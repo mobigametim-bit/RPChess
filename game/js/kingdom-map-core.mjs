@@ -111,33 +111,32 @@ function growTerritory(map){
 // stolen. The reservation may extend beyond fog but stays hidden until scouted.
 function reserveBattleTerritories(map){
  const existing=map.battleTerritories||[];
- let territories=existing;
- const committed=playerTerritoryKeys(map);
- const red=new Set(existing.flatMap(t=>t.cells));
- const battleCells=Object.entries(map.cells||{}).filter(([id,c])=>
+ const existingIds=new Set(existing.map(t=>t.id));
+ const newBattles=Object.entries(map.cells||{}).filter(([id,c])=>
   c?.selectedEncounter?.type==='battle'&&!c.completedOnce&&c.status!=='completed'&&
-  !existing.some(t=>t.id===id)).sort(([a],[b])=>a.localeCompare(b,'en'));
- // Reserve each Battle's center before allocating neighbors. Otherwise an
- // earlier generated province can consume the center of a nearby Battle.
- const battleCenters=new Set([...existing.map(t=>t.id),...battleCells.map(([id])=>id)]);
- for(const [id,cell] of battleCells){
-  const [cx,cy]=id.split(',').map(Number);
-  const target=Math.max(1,Math.floor(difficultyForStars(cell.selectedEncounter.stars).elo/200));
-  const cells=[];
-  // Grow a contiguous cardinal region outward, avoiding player cells,
-  // other Battle centers and previously reserved enemy territory. Blue land
-  // containing a legacy Battle center is treated as an origin, never stolen.
+  !existingIds.has(id)).sort(([a],[b])=>a.localeCompare(b,'en'));
+ if(!newBattles.length)return map;
+ const committed=playerTerritoryKeys(map);
+ const newCenters=new Set(newBattles.map(([id])=>id));
+ const allCenters=new Set([...existingIds,...newCenters]);
+ // A Battle discovered inside another red province must still retain its
+ // center. Rebuild only affected old provinces, never player-owned cells.
+ const displaced=new Set(existing.filter(t=>t.cells.some(id=>
+  id!==t.id&&newCenters.has(id))).map(t=>t.id));
+ const red=new Set(existing.filter(t=>!displaced.has(t.id)).flatMap(t=>t.cells));
+ const allocate=(id,encounterId,target)=>{
+  const [cx,cy]=id.split(',').map(Number),cells=[];
   const frontier=new Set([id]),visited=new Set();
   const appendNeighbors=tile=>{
    const [x,y]=tile.split(',').map(Number);
    for(const [dx,dy] of CARDINAL){
     const n=keyOf(x+dx,y+dy);
     if(!visited.has(n)&&!frontier.has(n)&&!committed.has(n)&&
-       !red.has(n)&&!battleCenters.has(n))frontier.add(n);
+       !red.has(n)&&!allCenters.has(n))frontier.add(n);
    }
   };
   while(cells.length<target&&frontier.size){
-   const candidates=[...frontier].sort((a,b)=>{
+   const options=[...frontier].sort((a,b)=>{
     const score=tile=>{
      const [x,y]=tile.split(',').map(Number);
      return Math.abs(x-cx)+Math.abs(y-cy)+
@@ -145,17 +144,22 @@ function reserveBattleTerritories(map){
     };
     return score(a)-score(b)||a.localeCompare(b,'en');
    });
-   const tile=candidates[0];frontier.delete(tile);visited.add(tile);
+   const tile=options[0];frontier.delete(tile);visited.add(tile);
    if(!committed.has(tile)&&!red.has(tile)&&
-      (tile===id||!battleCenters.has(tile))){
-    cells.push(tile);red.add(tile);
-    appendNeighbors(tile);
+      (tile===id||!allCenters.has(tile))){
+    cells.push(tile);red.add(tile);appendNeighbors(tile);
    }else if(tile===id)appendNeighbors(tile);
   }
-  if(territories===existing)territories=[...existing];
-  territories.push({id,encounterId:cell.selectedEncounter.id,cells});
- }
- return territories===existing?map:{...map,battleTerritories:territories};
+  return {id,encounterId,cells};
+ };
+ const repaired=new Map();
+ for(const t of existing)if(displaced.has(t.id))
+  repaired.set(t.id,allocate(t.id,t.encounterId,t.cells.length));
+ const territories=existing.map(t=>repaired.get(t.id)||t);
+ for(const [id,cell] of newBattles)
+  territories.push(allocate(id,cell.selectedEncounter.id,
+   Math.max(1,Math.floor(difficultyForStars(cell.selectedEncounter.stars).elo/200))));
+ return {...map,battleTerritories:territories};
 }
 function migrateKingdomMap(map,run=null){
  if(!validateKingdomMap(map))return map;
