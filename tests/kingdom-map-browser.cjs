@@ -1207,7 +1207,19 @@ async function assertTileImage(page,cellId){
   await buildButton.click();
   assert.equal((await read(walking)).kingdomMap.outposts.length,1);
   assert.equal((await read(walking)).kingdomMap.day,8,'outpost construction advances one day');
-  assert.equal(await walking.locator('[data-kingdom-cell="4,0"] .km-object--outpost').count(),1);
+  const outpostIcon=walking.locator('[data-kingdom-cell="4,0"] .km-object--outpost');
+  assert.equal(await outpostIcon.count(),1);
+  // Production strips parchment SVG masters; verify the actual outpost PNG
+  // decodes even when the icon is outside the visible lazy-load viewport.
+  const outpostArt=await outpostIcon.evaluate(async image=>{
+    image.loading='eager';
+    await image.decode();
+    return {src:image.getAttribute('src'),width:image.naturalWidth,height:image.naturalHeight};
+  });
+  assert.deepStrictEqual(outpostArt,{
+    src:'assets/kingdom-parchment/decor_minor_landmarks/04_watchtower.png',
+    width:128,height:128
+  },'completed outpost must load a real PNG after the conversion');
   assert.equal((await read(walking)).kingdomMap.outpostRoads.length,1,
     'building a remote outpost lays a single connected road without duplication');
   assert.equal(await walking.locator('[data-kingdom-outpost]:visible').count(),0,
