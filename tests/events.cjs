@@ -64,6 +64,12 @@ const path=require('path'),assert=require('assert'),fs=require('fs'),{pathToFile
   const trade=core.resolveEventChoice(run,'E002.1');assert.strictEqual(trade.success,true);assert.strictEqual(trade.run.gold,62);assert.strictEqual(trade.run.supplies,32);const again=core.resolveEventChoice(trade.run,'E002.1');assert.strictEqual(again.reason,'already-resolved');assert.strictEqual(again.run.gold,62);
 
   let alwaysRun=persistence.createRun({id:'events-always-effect-test',now:2});alwaysRun={...alwaysRun,activeTravelChoice:{...route,seed:'always-effect-seed'},currentTravelChoices:null,journeyStep:1};created=core.createEventState(alwaysRun,alwaysRun.activeTravelChoice);alwaysRun={...created.run,currentEvent:{...created.state,eventId:'E018'}};
+  const soloKing={...alwaysRun,roster:alwaysRun.roster.filter(hero=>hero.isRunKing)};
+  const ambushChoice=core.normalizedEvent('E018').choices.find(c=>c.id==='E018.2');
+  assert.equal(core.choiceAvailability(soloKing,ambushChoice).enabled,false,
+    'Event choice that can start Skirmish must be disabled for solo King');
+  assert.equal(core.resolveEventChoice(soloKing,'E018.2').reason,'skirmish-needs-companion',
+    'Event resolution cannot launch a solo-King Skirmish');
   const ambush=core.resolveEventChoice(alwaysRun,'E018.2');assert.strictEqual(ambush.success,true);const combat=ambush.run.currentEvent.combat;assert(combat);assert.strictEqual(combat.type,'skirmish');assert.strictEqual(combat.stars,12,'event threat modifier must clamp to the new 12-star ceiling');assert(['w','b'].includes(combat.playerColor));assert(combat.enemyRaceTag);assert(combat.enemyRoleRaces);assert(ambush.run.currentEvent.outcome.notes.includes('Начинается Стычка'));
 
   const v4Sample=data.eventById('E101');assert(v4Sample);let v4Run=persistence.createRun({id:'events-v4-sample',now:4});v4Run={...v4Run,gold:100,activeTravelChoice:{...route,seed:'events-v4-sample-seed'},currentTravelChoices:null,journeyStep:1,currentEvent:{routeId:route.id,eventId:'E101',choiceId:null,roll:null,success:null,resolved:false,outcome:null,combat:null}};const v4Choice=core.resolveEventChoice(v4Run,'E101.1');assert.strictEqual(v4Choice.success,true);assert(v4Choice.run.gold<=86,'E101.1 must charge its authored 14 Gold cost');assert.strictEqual(v4Choice.run.supplies>=10,true);

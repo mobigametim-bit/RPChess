@@ -1,0 +1,112 @@
+name: Kingdom Polish — single PR acceptance
+on:
+  push:
+    branches:
+      - feature/kingdom-polish-territory-red-battles-ads-artifacts-20261111
+    paths:
+      - '.github/workflows/kingdom-polish-preview.yml'
+      - 'kingdom-polish-preview/**'
+      - 'game/**'
+      - 'scripts/**'
+      - 'tests/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: rpchess-kingdom-polish-QA-v2
+  cancel-in-progress: true
+jobs:
+  polish-qa:
+    if: github.repository == 'mobigametim-bit/RPChess' && github.ref == 'refs/heads/feature/kingdom-polish-territory-red-battles-ads-artifacts-20261111'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 65
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm/rpchess-runtime-assets-v1
+          key: rpchess-runtime-assets-v1-${{ runner.os }}-${{ hashFiles('game/assets/**/*.png', 'game/generated_assets/*.png', 'scripts/*asset*.cjs', 'scripts/runtime-assets-build.cjs') }}
+          restore-keys: |
+            rpchess-runtime-assets-v1-${{ runner.os }}-
+      - name: Canonical source, unit regressions and PNG-only production build
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund
+          npm pack stockfish@18.0.0 --silent --pack-destination /tmp
+          mkdir -p /tmp/rpchess-stockfish-package /tmp/rpchess-stockfish-verified
+          tar -xzf /tmp/stockfish-18.0.0.tgz -C /tmp/rpchess-stockfish-package
+          package=/tmp/rpchess-stockfish-package/package
+          for name in stockfish-18-lite-single.js stockfish-18-lite-single.wasm; do
+            source=$(find "$package" -type f -name "$name" -print -quit)
+            test -n "$source"
+            cp "$source" "/tmp/rpchess-stockfish-verified/$name"
+          done
+          license=$(find "$package" -type f -iname 'Copying.txt' -print -quit)
+          test -n "$license"
+          cp "$license" /tmp/rpchess-stockfish-verified/COPYING.txt
+          RPCHESS_INCLUDE_ATLAS_LAB=1 RPCHESS_STOCKFISH_ASSET_DIR=/tmp/rpchess-stockfish-verified npm run gate:local
+      # Publish the private, non-production manual QA stand after the canonical
+      # gate, even when a targeted browser regression is still being repaired.
+      # Never expose this build as an approved public release.
+      - name: Publish isolated playable QA build
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          npx wrangler deploy --config kingdom-polish-preview/wrangler.toml
+      - name: Smoke-test published single-PR build
+        run: |
+          node <<'NODE'
+          const assert=require('node:assert/strict');
+          (async()=>{
+            const root='https://rpchess-kingdom-polish-preview.mobigametim.workers.dev';
+            for(let attempt=0;attempt<12;attempt++){
+              try{
+                const paths=[
+                  ['/', 'data-reboot-foundation'],
+                  ['/js/kingdom-map-core.mjs','reserveBattleTerritories'],
+                  ['/js/kingdom-map-app.mjs','playerTerritoryCount'],
+                  ['/js/kingdom-map-overlay.mjs','drawEnemyBattleTerritories'],
+                  ['/js/content/monetization.mjs','resumeMapEncounter'],
+                  ['/js/classic-chess-app.mjs','rpchess:chess-selection-changed'],
+                  ['/css/kingdom-map.css','km-heading']
+                ];
+                for(const [path,token] of paths){
+                  const r=await fetch(root+path,{cache:'no-store'});
+                  assert.equal(r.status,200,path);
+                  assert((await r.text()).includes(token),path+' is not the accepted QA release');
+                }
+                console.log('Polish preview deployed and correct modules served');
+                return;
+              }catch(e){
+                if(attempt===11)throw e;
+                await new Promise(resolve=>setTimeout(resolve,3000));
+              }
+            }
+          })().catch(error=>{console.error(error);process.exitCode=1;});
+          NODE
+      - name: Browser QA — Battle provinces, Day HUD, artifacts, Starvation
+        env:
+          RPCHESS_JOURNEY_PICKER_ONLY: '1'
+          RPCHESS_BROWSER_TEST: kingdom-map-browser.cjs,skirmish-artifact-browser.cjs,piercing-vision-browser.cjs,starvation-browser.cjs
+          RPCHESS_UI_SCREENSHOT_DIR: test-results/kingdom-polish
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
+          npx playwright install chromium
+          npm run test:browser
+      - name: Save Battle province and Day HUD screenshots
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kingdom-polish-qa-screenshots
+          path: test-results/kingdom-polish/
+          retention-days: 14
+          if-no-files-found: warn

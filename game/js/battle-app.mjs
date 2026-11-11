@@ -446,7 +446,13 @@ function rerenderLanguage() {
   if (battlePlan && classicScreen && !classicScreen.hidden) { applyBoardArt(); const mode=document.querySelector('[data-game-mode]');if(mode)mode.textContent=combatDifficultyLabel(); }
 }
 
-addEventListener('rpchess:caravan-open',openCaravan);addEventListener('rpchess:battle-open',openBattle);ensureBattleScreens();subscribe(rerenderLanguage);
+addEventListener('rpchess:caravan-open',openCaravan);addEventListener('rpchess:chess-selection-changed',event=>{
+ if(!['battle','caravan'].includes(event?.detail?.combatOwner)||!battlePlan||classicScreen?.hidden)return;
+ renderThreatOverlay(board,globalThis.RPChessClassicChess?.snapshot?.(),
+  artifactForCombat(activeRun,{combatType,encounterId:battlePlan.encounter.id}),
+  battlePlan.playerColor,event.detail.square);
+});
+addEventListener('rpchess:battle-open',openBattle);ensureBattleScreens();subscribe(rerenderLanguage);
 if(board&&typeof MutationObserver!=='undefined')new MutationObserver(syncBattleFromChess).observe(board,{childList:true,subtree:true});
 if(typeof MutationObserver!=='undefined'&&document.body)new MutationObserver(()=>{if(!battlePlan)return;if(!document.querySelector('.classic-piece-flyer:not([data-battle-visualized]),.classic-captured-ghost:not([data-battle-visualized])'))return;queueMicrotask(patchTransientBattleArt);}).observe(document.body,{childList:true,subtree:true});
 globalThis.RPChessBattle=Object.freeze({open:openBattle,openCaravan,get combatType(){return combatType;},start:startBattle,get encounter(){return encounter;},get selectedIds(){return[...selectedIds];},get battlePlan(){return battlePlan;},syncBattleFromChess,finishBattle,forfeitBattle});

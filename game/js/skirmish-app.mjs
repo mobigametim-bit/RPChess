@@ -143,7 +143,13 @@ function leaveRunEnd(){audio()?.click?.();resetBattleState();showOnly('menu');gl
 
 renderStaticCopy();
 subscribe(()=>{renderStaticCopy();setNotice(noticeCopy);renderWoundToast();if(skirmishScreen&&!skirmishScreen.hidden&&encounter){renderEncounter();renderComposition();}if(aftermathScreen&&!aftermathScreen.hidden&&battlePlan&&lastBattleStatus)renderAftermath(lastBattleStatus);if(runEndScreen&&!runEndScreen.hidden)renderRunEnd();if(classicScreen&&!classicScreen.hidden&&battlePlan){applyBoardArt();const mode=document.querySelector('[data-game-mode]');if(mode)mode.textContent=combatDifficultyLabel();}});
-startButton?.addEventListener('click',startBattle);aftermathButton?.addEventListener('click',leaveAftermath);addEventListener('rpchess:skirmish-open',openSkirmish);
+startButton?.addEventListener('click',startBattle);aftermathButton?.addEventListener('click',leaveAftermath);addEventListener('rpchess:chess-selection-changed',event=>{
+ if(event?.detail?.combatOwner!=='skirmish'||!battlePlan||classicScreen?.hidden)return;
+ renderThreatOverlay(board,globalThis.RPChessClassicChess?.snapshot?.(),
+  artifactForCombat(activeRun,{combatType:'skirmish',encounterId:battlePlan.encounter.id}),
+  battlePlan.playerColor,event.detail.square);
+});
+addEventListener('rpchess:skirmish-open',openSkirmish);
 if(board&&typeof MutationObserver!=='undefined')new MutationObserver(syncBattleFromChess).observe(board,{childList:true,subtree:true});
 if(typeof MutationObserver!=='undefined'&&document.body)new MutationObserver(()=>{if(!battlePlan)return;if(!document.querySelector('.classic-piece-flyer:not([data-skirmish-visualized]),.classic-captured-ghost:not([data-skirmish-visualized])'))return;queueMicrotask(patchTransientBattleArt);}).observe(document.body,{childList:true,subtree:true});
 globalThis.RPChessSkirmish=Object.freeze({open:openSkirmish,start:startBattle,get encounter(){return encounter;},get selectedIds(){return[...selectedIds];},get battlePlan(){return battlePlan;},syncBattleFromChess,finishBattle,forfeitBattle});

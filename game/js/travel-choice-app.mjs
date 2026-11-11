@@ -2,7 +2,7 @@ import { readRun, writeRun } from './run-persistence.mjs';
 import { TRAVEL_SUPPLY_COST, applyTravelSupplyCost, combatGoldReward } from './resources-core.mjs';
 import { hasPendingStarvation, resolveStarvation } from './starvation-core.mjs';
 import { PLAYABLE_TRAVEL_TYPES, FLAVOR_POOLS, TRAVEL_CHOICE_COUNT, canSelectTravelChoice, createTravelChoices, isTravelChoice, hasHealthySkirmishCompanion } from './travel-choice-core.mjs';
-import { beginEncounter, cancelEncounterBeforeStart } from './kingdom-map-core.mjs?v=20261110-starvation-guard-v1';
+import { beginEncounter, cancelEncounterBeforeStart } from './kingdom-map-core.mjs?v=20261111-battle-province-v1';
 import { starsText } from './encounter-difficulty.mjs';
 import { readPlayerRating, threatStarsForPower } from './player-rating.mjs';
 import { puzzleBaseGold } from './puzzles/puzzle-core.mjs';
@@ -158,7 +158,7 @@ function openTravel(event){routing=false;activeRun=readRun();if(!activeRun)retur
     globalThis.sessionStorage?.getItem('rpchess.test.legacyTravel')==='1'){
   activeRun=ensureChoices(activeRun);renderChoices();showTravel();return;
  }
- void import('./kingdom-map-app.mjs?v=20261111-outpost-png-v1').then(mod=>mod.openMap(event))
+ void import('./kingdom-map-app.mjs?v=20261112-province-colors-v2').then(mod=>mod.openMap(event))
   .catch(error=>{console.error('[RPChess] Kingdom map could not load',error);
    activeRun=ensureChoices(activeRun);renderChoices();showTravel();});
 }

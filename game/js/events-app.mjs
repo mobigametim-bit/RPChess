@@ -1,6 +1,7 @@
 import { readRun, writeRun } from './run-persistence.mjs';
 import { PIECE_GLYPHS } from './roster-data.mjs';
 import { subscribe, t, translateLegacy } from './i18n.mjs';
+import { currentLanguage } from './i18n.mjs';
 import { brandLogoSrc, brandLogoAlt } from './brand-logo.mjs';
 import { eventBackgroundPath } from './race-assets.mjs';
 import { literaryStory } from './event-narrative.mjs';
@@ -8,6 +9,7 @@ import { playerNameForRun, personalizePlayerNarrative, personalizePlayerTitle } 
 import { EVENT_CONTENT_V3, applyEventContentV3, formatHeroReaction } from './events/event-content-v3.mjs';
 import {
   choiceAvailability,
+  hasEventSkirmishCompanion,
   completeEvent,
   createEventState,
   eventCombatCompleted,
@@ -175,7 +177,10 @@ function choiceButton(eventChoice) {
   const role = heroState ? '' : hero ? `${PIECE_GLYPHS[hero.pieceType] || ''} ${hero.name}` : choice.role ? `${PIECE_GLYPHS[choice.role] || ''} ${t(`piece.${choice.role}`)}` : '';
   const chance = choice.chance < 100 ? t('events.choice.successChance',{chance:choice.chance}) : t('events.choice.guaranteed');
   const cost = costLabel(choice), risk = riskLabel(choice);
-  const unavailable = availability.enabled ? '' : localizeEventSource(availability.reason);
+  const unavailable=availability.enabled?'':availability.reason==='skirmish-needs-companion'?
+    (currentLanguage()==='en'?'At least one healthy fighter besides the King is required':
+      'Нужен хотя бы один здоровый боец помимо короля'):
+    localizeEventSource(availability.reason);
   button.innerHTML = `<span class="events-choice__head"><strong></strong><span>${chance}</span></span><span class="events-choice__meta">${[role,cost,risk].filter(Boolean).map((x)=>`<small>${x}</small>`).join('')}</span>${availability.enabled?'':`<span class="events-choice__disabled">${unavailable}</span>`}`;
   button.querySelector('strong').textContent = presentEventText(displayedChoiceAction(choice));
   if (heroState) {
@@ -309,6 +314,17 @@ function handleChoice(event) {
 function dispatchCombat() {
   const current = readRun(), combat = current?.currentEvent?.combat;
   if (!current || !combat || current.ended) return;
+  // Legacy saves may have resolved a Skirmish before the last companion died.
+  // Exit Event safely instead of entering an impossible skirmish scene.
+  if(combat.type==='skirmish'&&!hasEventSkirmishCompanion(current)){
+    activeRun=writeRun(completeEvent(current));
+    globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated'));
+    document.body.classList.remove('events-outcome-open');
+    hideEvents();
+    globalThis.dispatchEvent(new CustomEvent('rpchess:travel-open',
+      {detail:{source:'event-complete',runId:activeRun.id}}));
+    return;
+  }
   activeRun = writeRun(markEventCombatStarted(current));
   const routed = { type:combat.type, stars:combat.stars, seed:combat.seed, playerColor:combat.playerColor, enemyColor:combat.enemyColor, enemyRaceTag:combat.enemyRaceTag, enemyRoleRaces:combat.enemyRoleRaces, mixedArmy:combat.mixedArmy, sideNarrative:combat.sideNarrative, sourceEventId:combat.sourceEventId, sourceEventTitle:localizeEventSource(combat.sourceEventTitle) };
   globalThis.RPChessTravelEncounterOverride = routed;

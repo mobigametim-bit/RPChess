@@ -5,9 +5,10 @@ import { EVENT_IDS, eventById } from './events-data.mjs';
 import {combatTheme} from './race-assets.mjs';
 import {worldAt,biomeAt} from './kingdom-world-core.mjs?v=20261109-kingdom-feedback1';
 import {SCOUT_RADIUS} from './kingdom-world-config.mjs';
+import {difficultyForStars} from './encounter-difficulty.mjs';
 import {KINGDOM_OUTPOST_SHARD_COST} from './arena-core.mjs?v=20261109-kingdom-economy-v7';
 import {DEFAULT_KINGDOM_ECONOMY,weeklyResourceProduction} from './kingdom-economy-config.mjs';
-import {synchronizeRoyalRoads} from './kingdom-road-network.mjs?v=20261110-roadgrid-v3';
+import {synchronizeRoyalRoads} from './kingdom-road-network.mjs?v=20261111-polish-v1';
 
 // Live defaults mirror Atlas Lab's canonical economy; change only after acceptance.
 const production=DEFAULT_KINGDOM_ECONOMY.production;
@@ -48,6 +49,18 @@ function territoryCapacity(map){
  return Math.max(0,Math.floor((map.peakKingPower||0)/100)+legacy+
   (map.uniqueFirstConquests||[]).reduce((n,c)=>n+Math.max(0,c.bonusLands||0),0));
 }
+// All sovereign tiles count once, including disconnected outposts and lands
+// captured from enemy Battles. Unlike capacity this is a real area counter.
+function playerTerritoryKeys(map){
+ return new Set([keyOf(map.castle.x,map.castle.y),...(map.centralOwnedCells||[]),
+  ...(map.outposts||[]).flatMap(p=>p.cells||[]),
+  ...(map.battleConqueredCells||[]),
+  ...Object.entries(map.cells||{}).filter(([,c])=>c?.annexed).map(([id])=>id)]);
+}
+function playerTerritoryCount(map){return playerTerritoryKeys(map).size;}
+function enemyBattleKeys(map){
+ return new Set((map.battleTerritories||[]).flatMap(p=>p.cells||[]));
+}
 function pointsEarned(map){return territoryCapacity(map);}
 function pointsAvailable(map){return Math.max(0,territoryCapacity(map)-
   Math.max(0,(map.centralOwnedCells||[]).length-1));}
@@ -55,18 +68,30 @@ function isOwned(map,point){
  const id=typeof point==='string'?point:keyOf(point.x,point.y);
  return id===keyOf(map.castle.x,map.castle.y)||
   (map.centralOwnedCells||[]).includes(id)||Boolean(map.cells?.[id]?.annexed)||
-  (map.outposts||[]).some(post=>post.cells?.includes(id));
+  (map.outposts||[]).some(post=>post.cells?.includes(id))||
+  (map.battleConqueredCells||[]).includes(id);
+}
+// Persist per-Battle hues; blue belongs exclusively to the player.
+const BATTLE_PROVINCE_HUES=Object.freeze([0,18,36,55,75,95,115,135,155,175,247,265,283,301,319,337]);
+function nextProvinceColorIndex(seed,id,used){
+ const start=(hashString(seed+':province-color:'+id)>>>0)%BATTLE_PROVINCE_HUES.length;
+ for(let n=0;n<BATTLE_PROVINCE_HUES.length;n++){
+  const index=(start+n)%BATTLE_PROVINCE_HUES.length;
+  if(!used.has(index)){used.add(index);return index;}
+ }
+ return start;
 }
 const CARDINAL=Object.freeze([[0,-1],[1,0],[0,1],[-1,0]]);
 function growTerritory(map){
  const owned=new Set([keyOf(map.castle.x,map.castle.y),
   ...(map.centralOwnedCells||[]),
   ...Object.entries(map.cells).filter(([,cell])=>cell.annexed).map(([id])=>id)]);
+ const protectedTiles=enemyBattleKeys(map);
  const target=Math.max(owned.size,territoryCapacity(map)+1),frontier=new Set();
  const addNeighbors=id=>{
   const [x,y]=id.split(',').map(Number);
   for(const [dx,dy] of CARDINAL){
-   const n=keyOf(x+dx,y+dy);if(!owned.has(n))frontier.add(n);
+   const n=keyOf(x+dx,y+dy);if(!owned.has(n)&&!protectedTiles.has(n))frontier.add(n);
   }
  };
  for(const id of owned)addNeighbors(id);
@@ -91,6 +116,73 @@ function growTerritory(map){
  if(cells===map.cells&&prev.length===ordered.length&&prev.every((id,i)=>id===ordered[i]))return synchronizeRoyalRoads(map);
  return synchronizeRoyalRoads({...map,cells,centralOwnedCells:ordered});
 }
+// Each undefeated Battle owns a distinct stable colored province. Its
+// centre counts toward the ELO/200 total when free. Old blue land is never
+// stolen. The reservation may extend beyond fog but stays hidden until scouted.
+function reserveBattleTerritories(map){
+ const usedColors=new Set();
+ let recolored=false;
+ // Upgrade old saves once and keep enemy hues stable after conquest/reload.
+ const existing=(map.battleTerritories||[]).map(p=>{
+  const index=p.colorIndex;
+  if(Number.isInteger(index)&&index>=0&&index<BATTLE_PROVINCE_HUES.length&&
+      (!usedColors.has(index)||usedColors.size===BATTLE_PROVINCE_HUES.length)){
+   usedColors.add(index);return p;
+  }
+  recolored=true;
+  return {...p,colorIndex:nextProvinceColorIndex(map.seed,p.id,usedColors)};
+ });
+ const existingIds=new Set(existing.map(t=>t.id));
+ const newBattles=Object.entries(map.cells||{}).filter(([id,c])=>
+  c?.selectedEncounter?.type==='battle'&&!c.completedOnce&&c.status!=='completed'&&
+  !existingIds.has(id)).sort(([a],[b])=>a.localeCompare(b,'en'));
+ if(!newBattles.length)return recolored?{...map,battleTerritories:existing}:map;
+ const committed=playerTerritoryKeys(map);
+ const newCenters=new Set(newBattles.map(([id])=>id));
+ const allCenters=new Set([...existingIds,...newCenters]);
+ // A Battle discovered inside another red province must still retain its
+ // center. Rebuild only affected old provinces, never player-owned cells.
+ const displaced=new Set(existing.filter(t=>t.cells.some(id=>
+  id!==t.id&&newCenters.has(id))).map(t=>t.id));
+ const red=new Set(existing.filter(t=>!displaced.has(t.id)).flatMap(t=>t.cells));
+ const allocate=(id,encounterId,target,colorIndex)=>{
+  const [cx,cy]=id.split(',').map(Number),cells=[];
+  const frontier=new Set([id]),visited=new Set();
+  const appendNeighbors=tile=>{
+   const [x,y]=tile.split(',').map(Number);
+   for(const [dx,dy] of CARDINAL){
+    const n=keyOf(x+dx,y+dy);
+    if(!visited.has(n)&&!frontier.has(n)&&!committed.has(n)&&
+       !red.has(n)&&!allCenters.has(n))frontier.add(n);
+   }
+  };
+  while(cells.length<target&&frontier.size){
+   const options=[...frontier].sort((a,b)=>{
+    const score=tile=>{
+     const [x,y]=tile.split(',').map(Number);
+     return Math.abs(x-cx)+Math.abs(y-cy)+
+      (hashString(map.seed+':red-province:'+id+':'+tile)>>>0)/4294967296*.8;
+    };
+    return score(a)-score(b)||a.localeCompare(b,'en');
+   });
+   const tile=options[0];frontier.delete(tile);visited.add(tile);
+   if(!committed.has(tile)&&!red.has(tile)&&
+      (tile===id||!allCenters.has(tile))){
+    cells.push(tile);red.add(tile);appendNeighbors(tile);
+   }else if(tile===id)appendNeighbors(tile);
+  }
+  return {id,encounterId,cells,colorIndex};
+ };
+ const repaired=new Map();
+ for(const t of existing)if(displaced.has(t.id))
+  repaired.set(t.id,allocate(t.id,t.encounterId,t.cells.length,t.colorIndex));
+ const territories=existing.map(t=>repaired.get(t.id)||t);
+ for(const [id,cell] of newBattles)
+  territories.push(allocate(id,cell.selectedEncounter.id,
+   Math.max(1,Math.floor(difficultyForStars(cell.selectedEncounter.stars).elo/200)),
+   nextProvinceColorIndex(map.seed,id,usedColors)));
+ return {...map,battleTerritories:territories};
+}
 function migrateKingdomMap(map,run=null){
  if(!validateKingdomMap(map))return map;
  let result=map;
@@ -111,7 +203,9 @@ function migrateKingdomMap(map,run=null){
  // Legacy completions have no reliable chronology; do not invent roads.
  if(!Array.isArray(result.completedRoads))
   result={...result,completedRoads:[],lastCompletedRouteCell:null};
- return growTerritory(result);
+ if(!Array.isArray(result.battleTerritories))result={...result,battleTerritories:[]};
+ if(!Array.isArray(result.battleConqueredCells))result={...result,battleConqueredCells:[]};
+ return growTerritory(reserveBattleTerritories(result));
 }
 // Route paths are historical: each first successful completion links to
 // the last different completed event, or to the castle for the first one.
@@ -198,7 +292,7 @@ function buildSettlement(map,point,transactionId,{gold,shards,raceTag='humans'}=
  return {ok:true,map:synchronizeRoyalRoads(advanceDay(next,'build-settlement:'+id)),encounter};
 }
 function canBuildOutpost(map,point){
- if(!validateKingdomMap(map)||!isPoint(point)||map.pendingCell||isOwned(map,point))return false;
+ if(!validateKingdomMap(map)||!isPoint(point)||map.pendingCell||isOwned(map,point)||enemyBattleKeys(map).has(keyOf(point.x,point.y)))return false;
  const id=keyOf(point.x,point.y),cell=map.cells[id];
  return Boolean(cell?.explored&&cell.status==='completed'&&
   (cell.type==='empty'||cell.completedOnce===true)&&
@@ -227,7 +321,7 @@ function buildOutpost(map,point,transactionId){
   return {ok:false,map};
  const id=keyOf(point.x,point.y);
  const neighbors=CARDINAL.map(([dx,dy])=>keyOf(point.x+dx,point.y+dy))
-  .filter(key=>!isOwned(map,key))
+  .filter(key=>!isOwned(map,key)&&!enemyBattleKeys(map).has(key))
   .sort((a,b)=>(hashString(map.seed+':outpost:'+id+':'+a)>>>0)-
    (hashString(map.seed+':outpost:'+id+':'+b)>>>0)).slice(0,2);
  const post={id,cells:[id,...neighbors],transactionId,price:KINGDOM_OUTPOST_SHARD_COST};
@@ -268,6 +362,7 @@ function createKingdomMap(run,playerPower=400,raceTag='humans'){
   cells:{'0,0':{status:'completed',type:'castle',annexed:true}},pendingCell:null,
   peakKingPower:power,annexationPointsSpent:0,battlePointsEarned:0,legacyBonusLands:0,
   creditedBattleEncounterIds:[],uniqueFirstConquests:[],centralOwnedCells:[],
+  battleTerritories:[],battleConqueredCells:[],
   day:1,calendarActions:[],processedThroughWeek:0,outposts:[],builtSettlements:[],productionClaims:[],
   completedRoads:[],lastCompletedRouteCell:null,outpostRoads:[],royalRoads:[],
   completedNewEncounterCount:0,productionCyclesResolved:0});
@@ -307,6 +402,13 @@ function validateKingdomMap(map){
     !map.calendarActions.every(id=>typeof id==='string'&&id.length>0)))return false;
  if(map.centralOwnedCells!=null&&(!Array.isArray(map.centralOwnedCells)||
     !map.centralOwnedCells.every(id=>/^-?\d+,-?\d+$/.test(id))))return false;
+ if(map.battleConqueredCells!=null&&(!Array.isArray(map.battleConqueredCells)||
+    !map.battleConqueredCells.every(id=>/^-?\d+,-?\d+$/.test(id))))return false;
+ if(map.battleTerritories!=null&&(!Array.isArray(map.battleTerritories)||
+    !map.battleTerritories.every(t=>t&&typeof t.id==='string'&&/^-?\d+,-?\d+$/.test(t.id)&&
+      typeof t.encounterId==='string'&&Array.isArray(t.cells)&&t.cells.length<=13&&
+      (t.colorIndex==null||(Number.isInteger(t.colorIndex)&&t.colorIndex>=0&&t.colorIndex<BATTLE_PROVINCE_HUES.length))&&
+      t.cells.every(id=>typeof id==='string'&&/^-?\d+,-?\d+$/.test(id)))))return false;
  if(map.uniqueFirstConquests!=null&&(!Array.isArray(map.uniqueFirstConquests)||
     !map.uniqueFirstConquests.every(c=>c&&typeof c.encounterId==='string'&&
       ['battle','skirmish','caravan'].includes(c.type)&&Number.isSafeInteger(c.bonusLands)&&c.bonusLands>=0)))return false;
@@ -376,6 +478,7 @@ function revealAround(map,run,power,radius=SCOUT_RADIUS){
   locations.add(keyOf(map.king.x+dx,map.king.y+dy));
  for(const post of map.outposts||[])for(const id of post.cells||[])locations.add(id);
  for(const [id,cell] of Object.entries(map.cells))if(cell.annexed)locations.add(id);
+ for(const id of map.battleConqueredCells||[])locations.add(id);
  for(const id of locations){
   if(map.cells[id])continue;
   const [x,y]=id.split(',').map(Number);
@@ -387,8 +490,9 @@ function revealAround(map,run,power,radius=SCOUT_RADIUS){
   if(!cells)cells={...map.cells};
   cells[id]=entry;
  }
- return synchronizeRoyalRoads(cells?{...map,cells,explorationVersion:2}:
-  map.explorationVersion===2?map:{...map,explorationVersion:2});
+ const scouted=cells?{...map,cells,explorationVersion:2}:
+  map.explorationVersion===2?map:{...map,explorationVersion:2};
+ return synchronizeRoyalRoads(reserveBattleTerritories(scouted));
 }
 function enterCell(map,point,encounter=null,now=Date.now()){
  if(!validateKingdomMap(map)||!adjacent(map.king,point)||map.pendingCell)return {ok:false,reason:'not_adjacent_or_busy',map};
@@ -449,7 +553,9 @@ function cancelEncounterBeforeStart(map,id){
 function finishEncounter(map,id,{success=false,opponentPower=0}={}){
  const prev=map?.cells?.[id];
  if(!prev||!['in_progress','revealed'].includes(prev.status))return {ok:false,map};
- let next=copyMap(map);
+ // Backfill old saves that had an undefeated Battle without a reservation.
+ let next=prev.selectedEncounter?.type==='battle'&&success?
+  copyMap(reserveBattleTerritories(map)):copyMap(map);
  const first=Boolean(success&&!prev.completedOnce);
  next.cells[id]={...prev,status:success?'completed':'failed',completedOnce:prev.completedOnce||Boolean(success)};
  if(!success&&isPoint(prev.lastEntryFrom))next.king={...prev.lastEntryFrom};
@@ -458,15 +564,21 @@ function finishEncounter(map,id,{success=false,opponentPower=0}={}){
   next.completedNewEncounterCount++;
   const choice=prev.selectedEncounter;
   if(choice?.id)next=linkCompletedRoad(next,id);
+  if(choice?.type==='battle'){
+   const territory=(next.battleTerritories||[]).find(t=>t.id===id);
+   if(territory){
+    next.battleConqueredCells=[...new Set([...(next.battleConqueredCells||[]),...territory.cells])];
+    next.battleTerritories=next.battleTerritories.filter(t=>t.id!==id);
+   }
+  }
   if(['battle','skirmish','caravan'].includes(choice?.type)&&!next.creditedBattleEncounterIds.includes(choice.id)){
    const enemyPower=Math.max(0,Math.floor(Number(opponentPower)||0));
     const divisor={battle:200,skirmish:400,caravan:300}[choice.type];
-    const bonusLands=Math.floor(enemyPower/divisor);
+    const bonusLands=choice.type==='battle'?0:Math.floor(enemyPower/divisor);
    next.creditedBattleEncounterIds=[...next.creditedBattleEncounterIds,choice.id];
-   if(choice.type==='battle')next.battlePointsEarned+=bonusLands; // legacy analytics, not new capacity
    next.uniqueFirstConquests=[...(next.uniqueFirstConquests||[]),
     {encounterId:choice.id,type:choice.type,enemyPower,bonusLands}];
-   next=growTerritory(next);
+   if(choice.type!=='battle')next=growTerritory(next);
   }
  }
  next=advanceDay(next,'complete:'+id+':'+(prev.attempts||0)+':'+(success?'success':'failed'));
@@ -504,6 +616,6 @@ function borderEdges(map,point){
 export {MAP_VERSION,TYPES,ROMANS,keyOf,isPoint,adjacent,orthogonal,shortestKingRoute,romanForStars,castleLevel,
  createKingdomMap,validateKingdomMap,migrateKingdomMap,updatePeak,randomEncounter,revealAround,enterCell,beginEncounter,cancelEncounterBeforeStart,
  finishEncounter,matchesCombatReceipt,canAnnex,annexCell,pointsEarned,pointsAvailable,territoryCapacity,
- growTerritory,advanceDay,isOwned,linkCompletedRoad,borderEdges,weekForDay,productionFor,
+ growTerritory,reserveBattleTerritories,BATTLE_PROVINCE_HUES,playerTerritoryKeys,playerTerritoryCount,enemyBattleKeys,advanceDay,isOwned,linkCompletedRoad,borderEdges,weekForDay,productionFor,
  settleWeeklyProduction,collectProduction,acknowledgeReturn,canBuildOutpost,buildOutpost,linkOutpostRoad,
  canBuildSettlement,buildSettlement,WEEK_DAYS,PROTOTYPE_YIELDS};

@@ -125,6 +125,10 @@ async function assertTileImage(page,cellId){
     return Boolean(button&&piece.alt&&piece.naturalWidth&&coin.naturalWidth&&!button.textContent.includes('зол.'));
   })));
   assert.equal(recruitArt.length,5,'all five permanent Army roles have Castle hire buttons');
+  assert.equal(await page.locator('.km-castle-recruit button .km-castle-recruit__piece').count(),5,
+    'all recruit images must be inside their clickable tiles');
+  assert.equal(await page.locator('.km-castle-recruit button .km-castle-recruit__count').count(),5,
+    'each recruit button must show its live owned count');
   assert(recruitArt.every(Boolean),'Castle recruit art and Gold currency icons must decode');
   assert.deepEqual(await page.locator('[data-kingdom-army-count]').allTextContents(),
     ['×0','×0','×0','×0','×0'],
@@ -690,11 +694,11 @@ async function assertTileImage(page,cellId){
   assert.equal(await page.locator('.km-heading').innerText(),'День 1');
   assert.equal(await page.locator('[data-kingdom-shards]').textContent(),'37',
     'Honor shards reflect the persistent Arena ledger, not current run data');
-  assert.equal(await page.locator('[data-kingdom-points]').textContent(),'5/5',
-    'the header shows five automatically held lands out of five Power-based capacity');
+  assert.equal(await page.locator('[data-kingdom-points]').textContent(),'6',
+    'the header shows six distinct owned tiles: castle plus five automatic lands');
   const liveNpcCount=Number(await page.locator('[data-kingdom-travelers]').getAttribute('data-walker-count'));
   assert(Number.isInteger(liveNpcCount)&&liveNpcCount<=5,
-    'HUD 5/5 may spawn at most five decorative NPCs, one per type');
+    'Five annexed lands (plus the castle) may spawn at most five decorative NPCs, one per type');
   assert.equal(await page.locator('[data-kingdom-power]').textContent(),'500',
     'Power appears in the shared resource strip with its real rating');
   assert.equal(await page.locator('[data-kingdom-threat]').count(),0,
@@ -986,7 +990,10 @@ async function assertTileImage(page,cellId){
      'finished events retain their original beautiful route card');
    assert.equal(await completedCard.locator('.km-route-card__icon').count(),1);
    assert.equal(await completedCard.locator('.km-route-card__defender').count(),0);
-   assert.equal(await completedCard.locator('.km-route-card__cleared').count(),1);
+   assert.equal(await completedCard.locator('.km-route-card__cleared').count(),0,
+     'cleared cards must not repeat the redundant location-completed explanation');
+   assert(!/Место освоено|This location is cleared/i.test(await completedCard.innerText()),
+     'completed card must omit the deprecated verbose cleared message');
    assert.equal(await completedCard.locator('.km-route-resource').count(),0,
      'a completed encounter does not advertise a fresh supply charge or repeat reward');
    assert.equal(await page.locator('.km-kingdom-overlay').count(),1,
@@ -1571,9 +1578,24 @@ async function assertTileImage(page,cellId){
   assert.equal(finishedServices.kingdomMap.cells['1,0'].status,'completed');
   assert.deepEqual(serviceErrors,[],'Settlement revisit must not throw browser errors');
 
+  // Same real map fixture: a six-digit day must fit the fixed portrait
+  // header on every mobile and desktop breakpoint without hiding digits.
+  await servicesPage.evaluate(storage=>{
+    const run=JSON.parse(localStorage.getItem(storage));
+    run.kingdomMap.day=166166;
+    localStorage.setItem(storage,JSON.stringify(run));
+    globalThis.RPChessKingdomMap.open();
+  },key);
   // Existing completed-Settlement fixture doubles as a responsive map check.
   for(const [width,height] of [[1440,900],[1180,820],[844,390],[900,1440],[820,1180],[390,844]]){
     await servicesPage.setViewportSize({width,height});
+    // Viewport changes are asynchronous relative to resize listeners; sample
+    // the heading only after its real browser reflow and adaptive fit settle.
+    await servicesPage.waitForFunction(()=>{
+      const day=document.querySelector('[data-kingdom-day]');
+      return day&&day.textContent.includes('166166')&&
+        day.scrollWidth<=day.clientWidth+1;
+    },null,{timeout:7000});
     const ui=await servicesPage.locator('[data-kingdom-map-screen]').evaluate(root=>{
       const rect=selector=>root.querySelector(selector)?.getBoundingClientRect();
       const rootBox=root.getBoundingClientRect(),map=rect('.km-map-frame');
@@ -1588,7 +1610,10 @@ async function assertTileImage(page,cellId){
       }));
       const mirror=root.querySelector('[data-kingdom-heading-glory]');
       return {root:rootBox.toJSON(),map:map.toJSON(),panel:panel.toJSON(),zoom:zoom.toJSON(),
-        title:day.getBoundingClientRect().toJSON(),nav:nav.getBoundingClientRect().toJSON(),
+        title:day.getBoundingClientRect().toJSON(),dayText:day.textContent,
+        dayFontPx:parseFloat(getComputedStyle(day).fontSize),
+        dayScrollWidth:day.scrollWidth,dayClientWidth:day.clientWidth,
+        nav:nav.getBoundingClientRect().toJSON(),
         heading:heading.getBoundingClientRect().toJSON(),
         header:header.getBoundingClientRect().toJSON(),
         headingCSS:{display:headingCSS.display,justify:headingCSS.justifyContent,
@@ -1605,6 +1630,15 @@ async function assertTileImage(page,cellId){
     });
     assert(ui.root.width<=width+2&&ui.root.height<=height+2,
       'Map must fit '+width+'x'+height+': '+JSON.stringify(ui));
+    assert(ui.dayText==='День 166166'||ui.dayText==='Day 166166',
+      'long day label must contain all six digits at '+width+'x'+height);
+    assert(ui.title.right<=ui.heading.right-1,
+      'long day label must fit its commandbar heading at '+width+'x'+height+
+      ': '+JSON.stringify({title:ui.title,heading:ui.heading,font:ui.dayFontPx}));
+    assert(ui.dayScrollWidth<=ui.dayClientWidth+1,
+      'the Day text itself must be fully visible with no glyph clipping at '+width+'x'+height+
+      ': '+JSON.stringify({scroll:ui.dayScrollWidth,client:ui.dayClientWidth,font:ui.dayFontPx}));
+
     assert(ui.map.height>160&&ui.map.width>220,'Map viewport unusable at '+width+'x'+height);
     assert(ui.panel.top>=ui.map.top-2&&ui.panel.bottom<=ui.map.bottom+2,
       'Inspector must fit map at '+width+'x'+height);
@@ -1635,6 +1669,58 @@ async function assertTileImage(page,cellId){
   }
   await servicesPage.setViewportSize({width:1280,height:720});
   await servicesPage.close();
-  console.log('KINGDOM MAP PASS — click-inspect, king drag, shortest routes, event stop, map pan, step supplies');
+  // A scouted undefeated Battle shows its persistent red province. Player
+  // territory and count stay untouched; unfogged red ink must paint on paper.
+  const enemy=await browser.newPage({viewport:{width:1280,height:720},reducedMotion:'reduce'});
+  await enemy.goto(url,{waitUntil:'domcontentloaded'});
+  await startNewRun(enemy,{playerName:'Province QA',legacyTravel:false});
+  await enemy.locator('[data-roster-travel]').click();
+  await enemy.locator('[data-kingdom-map-screen]:not([hidden])').waitFor({timeout:16000});
+  const redStats=await enemy.evaluate(async storage=>{
+    const core=await import('./js/kingdom-map-core.mjs?v=20261111-battle-province-v1');
+    let run=JSON.parse(localStorage.getItem(storage));
+    const origin={x:5,y:4},id='5,4';
+    const choice=core.randomEncounter(run,origin,500,{
+      type:'battle',biome:'plains',landmark:null,raceTag:'orcs',paths:{}});
+    const second={x:6,y:4},secondId='6,4';
+    const other=core.randomEncounter(run,second,600,{
+      type:'battle',biome:'hills',landmark:null,raceTag:'goblins',paths:{}});
+    let map={...run.kingdomMap,king:origin,pendingCell:null,
+      cells:{...run.kingdomMap.cells,
+        [id]:{status:'revealed',explored:true,selectedEncounter:choice},
+        [secondId]:{status:'revealed',explored:true,selectedEncounter:other}}};
+    map=core.reserveBattleTerritories(map);
+    const province=map.battleTerritories.find(t=>t.id===id);
+    if(!province||!province.cells.includes(id))throw Error('Battle red province missing origin');
+    for(const territory of map.battleTerritories)
+      for(const tile of territory.cells)if(!map.cells[tile])
+        map.cells[tile]={status:'completed',type:'empty',explored:false};
+    run.kingdomMap=map;
+    localStorage.setItem(storage,JSON.stringify(run));
+    globalThis.RPChessKingdomMap.open();
+    const real=globalThis.RPChessKingdomMap.map;
+    return {red:province.cells.length,owned:core.playerTerritoryCount(real),
+      colors:[real.battleTerritories.find(p=>p.id===id)?.colorIndex,
+        real.battleTerritories.find(p=>p.id===secondId)?.colorIndex],
+      provinces:document.querySelector('[data-kingdom-parchment]')?.dataset.enemyProvinceCount,
+      redBorders:document.querySelector('[data-kingdom-parchment]')?.dataset.enemyBorderSegments,
+      counter:document.querySelector('[data-kingdom-points]')?.textContent,
+      blueOverlap:province.cells.filter(tile=>core.isOwned(real,tile))};
+  },key);
+  assert(redStats.red>=2&&redStats.red<=13,'Battle province must have ELO/200 cells');
+  assert(redStats.colors.every(Number.isInteger)&&new Set(redStats.colors).size===2,
+    'neighboring Battles must render with distinct persistent colors');
+  assert.equal(redStats.provinces,'2','both colored enemy borders render separately');
+  assert.equal(redStats.counter,String(redStats.owned),
+    'territory HUD counts the actual unique owned area, excluding enemy provinces');
+  assert.deepEqual(redStats.blueOverlap,[],'blue and red provinces must not overlap');
+  assert(Number(redStats.redBorders)>0,'colored Battle borders must draw on parchment');
+  if(process.env.RPCHESS_UI_SCREENSHOT_DIR){
+    fs.mkdirSync(process.env.RPCHESS_UI_SCREENSHOT_DIR,{recursive:true});
+    await enemy.screenshot({path:path.join(process.env.RPCHESS_UI_SCREENSHOT_DIR,
+      'battle-red-territory.png'),fullPage:false});
+  }
+  await enemy.close();
+  console.log('KINGDOM MAP PASS — click-inspect, king drag, shortest routes, event stop, map pan, step supplies, red provinces');
  }finally{await browser.close()}
 })().catch(e=>{console.error(e.stack||e);process.exitCode=1});

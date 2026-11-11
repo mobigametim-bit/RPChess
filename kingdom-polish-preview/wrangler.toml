@@ -1,0 +1,7 @@
+name = "rpchess-kingdom-polish-preview"
+compatibility_date = "2026-11-11"
+
+# Independent QA build. Never touches the public GitHub Pages deployment.
+[assets]
+directory = "../dist"
+not_found_handling = "single-page-application"

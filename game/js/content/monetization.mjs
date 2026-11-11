@@ -421,17 +421,12 @@ function applyStarvationRescue(run, receiptId) {
 
 function dispatchRescuedEncounter(run) {
   const choice = run?.activeTravelChoice;
-  const events = {
-    skirmish:'rpchess:skirmish-open',
-    battle:'rpchess:battle-open',
-    event:'rpchess:event-open',
-    settlement:'rpchess:settlement-open',
-    puzzle:'rpchess:puzzle-open'
-  };
-  const name = events[choice?.type];
-  if (!name) return false;
-  redispatchTravelEvent(name, { source:'travel-choice', runId:run.id, choice });
-  return true;
+  if (!choice) return false;
+  // The regular Travel gate promotes revealed Kingdom encounters to
+  // in_progress before dispatch. Dispatching an encounter directly after a
+  // rewarded rescue previously bypassed that state transition, leaving the
+  // same Skirmish ready to fire again on return to the map.
+  return Boolean(globalThis.RPChessTravelChoice?.resumeMapEncounter?.(choice));
 }
 
 function hideRescueModal() {
@@ -509,7 +504,15 @@ async function claimStarvationRescue() {
   noteRewardedExposure(result);
   if (result.status === 'completed') {
     updateReceipt(receiptId, { type:'starvation-rescue', status:'completed', granted:false, runId:pending.run.id, routeId:choice.id, supplies:STARVATION_RESCUE_SUPPLIES });
-    const current = readRun() || pending.run;
+    const current = readRun();
+    // A stale ad callback must never grant to another run or route.
+    if (!current || current.id !== pending.run.id ||
+        current.activeTravelChoice?.id !== choice.id) {
+      updateReceipt(receiptId, {type:'starvation-rescue',status:'completed',
+        granted:false,runId:pending.run.id,routeId:choice.id,supplies:STARVATION_RESCUE_SUPPLIES});
+      hideRescueModal();
+      return;
+    }
     const rescued = applyStarvationRescue(current, receiptId);
     if (rescued) {
       const persisted = writeRun(rescued);
@@ -648,6 +651,8 @@ export {
   rewardedCooldownRemaining,
   installMonetization,
   bindStarvationRescue,
+  applyStarvationRescue,
+  dispatchRescuedEncounter,
   reconcileCompletedRewards,
   destroyMonetization
 };

@@ -505,6 +505,79 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   assert(mapCore.isOwned(migrated,'9,9'),'manual old territory survives the migration');
   assert.strictEqual(mapCore.migrateKingdomMap(migrated),migrated,
     'loading an already migrated kingdom does not add days or reallocate land');
+  // New and existing saves: unseen Battle reserves a private red province
+  // without seizing owned tiles, and converts ONLY that province on victory.
+  const enemyBattleId='5,4',overlapId='5,5';
+  const remoteBattle={id:'map.test-red-1',type:'battle',stars:5};
+  const overlapBattle={id:'map.test-red-2',type:'battle',stars:6};
+  const seeded={...startMap,cells:{...startMap.cells,
+    [enemyBattleId]:{status:'revealed',explored:false,selectedEncounter:remoteBattle},
+    [overlapId]:{status:'revealed',explored:false,selectedEncounter:overlapBattle}}};
+  const reserved=mapCore.reserveBattleTerritories(seeded);
+  assert.equal(reserved.battleTerritories.length,2);
+  const colorA=reserved.battleTerritories.find(p=>p.id===enemyBattleId).colorIndex;
+  const colorB=reserved.battleTerritories.find(p=>p.id===overlapId).colorIndex;
+  assert(Number.isInteger(colorA)&&Number.isInteger(colorB)&&colorA!==colorB,
+    'active Battles must keep different non-player territory colors');
+  const redA=reserved.battleTerritories.find(p=>p.id===enemyBattleId).cells;
+  const redB=reserved.battleTerritories.find(p=>p.id===overlapId).cells;
+  assert.equal(redA.length,6,'Battle V owns six cells including its center');
+  assert.equal(redB.length,7,'Battle VI owns seven cells including its center');
+  assert(redA.includes(enemyBattleId));
+  assert(redB.includes(overlapId),'each nearby Battle must keep its own center');
+  assert(!redA.some(id=>startMap.centralOwnedCells.includes(id)),
+    'reservation cannot steal a single pre-owned tile');
+  assert(!redA.some(id=>redB.includes(id)),
+    'neighboring Battle provinces never overlap');
+  assert.deepStrictEqual(mapCore.reserveBattleTerritories(reserved).battleTerritories,
+    reserved.battleTerritories,'red reservations must survive reload without reroll');
+  // When a later scouting step discovers a Battle inside an older red
+  // reservation, both centers survive and provinces remain disjoint.
+  const singleBattle=mapCore.reserveBattleTerritories({...seeded,cells:{
+    ...startMap.cells,[enemyBattleId]:seeded.cells[enemyBattleId]}});
+  const delayedCenter=singleBattle.battleTerritories[0].cells[1];
+  const delayed=mapCore.reserveBattleTerritories({...singleBattle,cells:{
+    ...singleBattle.cells,[delayedCenter]:{status:'revealed',explored:false,
+      selectedEncounter:{id:'map.test-delayed',type:'battle',stars:6}}}});
+  const oldProvince=delayed.battleTerritories.find(p=>p.id===enemyBattleId);
+  const lateProvince=delayed.battleTerritories.find(p=>p.id===delayedCenter);
+  assert(oldProvince.cells.includes(enemyBattleId)&&lateProvince.cells.includes(delayedCenter),
+    'late-discovered Battle must preserve both province centers');
+  assert.equal(new Set([...oldProvince.cells,...lateProvince.cells]).size,
+    oldProvince.cells.length+lateProvince.cells.length,
+    'rebalanced red provinces must not overlap');
+  assert.deepStrictEqual(mapCore.reserveBattleTerritories(delayed),delayed,
+    'rebalanced red provinces must remain stable on save reload');
+  const raisedRed=mapCore.updatePeak(reserved,2400);
+  for(const enemyId of [...redA,...redB])assert(!raisedRed.centralOwnedCells.includes(enemyId),
+    'Power growth cannot cross red territory');
+  const scored={...reserved,king:{x:5,y:4},pendingCell:enemyBattleId,
+    cells:{...reserved.cells,[enemyBattleId]:{...reserved.cells[enemyBattleId],
+      status:'in_progress',lastEntryFrom:{x:0,y:0}}}};
+  const conquered=mapCore.finishEncounter(scored,enemyBattleId,{success:true,opponentPower:1200});
+  assert(conquered.ok);
+  assert.equal(conquered.map.battleTerritories.length,1);
+  assert.deepStrictEqual(conquered.map.battleTerritories[0].cells,redB,
+    'conquest must retain the neighboring Battle province unchanged');
+  assert.equal(conquered.map.battleTerritories[0].colorIndex,colorB,
+    'remaining enemy color must not change after capture');
+  assert.deepStrictEqual(new Set(conquered.map.battleConqueredCells),new Set(redA),
+    'victory must transfer exactly the originally painted cells');
+  assert(redA.every(id=>mapCore.isOwned(conquered.map,id)));
+  assert.equal(conquered.map.centralOwnedCells.length,startMap.centralOwnedCells.length);
+  assert.equal(conquered.map.uniqueFirstConquests[0].bonusLands,0);
+  assert.equal(mapCore.playerTerritoryCount(conquered.map),
+    new Set([...startMap.centralOwnedCells,...redA]).size,
+    'HUD area counts all blue provinces without duplicates');
+  const oldOwned={...seeded,centralOwnedCells:[...startMap.centralOwnedCells,enemyBattleId],
+    cells:{...seeded.cells,[enemyBattleId]:{...seeded.cells[enemyBattleId],annexed:true}}};
+  const oldReserved=mapCore.reserveBattleTerritories(oldOwned);
+  assert(!oldReserved.battleTerritories[0].cells.includes(enemyBattleId),
+    'legacy owned Battle centre never turns red');
+  const savedTerritories=persistence.writeRun({...mapRun,kingdomMap:reserved},storage,1421);
+  assert.deepStrictEqual(persistence.readRun(storage).kingdomMap.battleTerritories,
+    reserved.battleTerritories,'Battle territories survive persistence');
+
   // Idempotent +1 day per new peaceful cell, even if its contents were already scouted.
   let walk=startMap;
   for(let x=1;x<=6;x++){
@@ -522,15 +595,18 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   assert.strictEqual(acted.day,8);
   assert.strictEqual(mapCore.advanceDay(acted,'significant:future-action'),acted,
     'replayed action receipts never advance the calendar twice');
-  // First victory bonuses: Battle /200, Skirmish /400 and Caravan /300, rounded down.
+  // First Battle victory transfers its reserved province; only Skirmish and Caravan
+  // still add their original power-based bonus to central territory.
   const battlePoint={x:0,y:1},battleRoute={...mapCore.randomEncounter(mapRun,battlePoint,500),
     id:'kingdom.test-battle',type:'battle'};
   const battleEnter=mapCore.enterCell(startMap,battlePoint,battleRoute);
   const battleStart=mapCore.beginEncounter(battleEnter.map,'0,1');
   const battleWin=mapCore.finishEncounter(battleStart.map,'0,1',{success:true,opponentPower:630});
-  assert.strictEqual(battleWin.map.battlePointsEarned,3,'legacy battle analytics stay readable');
+  assert.strictEqual(battleWin.map.battlePointsEarned,0,'new Battle wins do not accrue legacy expansion credits');
   assert.strictEqual(battleWin.map.creditedBattleEncounterIds.length,1);
-  assert.strictEqual(battleWin.map.uniqueFirstConquests[0].bonusLands,3);
+  assert.strictEqual(battleWin.map.uniqueFirstConquests[0].bonusLands,0);
+  assert(mapCore.playerTerritoryCount(battleWin.map)>=mapCore.playerTerritoryCount(startMap));
+  assert.equal(battleWin.map.battleTerritories.length,0,'defeated red province must disappear');
   assert.equal(battleWin.map.completedRoads.length,1);
   assert.deepStrictEqual({from:battleWin.map.completedRoads[0].from,
     to:battleWin.map.completedRoads[0].to},{from:'0,0',to:'0,1'},
@@ -549,7 +625,9 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
     'second completed event links directly to the last completed event');
   assert.strictEqual(mapCore.linkCompletedRoad(nextFinished.map,'1,1'),nextFinished.map,
     'reload or repeat victory does not reroll an existing road');
-  assert.strictEqual(mapCore.territoryCapacity(battleWin.map),8);
+  assert.strictEqual(mapCore.territoryCapacity(battleWin.map),5);
+  assert.strictEqual(battleWin.map.centralOwnedCells.length,startMap.centralOwnedCells.length,
+    'Battle victory must not auto-grow the blue central region');
   assert.strictEqual(battleWin.map.day,3);
   assert(!mapCore.finishEncounter(battleWin.map,'0,1',{success:true,opponentPower:630}).ok,
     'the first victory receipt cannot be counted again');
