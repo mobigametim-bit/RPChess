@@ -17,7 +17,7 @@ import {FLAVOR_POOLS} from './travel-choice-core.mjs';
 import {translateLegacy} from './i18n.mjs';
 import {commanderPortrait,commanderTitle} from './commander-portraits.mjs';
 import {kingdomMapSprite,kingdomEncounterSprite} from './kingdom-map-assets.mjs';
-import {renderParchment,renderParchmentFog} from './kingdom-parchment-app.mjs?v=20261110-natural-road-layer-v4';
+import {renderParchment,renderParchmentFog} from './kingdom-parchment-app.mjs?v=20261111-parchment-png-only-v1';
 import {drawKingdomOverlay} from './kingdom-map-overlay.mjs?v=20261110-natural-road-layer-v4';
 import {animateTravelers,stopTravelers} from './kingdom-traveler-renderer.mjs?v=20261111-npc-floor-v1';
 import {ATLAS_VIEW} from './kingdom-world-config.mjs?v=20261109-atlas-visual5';
