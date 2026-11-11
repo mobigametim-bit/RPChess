@@ -1,6 +1,6 @@
-/* Build-time, opt-in conversion of 128px pixel-rect parchment masters.
+/* Mandatory production conversion of 128px pixel-rect parchment masters.
  * No image libraries, Chromium or Network. Never write into game/assets.
- * Enables compact PNG-only runtime with original SVGs retained in Git.
+ * Every build ships PNG only; editable source SVG masters remain in Git.
  */
 const fs=require('node:fs');
 const path=require('node:path');
@@ -46,7 +46,7 @@ function rasterSvg(svg,filename){
  if(header.width!==128||header.height!==128)throw Error(filename+': bad PNG');
  return png;
 }
-function convertParchment(root,{stripSvg=true}={}){
+function convertParchment(root){
  const folder=path.join(root,'assets/kingdom-parchment');
  if(!fs.existsSync(folder))throw Error('Missing parchment folder: '+folder);
  const rows=[];
@@ -60,7 +60,7 @@ function convertParchment(root,{stripSvg=true}={}){
      const dest=src.replace(/\.svg$/,'.png');
      fs.writeFileSync(dest,png);
      rows.push({path:group+'/'+name,svgBytes:Buffer.byteLength(source),pngBytes:png.length});
-     if(stripSvg)fs.rmSync(src);
+     fs.rmSync(src); // SVG masters never ship with dist
    }
  }
  if(rows.length!==112)throw Error('Expected exactly 112 raster assets');
@@ -71,13 +71,6 @@ function convertParchment(root,{stripSvg=true}={}){
     data.groups[group]=names.map(name=>name.replace(/\.svg$/,'.png'));
   }
   fs.writeFileSync(manifest,JSON.stringify(data,null,2)+'\n');
- }
- const html=path.join(root,'index.html');
- if(fs.existsSync(html)){
-   let doc=fs.readFileSync(html,'utf8');
-   if(doc.includes('name="rpchess-parchment-raster"'))throw Error('Duplicate raster marker');
-   doc=doc.replace('</head>','  <meta name="rpchess-parchment-raster" content="png">\n</head>');
-   fs.writeFileSync(html,doc);
  }
  const report={count:rows.length,svgBytes:rows.reduce((n,r)=>n+r.svgBytes,0),
     pngBytes:rows.reduce((n,r)=>n+r.pngBytes,0),rows};

@@ -142,14 +142,13 @@ async function main(){
     'assets/regions/ashen_dominion/boss_arena.webp','assets/races/humans/board/white.png','assets/races/humans/board/black.png','assets/pieces/fantasy','assets/vfx/pin_ice_full.png','assets/vfx/pin_ice_partial.png','assets/vfx/aura_white.png','assets/vfx/aura_black.png','assets/vfx/aura_red.png','assets/races/humans/pieces/white/king.png','assets/races/humans/pieces/black/king.png','assets/races/orcs/pieces/pawn.png','assets/events/register-04/backgrounds/generic/forest_crossroad.webp','assets/events/register-04/sky_khanate/storm_over_caravan.webp','assets/doctrines/cavalry/emblem.png','assets/doctrines/royal_court/emblem.png','generated_assets/node_training.png','generated_assets/node_story.png','generated_assets/scene_campaign.webp','generated_assets/scene_victory.webp','generated_assets/scene_reward.webp','generated_assets/scene_defeat.webp','generated_assets/logo_ru.png','generated_assets/logo_en.png','SFX/win_fanfare.mp3',
     'vendor/stockfish/stockfish-18-lite-single.js','vendor/stockfish/stockfish-18-lite-single.wasm','vendor/stockfish/COPYING.txt','vendor/stockfish/SOURCE.txt'
   ])if(!fs.existsSync(path.join(dist,relative)))throw new Error(`Power build output missing: ${relative}`);
-  // Optional release candidate: convert only dist, never the authored SVGs.
-  if(process.env.RPCHESS_PARCHMENT_RASTER==='1'){
-    const {convertParchment}=require('./prepare-parchment-raster.cjs');
-    const report=convertParchment(dist);
-    const out=path.join(root,'test-results/parchment-raster-report.json');
-    fs.mkdirSync(path.dirname(out),{recursive:true});
-    fs.writeFileSync(out,JSON.stringify(report,null,2)+'\n');
-  }
+  // PNG-only production: conversion is mandatory in every distribution.
+  const {convertParchment}=require('./prepare-parchment-raster.cjs');
+  const parchmentReport=convertParchment(dist);
+  if(parchmentReport.count!==112)throw Error('Expected 112 PNG parchment sprites');
+  const parchmentOut=path.join(root,'test-results/parchment-raster-report.json');
+  fs.mkdirSync(path.dirname(parchmentOut),{recursive:true});
+  fs.writeFileSync(parchmentOut,JSON.stringify(parchmentReport,null,2)+'\n');
   const {printBuildSizeReport}=require('./build-size-report.cjs');
   printBuildSizeReport(dist,path.join(root,'test-results','build-size-report.json'));
   console.log(`Prepared RPChess Power/adaptive encounters distribution in ${dist}; Stockfish ${stockfish.version}`);
