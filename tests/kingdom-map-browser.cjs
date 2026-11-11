@@ -923,6 +923,10 @@ async function assertTileImage(page,cellId){
    await page.locator('[data-kingdom-map-screen]:not([hidden])').waitFor({timeout:15000});
    const lost=await read(page);
    assert.equal(lost.kingdomMap.cells['1,0'].status,'failed');
+   // Scene visibility may precede the inspector's asynchronous final paint.
+   // Wait for the settled single card; never accept a persistent duplicate.
+   await page.waitForFunction(()=>document.querySelectorAll('[data-kingdom-route-card]').length===1,
+     null,{timeout:7000});
    assert.equal(await page.locator('[data-kingdom-route-card]').count(),1,
      'after retreat the unfinished route card must stay selected');
    assert.equal(await page.locator('[data-kingdom-route-card]').getAttribute('data-kingdom-route-status'),
