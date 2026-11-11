@@ -1571,6 +1571,14 @@ async function assertTileImage(page,cellId){
   assert.equal(finishedServices.kingdomMap.cells['1,0'].status,'completed');
   assert.deepEqual(serviceErrors,[],'Settlement revisit must not throw browser errors');
 
+  // Same real map fixture: a six-digit day must fit the fixed portrait
+  // header on every mobile and desktop breakpoint without hiding digits.
+  await servicesPage.evaluate(storage=>{
+    const run=JSON.parse(localStorage.getItem(storage));
+    run.kingdomMap.day=166166;
+    localStorage.setItem(storage,JSON.stringify(run));
+    globalThis.RPChessKingdomMap.open();
+  },key);
   // Existing completed-Settlement fixture doubles as a responsive map check.
   for(const [width,height] of [[1440,900],[1180,820],[844,390],[900,1440],[820,1180],[390,844]]){
     await servicesPage.setViewportSize({width,height});
@@ -1588,7 +1596,9 @@ async function assertTileImage(page,cellId){
       }));
       const mirror=root.querySelector('[data-kingdom-heading-glory]');
       return {root:rootBox.toJSON(),map:map.toJSON(),panel:panel.toJSON(),zoom:zoom.toJSON(),
-        title:day.getBoundingClientRect().toJSON(),nav:nav.getBoundingClientRect().toJSON(),
+        title:day.getBoundingClientRect().toJSON(),dayText:day.textContent,
+        dayFontPx:parseFloat(getComputedStyle(day).fontSize),
+        nav:nav.getBoundingClientRect().toJSON(),
         heading:heading.getBoundingClientRect().toJSON(),
         header:header.getBoundingClientRect().toJSON(),
         headingCSS:{display:headingCSS.display,justify:headingCSS.justifyContent,
@@ -1605,6 +1615,12 @@ async function assertTileImage(page,cellId){
     });
     assert(ui.root.width<=width+2&&ui.root.height<=height+2,
       'Map must fit '+width+'x'+height+': '+JSON.stringify(ui));
+    assert(ui.dayText==='День 166166'||ui.dayText==='Day 166166',
+      'long day label must contain all six digits at '+width+'x'+height);
+    assert(ui.title.right<=ui.heading.right-1,
+      'long day label must fit its commandbar heading at '+width+'x'+height+
+      ': '+JSON.stringify({title:ui.title,heading:ui.heading,font:ui.dayFontPx}));
+
     assert(ui.map.height>160&&ui.map.width>220,'Map viewport unusable at '+width+'x'+height);
     assert(ui.panel.top>=ui.map.top-2&&ui.panel.bottom<=ui.map.bottom+2,
       'Inspector must fit map at '+width+'x'+height);
