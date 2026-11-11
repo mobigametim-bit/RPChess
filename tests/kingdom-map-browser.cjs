@@ -1220,6 +1220,13 @@ async function assertTileImage(page,cellId){
     src:'assets/kingdom-parchment/decor_minor_landmarks/04_watchtower.png',
     width:128,height:128
   },'completed outpost must load a real PNG after the conversion');
+  if(process.env.RPCHESS_OUTPOST_SCREENSHOT_DIR){
+    fs.mkdirSync(process.env.RPCHESS_OUTPOST_SCREENSHOT_DIR,{recursive:true});
+    await walking.screenshot({
+      path:path.join(process.env.RPCHESS_OUTPOST_SCREENSHOT_DIR,'outpost-built-1280x720.png'),
+      fullPage:false
+    });
+  }
   assert.equal((await read(walking)).kingdomMap.outpostRoads.length,1,
     'building a remote outpost lays a single connected road without duplication');
   assert.equal(await walking.locator('[data-kingdom-outpost]:visible').count(),0,
