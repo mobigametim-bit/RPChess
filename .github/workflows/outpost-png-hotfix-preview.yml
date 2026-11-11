@@ -1,0 +1,129 @@
+name: Outpost PNG Hotfix — Isolated QA
+on:
+  push:
+    branches:
+      - fix/outpost-png-after-parchment-release-20261111
+    paths:
+      - '.github/workflows/outpost-png-hotfix-preview.yml'
+      - 'outpost-png-preview/**'
+      - 'game/**'
+      - 'scripts/**'
+      - 'tests/kingdom-map-browser.cjs'
+      - 'tests/travel-choice.cjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: rpchess-outpost-hotfix-qa-20261111
+  cancel-in-progress: true
+jobs:
+  build-test-preview:
+    if: github.repository == 'mobigametim-bit/RPChess' && github.ref == 'refs/heads/fix/outpost-png-after-parchment-release-20261111'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm/rpchess-runtime-assets-v1
+          key: rpchess-runtime-assets-v1-${{ runner.os }}-${{ hashFiles('game/assets/**/*.png', 'game/generated_assets/*.png', 'scripts/*asset*.cjs', 'scripts/runtime-assets-build.cjs') }}
+          restore-keys: |
+            rpchess-runtime-assets-v1-${{ runner.os }}-
+      - name: Build PNG-only game and run canonical local gate
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund
+          npm pack stockfish@18.0.0 --silent --pack-destination /tmp
+          mkdir -p /tmp/rpchess-stockfish-package /tmp/rpchess-stockfish-verified
+          tar -xzf /tmp/stockfish-18.0.0.tgz -C /tmp/rpchess-stockfish-package
+          package=/tmp/rpchess-stockfish-package/package
+          for name in stockfish-18-lite-single.js stockfish-18-lite-single.wasm; do
+            source=$(find "$package" -type f -name "$name" -print -quit)
+            test -n "$source"
+            cp "$source" "/tmp/rpchess-stockfish-verified/$name"
+          done
+          license=$(find "$package" -type f -iname 'Copying.txt' -print -quit)
+          test -n "$license"
+          cp "$license" /tmp/rpchess-stockfish-verified/COPYING.txt
+          RPCHESS_INCLUDE_ATLAS_LAB=1 RPCHESS_STOCKFISH_ASSET_DIR=/tmp/rpchess-stockfish-verified npm run gate:local
+      - name: Verify outpost PNG in dist and eliminate stripped SVG runtime URLs
+        run: |
+          node <<'NODE'
+          const assert=require('node:assert/strict');
+          const fs=require('node:fs');
+          const icon='assets/kingdom-parchment/decor_minor_landmarks/04_watchtower.png';
+          const svg=icon.slice(0,-3)+'svg';
+          assert(fs.statSync('dist/'+icon).size>100,'missing shipped watchtower PNG');
+          assert(!fs.existsSync('dist/'+svg),'pergament source SVG must not ship');
+          for(const f of ['kingdom-map-app.mjs','kingdom-menu-preview.mjs']){
+            const text=fs.readFileSync('dist/js/'+f,'utf8');
+            assert(text.includes(icon),f+' must reference converted PNG');
+            assert(!text.includes(svg),f+' cannot request removed SVG');
+          }
+          const png=fs.readFileSync('dist/'+icon);
+          assert(png.subarray(0,8).equals(Buffer.from('89504e470d0a1a0a','hex')));
+          assert.equal(png.readUInt32BE(16),128);
+          assert.equal(png.readUInt32BE(20),128);
+          console.log('Outpost release: 128×128 PNG ships and both runtime references are PNG-only.');
+          NODE
+      - name: Run the existing real Chromium Kingdom regression
+        env:
+          RPCHESS_BROWSER_TEST: kingdom-map-browser.cjs
+          RPCHESS_JOURNEY_PICKER_ONLY: '1'
+          RPCHESS_OUTPOST_SCREENSHOT_DIR: test-results/outpost-png
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
+          npx playwright install chromium
+          npm run test:browser
+      - name: Keep outpost gameplay screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: outpost-png-actual-game
+          path: test-results/outpost-png/
+          retention-days: 14
+          if-no-files-found: warn
+      - name: Publish isolated Cloudflare hotfix preview
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          grep -Fx 'name = "rpchess-outpost-preview"' outpost-png-preview/wrangler.toml
+          npx wrangler deploy --config outpost-png-preview/wrangler.toml
+      - name: Smoke-test live watchtower and both modules
+        run: |
+          node <<'NODE'
+          const assert=require('node:assert/strict');
+          const base='https://rpchess-outpost-preview.mobigametim.workers.dev';
+          const icon='/assets/kingdom-parchment/decor_minor_landmarks/04_watchtower.png';
+          (async()=>{
+            for(let attempt=0;attempt<12;attempt++){
+              try{
+                const r=await fetch(base+icon+'?hotfix=1',{cache:'no-store'});
+                assert.equal(r.status,200);
+                assert((r.headers.get('content-type')||'').includes('image/png'));
+                const bytes=Buffer.from(await r.arrayBuffer());
+                assert.equal(bytes.readUInt32BE(16),128);
+                assert.equal(bytes.readUInt32BE(20),128);
+                for(const mod of ['/js/kingdom-map-app.mjs','/js/kingdom-menu-preview.mjs']){
+                  const source=await (await fetch(base+mod,{cache:'no-store'})).text();
+                  assert(source.includes(icon.slice(1)),mod+' still references old outpost');
+                  assert(!source.includes('04_watchtower.svg'),mod+' still references SVG');
+                }
+                console.log('Deployed outpost hotfix: PNG served, runtime modules verified.');
+                return;
+              }catch(e){
+                if(attempt===11)throw e;
+                await new Promise(resolve=>setTimeout(resolve,3000));
+              }
+            }
+          })().catch(e=>{console.error(e);process.exitCode=1});
+          NODE
