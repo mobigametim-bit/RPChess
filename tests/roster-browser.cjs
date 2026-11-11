@@ -115,14 +115,28 @@ async function assertOneScreen(page,label){
         const c=root.querySelector('.roster-catalog').getBoundingClientRect();
         const b=root.querySelector('[data-roster-board]').getBoundingClientRect();
         const action=root.querySelector('[data-roster-travel]').getBoundingClientRect();
+        const title=root.querySelector('.roster-heading h1').getBoundingClientRect();
+        const navigation=root.querySelector('.roster-topbar__actions').getBoundingClientRect();
+        const buttons=[...root.querySelectorAll('.roster-topbar__actions button')].map(el=>
+          getComputedStyle(el).backgroundImage);
         return {sw:document.documentElement.scrollWidth,
           root:root.getBoundingClientRect().toJSON(),catalog:c.toJSON(),
-          board:b.toJSON(),action:action.toJSON()};
+          board:b.toJSON(),action:action.toJSON(),title:title.toJSON(),
+          nav:navigation.toJSON(),buttons,
+          logoVisible:getComputedStyle(root.querySelector('.roster-logo')).display!=='none'};
       });
       assert(ui.sw<=width+2&&ui.root.width<=width+2,
         'Roster horizontal overflow at '+width+'x'+height);
       assert(ui.action.height>=(width<=844?39:35)&&ui.board.width>180,
         'Journey CTA and Roster formation unusable at '+width+'x'+height);
+      if(height>width&&width<=1100){
+        assert(Math.abs((ui.title.top+ui.title.bottom)/2-(ui.nav.top+ui.nav.bottom)/2)<12,
+          'Portrait Roster title and navigation must share one row '+width+'x'+height);
+        assert(!ui.logoVisible,'Portrait Roster tablet/phone logo must not occupy header space');
+        assert(ui.buttons.every((value,i)=>value.includes(
+          ['main-menu-journey.png','main-menu-settings.png','hud-main-menu.png'][i])),
+          'Roster must use the existing Journey, Settings and Castle PNGs');
+      }
       if(width>height&&height<=540)assert(ui.catalog.bottom<=height+2,
         'Landscape catalog must fit viewport '+width+'x'+height);
     }

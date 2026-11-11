@@ -1403,8 +1403,20 @@ async function assertTileImage(page,cellId){
       const rootBox=root.getBoundingClientRect(),map=rect('.km-map-frame');
       const panel=rect('.km-inspector'),zoom=rect('.km-zoom-controls');
       const bar=root.querySelector('.km-resource-group');
+      const nav=root.querySelector('.km-actions'),day=root.querySelector('.km-heading h1');
+      const navIcons=[...nav.querySelectorAll('button')].map(el=>({
+        image:getComputedStyle(el).backgroundImage,
+        box:el.getBoundingClientRect().toJSON()
+      }));
+      const mirror=root.querySelector('[data-kingdom-heading-glory]');
       return {root:rootBox.toJSON(),map:map.toJSON(),panel:panel.toJSON(),zoom:zoom.toJSON(),
-        touch:[...root.querySelectorAll('.km-actions button')].map(b=>b.getBoundingClientRect().height),
+        title:day.getBoundingClientRect().toJSON(),nav:nav.getBoundingClientRect().toJSON(),
+        navIcons,mirror:mirror.getBoundingClientRect().toJSON(),
+        mirrorDisplay:getComputedStyle(mirror).display,
+        originalGloryDisplay:getComputedStyle(root.querySelector('.km-resource--glory')).display,
+        originalGlory:root.querySelector('[data-kingdom-glory]').textContent,
+        mirrorGlory:root.querySelector('[data-kingdom-heading-glory-value]').textContent,
+        touch:navIcons.map(item=>item.box.height),
         resourceOverflow:bar.scrollWidth>bar.clientWidth,resourceScroll:getComputedStyle(bar).overflowX};
     });
     assert(ui.root.width<=width+2&&ui.root.height<=height+2,
@@ -1414,6 +1426,19 @@ async function assertTileImage(page,cellId){
       'Inspector must fit map at '+width+'x'+height);
     assert(ui.zoom.top>=ui.map.top-2&&ui.zoom.bottom<=ui.map.bottom+2,
       'Zoom must fit map at '+width+'x'+height);
+    if(height>width){
+      assert(Math.abs((ui.title.top+ui.title.bottom)/2-(ui.nav.top+ui.nav.bottom)/2)<12,
+        'Portrait Journey: Day and PNG actions must share header row '+width+'x'+height);
+      assert(ui.navIcons.map(item=>item.image).every((value,i)=>value.includes(
+        ['hud-squad.png','main-menu-settings.png','hud-main-menu.png'][i])),
+        'Journey must use the original Squad, Settings and Castle menu PNGs');
+      if(width<=599){
+        assert(ui.mirrorDisplay!=='none'&&ui.originalGloryDisplay==='none'&&
+          ui.mirrorGlory===ui.originalGlory&&
+          ui.title.right<=ui.mirror.left+2&&ui.mirror.right<=ui.nav.left+2,
+          'Phone portrait Glory must be left of nav icons beside Day N');
+      }
+    }
     if(width<=844)assert(ui.touch.every(h=>h>=39)&&
       (!ui.resourceOverflow||ui.resourceScroll==='auto'),
       'Phone map controls and resource strip must be reachable');
