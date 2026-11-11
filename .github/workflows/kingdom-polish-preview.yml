@@ -59,7 +59,7 @@ jobs:
           npx playwright install chromium
           npm run test:browser
       - name: Save Battle province and Day HUD screenshots
-        if: always()
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: kingdom-polish-qa-screenshots
