@@ -262,8 +262,8 @@
     margin:0!important;line-height:1.1!important;white-space:nowrap!important;
   }
   html[data-landscape-ui='1'] body.roster-active .roster-screen .roster-topbar__actions{
-    grid-area:actions!important;display:flex!important;align-items:center!important;
-    justify-content:flex-end!important;flex-wrap:nowrap!important;
+    grid-area:actions!important;display:flex!important;flex-direction:row!important;
+    align-items:center!important;justify-content:flex-end!important;flex-wrap:nowrap!important;
     width:auto!important;min-width:0!important;max-width:none!important;
     gap:clamp(3px,.7vw,8px)!important;margin:0!important;padding:0!important;
     grid-template-columns:none!important;

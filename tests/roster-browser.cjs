@@ -118,12 +118,13 @@ async function assertOneScreen(page,label){
         const action=root.querySelector('[data-roster-travel]').getBoundingClientRect();
         const title=root.querySelector('.roster-heading h1').getBoundingClientRect();
         const navigation=root.querySelector('.roster-topbar__actions').getBoundingClientRect();
-        const buttons=[...root.querySelectorAll('.roster-topbar__actions button')].map(el=>
-          getComputedStyle(el).backgroundImage);
+        const actionButtons=[...root.querySelectorAll('.roster-topbar__actions button')];
+        const buttons=actionButtons.map(el=>getComputedStyle(el).backgroundImage);
+        const buttonBoxes=actionButtons.map(el=>el.getBoundingClientRect().toJSON());
         return {sw:document.documentElement.scrollWidth,
           root:root.getBoundingClientRect().toJSON(),catalog:c.toJSON(),
           board:b.toJSON(),action:action.toJSON(),title:title.toJSON(),
-          nav:navigation.toJSON(),buttons,
+          nav:navigation.toJSON(),buttons,buttonBoxes,
           logoVisible:getComputedStyle(root.querySelector('.roster-logo')).display!=='none'};
       });
       assert(ui.sw<=width+2&&ui.root.width<=width+2,
@@ -131,8 +132,10 @@ async function assertOneScreen(page,label){
       assert(ui.action.height>=(width<=844?39:35)&&ui.board.width>180,
         'Journey CTA and Roster formation unusable at '+width+'x'+height);
       if(height>width&&width<=850){
-        assert(Math.abs((ui.title.top+ui.title.bottom)/2-(ui.nav.top+ui.nav.bottom)/2)<12,
-          'Portrait Roster title and navigation must share one row '+width+'x'+height);
+        assert(ui.buttonBoxes.every(box=>
+          Math.abs((ui.title.top+ui.title.bottom)/2-(box.top+box.bottom)/2)<12),
+          'Portrait Roster title and EACH of the 3 icons must share one row '+width+'x'+height+
+          ': '+JSON.stringify({title:ui.title,nav:ui.nav,buttonBoxes:ui.buttonBoxes}));
         assert(!ui.logoVisible,'Portrait Roster tablet/phone logo must not occupy header space');
         assert(ui.buttons.every((value,i)=>value.includes(
           ['main-menu-journey.png','main-menu-settings.png','hud-main-menu.png'][i])),
