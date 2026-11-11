@@ -54,6 +54,13 @@ jobs:
           test -n "$license"
           cp "$license" /tmp/rpchess-stockfish-verified/COPYING.txt
           RPCHESS_STOCKFISH_ASSET_DIR=/tmp/rpchess-stockfish-verified npm run gate:local
+      - name: Save distribution size report
+        uses: actions/upload-artifact@v4
+        with:
+          name: kingdom-build-size-report
+          path: test-results/build-size-report.json
+          retention-days: 14
+          if-no-files-found: error
       - name: Kingdom and legacy Travel Chromium tests
         run: |
           npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
