@@ -63,6 +63,8 @@ async function assertTileImage(page,cellId){
  try{
   fs.mkdirSync(output,{recursive:true});
   const page=await browser.newPage({viewport:{width:1366,height:768}});
+  if(process.env.RPCHESS_PARCHMENT_QA_SCREENSHOT_DIR)
+    await page.addInitScript(()=>performance.setResourceTimingBufferSize(3000));
   const errors=[];page.on('pageerror',e=>errors.push(String(e.stack||e)));
   const failedAssets=[];
   page.on('console',msg=>{if(msg.type()==='error')failedAssets.push(msg.text());});
@@ -343,14 +345,18 @@ async function assertTileImage(page,cellId){
     'territory boundary is on the original natural-road terrain layer, below later event roads');
   // Exercise actual uploaded sprites in the bundled dist, not just the
   // procedural Canvas fallback that worked before the artist supplied art.
-  const artProbe=await page.evaluate(async()=>{
+  const parchmentFormat=await page.evaluate(()=>document.querySelector(
+    'meta[name="rpchess-parchment-raster"]')?.content==='png'?'png':'svg');
+  assert.equal(parchmentFormat,process.env.RPCHESS_PARCHMENT_EXPECT_FORMAT||'svg',
+    'Parchment distribution format must match the QA build');
+  const artProbe=await page.evaluate(async format=>{
     const files=[
       'parchment_base_variations/01_light_ochre_plain.svg',
       'forest_clusters/01_small_grove.svg',
       'mountain_clusters/01_single_summit.svg',
       'hills_rocks/01_three_hills.svg',
       'fog_of_war_shapes/01_broad_blot.svg'
-    ];
+    ].map(name=>name.replace(/\.svg$/,'.'+format));
     return Promise.all(files.map(async file=>{
       const src='assets/kingdom-parchment/'+file;
       const response=await fetch(src,{cache:'no-store'});
@@ -359,9 +365,9 @@ async function assertTileImage(page,cellId){
       try{await img.decode();}catch{return {file,status:response.status,decoded:false};}
       return {file,status:response.status,decoded:img.naturalWidth===128&&img.naturalHeight===128};
     }));
-  });
+  },parchmentFormat);
   for(const sprite of artProbe)assert.equal(sprite.status===200&&sprite.decoded,true,
-    'artist SVG must be shipped and decoded at 128px: '+sprite.file);
+    'artist parchment '+parchmentFormat.toUpperCase()+' must decode at 128px: '+sprite.file);
   // The six artist-repaired road-event sprites must remain actual vectors
   // with the author's transparent margins, not raster images or opaque tiles.
   const correctedSprites=[
@@ -407,12 +413,13 @@ async function assertTileImage(page,cellId){
     'the atlas contains five core groups, one marsh group and one landmark group');
   assert.equal(manifest.groups.marsh_wasteland_optional?.length,16,
     'all sixteen correct marsh SVGs are included');
-  assert(manifest.groups.marsh_wasteland_optional.includes('01_pale_marsh.svg')&&
-    !manifest.groups.marsh_wasteland_optional.includes('01_straight_line.svg'),
+  assert(manifest.groups.marsh_wasteland_optional.includes('01_pale_marsh.'+parchmentFormat)&&
+    !manifest.groups.marsh_wasteland_optional.includes('01_straight_line.'+parchmentFormat),
     'marsh sprites must not be mislabeled frame shapes');
   for(const [group,names] of Object.entries(manifest.groups)){
-    assert.equal(names.length,16,'each valid sprite group has 16 SVGs: '+group);
-    assert(names.every(name=>name.endsWith('.svg')),'sprite group must be SVG-only: '+group);
+    assert.equal(names.length,16,'each valid sprite group has 16 assets: '+group);
+    assert(names.every(name=>name.endsWith('.'+parchmentFormat)),
+      'sprite group must match the SVG/PNG build: '+group);
   }
   const expectedCore=['fog_of_war_shapes','forest_clusters','hills_rocks',
     'mountain_clusters','parchment_base_variations'];
@@ -439,7 +446,7 @@ async function assertTileImage(page,cellId){
   assert(tileAsset.ok&&tileAsset.w===256&&tileAsset.h===256&&tileAsset.size<5000,
     'real compressed user parchment WebP is repeated in the renderer, without paper noise');
   assert.equal(await atlas.getAttribute('data-parchment-art'),'loaded',
-    'the parchment renderer uses the uploaded SVGs rather than its fallback');
+    'the parchment renderer uses the authored artwork rather than its fallback');
   // Procedural world-space roads and rivers are independent of the retired
   // road_segments/river_segments assets: exercise both Canvas stroke types.
   const lineArt=await page.evaluate(async()=>{
