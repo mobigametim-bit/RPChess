@@ -70,6 +70,55 @@ jobs:
           assert.equal(png.readUInt32BE(20),128);
           console.log('Outpost release: 128×128 PNG ships and both runtime references are PNG-only.');
           NODE
+      - name: Audit every literal asset URL in the shipped JS/CSS/HTML
+        run: |
+          node <<'NODE'
+          const fs=require('node:fs'),path=require('node:path');
+          const root=path.resolve('dist');
+          const media=/\.(?:svg|png|webp|gif|jpg|jpeg|mp3|wav|ogg|woff2?|otf|ttf|wasm)$/i;
+          const texts=new Set(['.mjs','.js','.css','.html']);
+          const roots=['assets/','generated_assets/','fonts/','music/','SFX/'];
+          const walk=dir=>fs.readdirSync(dir,{withFileTypes:true}).flatMap(e=>{
+            const p=path.join(dir,e.name);
+            return e.isDirectory()?walk(p):[p];
+          });
+          const code=walk(root).filter(file=>texts.has(path.extname(file)));
+          const seen=new Map(), missing=new Map(), shipped=new Set(walk(root).map(p=>path.relative(root,p).replace(/\\/g,'/')));
+          const rx=/(?:assets|generated_assets|fonts|music|SFX)\/[\w./@+%-]+\.(?:svg|png|webp|gif|jpg|jpeg|mp3|wav|ogg|woff2?|otf|ttf|wasm)/gi;
+          for(const file of code){
+            const text=fs.readFileSync(file,'utf8'),relative=path.relative(root,file).replace(/\\/g,'/');
+            for(const match of text.matchAll(rx)){
+              const ref=match[0].replace(/^\/+/,'');
+              if(ref.includes('..')||!roots.some(r=>ref.startsWith(r)))continue;
+              if(!seen.has(ref))seen.set(ref,new Set());
+              seen.get(ref).add(relative);
+              if(!shipped.has(ref)){
+                if(!missing.has(ref))missing.set(ref,new Set());
+                missing.get(ref).add(relative);
+              }
+            }
+          }
+          const all=[...missing].map(([asset,sources])=>({asset,sources:[...sources]}))
+            .sort((a,b)=>a.asset.localeCompare(b.asset));
+          const converted=all.filter(row=>row.asset.startsWith('assets/kingdom-parchment/'));
+          console.log('Shipped runtime source files inspected:',code.length);
+          console.log('Unique literal media refs found:',seen.size);
+          console.log('Missing literal media refs (including comments/fallbacks):',all.length);
+          for(const x of all)console.log('MISSING',x.asset,'IN',x.sources.join(', '));
+          fs.mkdirSync('test-results/outpost-asset-audit',{recursive:true});
+          fs.writeFileSync('test-results/outpost-asset-audit/summary.json',JSON.stringify({
+            filesScanned:code.length,uniqueLiteralReferences:seen.size,missing:all
+          },null,2)+'\n');
+          if(converted.length)throw Error('Runtime still contains references to stripped parchment assets');
+          NODE
+      - name: Archive literal media path audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shipped-runtime-media-path-audit
+          path: test-results/outpost-asset-audit/summary.json
+          retention-days: 14
+          if-no-files-found: warn
       - name: Run the existing real Chromium Kingdom regression
         env:
           RPCHESS_BROWSER_TEST: kingdom-map-browser.cjs
