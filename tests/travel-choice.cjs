@@ -593,13 +593,13 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   assert.deepStrictEqual(Object.keys(parchment.GROUPS).sort(),[
     'fog_of_war_shapes','forest_clusters','hills_rocks','mountain_clusters',
     'parchment_base_variations'
-  ],'the parchment atlas keeps exactly five core SVG groups');
+  ],'the parchment atlas keeps exactly five core source-art groups');
   assert.strictEqual(Object.values(parchment.GROUPS).reduce((count,names)=>count+names.length,0),80,
     'road and river module assets are removed from the permanent catalog');
   for(const [kind,names] of Object.entries(parchment.GROUPS)){
     assert.strictEqual(names.length,16,kind+' has 16 separate sprites');
     for(let i=0;i<16;i++)assert.strictEqual(parchment.spritePath(kind,i),
-      'assets/kingdom-parchment/'+kind+'/'+names[i]+'.svg');
+      'assets/kingdom-parchment/'+kind+'/'+names[i]+'.png');
   }
   assert.strictEqual(parchment.pickSprite('saved-run','forest_clusters',-8,12),
     parchment.pickSprite('saved-run','forest_clusters',-8,12),
