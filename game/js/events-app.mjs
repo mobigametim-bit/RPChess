@@ -1,6 +1,7 @@
 import { readRun, writeRun } from './run-persistence.mjs';
 import { PIECE_GLYPHS } from './roster-data.mjs';
-import { subscribe, t, translateLegacy, currentLanguage } from './i18n.mjs';
+import { subscribe, t, translateLegacy } from './i18n.mjs';
+import { currentLanguage } from './i18n.mjs';
 import { brandLogoSrc, brandLogoAlt } from './brand-logo.mjs';
 import { eventBackgroundPath } from './race-assets.mjs';
 import { literaryStory } from './event-narrative.mjs';
