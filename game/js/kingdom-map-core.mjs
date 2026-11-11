@@ -117,6 +117,9 @@ function reserveBattleTerritories(map){
  const battleCells=Object.entries(map.cells||{}).filter(([id,c])=>
   c?.selectedEncounter?.type==='battle'&&!c.completedOnce&&c.status!=='completed'&&
   !existing.some(t=>t.id===id));
+ // Reserve each Battle's center before allocating neighbors. Otherwise an
+ // earlier generated province can consume the center of a nearby Battle.
+ const battleCenters=new Set([...existing.map(t=>t.id),...battleCells.map(([id])=>id)]);
  for(const [id,cell] of battleCells){
   const [cx,cy]=id.split(',').map(Number);
   const target=Math.max(1,Math.floor(difficultyForStars(cell.selectedEncounter.stars).elo/200));
@@ -134,7 +137,8 @@ function reserveBattleTerritories(map){
    a.id.localeCompare(b.id,'en'));
   for(const candidate of candidates){
    if(cells.length>=target)break;
-   if(committed.has(candidate.id)||red.has(candidate.id))continue;
+   if(committed.has(candidate.id)||red.has(candidate.id)||
+      candidate.id!==id&&battleCenters.has(candidate.id))continue;
    cells.push(candidate.id);red.add(candidate.id);
   }
   if(territories===existing)territories=[...existing];
