@@ -3,7 +3,7 @@ const { chromium } = require('playwright');
 const {startNewRun}=require('./browser-test-helpers.cjs');
 
 const url = process.env.RPCHESS_ACCEPTANCE_URL || 'http://127.0.0.1:4173';
-const HINTS = ["identity","roster","kingdomMap","kingdomCastle","kingdomProduction","artifact","skirmishChess","battleChess","event","settlement","puzzle","caravanChess","starvation","chronicle","arenaCatalog","arenaFoe","arenaArtifact","arenaChess"];
+const HINTS = ["welcome","identity","roster","kingdomMap","kingdomCastle","kingdomProduction","artifact","skirmishChess","battleChess","event","settlement","puzzle","caravanChess","starvation","chronicle","arenaCatalog","arenaFoe","arenaArtifact","arenaChess"];
 const TUTORIAL_KEY = 'rpchess.reboot.v1.tutorial';
 
 async function setLanguage(page, language) {
@@ -99,7 +99,27 @@ async function audit(browser, { width, height, language, mobile = false }) {
     await page.waitForFunction(() => Boolean(globalThis.RPChessOnboardingReady));
     await page.evaluate(async () => { await globalThis.RPChessOnboardingReady; return true; });
 
-    await page.locator('[data-new-game]').first().click();
+    await page.locator('[data-game-loading]').waitFor({state:'hidden',timeout:30000});
+    await page.locator('[data-tutorial-overlay][data-tutorial-hint="welcome"]:not([hidden])').waitFor();
+    await page.waitForFunction(()=>Boolean(document.querySelector('[data-tutorial-overlay] .rpchess-onboarding__portrait')?.naturalWidth));
+    await assertOverlay(page, `${label} welcome`, 'welcome');
+    const spotlight=await page.evaluate(()=>{
+      const button=document.querySelector('[data-reboot-foundation] [data-new-game]');
+      const hole=document.querySelector('[data-tutorial-spotlight]');
+      const a=button.getBoundingClientRect(),b=hole.getBoundingClientRect();
+      return {left:Math.abs(a.left-b.left),top:Math.abs(a.top-b.top),
+        width:Math.abs(a.width-b.width),height:Math.abs(a.height-b.height),
+        shadow:getComputedStyle(hole).boxShadow,hidden:hole.hidden,
+        overlayBg:getComputedStyle(document.querySelector('[data-tutorial-overlay]')).backgroundColor,
+        otherMenuDisabled:Boolean(document.querySelector('[data-tutorial-overlay]:not([hidden])'))};
+    });
+    assert(!spotlight.hidden&&spotlight.left<10&&spotlight.top<10&&
+      spotlight.width<11&&spotlight.height<11&&spotlight.shadow.includes('rgba'),
+      `${label}: actual Journey icon must sit in an undimmed spotlight`);
+    const iconBox=await page.locator('[data-new-game]').first().boundingBox();
+    await page.mouse.click(iconBox.x+iconBox.width/2,iconBox.y+iconBox.height/2);
+    await page.locator('[data-journey-choice-modal]:not([hidden])').waitFor();
+    await page.locator('[data-tutorial-overlay]').waitFor({state:'hidden'});
     await page.locator('[data-journey-choice-modal]:not([hidden]) [data-journey-new]').click();
     await assertOverlay(page, `${label} identity`, 'identity');
     const firstDismiss = await page.locator('[data-tutorial-dismiss]').textContent();
@@ -108,7 +128,7 @@ async function audit(browser, { width, height, language, mobile = false }) {
     await page.locator('[data-player-identity-modal]:not([hidden])').waitFor({ state:'visible' });
     await page.locator('[data-player-identity-close]').click();
 
-    for (const hint of HINTS.slice(1)) {
+    for (const hint of HINTS.slice(2)) {
       const shown = await page.evaluate(async (key) => {
         const onboarding = await globalThis.RPChessOnboardingReady;
         return onboarding.showHint(key);
@@ -121,12 +141,19 @@ async function audit(browser, { width, height, language, mobile = false }) {
 
     const state = await page.evaluate((key) => JSON.parse(localStorage.getItem(key) || 'null'), TUTORIAL_KEY);
     assert(state?.activated, `${label}: tutorial must remain activated`);
-    assert.deepStrictEqual(Object.keys(state.dismissed).sort(), [...HINTS].sort(), `${label}: dismissed state must contain exactly the eighteen active hints`);
+    assert.deepStrictEqual(Object.keys(state.dismissed).sort(), [...HINTS].sort(), `${label}: dismissed state must contain exactly the nineteen active hints`);
     const repeated = await page.evaluate(async () => {
       const onboarding = await globalThis.RPChessOnboardingReady;
       return onboarding.showHint('travel');
     });
     assert.strictEqual(repeated, false, `${label}: dismissed hints must never repeat`);
+
+    // A closed welcome persists and never reappears after a reload.
+    await page.reload({waitUntil:'domcontentloaded'});
+    await page.evaluate(async()=>await globalThis.RPChessOnboardingReady);
+    await page.locator('[data-game-loading]').waitFor({state:'hidden',timeout:30000});
+    assert.strictEqual(await page.locator('[data-tutorial-overlay][data-tutorial-hint="welcome"]:not([hidden])').count(),0,
+      `${label}: returning visitors must not see the initial Journey spotlight again`);
 
     // Exercise an actual scene owner, not just direct showHint(): Arena needs no journey.
     // Reset only its dismissed bit so the real catalog event must show it.
@@ -191,14 +218,17 @@ async function capturePortraitTutorials(browser, width, height) {
     await setLanguage(page,'ru');
     await page.waitForFunction(()=>Boolean(globalThis.RPChessOnboardingReady));
     await page.evaluate(async()=>await globalThis.RPChessOnboardingReady);
-    await page.locator('[data-new-game]').first().click();
+    await page.locator('[data-game-loading]').waitFor({state:'hidden',timeout:30000});
+    await page.locator('[data-tutorial-overlay][data-tutorial-hint="welcome"]:not([hidden])').waitFor();
     const debug=await page.locator('[data-tutorial-overlay]').evaluate(root=>{
       const rect=root.getBoundingClientRect(),cs=getComputedStyle(root);
       return {hidden:root.hidden,display:cs.display,visibility:cs.visibility,position:cs.position,opacity:cs.opacity,zIndex:cs.zIndex,bounds:{x:rect.x,y:rect.y,w:rect.width,h:rect.height},parent:root.parentElement.tagName,stylePresent:!!document.querySelector('[data-rpchess-onboarding-style]'),hint:root.dataset.tutorialHint};
     });
     console.log('PORTRAIT ONBOARDING FIRST OVERLAY DIAGNOSTIC',JSON.stringify(debug));
     for (const [index,hint] of HINTS.entries()) {
-      if(index>0){
+      if(index===1){
+        await page.locator('[data-journey-choice-modal]:not([hidden]) [data-journey-new]').click();
+      }else if(index>1){
         const shown=await page.evaluate(async key=>{
           const onboarding=await globalThis.RPChessOnboardingReady;
           return onboarding.showHint(key);
@@ -213,7 +243,7 @@ async function capturePortraitTutorials(browser, width, height) {
       console.log('PORTRAIT TUTORIAL SCREENSHOT',file);
       await page.locator('[data-tutorial-dismiss]').click();
       await page.locator('[data-tutorial-overlay]').waitFor({state:'hidden'});
-      if(index===0){
+      if(index===1){
         await page.locator('[data-player-identity-modal]:not([hidden])').waitFor({state:'visible'});
         await page.locator('[data-player-identity-close]').click();
       }
@@ -229,7 +259,7 @@ async function capturePortraitTutorials(browser, width, height) {
     if(process.env.RPCHESS_ONBOARDING_SCREENSHOT_DIR){
       await capturePortraitTutorials(browser,390,844);
       await capturePortraitTutorials(browser,768,1024);
-      console.log('All 18 onboarding hints captured on phone and tablet: PASS');
+      console.log('All 19 onboarding hints captured on phone and tablet: PASS');
       return;
     }
     for (const language of ['ru','en']) {

@@ -3,11 +3,15 @@ import { currentLanguage, subscribe } from '../i18n.mjs';
 
 const TUTORIAL_STORAGE_KEY = 'rpchess.reboot.v1.tutorial';
 const TUTORIAL_SCHEMA_VERSION = 1;
-const INCLUDED_HINTS = Object.freeze(["identity","roster","kingdomMap","kingdomCastle","kingdomProduction","artifact","skirmishChess","battleChess","event","settlement","puzzle","caravanChess","starvation","chronicle","arenaCatalog","arenaFoe","arenaArtifact","arenaChess"]);
+const INCLUDED_HINTS = Object.freeze(["welcome","identity","roster","kingdomMap","kingdomCastle","kingdomProduction","artifact","skirmishChess","battleChess","event","settlement","puzzle","caravanChess","starvation","chronicle","arenaCatalog","arenaFoe","arenaArtifact","arenaChess"]);
 const INCLUDED_HINT_SET = new Set(INCLUDED_HINTS);
 
 const COPY = Object.freeze({
   "ru": {
+    "welcome": {
+      "title": "«О, новый правитель! Наконец-то кто-то, кому можно давать советы!»",
+      "body": "Начни с Путешествия — золотая иконка перед тобой. Там выберешь короля и отправишься исследовать Королевство. Нажми на подсвеченную иконку или кнопку ниже."
+    },
     "identity": {
       "title": "«Для начала выбери имя и короля. Имя попадёт в летопись, а король — во все неприятности!»",
       "body": "Назови героя и выбери портрет короля. Это начало нового похода."
@@ -82,6 +86,10 @@ const COPY = Object.freeze({
     }
   },
   "en": {
+    "welcome": {
+      "title": "“A new ruler! Finally, someone I can give advice to!”",
+      "body": "Start with Journey — the highlighted golden icon. Choose your King and set out to explore the Kingdom. Tap the glowing icon or the button below."
+    },
     "identity": {
       "title": "“First, choose a name and a king. The name goes into the Chronicle; the king gets all the trouble!”",
       "body": "Name your hero and choose the king’s portrait to begin a new journey."
@@ -157,12 +165,14 @@ const COPY = Object.freeze({
   }
 });
 const DISMISS = Object.freeze({ru:'Понятно',en:'Got it'});
+const WELCOME_ACTION = Object.freeze({ru:'К путешествию',en:'Open Journey'});
 
 let overlay = null;
 let currentHint = null;
 let previousFocus = null;
 let installed = false;
 let unsubscribeLanguage = null;
+let welcomeLoaderObserver = null;
 
 function emptyState() {
   return { schemaVersion:TUTORIAL_SCHEMA_VERSION, activated:false, dismissed:{} };
@@ -202,7 +212,7 @@ function activateOnboarding() {
 
 function copyFor(key) {
   const language = currentLanguage() === 'en' ? 'en' : 'ru';
-  return { ...COPY[language][key], dismiss:DISMISS[language] };
+  return { ...COPY[language][key], dismiss:key==='welcome'?WELCOME_ACTION[language]:DISMISS[language] };
 }
 
 function ensureStyles() {
@@ -212,6 +222,17 @@ function ensureStyles() {
   style.textContent = `
 .rpchess-onboarding[hidden]{display:none!important}
 .rpchess-onboarding{position:fixed;inset:0;z-index:2147483000;display:grid;place-items:center;box-sizing:border-box;padding:12px;background:rgba(2,5,9,.76);backdrop-filter:blur(2px)}
+.rpchess-onboarding--welcome{background:transparent!important;backdrop-filter:none!important}
+.rpchess-onboarding__spotlight[hidden]{display:none!important}
+.rpchess-onboarding__spotlight{
+ position:fixed;z-index:0;pointer-events:none;border-radius:16px;
+ box-shadow:0 0 0 4px rgba(255,218,131,.98),
+ 0 0 24px 8px rgba(255,185,61,.64),
+ 0 0 0 200vmax rgba(2,5,9,.82);
+}
+.rpchess-onboarding--welcome .rpchess-onboarding__layout{
+ z-index:1;align-self:start;margin-top:clamp(4px,3vh,26px)
+}
 .rpchess-onboarding__layout{
  position:relative;isolation:isolate;box-sizing:border-box;min-width:0;
  width:min(730px,calc(100vw - 28px));
@@ -278,6 +299,7 @@ function ensureOverlay() {
   overlay.dataset.tutorialOverlay = '';
   overlay.hidden = true;
   overlay.innerHTML = `
+    <div class="rpchess-onboarding__spotlight" data-tutorial-spotlight hidden aria-hidden="true"></div>
     <div class="rpchess-onboarding__layout">
       <img class="rpchess-onboarding__portrait" src="assets/ui/jester-patrick.webp" alt="" aria-hidden="true">
       <section class="rpchess-onboarding__card ui-panel-surface" role="dialog" aria-modal="true" aria-labelledby="rpchess-onboarding-title" aria-describedby="rpchess-onboarding-body">
@@ -288,7 +310,14 @@ function ensureOverlay() {
         </div>
       </section>
     </div>`;
-  overlay.querySelector('[data-tutorial-dismiss]')?.addEventListener('click', dismissCurrentHint);
+  overlay.querySelector('[data-tutorial-dismiss]')?.addEventListener('click', tutorialAction);
+  overlay.addEventListener('click', (event) => {
+    if(currentHint!=='welcome'||event.target.closest('.rpchess-onboarding__layout'))return;
+    const target=journeyTarget(),rect=target?.getBoundingClientRect();
+    if(rect&&event.clientX>=rect.left-6&&event.clientX<=rect.right+6&&
+       event.clientY>=rect.top-6&&event.clientY<=rect.bottom+6)tutorialAction();
+  });
+  globalThis.addEventListener?.('resize', syncWelcomeSpotlight);
   overlay.addEventListener('keydown', (event) => {
     if (event.key === 'Tab') {
       event.preventDefault();
@@ -297,6 +326,47 @@ function ensureOverlay() {
   });
   document.body.append(overlay);
   return overlay;
+}
+
+function journeyTarget() {
+  return document.querySelector('[data-reboot-foundation]:not([hidden]) [data-new-game][data-continue-run]');
+}
+function syncWelcomeSpotlight() {
+  if(!overlay||currentHint!=='welcome')return;
+  const target=journeyTarget(),spotlight=overlay.querySelector('[data-tutorial-spotlight]');
+  if(!target||!spotlight)return;
+  const r=target.getBoundingClientRect(),pad=5;
+  spotlight.style.left=(r.left-pad)+'px';
+  spotlight.style.top=(r.top-pad)+'px';
+  spotlight.style.width=(r.width+pad*2)+'px';
+  spotlight.style.height=(r.height+pad*2)+'px';
+}
+function tutorialAction() {
+  const welcome=currentHint==='welcome',target=welcome?journeyTarget():null;
+  if(!dismissCurrentHint())return;
+  // Open the existing Journey choice dialog instead of bypassing run selection.
+  if(target?.isConnected)target.click();
+}
+function offerWelcome({hasExistingRun=false}={}) {
+  if(hasExistingRun||readTutorialState().activated||currentHint)return false;
+  const target=journeyTarget(),menu=document.querySelector('[data-reboot-foundation]');
+  const choice=document.querySelector('[data-journey-choice-modal]');
+  if(!target||!menu||menu.hidden||!choice||!choice.hidden)return false;
+  const loader=document.querySelector('[data-game-loading]');
+  if(loader&&!loader.hidden){
+    if(!welcomeLoaderObserver){
+      welcomeLoaderObserver=new MutationObserver(()=>{
+        if(!loader.hidden)return;
+        welcomeLoaderObserver?.disconnect();
+        welcomeLoaderObserver=null;
+        offerWelcome({hasExistingRun});
+      });
+      welcomeLoaderObserver.observe(loader,{attributes:true,attributeFilter:['hidden']});
+    }
+    return false;
+  }
+  activateOnboarding();
+  return showHint('welcome');
 }
 
 function renderCurrentHint() {
@@ -318,8 +388,12 @@ function showHint(key) {
   currentHint = key;
   previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
   root.dataset.tutorialHint = key;
+  root.classList.toggle('rpchess-onboarding--welcome',key==='welcome');
+  const spotlight=root.querySelector('[data-tutorial-spotlight]');
+  if(spotlight)spotlight.hidden=key!=='welcome';
   renderCurrentHint();
   root.hidden = false;
+  if(key==='welcome')syncWelcomeSpotlight();
   document.body.classList.add('rpchess-onboarding-open');
   requestAnimationFrame(() => root.querySelector('[data-tutorial-dismiss]')?.focus());
   return true;
@@ -334,6 +408,9 @@ function dismissCurrentHint() {
   if (overlay) {
     overlay.hidden = true;
     delete overlay.dataset.tutorialHint;
+    overlay.classList.remove('rpchess-onboarding--welcome');
+    const spotlight=overlay.querySelector('[data-tutorial-spotlight]');
+    if(spotlight)spotlight.hidden=true;
   }
   document.body.classList.remove('rpchess-onboarding-open');
   previousFocus?.focus?.();
@@ -382,6 +459,8 @@ function installOnboarding() {
 }
 
 function destroyOnboarding() {
+  welcomeLoaderObserver?.disconnect();
+  welcomeLoaderObserver=null;
   unsubscribeLanguage?.();
   unsubscribeLanguage = null;
 }
@@ -401,6 +480,7 @@ export {
   TUTORIAL_SCHEMA_VERSION,
   INCLUDED_HINTS,
   activateOnboarding,
+  offerWelcome,
   readTutorialState,
   writeTutorialState,
   showHint,

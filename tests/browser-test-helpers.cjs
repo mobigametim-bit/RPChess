@@ -1,6 +1,6 @@
 const RUN_KEY = 'rpchess.reboot.v1.run';
 const TUTORIAL_KEY = 'rpchess.reboot.v1.tutorial';
-const TUTORIAL_HINTS = ["identity","roster","kingdomMap","kingdomCastle","kingdomProduction","artifact","skirmishChess","battleChess","event","settlement","puzzle","caravanChess","starvation","chronicle","arenaCatalog","arenaFoe","arenaArtifact","arenaChess"];
+const TUTORIAL_HINTS = ["welcome","identity","roster","kingdomMap","kingdomCastle","kingdomProduction","artifact","skirmishChess","battleChess","event","settlement","puzzle","caravanChess","starvation","chronicle","arenaCatalog","arenaFoe","arenaArtifact","arenaChess"];
 
 async function installManualTravelFixtureNormalizer(page) {
   await page.evaluate((key) => {
@@ -52,12 +52,16 @@ async function waitForVisible(page, selector, label = selector, timeout = 10000)
 }
 
 async function markOnboardingComplete(page) {
-  await page.evaluate(({ key, hints }) => {
+  await page.evaluate(async ({ key, hints }) => {
     localStorage.setItem(key, JSON.stringify({
       schemaVersion:1,
       activated:true,
       dismissed:Object.fromEntries(hints.map((hint) => [hint, true]))
     }));
+    // Browser fixtures that deliberately bypass onboarding may arrive while
+    // the welcome is already open: never leave its mask over the test menu.
+    const owner=await globalThis.RPChessOnboardingReady;
+    if(owner?.onboardingStatus?.().current==='welcome')owner.dismissCurrentHint();
   }, { key:TUTORIAL_KEY, hints:TUTORIAL_HINTS });
 }
 

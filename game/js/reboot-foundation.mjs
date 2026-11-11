@@ -42,7 +42,7 @@ globalThis.RPChessCloudReady = cloudReady;
 // The jester owns the first-visit hints. It loads after Cloud Save so synced
 // tutorial flags are authoritative before any hint can be displayed.
 const onboardingReady = cloudReady
-  .then(() => import('./content/onboarding.mjs?v=20261111-goblin-18-v1'))
+  .then(() => import('./content/onboarding.mjs?v=20261111-welcome-spotlight-v1'))
   .then((module) => {
     module.installOnboarding();
     return module;
@@ -93,6 +93,14 @@ const identityReady = cloudReady
     return null;
   });
 globalThis.RPChessIdentityReady = identityReady;
+
+// Offer the first-install spotlight only after reconciled cloud state is
+// available. Existing runs never receive a surprise tutorial over Continue.
+void Promise.all([onboardingReady, identityReady]).then(async ([onboarding]) => {
+  if(!onboarding)return;
+  const {readRun}=await import('./run-persistence.mjs');
+  onboarding.offerWelcome({hasExistingRun:Boolean(readRun())});
+}).catch(error=>console.warn('[RPChess] First-run welcome unavailable',error));
 
 // The read-only map attaches after the authoritative cloud-state reconciliation.
 const menuReady=cloudReady
