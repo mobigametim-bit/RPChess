@@ -520,6 +520,7 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   assert.equal(redA.length,6,'Battle V owns six cells including its center');
   assert.equal(redB.length,7,'Battle VI owns seven cells including its center');
   assert(redA.includes(enemyBattleId));
+  assert(redB.includes(overlapId),'each nearby Battle must keep its own center');
   assert(!redA.some(id=>startMap.centralOwnedCells.includes(id)),
     'reservation cannot steal a single pre-owned tile');
   assert(!redA.some(id=>redB.includes(id)),
