@@ -1,0 +1,7 @@
+name = "rpchess-layout-preview"
+compatibility_date = "2026-11-11"
+
+# Independent QA Worker. Never touches production, PvP or old Kingdom QA.
+[assets]
+directory = "../dist"
+not_found_handling = "single-page-application"

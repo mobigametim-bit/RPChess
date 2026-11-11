@@ -1442,6 +1442,11 @@ async function assertTileImage(page,cellId){
     if(width<=844)assert(ui.touch.every(h=>h>=39)&&
       (!ui.resourceOverflow||ui.resourceScroll==='auto'),
       'Phone map controls and resource strip must be reachable');
+    if(process.env.RPCHESS_UI_SCREENSHOT_DIR){
+      fs.mkdirSync(process.env.RPCHESS_UI_SCREENSHOT_DIR,{recursive:true});
+      await servicesPage.screenshot({path:path.join(process.env.RPCHESS_UI_SCREENSHOT_DIR,
+        'journey-'+width+'x'+height+'.png'),fullPage:false});
+    }
   }
   await servicesPage.setViewportSize({width:1280,height:720});
   await servicesPage.close();

@@ -1,4 +1,5 @@
 const assert=require('assert');
+const fs=require('node:fs'),path=require('node:path');
 const {chromium}=require('playwright');
 const {startNewRun,waitForVisible}=require('./browser-test-helpers.cjs');
 const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
@@ -139,6 +140,11 @@ async function assertOneScreen(page,label){
       }
       if(width>height&&height<=540)assert(ui.catalog.bottom<=height+2,
         'Landscape catalog must fit viewport '+width+'x'+height);
+      if(process.env.RPCHESS_UI_SCREENSHOT_DIR){
+        fs.mkdirSync(process.env.RPCHESS_UI_SCREENSHOT_DIR,{recursive:true});
+        await mobile.screenshot({path:path.join(process.env.RPCHESS_UI_SCREENSHOT_DIR,
+          'roster-'+width+'x'+height+'.png'),fullPage:false});
+      }
     }
     await mobile.setViewportSize({width:844,height:390});
     assert.deepStrictEqual(errors,[]);
