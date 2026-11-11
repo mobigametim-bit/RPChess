@@ -131,12 +131,12 @@ async function assertOneScreen(page,label){
         'Roster horizontal overflow at '+width+'x'+height);
       assert(ui.action.height>=(width<=844?39:35)&&ui.board.width>180,
         'Journey CTA and Roster formation unusable at '+width+'x'+height);
-      if(height>width&&width<=850){
+      if(height>width&&width<=1100){
         assert(ui.buttonBoxes.every(box=>
           Math.abs((ui.title.top+ui.title.bottom)/2-(box.top+box.bottom)/2)<12),
           'Portrait Roster title and EACH of the 3 icons must share one row '+width+'x'+height+
           ': '+JSON.stringify({title:ui.title,nav:ui.nav,buttonBoxes:ui.buttonBoxes}));
-        assert(!ui.logoVisible,'Portrait Roster tablet/phone logo must not occupy header space');
+        assert(!ui.logoVisible,'Portrait Roster tablet/phone logo must not occupy header space '+width+'x'+height);
         assert(ui.buttons.every((value,i)=>value.includes(
           ['main-menu-journey.png','main-menu-settings.png','hud-main-menu.png'][i])),
           'Roster must use the existing Journey, Settings and Castle PNGs');

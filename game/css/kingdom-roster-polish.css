@@ -234,7 +234,7 @@
 }
 /* Roster, portrait phone + tablet: title and three original scene icons
  * form the top row. Remove the brand logo to return vertical space to pieces. */
-@media (orientation:portrait) and (max-width:850px){
+@media (orientation:portrait) and (max-width:1100px){
   html[data-landscape-ui='1'] body.roster-active .roster-screen .roster-shell{
     display:grid!important;
     grid-template-columns:minmax(0,1fr) max-content!important;
