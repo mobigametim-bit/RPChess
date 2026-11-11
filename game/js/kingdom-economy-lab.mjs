@@ -111,7 +111,18 @@ function renderProductionPreview(group){
   if(!Number.isSafeInteger(value)||value<1||value>12){
    level.value=String(previewLevel);status('Уровень события должен быть от 1 до 12');return;
   }
-  previewLevel=value;render();
+  previewLevel=value;
+  marker.textContent='N = ×'+weeklyProductionMultiplier(previewLevel);
+  // Repaint only numeric cells; rebuilding the entire tab from a focused
+  // input's change/blur handler causes nested replaceChildren() mutations.
+  for(const [i,row] of [...tbody.children].entries()){
+    const [,type,kind,key]=productionPreviewRows[i];
+    const base=draft.production[key];
+    const calculated=weeklyResourceProduction(type,kind,previewLevel,draft);
+    row.children[1].textContent=String(base);
+    row.children[2].textContent=calculated===null?'—':'×'+previewLevel;
+    row.children[3].textContent=String(calculated??base);
+  }
  };
  const marker=document.createElement('strong');marker.id='kmEconomyPreviewMultiplier';
  marker.textContent='N = ×'+weeklyProductionMultiplier(previewLevel);
