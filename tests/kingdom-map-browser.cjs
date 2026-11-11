@@ -1173,7 +1173,7 @@ async function assertTileImage(page,cellId){
   assert.equal(await collectButton.getAttribute('data-production-kind'),'gold');
   const beforeClaim=(await read(walking)).gold;
   await collectButton.click();
-  assert.strictEqual((await read(walking)).gold,beforeClaim+20);
+  assert.strictEqual((await read(walking)).gold,beforeClaim+10);
   assert.equal(await walking.locator('[data-kingdom-collect="'+ownedProducer+'"]').count(),0);
   assert.equal((await read(walking)).kingdomMap.productionClaims.length,1);
   const afterClaim=(await read(walking)).gold;
@@ -1447,10 +1447,10 @@ async function assertTileImage(page,cellId){
     caravanGold:productionPreview.caravanGold,caravanSupplies:productionPreview.caravanSupplies,
     eventGold:productionPreview.eventGold,eventSupplies:productionPreview.eventSupplies,
     puzzle:productionPreview.puzzle,recruits:productionPreview.recruits,respawn:productionPreview.respawn
-  },{level:'5',settlement:'100',caravanGold:'60',caravanSupplies:'25',
-    eventGold:'50',eventSupplies:'20',puzzle:'25',recruits:'1',respawn:'1'},
+  },{level:'5',settlement:'50',caravanGold:'25',caravanSupplies:'25',
+    eventGold:'10',eventSupplies:'10',puzzle:'5',recruits:'1',respawn:'1'},
     'Atlas Lab weekly calculator must show base×N resources and fixed non-resources');
-  assert.equal(productionPreview.exported.economy.production.settlementGold,20,
+  assert.equal(productionPreview.exported.economy.production.settlementGold,10,
     'preview N is UI-only and must not change exported base economy');
   if(process.env.RPCHESS_ATLAS_ECON_SCREENSHOT_DIR){
     fs.mkdirSync(process.env.RPCHESS_ATLAS_ECON_SCREENSHOT_DIR,{recursive:true});
