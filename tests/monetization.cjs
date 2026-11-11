@@ -79,8 +79,8 @@ class MemoryStorage {
   assert(platformSource.includes('const VK_AD_SHOW_TIMEOUT_MS = 180_000;'), 'Rewarded ads must have enough time to finish before the Bridge request expires');
   assert(platformSource.includes("sendVKRequest('VKWebAppShowNativeAds'") && platformSource.includes('timeoutMs:VK_AD_SHOW_TIMEOUT_MS'), 'Native ad show must use the dedicated long timeout');
   assert(starvationSource.includes('starvationVictimPreviousStatus: victim.status'), 'Starvation must preserve the victim status so rewarded rescue can restore it exactly');
-  assert(foundation.includes("import('./content/monetization.mjs')"), 'Foundation must load the monetization owner');
-  assert(foundation.indexOf("import('./content/monetization.mjs')") < foundation.indexOf("import('./battle-route.mjs')"), 'Ad gate must register before route owners');
+  assert(foundation.includes("import('./content/monetization.mjs?v=20261111-polish-v1')"), 'Foundation must load the current monetization owner');
+  assert(foundation.indexOf("import('./content/monetization.mjs?v=20261111-polish-v1')") < foundation.indexOf("import('./battle-route.mjs?v=20261111-polish-v1')"), 'Ad gate must register before route owners');
   assert(foundation.includes('bindStarvationRescue'), 'Starvation rescue must bind only after the Starvation owner exists');
 
   // A mobile VK host can expose ShowNativeAds but omit CheckNativeAds and
