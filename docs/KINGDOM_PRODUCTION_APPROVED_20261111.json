@@ -1,0 +1,18 @@
+{
+  "format": "rpchess.kingdom.production.v1",
+  "approvedAt": "2026-11-11",
+  "sourceExportSavedAt": "2026-11-11T17:44:09.021Z",
+  "production": {
+    "weekDays": 7,
+    "settlementGold": 10,
+    "caravanGold": 5,
+    "caravanSupplies": 5,
+    "eventGold": 2,
+    "eventSupplies": 2,
+    "puzzleShards": 1,
+    "skirmishRecruits": 1,
+    "battleRespawnWeeks": 1
+  },
+  "productionScaling": "resources = base × routeStars (clamped 1..12); skirmish recruits and battle respawn unscaled",
+  "scope": "Approved production values only. All other economy sections retain their previous defaults. The previous 2026-11-10 full economy snapshot remains historical."
+}
