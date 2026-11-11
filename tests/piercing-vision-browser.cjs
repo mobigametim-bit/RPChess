@@ -20,7 +20,7 @@ async function glow(page,selector){
   try{
     for(const type of ['battle','skirmish','caravan']){
       const page=await browser.newPage({viewport:{width:1440,height:900}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
-      await page.goto(url,{waitUntil:'networkidle'});assert.strictEqual(await page.locator('[data-new-game]').innerText(),'Новое Путешествие');
+      await page.goto(url,{waitUntil:'networkidle'});assert.strictEqual(await page.locator('[data-new-game]').getAttribute('aria-label'),'Путешествие');
       await startNewRun(page);
       await page.evaluate(async({type,key})=>{
         const {createTravelChoices}=await import('./js/travel-choice-core.mjs');
@@ -37,7 +37,7 @@ async function glow(page,selector){
       await page.locator('[data-classic-screen]:not([hidden])').waitFor();
       const chosen=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)),key);assert.strictEqual(chosen.artifacts['vision.piercing'],1);
       // Reload actual match first, then use a diagnostic position for line/color checks.
-      await page.reload({waitUntil:'networkidle'});await page.locator('[data-continue-run]').click();await page.locator('[data-classic-screen]:not([hidden])').waitFor();
+      await page.reload({waitUntil:'networkidle'});await page.locator('[data-continue-run]').click();await page.locator('[data-journey-choice-modal]:not([hidden]) [data-journey-continue]').click();await page.locator('[data-classic-screen]:not([hidden])').waitFor();
       assert.strictEqual(await page.locator('[data-artifact-choice-modal]').count(),0);assert.strictEqual(await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).artifacts['vision.piercing'],key),1);
       await page.setViewportSize({width:1440,height:900});
       await page.evaluate(({fen,type})=>window.RPChessClassicChess.loadFen(fen,{mode:'hotseat',playerColor:'w',blockedSquares:['d7'],combatOwner:type}),{fen,type});

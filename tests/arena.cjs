@@ -8,6 +8,13 @@ const { pathToFileURL } = require('url');
   const {arenaProfileForElo,profileForElo,ChessAIAdapter}=await import(pathToFileURL(path.join(root,'game/js/chess-ai-adapter.mjs')).href);
   const {ClassicChessEngine}=await import(pathToFileURL(path.join(root,'game/js/classic-chess-engine.mjs')).href);
   const foes=core.OPPONENTS;
+  let kingdomLedger=core.emptyArena();
+  kingdomLedger=core.addEvent(kingdomLedger,{id:'kingdom:income:1',kind:'kingdom-production',
+    at:1,amount:50,runId:'unit',productionId:'week:1'});
+  kingdomLedger=core.addEvent(kingdomLedger,{id:'kingdom:settlement:1',kind:'kingdom-settlement',
+    at:2,amount:15,runId:'unit',cellId:'20,20',tier:'owned'});
+  assert.equal(core.arenaSummary(kingdomLedger).balance,35,
+    'a Settlement purchase must debit the shared Arena shard ledger exactly once');
   assert.strictEqual(foes.length,84);
   assert.strictEqual(new Set(foes.map(x=>x.id)).size,84);
   assert.strictEqual(foes[0].elo,400);
@@ -44,6 +51,24 @@ const { pathToFileURL } = require('url');
   let state=core.emptyArena();
   assert.strictEqual(core.arenaSummary(state).balance,0);
   assert.strictEqual(core.arenaSummary(state).highest,0);
+  // Kingdom production and outposts share the immutable Arena shard ledger.
+  const kingdomCredit={id:'kingdom:production:fixture',kind:'kingdom-production',
+    runId:'test-run',productionId:'production:1,2:1:shards',amount:45,at:1};
+  const funded=core.addEvent(core.emptyArena(),kingdomCredit);
+  assert.strictEqual(core.arenaSummary(funded).balance,45);
+  assert(core.arenaSummary(funded).applied.has(kingdomCredit.id));
+  const outpostSpend={id:'kingdom:outpost:fixture',kind:'kingdom-outpost',runId:'test-run',
+    cellId:'25,25',amount:core.KINGDOM_OUTPOST_SHARD_COST,at:2};
+  const spent=core.addEvent(funded,outpostSpend);
+  assert.strictEqual(core.arenaSummary(spent).balance,15);
+  assert.strictEqual(core.arenaSummary(core.addEvent(spent,outpostSpend)).balance,15,
+    'the same receipt cannot be charged twice');
+  assert.strictEqual(core.arenaSummary(core.mergeArena(spent,funded)).balance,15,
+    'cross-device event union must never double-count outposts or weekly shards');
+  const unpaidOutpost=core.addEvent(core.emptyArena(),outpostSpend);
+  assert(!core.arenaSummary(unpaidOutpost).applied.has(outpostSpend.id),
+    'an unaffordable outpost event must not charge shards or grant a free purchase');
+
   assert.strictEqual(core.newMatch(state,foes[1].id,'skip'),state,'locked opponent');
   const blackMatch=core.newMatch(state,foes[0].id,'match:black','b');
   assert.strictEqual(core.normalizeArena(JSON.parse(JSON.stringify(blackMatch))).match.playerColor,'b','black color survives reload');
@@ -69,9 +94,9 @@ const { pathToFileURL } = require('url');
   assert.strictEqual(core.arenaSummary(withArtifact).balance,52);
   assert.strictEqual(withArtifact.match.artifactId,'threat.defense');
   const repeat=core.finishMatch(withArtifact,'win');
-  assert.strictEqual(repeat.match.reward,10);
+  assert.strictEqual(repeat.match.reward,15,'approved Atlas Lab repeat-win reward');
   const merged=core.mergeArena(state,repeat);
-  assert.strictEqual(core.arenaSummary(merged).balance,62,'event union must not duplicate awards');
+  assert.strictEqual(core.arenaSummary(merged).balance,67,'event union must not duplicate awards');
   const unpaid=core.mergeArena({...state,match:{...state.match,phase:'playing',artifactId:'threat.defense'}},{...state,events:[...state.events,{id:'match:test:1:artifact',kind:'artifact',artifact:'threat.defense',amount:8,at:0}]});
   assert.strictEqual(unpaid.match.artifactId,null,'unpaid artifact must not survive conflict merge');
   const next=core.newMatch({...merged,match:null},foes[1].id,'match:test:3');

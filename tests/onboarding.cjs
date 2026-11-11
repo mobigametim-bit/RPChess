@@ -6,21 +6,27 @@ const root = path.resolve(__dirname, '..');
 const onboarding = fs.readFileSync(path.join(root, 'game/js/content/onboarding.mjs'), 'utf8');
 const foundation = fs.readFileSync(path.join(root, 'game/js/reboot-foundation.mjs'), 'utf8');
 const cloud = fs.readFileSync(path.join(root, 'game/js/cloud-save.mjs'), 'utf8');
+const kingdom = fs.readFileSync(path.join(root, 'game/js/kingdom-map-app.mjs'), 'utf8');
+const settlement = fs.readFileSync(path.join(root, 'game/js/settlement-app.mjs'), 'utf8');
+const disabledPreload = fs.readFileSync(path.join(root, 'tests/onboarding-disabled-preload.cjs'), 'utf8');
 
-const approved = ["identity","roster","travel","artifact","skirmishChess","battleChess","combatAftermath","event","settlement","puzzle","caravanChess","caravanReward","starvation","runEnd","chronicle","arenaCatalog","arenaFoe","arenaArtifact","arenaChess","arenaResult"];
+const approved = ["welcome","identity","roster","kingdomMap","kingdomCastle","kingdomProduction","artifact","skirmishChess","battleChess","event","settlement","puzzle","caravanChess","starvation","chronicle","arenaCatalog","arenaFoe","arenaArtifact","arenaChess"];
 const arrayMatch = onboarding.match(/const INCLUDED_HINTS = Object\.freeze\(\[([\s\S]*?)\]\);/);
 assert(arrayMatch, 'Onboarding must expose the approved hint list');
 const actual = [...arrayMatch[1].matchAll(/[\x27\x22]([^\x27\x22]+)[\x27\x22]/g)].map((match) => match[1]);
-assert.deepStrictEqual(actual, approved, 'Onboarding scope must contain exactly 20 approved first-visit moments');
+assert.deepStrictEqual(actual, approved, 'Onboarding scope must contain exactly 19 useful first-visit moments');
 
-for (const excluded of ['skirmishPrep','battlePrep','caravanPrep']) {
+for (const excluded of ['skirmishPrep','battlePrep','caravanPrep','travel',
+  'combatAftermath','caravanReward','runEnd','arenaResult']) {
   assert(!actual.includes(excluded), `Excluded onboarding screen leaked into scope: ${excluded}`);
 }
 for (const token of [
   "'rpchess:run-new':['roster'",
-  "'rpchess:travel-open':['travel'",
+  "'rpchess:kingdom-map-shown':['kingdomMap'",
+  "'rpchess:kingdom-castle-inspected':['kingdomCastle'",
+  "'rpchess:kingdom-production-collected':['kingdomProduction'",
   "'rpchess:event-open':['event'",
-  "'rpchess:settlement-open':['settlement'",
+  "'rpchess:settlement-shown':['settlement'",
   "ru:'Понятно'",
   "en:'Got it'",
   "role=\"dialog\"",
@@ -30,14 +36,30 @@ for (const token of [
 
 assert(onboarding.includes("const TUTORIAL_STORAGE_KEY = 'rpchess.reboot.v1.tutorial'"), 'Tutorial persistence key missing');
 assert(onboarding.includes('overflow:hidden'), 'Compact onboarding card must forbid internal scrolling');
-assert(foundation.includes("import('./content/onboarding.mjs')"), 'Foundation must load onboarding after cloud reconciliation');
+assert(foundation.includes("import('./content/onboarding.mjs?v=20261111-welcome-spotlight-v1')"), 'Foundation must load onboarding after cloud reconciliation');
 assert(foundation.includes('onboarding?.activateOnboarding?.()'), 'New Game must activate onboarding');
 assert(foundation.includes("onboarding?.showHint?.('identity')"), 'New Game must show the identity hint');
-assert(foundation.indexOf("import('./content/onboarding.mjs')") > foundation.indexOf('const cloudReady'), 'Onboarding must be sequenced behind Cloud Save');
+assert(foundation.indexOf("import('./content/onboarding.mjs?v=20261111-welcome-spotlight-v1')") > foundation.indexOf('const cloudReady'), 'Onboarding must be sequenced behind Cloud Save');
 assert(cloud.includes("const TUTORIAL_STORAGE_KEY = 'rpchess.reboot.v1.tutorial'"), 'Cloud Save must sync tutorial flags');
 assert(cloud.includes("'rpchess:tutorial-updated'"), 'Cloud autosync must react to tutorial updates');
 
 assert(!actual.includes('skirmishPrep')&&!actual.includes('battlePrep')&&!actual.includes('caravanPrep'),'removed deployment screen hints must never reappear');
 assert(onboarding.includes('jester-patrick.webp'),'approved jester portrait missing');
+assert(onboarding.includes('function offerWelcome')&&foundation.includes('onboarding.offerWelcome'),
+  'the first-run jester welcome must be offered only after cloud reconciliation');
+assert(onboarding.includes('rpchess-onboarding__spotlight')&&onboarding.includes('200vmax'),
+  'the welcome must spotlight the Journey icon while shading the rest of the menu');
+assert(onboarding.includes("target.click()"),'welcome must open the existing Journey choice');
+assert(onboarding.includes('К путешествию')&&onboarding.includes('Open Journey'),
+  'first-run Journey action must exist in RU and EN');
+assert(disabledPreload.includes('browser.newContext')&&disabledPreload.includes('context.addInitScript'),
+  'non-onboarding Chromium suites must suppress the welcome for explicit browser contexts');
 assert(onboarding.includes('rpchess:arena-catalog-shown'),'Arena first-visit tutorial wiring missing');
-console.log('First-run jester onboarding (20 moments), persistence, localization, accessibility and cloud wiring: PASS');
+for(const event of ['rpchess:kingdom-map-shown',
+  'rpchess:kingdom-castle-inspected','rpchess:kingdom-production-collected'])
+  assert(kingdom.includes(`new CustomEvent('${event}'`),`Map milestone not emitted: ${event}`);
+assert(settlement.includes("new CustomEvent('rpchess:settlement-shown')"),
+  'Settlement first-visit event must fire even when scene is opened directly');
+assert(!onboarding.includes('Three roads')&&!onboarding.includes('Три дороги'),
+  'Deprecated three-road instructions must not appear in the Kingdom onboarding copy');
+console.log('First-run jester onboarding (19 moments), persistence, localization, accessibility and cloud wiring: PASS');

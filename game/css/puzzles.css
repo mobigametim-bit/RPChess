@@ -637,3 +637,15 @@ html body .puzzle-square:has(.puzzle-piece--new-race) .puzzle-piece-marker {
     margin:0!important;
   }
 }
+
+/* Queen/rook/bishop/knight promotion is an interactive modal. The
+   draggable chessboard has its own stacking context in landscape mode;
+   always paint the promotion choice above board squares and allow clicks. */
+.puzzle-screen .puzzle-board-wrap .puzzle-promotion:not([hidden]){
+ position:absolute!important;z-index:1000!important;pointer-events:auto!important;
+ isolation:isolate;
+}
+.puzzle-screen .puzzle-board-wrap .puzzle-promotion__panel,
+.puzzle-screen .puzzle-board-wrap .puzzle-promotion button{
+ position:relative;z-index:1;pointer-events:auto;
+}

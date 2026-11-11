@@ -1,17 +1,26 @@
 # RPChess — Current State
 
-**Last synchronized:** 2026-09-24  
-**Source branch:** `main` (verified head before this documentation change: `f6f0eec93e4cb3342477d6e164aaa56c08ab2ad8`)  
+**Documentation reviewed:** 2026-11-10.  
+**Production source:** `main`; the September 2026 production baseline retained below is historical and should not be mistaken for the latest feature-branch state.  
 **Latest separately verified Pages release SHA:** not established in this document; deployment is manual.  
 **Production URL:** https://mobigametim-bit.github.io/RPChess/  
-**Current planning stage:** Arena / Арена — design recorded, implementation not started.  
-**Working plan:** `docs/features/ARENA_PLAN.md`
+**Current active development:** Infinite Kingdom / «Бесконечное королевство», Draft [PR #190](https://github.com/mobigametim-bit/RPChess/pull/190).  
+**Active specs:** `docs/KINGDOM_EXPLORATION_ECONOMY_BIOME_DESIGN.md`, `docs/KINGDOM_ECONOMY_ARMY_SPEC.md`, `docs/features/KINGDOM_ROADS_AND_TRAVELERS_PLAN.md`.
 
-This is the current operational snapshot; older milestones and receipts below remain historical. The GitHub Pages site is updated only by a manually dispatched Pages workflow from `main`; normal pushes and PR checks validate without publishing.
+This file separates production history from active feature work. Older September milestones and acceptance receipts below are retained as historical evidence, not current claims of unimplemented features. The GitHub Pages site is updated only by a manually dispatched Pages workflow from `main`; regular PR checks validate without publishing.
 
-## Current phase — Arena plan; Caravan and VK saves already merged
+## Active feature branch — Infinite Kingdom, 10.11.2026
 
-- **Arena:** 84 opponents (14 races × 6 pieces), 12 visual sections of seven, 84 strictly increasing approximate Elo settings, independent Honor Shards economy and bought cosmetic squads. The approved UI and implementation plan live in `docs/features/ARENA_PLAN.md`. The Arena has no gameplay implementation yet; detailed prices, payouts and defeat icon remain to be finalized.
+- Draft PR #190 has a playable isolated Cloudflare Preview; it is not merged into `main`. Hex/grid world, six biome semantics, fog, calendar, territory, Castle recruits, weekly production, Arena Shards and settlement economy have working implementation paths. Final long-run/mobile acceptance is open.
+- Author's Atlas Lab v6 economy preset dated 09.11.2026 is committed as `docs/KINGDOM_ECONOMY_APPROVED_20261110.json`. The Skirmish runtime is **named-heroes only**; ordinary Army recruits are for other eligible modes. Roster tab labels: `Герои / Heroes`, `Армия / Army`.
+- **Road graph v3 in Draft:** four possible cardinal Castle exits, no diagonal physical segments. Scouted owned road events within **two king moves** join without duplicate shared segments. Historical `completedRoads` forms a **separately visible curved gray-stone Journey chain** beyond owned borders: first cleared site to Castle, next to previous site, etc.; building a Settlement does not extend this chain. Existing save receipts are preserved. See `docs/features/KINGDOM_ROADS_AND_TRAVELERS_PLAN.md`.
+- Five authored 64×64 transparent four-frame animation sets are now in the feature branch: original source ZIP at `art_source/kingdom-travelers/frames_64.zip` and production palette PNG atlas `game/assets/kingdom-travelers/walkers_64.png` (256×320, 23 KiB). Pure `kingdom-road-network.mjs` builds stable `royalRoads` from all **scouted+owned** events to Castle and nearest eligible event, preserving historical `completedRoads`. `kingdom-road-travelers.mjs` and `kingdom-traveler-renderer.mjs` add up to eight visual-only NPCs: free merchant/convoy/courier routes may use original natural road equations, patrol/builders reject routes leaving owned territory. This is **implemented in Draft PR #190 only**, pending full CI and human acceptance. No player resources, calendar, fights or buildings are changed by walkers.
+- Visual layering updated in Draft: parchment kingdom sovereignty boundaries now paint onto the **base terrain canvas immediately after natural roads**, below player-created event-road overlay and site SVGs. Classic map keeps its existing boundary treatment.
+- Continue through review and explicit player acceptance before merge. The documentation source of truth is **GitHub only**; Notion synchronization is not required.
+
+## Historical production snapshot — September 2026 (superseded as an active-plan heading)
+
+- **Arena (historical September plan):** 84 opponents (14 races × 6 pieces) and Honor Shards design were originally recorded in `docs/features/ARENA_PLAN.md`. This older note predates the present Arena implementation (`game/js/arena-app.mjs` exists on `main`); it must not be read as a current statement that Arena has no gameplay implementation.
 - **Caravan:** Chess960, free mercenaries, artifacts, reward selection and reload recovery were human accepted and merged to `main` in [PR #144](https://github.com/mobigametim-bit/RPChess/pull/144), merge `a706eb8`. The earlier plan-only [PR #143](https://github.com/mobigametim-bit/RPChess/pull/143) is also merged.
 - **VK cross-device saves:** [PR #145](https://github.com/mobigametim-bit/RPChess/pull/145), [#146](https://github.com/mobigametim-bit/RPChess/pull/146) and [#147](https://github.com/mobigametim-bit/RPChess/pull/147) are merged, last merge `f6f0eec`. The owner confirmed on 2026-09-24 that a phone resumed at the laptop's location after a manually repaired remote checksum mismatch. The manual repair demonstrates one successful transfer, not automatic recovery of corrupted cloud state or a completed two-device acceptance matrix. Direct GitHub Pages remains browser-local.
 - **VK moderation:** the owner reported resubmission for moderation on 2026-09-24. Dashboard status and eventual approval have not been independently verified.
@@ -140,16 +149,16 @@ The accepted Reboot core currently includes:
 
 - Caravan Chess960 encounters are merged on `main` through PR #144; cross-device VK Cloud Save through PRs #145–147.
 
-Arena is planned and is not part of this implementation list.
+At the September 2026 baseline, Arena was still listed as planned. This is historical: current `main` contains `game/js/arena-app.mjs` and `game/js/arena-core.mjs`, and the Kingdom branch uses its Honor Shards ledger.
 
 Historical acceptance/build receipts remain in the numbered design documents and changelog.
 
-## Documentation synchronization rule
+## Documentation rule — GitHub only (10.11.2026)
 
-GitHub `main`, GitHub `docs/` and the Notion **RPChess — Центр проекта** hierarchy must describe the same accepted production state and current active delivery stage.
+GitHub repository documentation (`README.md`, applicable `docs/` specs and PR acceptance notes) is the **only required** source of project requirements, active plans and accepted delivery state. Update GitHub docs during the relevant development/release; a separate Notion mirror or GitHub–Notion sync is **not mandatory** and must not block a PR or release. Older Notion mentions in historical receipts are not active policy.
 
 For active work the lifecycle remains:
 
-`SPEC → IMPLEMENTED → AUTOTESTED → HUMAN ACCEPTED (when required) → DOCS SYNCED → MERGED → PRODUCTION VERIFIED`
+`SPEC → IMPLEMENTED → AUTOTESTED → HUMAN ACCEPTED (when required) → GITHUB DOCS UPDATED → MERGED → PRODUCTION VERIFIED`
 
 A green technical gate is not a substitute for Human Acceptance on player-facing UI/gameplay changes.

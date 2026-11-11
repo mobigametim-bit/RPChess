@@ -331,6 +331,8 @@ function choosePromotion(choices) {
       const button = document.createElement('button');
       button.type = 'button';
       const label = t(PROMOTION_KEYS[value] || 'piece.queen');
+      button.setAttribute('aria-label', label);
+      button.title=label;
       if (document.documentElement.dataset.simplePieces === '1') {
         button.innerHTML = fantasyPieceMarkup(value, engine.turn());
         button.setAttribute('aria-label', label);
@@ -385,17 +387,22 @@ async function clickSquare(square) {
     return;
   }
 
-  let promotion = null;
-  const promotions = engine.promotionChoices(selected, square);
-  if (promotions.length) promotion = await choosePromotion(promotions);
-  const from = selected;
-  selected = null;
-  selectedMoves = [];
-  if (!await validateCandidate(from, square, promotion)) {
-    wrongMove();
-    return;
+  // A drag can deliver both onDrop() and a native click for the same square.
+  // Lock *before* awaiting the promotion picker; otherwise two pickers open
+  // and the first unresolved promise strands the task forever.
+  const from=selected;
+  selected=null;selectedMoves=[];
+  locked=true;
+  let promotion=null;
+  const promotions=engine.promotionChoices(from,square);
+  if(promotions.length){
+    renderBoard();
+    promotion=await choosePromotion(promotions);
   }
-  await correctMove(from, square, promotion);
+  if(!await validateCandidate(from,square,promotion)){
+    locked=false;wrongMove();return;
+  }
+  await correctMove(from,square,promotion);
 }
 
 function wrongMove() {

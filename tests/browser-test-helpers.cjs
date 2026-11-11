@@ -1,6 +1,6 @@
 const RUN_KEY = 'rpchess.reboot.v1.run';
 const TUTORIAL_KEY = 'rpchess.reboot.v1.tutorial';
-const TUTORIAL_HINTS = ["identity","roster","travel","artifact","skirmishChess","battleChess","combatAftermath","event","settlement","puzzle","caravanChess","caravanReward","starvation","runEnd","chronicle","arenaCatalog","arenaFoe","arenaArtifact","arenaChess","arenaResult"];
+const TUTORIAL_HINTS = ["welcome","identity","roster","kingdomMap","kingdomCastle","kingdomProduction","artifact","skirmishChess","battleChess","event","settlement","puzzle","caravanChess","starvation","chronicle","arenaCatalog","arenaFoe","arenaArtifact","arenaChess"];
 
 async function installManualTravelFixtureNormalizer(page) {
   await page.evaluate((key) => {
@@ -52,21 +52,33 @@ async function waitForVisible(page, selector, label = selector, timeout = 10000)
 }
 
 async function markOnboardingComplete(page) {
-  await page.evaluate(({ key, hints }) => {
+  await page.evaluate(async ({ key, hints }) => {
     localStorage.setItem(key, JSON.stringify({
       schemaVersion:1,
       activated:true,
       dismissed:Object.fromEntries(hints.map((hint) => [hint, true]))
     }));
+    // Browser fixtures that deliberately bypass onboarding may arrive while
+    // the welcome is already open: never leave its mask over the test menu.
+    const owner=await globalThis.RPChessOnboardingReady;
+    if(owner?.onboardingStatus?.().current==='welcome')owner.dismissCurrentHint();
   }, { key:TUTORIAL_KEY, hints:TUTORIAL_HINTS });
 }
 
-async function startNewRun(page, { playerName = 'Browser Tester' } = {}) {
+async function startNewRun(page, { playerName = 'Browser Tester', legacyTravel = true } = {}) {
+  // Older scene suites explicitly exercise the legacy three-card Journey UI.
+  // The new kingdom acceptance suite opts out and verifies the production map.
+  await page.evaluate(value=>sessionStorage.setItem('rpchess.test.legacyTravel',value?'1':'0'),legacyTravel);
   const menu = await waitForVisible(page, '[data-reboot-foundation]:not([hidden])', 'Main menu');
   await markOnboardingComplete(page);
+  // Menus can paint before the asset/font loader has fully dismissed its
+  // click-intercepting splash. Honor production readiness instead of racing it.
+  await page.locator('[data-game-loading]').waitFor({ state:'hidden', timeout:60000 });
   const newGame = menu.locator('[data-new-game]');
   await newGame.waitFor({ state: 'visible' });
   await newGame.click();
+  const picker=await waitForVisible(page,'[data-journey-choice-modal]:not([hidden])','Journey choices');
+  await picker.locator('[data-journey-new]').click();
   const identity = await waitForVisible(page, '[data-player-identity-modal]:not([hidden])', 'Player Identity');
   await identity.locator('[data-player-identity-input]').fill(playerName);
   const submit = identity.locator('[data-player-identity-submit]');

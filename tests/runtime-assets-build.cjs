@@ -22,6 +22,14 @@ function equal(relative,expected){
   assert(actual.equals(expected),`${relative} cached build differs from canonical optimizer\nexpected ${hash(expected)}\nactual   ${hash(actual)}`);
 }
 assert(fs.existsSync(path.join(DIST,'index.html')),'dist must exist; run npm run build first');
+assert(!fs.existsSync(path.join(DIST,'js/puzzles/catalog-data')),
+  'shipped puzzle shards must not include their generator input archive');
+if(process.env.RPCHESS_INCLUDE_ATLAS_LAB!=='1'){
+  assert(!fs.existsSync(path.join(DIST,'atlas-lab.html')),
+    'production dist must not publish the authoring-only Atlas Lab');
+  assert(!fs.existsSync(path.join(DIST,'js/kingdom-economy-lab.mjs')),
+    'production dist must not publish its unused sandbox economy editor');
+}
 
 for(const relative of fs.readdirSync(path.join(DIST,'css')).filter((name)=>name.endsWith('.css'))){
   const cssPath=path.join(DIST,'css',relative);

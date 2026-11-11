@@ -21,7 +21,7 @@ const ASSETS = Object.freeze([
 const LICENSE_URL = `https://raw.githubusercontent.com/nmrugg/stockfish.js/v${STOCKFISH_VERSION}/Copying.txt`;
 const LICENSE_GIT_BLOB_SHA1 = '818433ecc0e094a4db1023c68b33f24344643ad8';
 
-function requestBuffer(url, redirects = 0) {
+function requestBuffer(url, redirects = 0, retries = 0) {
   return new Promise((resolve, reject) => {
     if (redirects > 6) return reject(new Error(`too many redirects while downloading ${url}`));
     https.get(url, {
@@ -37,6 +37,10 @@ function requestBuffer(url, redirects = 0) {
       }
       if (status < 200 || status >= 300) {
         response.resume();
+        // GitHub releases periodically returns 502/503/504 from its CDN.
+        // Retry only transient statuses; original SHA-256 verification stays strict.
+        if ([429, 502, 503, 504].includes(status) && retries < 4)
+          return setTimeout(() => resolve(requestBuffer(url, redirects, retries + 1)), 1200 * (retries + 1));
         return reject(new Error(`download failed ${status}: ${url}`));
       }
       const chunks = [];
@@ -59,9 +63,20 @@ function gitBlobSha1(buffer) {
 async function prepareStockfishAssets(distRoot) {
   const target = path.join(distRoot, 'vendor', 'stockfish');
   const assetDirectory = process.env.RPCHESS_STOCKFISH_ASSET_DIR;
-  const readAsset = (name, url) => assetDirectory
-    ? Promise.resolve(fs.readFileSync(path.join(assetDirectory, name)))
-    : requestBuffer(url);
+  const readAsset = async (name, url) => {
+    if(assetDirectory)return fs.readFileSync(path.join(assetDirectory, name));
+    try{return await requestBuffer(url);}
+    catch(error){
+      // A temporary 504 at GitHub Releases must not block the chess build.
+      // npm mirrors the same upstream binary; strict SHA-256 verification
+      // below rejects any different payload, even if the mirror responds.
+      if(!/download failed (429|502|503|504)/.test(error.message))throw error;
+      const mirror=name==='Copying.txt'
+        ?`https://cdn.jsdelivr.net/gh/nmrugg/stockfish.js@v${STOCKFISH_VERSION}/Copying.txt`
+        :`https://cdn.jsdelivr.net/npm/stockfish@${STOCKFISH_VERSION}/bin/${name}`;
+      return requestBuffer(mirror);
+    }
+  };
   fs.mkdirSync(target, { recursive: true });
 
   for (const asset of ASSETS) {

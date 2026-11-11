@@ -12,10 +12,12 @@ const STARTER_TEMPLATES = Object.freeze([
     portrait: 'assets/kings/oathkeeper/portrait.webp',
     pieceArt: 'assets/kings/oathkeeper/pieces/white.webp',
     description: 'Последний хранитель древней присяги Железных Маршей. После падения родовой крепости он покинул её стены и собрал вокруг себя тех, кто ещё верит, что данное слово важнее трона.',
+    raceTag: 'humans',
     isRunKing: true
   }),
   Object.freeze({
     id: 'hero.aldric_wall',
+    raceTag: 'humans',
     name: 'Альдрик Стена',
     pieceType: 'rook',
     origin: 'Железные Марши',
@@ -25,6 +27,7 @@ const STARTER_TEMPLATES = Object.freeze([
   }),
   Object.freeze({
     id: 'hero.mara_chain',
+    raceTag: 'humans',
     name: 'Мара Цепь',
     pieceType: 'pawn',
     origin: 'Железные Марши',
@@ -34,6 +37,7 @@ const STARTER_TEMPLATES = Object.freeze([
   }),
   Object.freeze({
     id: 'hero.nemea_quill',
+    raceTag: 'angels',
     name: 'Немея Перо',
     pieceType: 'pawn',
     origin: 'Светлый Синод',
@@ -43,6 +47,7 @@ const STARTER_TEMPLATES = Object.freeze([
   }),
   Object.freeze({
     id: 'hero.brother_orell',
+    raceTag: 'humans',
     name: 'Брат Орелл',
     pieceType: 'bishop',
     origin: 'Железные Марши',
@@ -52,6 +57,7 @@ const STARTER_TEMPLATES = Object.freeze([
   }),
   Object.freeze({
     id: 'hero.vael_hammer',
+    raceTag: 'humans',
     name: 'Ваэль Молот',
     pieceType: 'knight',
     origin: 'Железные Марши',
@@ -67,6 +73,7 @@ function normalizeCharacter(template) {
     name: template.name,
     pieceType: template.pieceType,
     origin: template.origin,
+    raceTag: template.raceTag,
     portrait: template.portrait,
     pieceArt: template.pieceArt,
     description: template.description,

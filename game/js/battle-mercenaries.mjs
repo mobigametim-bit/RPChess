@@ -1,10 +1,12 @@
 import { readRun, writeRun } from './run-persistence.mjs';
 import { validateBattleSelection, SLOT_CAPACITY } from './battle-core.mjs';
 import { subscribe, t } from './i18n.mjs';
+import {armyCandidates} from './kingdom-army-core.mjs';
+import {DEFAULT_KINGDOM_ECONOMY as K} from './kingdom-economy-config.mjs';
 
-const MERCENARY_COSTS = Object.freeze({ pawn:1, knight:3, bishop:3, rook:5, queen:9, king:0 });
-const RESERVE_REPLACEMENT_COSTS = Object.freeze({ queen:42, rook:26, bishop:18, knight:18, pawn:10 });
-const SUPPLY_GOLD_VALUE = 10;
+const MERCENARY_COSTS=Object.freeze({...K.mercenaries.goldCost});
+const RESERVE_REPLACEMENT_COSTS=Object.freeze({...K.mercenaries.reserveReplacementGold});
+const SUPPLY_GOLD_VALUE=K.mercenaries.supplyGoldValue;
 
 function countSelectedTypes(roster = [], selectedIds = []) {
   const selected = new Set(selectedIds);
@@ -17,7 +19,7 @@ function healthyReserveCounts(roster = [], selectedIds = []) {
   const selected = new Set(selectedIds);
   const counts = { queen:0, rook:0, bishop:0, knight:0, pawn:0 };
   for (const character of roster) {
-    if (character.isRunKing || character.status !== 'healthy' || selected.has(character.id)) continue;
+    if (character.isRunKing || character.isArmyRecruit || character.status !== 'healthy' || selected.has(character.id)) continue;
     if (counts[character.pieceType] !== undefined) counts[character.pieceType] += 1;
   }
   return counts;
@@ -147,15 +149,16 @@ function paymentToast(charged) {
   document.body.append(root);setTimeout(()=>{root.remove();if(refreshPaymentToast===renderCopy)refreshPaymentToast=()=>{};},4200);
 }
 
-// Battle owner copy contract: Замена оставленного в резерве здорового героя стоит как его лечение.
+// Battle reserve replacement uses its separately configurable per-piece Gold tariff (not healing prices).
 function renderBattlePrepQuote() {
   const screen = document.querySelector('[data-battle-screen]');
   if(globalThis.RPChessBattle?.combatType==='caravan'){screen?.querySelector('[data-battle-mercenary-quote]')?.remove();return;}
   const run = readRun();
   const selectedIds = globalThis.RPChessBattle?.selectedIds || [];
   if (!screen || !run || run.ended) return;
-  const validation = validateBattleSelection(run.roster, selectedIds);
-  const quote = mercenaryQuote(run.roster, selectedIds);
+  const complete=[...run.roster,...armyCandidates(run)];
+  const validation = validateBattleSelection(complete, selectedIds);
+  const quote = mercenaryQuote(complete, selectedIds);
   const personalizedCount = validation.ok ? validation.members.length : selectedIds.length;
   const army = screen.querySelector('.battle-army');
   const participants = screen.querySelector('[data-battle-participants]');
@@ -191,9 +194,10 @@ function handleBattleStartCapture(event) {
   const selectedIds = battle?.selectedIds || [];
   const encounterId = battle?.encounter?.id || '';
   if (!run || run.ended || !encounterId) return;
-  const validation = validateBattleSelection(run.roster, selectedIds);
+  const complete=[...run.roster,...armyCandidates(run)];
+  const validation = validateBattleSelection(complete, selectedIds);
   if (!validation.ok) return;
-  const charged = chargeBattleMercenaries(run, { roster: run.roster, selectedIds, encounterId, battleCountAtCharge: run.battleCount || 0 });
+  const charged = chargeBattleMercenaries(run, { roster: complete, selectedIds, encounterId, battleCountAtCharge: run.battleCount || 0 });
   writeRun(charged.run);
   globalThis.dispatchEvent(new CustomEvent('rpchess:resources-updated', { detail: { mercenaryPayment: true } }));
   if (charged.chargedGold || charged.chargedSupplies || charged.contract?.casualtyDebt) paymentToast(charged);

@@ -193,9 +193,10 @@ async function auditSettlement(browser, width, height, { gameplay = false } = {}
     await fresh(page, `Settlement ${width}`);
     await enter(page);
     let run = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), RUN_KEY);
-    assert.strictEqual(run.supplies, 9);
+    assert.strictEqual(run.supplies, 29);
     assert.strictEqual(run.currentSettlement.offers.length, 3);
-    assert.strictEqual(run.currentSettlement.supplyStock, 4);
+    assert.strictEqual(run.currentSettlement.supplyStock, 15,
+      'Settlement starting stock must match the approved Kingdom economy configuration');
     assert.strictEqual(await page.locator('[data-settlement-roster],[data-settlement-settings]').count(), 0, `${label}: obsolete Settlement shortcuts must remain absent`);
     assert.deepStrictEqual((await page.locator('.settlement-service h2').allInnerTexts()).map((text) => text.trim()), ['Знахарка','Таверна','Рынок']);
 
@@ -214,11 +215,16 @@ async function auditSettlement(browser, width, height, { gameplay = false } = {}
       }, RUN_KEY);
       await page.locator('[data-settlement-heal="hero.mara_chain"]').click();
       run = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), RUN_KEY);
-      assert.strictEqual(run.gold, 490);
+      assert.strictEqual(run.gold, 494,
+        'Healing a wounded pawn must charge 6 Gold at the current Kingdom rate');
       assert.strictEqual(run.roster.find((character) => character.id === 'hero.mara_chain').status, 'healthy');
       await page.locator('[data-settlement-buy-supply]').click();
       run = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), RUN_KEY);
-      assert.strictEqual(run.supplies, 10);
+      assert.strictEqual(run.supplies, 30);
+      assert.strictEqual(run.currentSettlement.supplyStock, 14,
+        'Buying one Supply must decrement the 15-unit Settlement stock exactly once');
+      assert.strictEqual(run.gold, 482,
+        'Buying one Supply must charge the current Kingdom price of 12 Gold');
       const before = run.supplies;
       await page.locator('[data-settlement-continue]').click();
       await page.locator('[data-travel-choice-screen]:not([hidden])').waitFor();

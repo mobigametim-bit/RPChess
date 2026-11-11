@@ -1,0 +1,204 @@
+{
+  "format": "rpchess.kingdom.economy.v1",
+  "savedAt": "2026-11-09T23:41:05.145Z",
+  "economy": {
+    "schemaVersion": 1,
+    "starting": {
+      "gold": 80,
+      "supplies": 10,
+      "shards": 0,
+      "kingPower": 600
+    },
+    "travel": {
+      "foreignCellSupplies": 1,
+      "ownedCellSupplies": 0,
+      "starvationCharacterLoss": 1
+    },
+    "combat": {
+      "battleGoldBase": 36,
+      "battleGoldPerStar": 9,
+      "skirmishGoldBase": 12,
+      "skirmishGoldPerStar": 4,
+      "drawRewardPercent": 50,
+      "puzzleGoldBase": 9,
+      "puzzleGoldPerStar": 3,
+      "puzzleError1Percent": 70,
+      "puzzleError2Percent": 40,
+      "puzzleError3Percent": 0,
+      "caravanRewardGoldBase": 40,
+      "caravanRewardGoldPerStar": 9,
+      "caravanRewardSuppliesBase": 4,
+      "caravanRewardSuppliesPer3Stars": 2,
+      "caravanRewardArtifactBase": 1,
+      "caravanRewardArtifactPer5Stars": 1
+    },
+    "settlementServices": {
+      "supplyUnitGold": 12,
+      "supplyStock": 15,
+      "artifactGoldPerCharge": {
+        "tactics.fork_master": 15,
+        "threat.defense": 18,
+        "threat.attack": 18,
+        "threat.great": 30,
+        "vision.piercing": 15
+      },
+      "healing": {
+        "pawn": 6,
+        "knight": 18,
+        "bishop": 18,
+        "rook": 30,
+        "queen": 54
+      },
+      "namedHeroPrices": {
+        "hero.aldric_wall": 134,
+        "hero.mara_chain": 50,
+        "hero.brother_orell": 88,
+        "hero.vael_hammer": 88,
+        "hero.lady_sorn": 202,
+        "hero.seraph_lyra": 88,
+        "hero.ivar_lens": 134,
+        "hero.nemea_quill": 50,
+        "hero.orion_step": 88,
+        "hero.abbess_celene": 202,
+        "hero.deacon_mirel": 88,
+        "hero.cassian_coin": 134,
+        "hero.viola_mask": 202,
+        "hero.renzo_bridge": 50,
+        "hero.tessa_gull": 88,
+        "hero.old_marin": 88,
+        "hero.elio_silk": 50,
+        "hero.briar_sister": 88,
+        "hero.roan_stag": 88,
+        "hero.maeve_root": 134,
+        "hero.puck_ember": 50,
+        "hero.ysra_moss": 202,
+        "hero.kael_cinder": 50,
+        "hero.velka_urn": 88,
+        "hero.rath_banner": 134,
+        "hero.suri_ash": 88,
+        "hero.empress_nahla": 202,
+        "hero.daro_last": 50,
+        "hero.temur_wind": 88,
+        "hero.altana_bow": 88,
+        "hero.batu_cliff": 134,
+        "hero.saran_dawn": 50,
+        "hero.khulan_star": 202
+      }
+    },
+    "castle": {
+      "recruitGold": {
+        "pawn": 1,
+        "knight": 3,
+        "bishop": 3,
+        "rook": 5,
+        "queen": 9
+      }
+    },
+    "mercenaries": {
+      "goldCost": {
+        "pawn": 2,
+        "knight": 6,
+        "bishop": 6,
+        "rook": 10,
+        "queen": 18,
+        "king": 0
+      },
+      "reserveReplacementGold": {
+        "pawn": 2,
+        "knight": 6,
+        "bishop": 6,
+        "rook": 10,
+        "queen": 18
+      },
+      "supplyGoldValue": 20
+    },
+    "building": {
+      "outpostShards": 30,
+      "outpostGold": 0,
+      "settlementOwnedGold": 80,
+      "settlementOwnedShards": 15,
+      "settlementForeignGold": 160,
+      "settlementForeignShards": 30
+    },
+    "production": {
+      "weekDays": 7,
+      "settlementGold": 20,
+      "caravanGold": 12,
+      "caravanSupplies": 5,
+      "eventGold": 10,
+      "eventSupplies": 4,
+      "puzzleShards": 5,
+      "skirmishRecruits": 1,
+      "battleRespawnWeeks": 1
+    },
+    "arena": {
+      "firstWinShardsBase": 30,
+      "firstWinShardsPer7": 5,
+      "repeatWinShardsBase": 15,
+      "repeatWinShardsPer7": 2,
+      "rewardedAdMultiplier": 2,
+      "squadShards": {
+        "elves": 120,
+        "orcs": 160,
+        "undead": 200,
+        "dark_elves": 240,
+        "dwarves": 280,
+        "demons": 320,
+        "angels": 360,
+        "dragonborn": 400,
+        "beastfolk": 440,
+        "constructs": 480,
+        "animals": 520,
+        "fae": 560,
+        "goblins": 600
+      },
+      "artifactShards": {
+        "threat.defense": 8,
+        "threat.attack": 8,
+        "threat.great": 14,
+        "vision.piercing": 7,
+        "tactics.fork_master": 7
+      }
+    },
+    "recruits": {
+      "levelWeights": {
+        "I": {
+          "pawn": 100,
+          "knight": 0,
+          "bishop": 0,
+          "rook": 0,
+          "queen": 0
+        },
+        "II": {
+          "pawn": 50,
+          "knight": 50,
+          "bishop": 0,
+          "rook": 0,
+          "queen": 0
+        },
+        "III": {
+          "pawn": 40,
+          "knight": 30,
+          "bishop": 30,
+          "rook": 0,
+          "queen": 0
+        },
+        "IV": {
+          "pawn": 30,
+          "knight": 25,
+          "bishop": 25,
+          "rook": 20,
+          "queen": 0
+        },
+        "V": {
+          "pawn": 30,
+          "knight": 20,
+          "bishop": 20,
+          "rook": 20,
+          "queen": 10
+        }
+      }
+    }
+  },
+  "note": "Экспорт из Atlas Lab: требуется утверждение и перенос разработчиком; текущий забег не затронут"
+}

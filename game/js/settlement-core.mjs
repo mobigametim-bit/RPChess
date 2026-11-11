@@ -1,26 +1,13 @@
+import {DEFAULT_KINGDOM_ECONOMY as K} from './kingdom-economy-config.mjs';
 import { PIECE_VALUES } from './roster-data.mjs';
 import { seededRandom } from './travel-choice-core.mjs';
 import { applyArtifactPurchase, deterministicArtifactOffer, isArtifactOffer } from './artifact-core.mjs';
 
 const SETTLEMENT_OFFER_COUNT = 3;
-const SETTLEMENT_SUPPLY_PRICE = 12;
-const SETTLEMENT_SUPPLY_STOCK = 4;
-
-const HEAL_COSTS = Object.freeze({
-  pawn: 10,
-  knight: 18,
-  bishop: 18,
-  rook: 26,
-  queen: 42
-});
-
-const RECRUIT_COSTS = Object.freeze({
-  pawn: 50,
-  knight: 88,
-  bishop: 88,
-  rook: 134,
-  queen: 202
-});
+const SETTLEMENT_SUPPLY_PRICE=K.settlementServices.supplyUnitGold;
+const SETTLEMENT_SUPPLY_STOCK=K.settlementServices.supplyStock;
+const HEAL_COSTS=Object.freeze({...K.settlementServices.healing});
+const RECRUIT_COSTS=Object.freeze({pawn:50,knight:88,bishop:88,rook:134,queen:202});
 
 const ORIGINS = Object.freeze({
   iron_marches: 'Железные Марши',
@@ -30,6 +17,14 @@ const ORIGINS = Object.freeze({
   ashen_dominion: 'Пепельный Доминион',
   sky_khanate: 'Небесный Каганат'
 });
+
+// Named recruits receive a stable race; faction defaults are conservative and
+// only explicit character motifs depart from their faction's predominant race.
+const FACTION_RACE_TAGS=Object.freeze({
+ iron_marches:'humans',luminous_synod:'angels',free_cities:'humans',
+ thorn_covenant:'elves',ashen_dominion:'undead',sky_khanate:'humans'
+});
+const HERO_RACE_OVERRIDES=Object.freeze({roan_stag:'beastfolk',puck_ember:'fae'});
 
 const RECRUIT_ROWS = Object.freeze([
   ['aldric_wall', 'Альдрик Стена', 'iron_marches', 'rook', 'Ветеран пограничных гарнизонов, привыкший держать линию до последнего.'],
@@ -72,6 +67,7 @@ const RECRUIT_LIBRARY = Object.freeze(RECRUIT_ROWS.map(([slug, name, factionId, 
   slug,
   name,
   pieceType,
+  raceTag:HERO_RACE_OVERRIDES[slug]||FACTION_RACE_TAGS[factionId],
   origin: ORIGINS[factionId],
   portrait: `assets/heroes/${slug}/${pieceType==='pawn'||pieceType==='bishop'?'portrait_named.webp':'portrait.png'}`,
   pieceArt: `assets/heroes/${slug}/${pieceType==='bishop'?'pieces/white/bishop.webp':'piece_badge.png'}`,
@@ -136,7 +132,7 @@ function healCost(character) {
 }
 
 function recruitCost(candidate) {
-  return RECRUIT_COSTS[candidate?.pieceType] ?? null;
+  return K.settlementServices.namedHeroPrices[candidate?.id] ?? RECRUIT_COSTS[candidate?.pieceType] ?? null;
 }
 
 function applyHealing(run, characterId) {

@@ -112,17 +112,21 @@ function show(open){
 }
 function ensure(){
  if(root)return;
- const entry=document.createElement('button');
- entry.type='button';entry.className='reboot-button reboot-button--primary';
- entry.dataset.mentorOpen='';entry.textContent=t('title');
- entry.addEventListener('click',enter);
  const actions=document.querySelector('.reboot-menu-actions');
- actions?.insertBefore(entry,actions.querySelector('.reboot-menu-secondary'));
+ // Reuse the author's six-icon dock instead of inserting a seventh text button.
+ let entry=actions?.querySelector('[data-mentor-open]');
+ if(!entry){
+  entry=document.createElement('button');
+  entry.type='button';entry.className='reboot-button reboot-button--primary';
+  entry.dataset.mentorOpen='';entry.textContent=t('title');
+  actions?.insertBefore(entry,actions.querySelector('.reboot-menu-secondary'));
+ }
+ entry.addEventListener('click',enter);
  root=document.createElement('main');root.className='mentor-training';root.dataset.mentorScreen='';root.hidden=true;
  (app||document.body).append(root);
  motion=createMentorMotion(root);
  root.addEventListener('click',onClick);
- subscribe(()=>{speech.stop();entry.textContent=t('title');if(!root.hidden)render();});
+ subscribe(()=>{speech.stop();if(!entry.classList.contains('mm-menu-icon'))entry.textContent=t('title');if(!root.hidden)render();});
  addEventListener('beforeunload',()=>{speech.stop();ai?.destroy();review?.close();});
  document.addEventListener('visibilitychange',()=>{if(document.hidden)speech.stop();});
 }

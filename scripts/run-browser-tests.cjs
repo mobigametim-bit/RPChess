@@ -40,6 +40,7 @@ const DEFAULT_TESTS=[
   'combat-aura-move-sync-browser.cjs',
   'battle-animation-art-browser.cjs',
   'travel-choice-browser.cjs',
+  'kingdom-map-browser.cjs',
   'resources-browser.cjs',
   'settlement-browser.cjs',
   'starvation-browser.cjs',

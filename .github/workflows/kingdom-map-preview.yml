@@ -1,0 +1,174 @@
+name: Kingdom infinite map feature preview
+on:
+  push:
+    branches: [feature/infinite-kingdom-map-auto-encounters-20261108]
+    paths:
+      - '.github/workflows/kingdom-map-preview.yml'
+      - 'kingdom-map-preview/**'
+      - 'game/**'
+      - 'scripts/**'
+      - 'tests/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kingdom-map-20261108-preview
+  cancel-in-progress: true
+
+jobs:
+  gate-and-preview:
+    if: github.repository == 'mobigametim-bit/RPChess' && github.ref == 'refs/heads/feature/infinite-kingdom-map-auto-encounters-20261108'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm/rpchess-runtime-assets-v1
+          key: rpchess-runtime-assets-v1-${{ runner.os }}-${{ hashFiles('game/assets/**/*.png', 'game/generated_assets/*.png', 'scripts/*asset*.cjs', 'scripts/runtime-assets-build.cjs') }}
+          restore-keys: |
+            rpchess-runtime-assets-v1-${{ runner.os }}-
+      - name: Canonical gate and static build
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund
+          # GitHub Releases sometimes returns 504 and public CDNs can rate-limit.
+          # Fetch the same stockfish@18.0.0 package through npm registry,
+          # and retain the canonical SHA256/GPL verification inside build.cjs.
+          npm pack stockfish@18.0.0 --silent --pack-destination /tmp
+          mkdir -p /tmp/rpchess-stockfish-package /tmp/rpchess-stockfish-verified
+          tar -xzf /tmp/stockfish-18.0.0.tgz -C /tmp/rpchess-stockfish-package
+          find /tmp/rpchess-stockfish-package/package -maxdepth 4 -type f | head -n 60
+          engine_js=$(find /tmp/rpchess-stockfish-package/package -type f -name 'stockfish-18-lite-single.js' | head -n 1)
+          engine_wasm=$(find /tmp/rpchess-stockfish-package/package -type f -name 'stockfish-18-lite-single.wasm' | head -n 1)
+          test -n "$engine_js" && test -n "$engine_wasm"
+          cp "$engine_js" /tmp/rpchess-stockfish-verified/
+          cp "$engine_wasm" /tmp/rpchess-stockfish-verified/
+          license=$(find /tmp/rpchess-stockfish-package/package -iname 'Copying.txt' -o -iname 'COPYING.txt' | head -n 1)
+          test -n "$license"
+          cp "$license" /tmp/rpchess-stockfish-verified/COPYING.txt
+          RPCHESS_INCLUDE_ATLAS_LAB=1 RPCHESS_STOCKFISH_ASSET_DIR=/tmp/rpchess-stockfish-verified npm run gate:local
+      - name: Save distribution size report
+        uses: actions/upload-artifact@v4
+        with:
+          name: kingdom-build-size-report
+          path: test-results/build-size-report.json
+          retention-days: 14
+          if-no-files-found: error
+      - name: Kingdom and legacy Travel Chromium tests
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
+          npx playwright install chromium
+          RPCHESS_JOURNEY_PICKER_ONLY=1 RPCHESS_BROWSER_TEST=reboot-foundation-browser.cjs,kingdom-map-browser.cjs,travel-choice-browser.cjs,puzzles-browser.cjs npm run test:browser
+      - name: Benchmark lossless parchment raster prototypes
+        run: node scripts/benchmark-parchment-raster.cjs
+      - name: Save optional raster prototypes and size comparison
+        uses: actions/upload-artifact@v4
+        with:
+          name: parchment-raster-benchmark
+          path: test-results/parchment-raster-benchmark/
+          retention-days: 14
+          if-no-files-found: error
+      - name: Save map screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kingdom-map-screenshots
+          path: test-results/kingdom-map
+          retention-days: 7
+          if-no-files-found: warn
+      # Temporary QA artifact: combine the tested game with the 112 supplied
+      # vector sprites outside GitHub to review their appearance before commit.
+      - name: Export playable parchment QA build
+        uses: actions/upload-artifact@v4
+        with:
+          name: kingdom-parchment-dist
+          path: dist/
+          retention-days: 3
+          compression-level: 1
+          if-no-files-found: error
+      - name: Deploy isolated kingdom map
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          grep -Fx 'name = "rpchess-kingdom-map-preview"' kingdom-map-preview/wrangler.toml
+          npx wrangler deploy --config kingdom-map-preview/wrangler.toml
+      - name: Verify published map files
+        run: |
+          node <<'NODE'
+          const assert=require('node:assert/strict');
+          const fs=require('node:fs');
+          (async()=>{
+           const {GROUPS}=await import('./game/js/kingdom-parchment-core.mjs');
+           const parchmentPaths=Object.entries(GROUPS).flatMap(([group,names])=>
+             names.map(name=>group+'/'+name+'.svg'));
+           assert.equal(parchmentPaths.length,80,'five core groups remain after retiring roads and rivers');
+           const root='dist/assets/kingdom-parchment';
+           const manifest=JSON.parse(fs.readFileSync(root+'/extra-manifest.json','utf8'));
+           const allPaths=Object.entries(manifest.groups).flatMap(([group,names])=>
+             names.map(name=>group+'/'+name));
+           for(const removed of ['road_segments','river_segments','territory_border_accents_optional'])
+             assert(!fs.existsSync(root+'/'+removed),'retired visual assets must not be shipped: '+removed);
+           assert.equal(allPaths.length,112,'five core sets plus correct marsh and landmark SVGs');
+           assert.equal(Object.keys(manifest.groups).length,7,'there should be exactly seven sprite groups');
+           assert(manifest.groups.marsh_wasteland_optional.includes('01_pale_marsh.svg'),
+             'correct marsh artwork must be shipped');
+           assert(!manifest.groups.marsh_wasteland_optional.includes('01_straight_line.svg'),
+             'border-line artwork cannot masquerade as a marsh');
+           for(const entry of allPaths){
+             const p=root+'/'+entry;
+             assert(fs.statSync(p).size>100,'missing built parchment art: '+p);
+           }
+           const base='https://rpchess-kingdom-map-preview.mobigametim.workers.dev';
+           for(let i=0;i<12;i++){
+            try{
+             const paths=['/','/js/kingdom-map-app.mjs','/js/kingdom-map-core.mjs','/css/kingdom-map.css','/atlas-lab.html'];
+             const res=await Promise.all(paths.map(p=>fetch(base+p,{cache:'no-store'})));
+             res.forEach(r=>assert.equal(r.status,200,r.url));
+             const html=await Promise.all(res.map(r=>r.text()));
+             assert(html[1].includes('schedulePending')&&html[1].includes('DISCOVERY_WAIT_MS=4050'));
+             assert(html[2].includes('randomEncounter')&&html[2].includes('annexCell'));
+             assert(html[3].includes('km-king-step'));
+             assert(html[4].includes('simPreview')&&html[4].includes('simSpacingRules')&&
+               html[4].includes('RPChessAtlasSimulation'),
+               'published HTML must be the full author v6 editor and the extended simulator');
+             for(const name of ['/assets/kingdom-map/humans/humans_castle_128.svg',
+                '/assets/kingdom-map/orcs/orcs_battle_128.svg',
+                '/assets/kingdom-map/puzzle/puzzle_128.svg',
+                ...Object.entries(manifest.groups).map(([group,names])=>
+                  '/assets/kingdom-parchment/'+group+'/'+names[0])]){
+                const res=await fetch(base+name,{cache:'no-store'});
+                assert.equal(res.status,200,name);
+                if(name.endsWith('.png')){
+                  assert((res.headers.get('content-type')||'').includes('image/png'),name+' PNG MIME');
+                  const bytes=Buffer.from(await res.arrayBuffer());
+                  assert(bytes.subarray(0,8).equals(Buffer.from('89504e470d0a1a0a','hex')),name+' PNG signature');
+                  assert.equal(bytes.readUInt32BE(16),128,name+' PNG width');
+                  assert.equal(bytes.readUInt32BE(20),128,name+' PNG height');
+                }else{
+                  assert((res.headers.get('content-type')||'').includes('image/svg+xml'),name+' SVG MIME');
+                  const markup=await res.text();
+                  assert(markup.startsWith('<svg ')&&markup.trimEnd().endsWith('</svg>'),name+' SVG markup');
+                  assert(markup.includes('viewBox="0 0 128 128"'),name+' vector dimensions');
+                }
+             }
+             console.log('Kingdom map static preview: PASS ('+allPaths.length+' SVG bundled; '+Object.keys(manifest.groups).length+' groups served)');return;
+            }catch(e){
+             console.log('Preview propagation '+(i+1)+'/12: '+e.message);
+             if(i===11)throw e;
+             await new Promise(r=>setTimeout(r,3000));
+            }
+           }
+          })().catch(e=>{console.error(e);process.exitCode=1});
+          NODE

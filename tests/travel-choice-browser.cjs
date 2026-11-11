@@ -232,17 +232,23 @@ async function assertDecoratedBackdrops(page, label) {
     assert.strictEqual(await page.locator('[data-travel-choice]').count(), 3);
     await assertDecoratedBackdrops(page, 'initial roster-to-Travel open');
     assert.strictEqual((await page.locator('[data-travel-week]').innerText()).trim(), 'Неделя 1');
-    const font = await page.locator('[data-travel-week]').evaluate((element) => getComputedStyle(element).fontFamily);
-    assert(font.includes('BrahmsGotischCyr'));
+    // Legacy Travel still uses the global Goznak UI font. Brahms was
+    // superseded by PR #179; do not wait forever for a font no longer used.
+    await page.waitForFunction(() => {
+      const heading=document.querySelector('[data-travel-week]');
+      return heading && getComputedStyle(heading).fontFamily.includes('GoznakUI');
+    }, null, { timeout: 12000 });
+    const font = await page.locator('[data-travel-week]').evaluate(element=>getComputedStyle(element).fontFamily);
+    assert(font.includes('GoznakUI'), `Travel heading must honor the released Goznak UI font, got ${font}`);
     const copy = await travel.innerText();
     for (const removed of ['Исход неизвестен','3–5 решений','Выбрать путь','Каждая карточка выбирается независимо','Куда двигаться дальше?','Шаг путешествия']) assert(!copy.includes(removed), `removed Travel copy leaked: ${removed}`);
     const types = await page.locator('[data-travel-choice]').evaluateAll((nodes) => nodes.map((node) => node.dataset.travelType));
     assert.deepStrictEqual(types, ['puzzle','puzzle','puzzle'], 'known six-type seed proves duplicate Puzzle cards are allowed');
     assert.strictEqual(await page.locator('[data-travel-type="puzzle"]').count(), 3);
-    assert((await travel.innerText()).includes('Тренировка'), 'Puzzle route must expose the semantic Training label in DOM text');
-    assert((await travel.innerText()).includes('СЛОЖНОСТЬ'));
+    assert((await travel.innerText()).includes('Задача'), 'Puzzle route must retain the distinct chess Puzzle label, not Mentor Training');
+    assert.strictEqual(await page.locator('[data-travel-type="puzzle"] .travel-choice-card__threat > strong').count(), 3, 'all Puzzle route cards must show their difficulty stars');
     assert.strictEqual((await page.locator('[data-travel-inline-gold]').innerText()).trim(), '80');
-    assert.strictEqual((await page.locator('[data-travel-inline-supplies]').innerText()).trim(), '10');
+    assert.strictEqual((await page.locator('[data-travel-inline-supplies]').innerText()).trim(), '30');
     await assertResourceAlignment(page);
     await assertRouteLoopStability(page, travel);
 
@@ -254,7 +260,7 @@ async function assertDecoratedBackdrops(page, label) {
     await assertDecoratedBackdrops(page, 'roster re-entry');
     assert.deepStrictEqual(await page.evaluate((key) => JSON.parse(localStorage.getItem(key)).currentTravelChoices, RUN_KEY), first);
     await page.reload({ waitUntil:'networkidle' });
-    await page.locator('[data-continue-run]').click();
+    await page.locator('[data-continue-run]').click();await page.locator('[data-journey-choice-modal]:not([hidden]) [data-journey-continue]').click();
     await page.locator('[data-roster-screen]:not([hidden])').waitFor();
     await page.locator('[data-roster-travel]').click();
     await travel.waitFor();
@@ -271,7 +277,7 @@ async function assertDecoratedBackdrops(page, label) {
     assert.strictEqual(committed.journeyStep, 1);
     assert.strictEqual(committed.activeTravelChoice.type, 'puzzle');
     assert.strictEqual(committed.activeTravelChoice.stars, first[0].stars);
-    assert.strictEqual(committed.supplies, 9);
+    assert.strictEqual(committed.supplies, 29);
     assert(committed.currentPuzzle?.puzzleId);
 
     const mobile = await browser.newPage({ viewport:{ width:844, height:390 } });

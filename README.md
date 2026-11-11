@@ -1,6 +1,6 @@
 # RPChess Reboot
 
-Fantasy chess roguelite built around **classical 8×8 chess**, a persistent roster of personalized living chess pieces, and an endless sequence of three-way travel choices.
+Fantasy chess roguelite built around **classical 8×8 chess**, persistent named heroes and a Journey loop. The in-progress **Infinite Kingdom** replaces the three-route map with an explorable world in Draft PR #190; the released production game remains on `main`.
 
 ## Current development mode
 
@@ -16,7 +16,10 @@ Active development happens through feature branches and human playtest gates bef
 The source-of-truth documentation lives under [`docs/`](docs/). Start with the current operational snapshot:
 
 - [`CURRENT_STATE.md`](docs/CURRENT_STATE.md) — current accepted production/runtime/deployment state;
-- [`ARENA_PLAN.md`](docs/features/ARENA_PLAN.md) — 84-opponent Arena design and implementation plan (not implemented);
+- [`KINGDOM_EXPLORATION_ECONOMY_BIOME_DESIGN.md`](docs/KINGDOM_EXPLORATION_ECONOMY_BIOME_DESIGN.md) — Infinite Kingdom design, feature-stage progress and acceptance;
+- [`KINGDOM_ECONOMY_ARMY_SPEC.md`](docs/KINGDOM_ECONOMY_ARMY_SPEC.md) — economy, permanent Army, recruitment and settlement balance;
+- [`KINGDOM_ROADS_AND_TRAVELERS_PLAN.md`](docs/features/KINGDOM_ROADS_AND_TRAVELERS_PLAN.md) — updated roads and animated travelers (planned, not yet implemented);
+- [`ARENA_PLAN.md`](docs/features/ARENA_PLAN.md) — historical Arena design and milestone plan;
 - `00_PRODUCT_VISION.md`
 - `01_CORE_GAME_LOOP.md`
 - `02_CHESS_RULES.md`
@@ -40,11 +43,11 @@ The source-of-truth documentation lives under [`docs/`](docs/). Start with the c
 
 The numbered documents and changelog intentionally keep historical acceptance receipts. When an old receipt describes a superseded hosting/UI/asset state, `CURRENT_STATE.md` is the operational reference for current production.
 
-GitHub docs and Notion must describe the same accepted version of the game.
+**Documentation policy (10.11.2026): GitHub is the sole required project-documentation source of truth.** Update the applicable files under `docs/` and reference the PR/commit where needed. Notion is optional, archival and **never a release/merge requirement**; automatic GitHub–Notion synchronization is not required.
 
 ## Development workflow
 
-`SPEC → IMPLEMENTED → AUTOTESTED → HUMAN ACCEPTED (when required) → DOCS SYNCED → MERGED → PRODUCTION VERIFIED`
+`SPEC → IMPLEMENTED → AUTOTESTED → HUMAN ACCEPTED (when required) → GITHUB DOCS UPDATED → MERGED → PRODUCTION VERIFIED`
 
 No player-facing feature is treated as accepted merely because CI is green.
 

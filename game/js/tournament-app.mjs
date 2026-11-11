@@ -691,7 +691,16 @@ root.addEventListener('click',event=>{
 });
 addEventListener('pagehide',()=>{if(shadowGame)saveShadowGame(platform.storage.local,shadowGame);});
 addEventListener('rpchess:arena-updated',()=>{if(page==='setup')render();});
-subscribe(()=>{if(button)button.textContent=t('title');render();});
+subscribe(()=>{
+ if(button){
+  const name=t('title');
+  if(button.classList.contains('mm-menu-icon')){
+   button.setAttribute('aria-label',name);
+   button.title=name;
+  }else button.textContent=name;
+ }
+ render();
+});
 const incoming=new URLSearchParams(location.search).get('tournament_room');
 if(incoming&&/^[a-zA-Z0-9-]{4,12}$/.test(incoming)){
  addEventListener('load',()=>{roomCode=incoming.toUpperCase();open();page='join';render();},{once:true});

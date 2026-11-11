@@ -1,3 +1,4 @@
+import {DEFAULT_KINGDOM_ECONOMY as K} from '../kingdom-economy-config.mjs';
 import { hashString } from '../race-assets.mjs';
 
 const PUZZLE_TYPES = Object.freeze(['mate1', 'mate2', 'mate3', 'material', 'mate4', 'mate5Plus', 'bestLine']);
@@ -33,11 +34,11 @@ function puzzleStarsForWeek(week) {
 }
 
 function puzzleDifficulty(stars) { return DIFFICULTY_TABLE[clampStars(stars)]; }
-function puzzleBaseGold(stars) { return 9 + 3 * clampStars(stars); }
+function puzzleBaseGold(stars) { return K.combat.puzzleGoldBase + K.combat.puzzleGoldPerStar * clampStars(stars); }
 
 function puzzleGoldReward(stars, errors = 0) {
   const resolvedErrors = Math.max(0, Math.min(3, Number.isFinite(Number(errors)) ? Math.floor(Number(errors)) : 0));
-  return Math.round(puzzleBaseGold(stars) * ERROR_MULTIPLIERS[resolvedErrors]);
+  return Math.round(puzzleBaseGold(stars) * [100,K.combat.puzzleError1Percent,K.combat.puzzleError2Percent,K.combat.puzzleError3Percent][resolvedErrors]/100);
 }
 
 function objectiveLabel(puzzle) {

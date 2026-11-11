@@ -1,3 +1,4 @@
+import {consumeCapturedRecruits} from './kingdom-army-core.mjs';
 import { MAX_ENCOUNTER_STARS, clampStars, difficultyForStars } from './encounter-difficulty.mjs';
 import { combatTheme, oppositeColor } from './race-assets.mjs';
 
@@ -70,7 +71,7 @@ function createBattlePlan({roster,selectedIds,encounter}={}){
   return{encounter:resolved,playerColor,enemyColor,selectedIds:validation.members.map((m)=>m.id),participants:validation.members.map((m)=>m.id),playerFormation:formationFor(playerColor,roster,selectedIds,playerColor),enemyFormation:formationFor(enemyColor,[],[],playerColor),fullArmyPieces:BATTLE_PIECE_COUNT,fullArmyPoints:BATTLE_ARMY_POINTS,fen:STANDARD_FEN};
 }
 
-function applyBattleOutcome(run,{capturedIds=[],status=null,playerColor='w',participantIds=[],freeMercenaries=false}={}){
+function applyBattleOutcome(run,{capturedIds=[],status=null,playerColor='w',participantIds=[],freeMercenaries=false,receiptId=null}={}){
   const captured=new Set(capturedIds||[]),participants=[...new Set(participantIds||[])];
   const participantSet=new Set(participants),soloKing=!freeMercenaries&&participants.length===1&&(run?.roster||[]).some((c)=>c.isRunKing&&participantSet.has(c.id));
   const roster=(run?.roster||[]).map((c)=>{
@@ -81,7 +82,9 @@ function applyBattleOutcome(run,{capturedIds=[],status=null,playerColor='w',part
   const woundedIds=roster.filter((c)=>captured.has(c.id)&&!c.isRunKing&&c.status==='wounded').map((c)=>c.id);
   const lastBattle={result:status?.type||'unknown',winner:status?.winner||null,participants,woundedIds,kingDied:false};
   if(soloKing)lastBattle.kingDied=true;
-  return{...run,roster,ended:Boolean(run?.ended||soloKing),endReason:run?.endReason||(soloKing?'king_solo_battle':null),lastBattle};
+  const armyLoss=consumeCapturedRecruits(run,{capturedIds,receiptId:receiptId||'battle:'+run?.id+':'+(run?.battleCount||0)});
+  const armyState=armyLoss.ok?armyLoss.run:run;
+  return{...armyState,roster,ended:Boolean(run?.ended||soloKing),endReason:run?.endReason||(soloKing?'king_solo_battle':null),lastBattle};
 }
 
 export {BATTLE_PIECE_COUNT,BATTLE_ARMY_POINTS,STANDARD_FEN,SLOT_CAPACITY,STANDARD_SLOTS,BATTLE_TIERS,combatEligible,createBattleEncounter,selectedTypeCounts,validateBattleSelection,defaultBattleSelection,automaticBattleSelection,formationFor,createBattlePlan,applyBattleOutcome};

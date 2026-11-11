@@ -40,6 +40,15 @@ function hide(token) {
   }, document.documentElement.dataset.reducedMotion === '1' ? 0 : 270);
 }
 function frame() { return new Promise((resolve) => requestAnimationFrame(resolve)); }
+function menuActive(){const root=document.querySelector('[data-reboot-foundation]');return Boolean(root&&!root.hidden);}
+function menuNeedsCanvas(){return menuActive()&&globalThis.RPChessMenuPreview?.needsTextureWait?.()===true;}
+async function awaitMenuCanvas(){
+ if(!menuActive())return;
+ try {
+  await (globalThis.RPChessMainMenuReady||Promise.resolve());
+  await globalThis.RPChessMenuPreview?.waitForTextures?.();
+ }catch(error){console.warn('[RPChess] Menu texture readiness failed',error);}
+}
 function visible(element) {
   if (!element?.getBoundingClientRect) return false;
   const box = element.getBoundingClientRect();
@@ -125,6 +134,8 @@ function preload(src) {
   return promise;
 }
 async function prepareScene(token) {
+  if(menuActive())await awaitMenuCanvas();
+  if(token!==generation)return;
   for (let pass = 0; pass < 4 && token === generation; pass += 1) {
     await frame();
     if (token !== generation) return;
@@ -157,7 +168,7 @@ function onSceneMutation(records) {
     if (!bootFinished || !key) return;
     const token = ++generation;
     // Do not flash the mask on cached, already complete transitions.
-    if (!pendingStyles().length && !mediaSources().length) {
+    if (!pendingStyles().length && !mediaSources().length && !menuNeedsCanvas()) {
       // A cached destination can supersede a still-loading screen. Dismiss
       // the old mask rather than invalidating its token and leaving it stuck.
       hide(token);
@@ -172,7 +183,7 @@ function onSceneMutation(records) {
 // before the next paint. Do not show a mask when all visible art is cached.
 function requestVisibleAssets(){
   if(!overlay||!bootFinished)return false;
-  if(!pendingStyles().length&&!mediaSources().length)return false;
+  if(!pendingStyles().length&&!mediaSources().length&&!menuNeedsCanvas())return false;
   const token=++generation;
   show();
   void prepareScene(token);

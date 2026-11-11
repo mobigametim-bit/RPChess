@@ -2,7 +2,7 @@ import { isCaravanState } from './caravan-core.mjs';
 import { createStarterRoster } from './roster-data.mjs';
 import { platform } from './platform.mjs';
 import { STARTING_GOLD, STARTING_SUPPLIES, hydrateResources } from './resources-core.mjs';
-import { isSettlementState } from './settlement-core.mjs';
+import { isSettlementState,recruitProfile } from './settlement-core.mjs';
 import { isPuzzleState } from './puzzles/puzzle-core.mjs';
 import { MAX_ENCOUNTER_STARS } from './encounter-difficulty.mjs';
 import { accrueRunStats, emptyRunStats, hydrateRunStats, isRunStats } from './endless-run-core.mjs';
@@ -10,6 +10,8 @@ import { normalizePlayerName, PLAYER_NAME_MAX_LENGTH } from './player-identity-c
 import { normalizeCommanderId,commanderById,commanderPieceArt } from './commander-portraits.mjs';
 import { isArtifactInventory, isCombatArtifactChoice, normalizeArtifacts } from './artifact-core.mjs';
 import { isCombatCheckpoint } from './combat-checkpoint.mjs';
+import { validateKingdomMap } from './kingdom-map-core.mjs';
+import { hydrateArmy, normalizeArmy } from './kingdom-army-core.mjs';
 
 const RUN_STORAGE_KEY = 'rpchess.reboot.v1.run';
 const RUN_SCHEMA_VERSION = 1;
@@ -49,7 +51,10 @@ function isValidRun(value) {
   if (value.currentPuzzle != null && !isPuzzleState(value.currentPuzzle)) return false;
   if (!isCaravanState(value.currentCaravan) || (value.caravanCount != null && (!Number.isInteger(value.caravanCount) || value.caravanCount < 0))) return false;
   if (!isCombatCheckpoint(value.currentCombat)) return false;
+  if (value.kingdomMap != null && !validateKingdomMap(value.kingdomMap)) return false;
   if (!isArtifactInventory(value.artifacts)) return false;
+  if (value.army != null && (!Array.isArray(value.army) || value.army.some(c => !c || !Number.isSafeInteger(c.count) || c.count < 1 || !c.pieceType || !c.raceTag))) return false;
+  for (const key of ['armyReceipts','armyCasualtyReceipts']) if (value[key] != null && (!Array.isArray(value[key]) || !value[key].every(x=>typeof x==='string'))) return false;
   if (!isCombatArtifactChoice(value.combatArtifactChoice)) return false;
   const ids = new Set(); let kingCount = 0;
   for (const character of value.roster) { if (!character || typeof character !== 'object' || !character.id || ids.has(character.id)) return false; ids.add(character.id); if (character.isRunKing) kingCount += 1; if (!['healthy','wounded','dead'].includes(character.status)) return false; }
@@ -66,22 +71,24 @@ function recoverCompletedCombatChoice(choice, skirmishCount, battleCount) {
 }
 function hydrateCurrentRosterCopy(run) {
   const currentTemplates=new Map(createStarterRoster().map(character=>[character.id,character])),resources=hydrateResources(run),existingSkirmishes=Number.isInteger(run.skirmishCount)?run.skirmishCount:0,existingBattles=Number.isInteger(run.battleCount)?run.battleCount:0,storedActiveChoice=isStoredTravelChoice(run.activeTravelChoice)?run.activeTravelChoice:null,recoveredActiveChoice=recoverCompletedCombatChoice(storedActiveChoice,existingSkirmishes,existingBattles);
-  return {...resources,playerName:normalizePlayerName(run?.playerName,'Воин'),commanderId:normalizeCommanderId(run?.commanderId),runStats:hydrateRunStats(run),resourceRewards:{skirmishCount:Number.isInteger(run.resourceRewards?.skirmishCount)?run.resourceRewards.skirmishCount:existingSkirmishes,battleCount:Number.isInteger(run.resourceRewards?.battleCount)?run.resourceRewards.battleCount:existingBattles},ended:Boolean(run.ended),skirmishCount:existingSkirmishes,battleCount:existingBattles,lastSkirmish:run.lastSkirmish||null,lastBattle:run.lastBattle||null,lastPuzzle:run.lastPuzzle||null,puzzleHistory:hydratePuzzleHistory(run),journeyStep:Number.isInteger(run.journeyStep)?run.journeyStep:0,currentTravelChoices:Array.isArray(run.currentTravelChoices)?run.currentTravelChoices:null,activeTravelChoice:recoveredActiveChoice,currentSettlement:isSettlementState(run.currentSettlement)?run.currentSettlement:null,currentPuzzle:isPuzzleState(run.currentPuzzle)?run.currentPuzzle:null,artifacts:normalizeArtifacts(run.artifacts),combatArtifactChoice:isCombatArtifactChoice(run.combatArtifactChoice)?run.combatArtifactChoice:null,currentCombat:isCombatCheckpoint(run.currentCombat)?run.currentCombat:null,roster:run.roster.map(character=>{const current=currentTemplates.get(character.id);return current?{...character,...current,...(character.isRunKing?{
+  return {...hydrateArmy(resources),playerName:normalizePlayerName(run?.playerName,'Воин'),commanderId:normalizeCommanderId(run?.commanderId),runStats:hydrateRunStats(run),resourceRewards:{skirmishCount:Number.isInteger(run.resourceRewards?.skirmishCount)?run.resourceRewards.skirmishCount:existingSkirmishes,battleCount:Number.isInteger(run.resourceRewards?.battleCount)?run.resourceRewards.battleCount:existingBattles},ended:Boolean(run.ended),skirmishCount:existingSkirmishes,battleCount:existingBattles,lastSkirmish:run.lastSkirmish||null,lastBattle:run.lastBattle||null,lastPuzzle:run.lastPuzzle||null,puzzleHistory:hydratePuzzleHistory(run),journeyStep:Number.isInteger(run.journeyStep)?run.journeyStep:0,currentTravelChoices:Array.isArray(run.currentTravelChoices)?run.currentTravelChoices:null,activeTravelChoice:recoveredActiveChoice,currentSettlement:isSettlementState(run.currentSettlement)?run.currentSettlement:null,currentPuzzle:isPuzzleState(run.currentPuzzle)?run.currentPuzzle:null,kingdomMap:validateKingdomMap(run.kingdomMap)?run.kingdomMap:null,artifacts:normalizeArtifacts(run.artifacts),combatArtifactChoice:isCombatArtifactChoice(run.combatArtifactChoice)?run.combatArtifactChoice:null,currentCombat:isCombatCheckpoint(run.currentCombat)?run.currentCombat:null,roster:run.roster.map(character=>{const current=currentTemplates.get(character.id);return current?{...character,...current,...(character.isRunKing?{
   name:commanderById(run?.commanderId).titleRu,
+  raceTag:commanderById(run?.commanderId).raceTag,
   portrait:commanderById(run?.commanderId).portrait,
   pieceArt:commanderPieceArt(run?.commanderId,'w'),
   commanderId:normalizeCommanderId(run?.commanderId),
   description:commanderById(run?.commanderId).descriptionRu
-}:{ }),status:character.status}:character;})};
+}:{ }),status:character.status}:(recruitProfile(character.id)?
+  {...character,raceTag:recruitProfile(character.id).raceTag}:character);})};
 }
 function createRun({ now = Date.now(), id = null, playerName = 'Воин', commanderId = 'oathkeeper' } = {}) {
-  const roster=createStarterRoster(); const commander=commanderById(commanderId); Object.assign(roster[0],{name:commander.titleRu,portrait:commander.portrait,pieceArt:commanderPieceArt(commander.id,'w'),commanderId:commander.id,description:commander.descriptionRu}); return {schemaVersion:RUN_SCHEMA_VERSION,id:id||runId(now),commanderId:commander.id,playerName:normalizePlayerName(playerName,'Воин'),createdAt:Number(now),updatedAt:Number(now),selectedCharacterId:roster[0].id,roster,gold:STARTING_GOLD,supplies:STARTING_SUPPLIES,runStats:emptyRunStats(),resourceRewards:{skirmishCount:0,battleCount:0},ended:false,endReason:null,skirmishCount:0,lastSkirmish:null,battleCount:0,lastBattle:null,caravanCount:0,currentCaravan:null,currentCombat:null,lastCaravan:null,lastPuzzle:null,puzzleHistory:[],journeyStep:0,currentTravelChoices:null,activeTravelChoice:null,currentSettlement:null,currentPuzzle:null,artifacts:{},combatArtifactChoice:null};
+  const roster=createStarterRoster(); const commander=commanderById(commanderId); Object.assign(roster[0],{raceTag:commander.raceTag,name:commander.titleRu,portrait:commander.portrait,pieceArt:commanderPieceArt(commander.id,'w'),commanderId:commander.id,description:commander.descriptionRu}); return {schemaVersion:RUN_SCHEMA_VERSION,id:id||runId(now),commanderId:commander.id,playerName:normalizePlayerName(playerName,'Воин'),createdAt:Number(now),updatedAt:Number(now),selectedCharacterId:roster[0].id,roster,army:[],armyReceipts:[],armyCasualtyReceipts:[],gold:STARTING_GOLD,supplies:STARTING_SUPPLIES,runStats:emptyRunStats(),resourceRewards:{skirmishCount:0,battleCount:0},ended:false,endReason:null,skirmishCount:0,lastSkirmish:null,battleCount:0,lastBattle:null,caravanCount:0,currentCaravan:null,currentCombat:null,lastCaravan:null,lastPuzzle:null,puzzleHistory:[],journeyStep:0,kingdomMap:null,currentTravelChoices:null,activeTravelChoice:null,currentSettlement:null,currentPuzzle:null,artifacts:{},combatArtifactChoice:null};
 }
 function readRun(storage = null) { const target=resolveStorage(storage); if(!target)return null; try{const parsed=JSON.parse(target.getItem(RUN_STORAGE_KEY)||'null');if(!parsed||typeof parsed!=='object')return null;if(parsed.schemaVersion!==RUN_SCHEMA_VERSION){target.removeItem(RUN_STORAGE_KEY);return null;}const hydrated=hydrateCurrentRosterCopy(parsed);return isValidRun(hydrated)?hydrated:null;}catch{return null;} }
 function previousStoredRun(target) { if(!target)return null;try{const parsed=JSON.parse(target.getItem(RUN_STORAGE_KEY)||'null');if(!parsed||typeof parsed!=='object'||parsed.schemaVersion!==RUN_SCHEMA_VERSION)return null;const hydrated=hydrateCurrentRosterCopy(parsed);return isValidRun(hydrated)?hydrated:null;}catch{return null;} }
 function writeRun(run, storage = null, now = Date.now()) {
   const target=resolveStorage(storage),previous=previousStoredRun(target);
-  const normalized={...hydrateResources(run),playerName:normalizePlayerName(run?.playerName,'Воин'),commanderId:normalizeCommanderId(run?.commanderId),runStats:hydrateRunStats(run),puzzleHistory:hydratePuzzleHistory(run),currentSettlement:isSettlementState(run?.currentSettlement)?run.currentSettlement:null,currentPuzzle:isPuzzleState(run?.currentPuzzle)?run.currentPuzzle:null,currentCombat:isCombatCheckpoint(run?.currentCombat)?run.currentCombat:null,artifacts:normalizeArtifacts(run?.artifacts),combatArtifactChoice:isCombatArtifactChoice(run?.combatArtifactChoice)?run.combatArtifactChoice:null};
+  const normalized={...hydrateArmy(hydrateResources(run)),playerName:normalizePlayerName(run?.playerName,'Воин'),commanderId:normalizeCommanderId(run?.commanderId),runStats:hydrateRunStats(run),puzzleHistory:hydratePuzzleHistory(run),kingdomMap:validateKingdomMap(run?.kingdomMap)?run.kingdomMap:null,currentSettlement:isSettlementState(run?.currentSettlement)?run.currentSettlement:null,currentPuzzle:isPuzzleState(run?.currentPuzzle)?run.currentPuzzle:null,currentCombat:isCombatCheckpoint(run?.currentCombat)?run.currentCombat:null,artifacts:normalizeArtifacts(run?.artifacts),combatArtifactChoice:isCombatArtifactChoice(run?.combatArtifactChoice)?run.combatArtifactChoice:null};
   const next={...accrueRunStats(normalized,previous),updatedAt:Number(now)};
   if(!isValidRun(next))throw new Error('Cannot persist invalid RPChess run state');
   if(target)target.setItem(RUN_STORAGE_KEY,JSON.stringify(next));

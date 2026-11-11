@@ -1,3 +1,4 @@
+import {DEFAULT_KINGDOM_ECONOMY as K} from './kingdom-economy-config.mjs';
 import { chess960BackRank, chess960Fen } from './chess960.mjs';
 import { createBattlePlan, automaticBattleSelection, applyBattleOutcome } from './battle-core.mjs';
 import { combatTheme, hashString } from './race-assets.mjs';
@@ -33,9 +34,9 @@ export function caravanRewardOffers(run, encounter) {
   const pick = list => list[Math.floor(random() * list.length)];
   const artifact = pick(ARTIFACTS);
   const pool = [
-    { kind:'gold', amount:40 + encounter.stars * 10 },
-    { kind:'supplies', amount:3 + Math.floor(encounter.stars / 3) },
-    { kind:'artifact', artifactId:artifact.id, amount:1 + Math.floor(encounter.stars / 5) }
+    { kind:'gold', amount:K.combat.caravanRewardGoldBase + encounter.stars * K.combat.caravanRewardGoldPerStar },
+    { kind:'supplies', amount:K.combat.caravanRewardSuppliesBase + Math.floor(encounter.stars / 3) * K.combat.caravanRewardSuppliesPer3Stars },
+    { kind:'artifact', artifactId:artifact.id, amount:K.combat.caravanRewardArtifactBase + Math.floor(encounter.stars / 5) * K.combat.caravanRewardArtifactPer5Stars }
   ];
   const wounded = run.roster.filter(c => !c.isRunKing && c.status === 'wounded');
   if (wounded.length) pool.push({ kind:'healing', heroId:pick(wounded).id });
@@ -47,9 +48,9 @@ export function caravanRewardOffers(run, encounter) {
 export function finishCaravan(run, { capturedIds, status, plan }) {
   const state = run.currentCaravan;
   if (!state || state.phase !== 'combat' || !status?.over || plan.encounter.id !== state.routeId) return run;
-  const outcome = applyBattleOutcome(run, { capturedIds, status, playerColor:plan.playerColor, participantIds:plan.participants, freeMercenaries:true });
+  const outcome = applyBattleOutcome(run, { capturedIds, status, playerColor:plan.playerColor, participantIds:plan.participants, freeMercenaries:true, receiptId:'caravan:'+run.id+':'+(run.caravanCount||0)+':'+state.routeId });
   const lastCaravan = { ...outcome.lastBattle, encounterId:state.routeId, encounterStars:state.encounter.stars, playerColor:plan.playerColor, goldReward:0 };
-  const next = { ...run, roster:outcome.roster, caravanCount:(run.caravanCount || 0) + 1, lastCaravan, combatArtifactChoice:null };
+  const next = { ...run, army:outcome.army, armyReceipts:outcome.armyReceipts, armyCasualtyReceipts:outcome.armyCasualtyReceipts, roster:outcome.roster, caravanCount:(run.caravanCount || 0) + 1, lastCaravan, combatArtifactChoice:null };
   const won = status?.type === 'checkmate' && status.winner === plan.playerColor;
   next.currentCaravan = { ...state, phase:won ? 'reward' : 'aftermath', status,
     offers:won ? caravanRewardOffers(next, state.encounter) : [] };

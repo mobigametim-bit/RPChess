@@ -1,4 +1,6 @@
-import { heroPortraitArt } from './race-assets.mjs';
+import { heroPortraitArt,boardRacePiecePath,RACE_LABELS } from './race-assets.mjs';
+import {PIECE_TYPES,PIECE_LABELS} from './kingdom-economy-config.mjs';
+import {normalizeArmy} from './kingdom-army-core.mjs';
 import { STATUS_LABELS, PIECE_GLYPHS } from './roster-data.mjs';
 import { createRun, readRun, writeRun } from './run-persistence.mjs';
 import { applyNewRunPowerCarryover } from './player-rating.mjs';
@@ -61,8 +63,10 @@ function updateContinueState() {
   activeRun = readRun();
   if (!continueButton) return;
   const enabled = Boolean(activeRun && !activeRun.ended);
-  continueButton.disabled = !enabled;
-  continueButton.setAttribute('aria-disabled', enabled ? 'false' : 'true');
+  // The Journey icon is always enabled: new run or resume from the same control.
+  continueButton.disabled = false;
+  continueButton.setAttribute('aria-disabled','false');
+  continueButton.dataset.journeyActive = enabled ? 'true' : 'false';
 }
 
 function updateJourneyLabel() {
@@ -133,10 +137,61 @@ function renderDetail() {
   rosterDetail.append(media, body);
 }
 
+let activeRosterTab='named';
+function armyEnglishType(type){return {pawn:'Pawn',knight:'Knight',bishop:'Bishop',rook:'Rook',queen:'Queen'}[type]||type;}
+function ensureRosterTabs(){
+  if(!rosterScreen)return;
+  let nav=rosterScreen.querySelector('[data-roster-army-tabs]');
+  if(!nav){
+    nav=document.createElement('div');nav.className='roster-army-tabs';nav.dataset.rosterArmyTabs='';
+    for(const key of ['named','army']){
+      const button=document.createElement('button');button.type='button';button.dataset.rosterArmTab=key;
+      button.addEventListener('click',()=>{activeRosterTab=key;renderRoster();});
+      nav.append(button);
+    }
+    (rosterScreen.querySelector('.roster-catalog__head')||rosterScreen.querySelector('.roster-heading')||rosterScreen).append(nav);
+  }
+  for(const button of nav.querySelectorAll('[data-roster-arm-tab]')){
+    const named=button.dataset.rosterArmTab==='named';
+    button.textContent=named?(currentLanguage()==='en'?'Heroes':'Герои'):(currentLanguage()==='en'?'Army':'Армия');
+    button.classList.toggle('is-active',button.dataset.rosterArmTab===activeRosterTab);
+    button.setAttribute('aria-pressed',String(button.dataset.rosterArmTab===activeRosterTab));
+  }
+}
+function renderArmyRoster(){
+  const english=currentLanguage()==='en',army=normalizeArmy(activeRun?.army),total=army.reduce((n,u)=>n+u.count,0);
+  rosterList.replaceChildren();rosterList.className='roster-army-list';
+  rosterDetail.replaceChildren();
+  const title=document.createElement('h2');title.textContent=english?'Army reserves':'Запас Армии';rosterDetail.append(title);
+  const intro=document.createElement('p');intro.textContent=english?
+    'Permanent recruits grouped by race and chess role. Captured recruits are lost permanently; temporary mercenaries are not stored.':
+    'Постоянные рекруты по расам и типам. Взятые фигуры погибают безвозвратно; временные наёмники не сохраняются.';
+  rosterDetail.append(intro);
+  const summary=document.createElement('p');summary.textContent=(english?'Total recruits: ':'Всего рекрутов: ')+total;rosterDetail.append(summary);
+  if(rosterCount)rosterCount.textContent=String(total);
+  if(!army.length){const empty=document.createElement('p');empty.className='roster-army-empty';empty.textContent=english?'No recruits yet. Hire them in the Castle or collect them from friendly cleared Skirmishes.':'Рекрутов пока нет. Нанимай в Замке или собирай в освоенных своих Стычках.';rosterList.append(empty);return;}
+  for(const raceTag of [...new Set(army.map(entry=>entry.raceTag))]){
+    const group=document.createElement('section');group.className='roster-army-race';
+    const h=document.createElement('h3');h.textContent=english?raceTag.replaceAll('_',' '):RACE_LABELS[raceTag]||raceTag;group.append(h);
+    const grid=document.createElement('div');grid.className='roster-army-grid';
+    for(const pieceType of PIECE_TYPES){
+      const count=army.find(x=>x.raceTag===raceTag&&x.pieceType===pieceType)?.count||0;
+      const item=document.createElement('article');item.className='roster-army-tile';
+      const image=document.createElement('img');image.src=boardRacePiecePath(raceTag,pieceType,'w');
+      image.alt='';image.loading='lazy';
+      const name=document.createElement('span');name.textContent=english?armyEnglishType(pieceType):PIECE_LABELS[pieceType];
+      const number=document.createElement('strong');number.textContent='×'+count;
+      item.append(image,name,number);grid.append(item);
+    }
+    group.append(grid);rosterList.append(group);
+  }
+}
 function renderRoster() {
   if (!activeRun || !rosterList) return;
   applyStaticCopy();
   updateJourneyLabel();
+  ensureRosterTabs();
+  if(activeRosterTab==='army'){renderArmyRoster();return;}
   renderDetail();
   const formation=normalizedFormation(activeRun);
   if (rosterCount) rosterCount.textContent = `${formation.members.length} / 16`;
@@ -194,7 +249,7 @@ async function ensureTravelChoiceReady() {
   if (routeReady && typeof routeReady.then === 'function') await routeReady;
   if (globalThis.RPChessTravelChoice?.open) return globalThis.RPChessTravelChoice;
   try {
-    await import('./travel-choice-app.mjs');
+    await import('./travel-choice-app.mjs?v=20261110-pre-entry-starvation-v1');
   } catch (error) {
     console.error('[RPChess] Travel Choice bootstrap failed', error);
     return null;
@@ -208,17 +263,61 @@ async function beginJourney() {
   if (!activeRun || activeRun.ended) return;
   audio()?.click();
   journeyPending = true;
+  rosterScreen?.querySelector('[data-roster-journey-error]')?.remove();
   if (journeyButton) {
     journeyButton.disabled = true;
     journeyButton.textContent = t('roster.journeyLoading');
   }
   try {
-    const travelChoice = await ensureTravelChoiceReady();
-    activeRun = readRun();
-    if (!travelChoice || !activeRun || activeRun.ended) return;
-    travelChoice.open({ detail: { source: 'roster', runId: activeRun.id } });
+    const runId = activeRun.id;
+    const legacyTravel = new URLSearchParams(location.search).has('legacy_travel') ||
+      globalThis.sessionStorage?.getItem('rpchess.test.legacyTravel') === '1';
+    // The Kingdom map is the normal Roster destination. Do not hold its
+    // navigation behind the unrelated battle/encounter route bootstrap:
+    // slow cloud/platform initialization otherwise leaves the icon inert.
+    // Active encounters and the explicitly requested legacy Travel stay
+    // with their existing route owner, including starvation recovery.
+    const resume=activeRun.activeTravelChoice;
+    const settled=resume?.type==='settlement' && resume.kingdomCell &&
+      activeRun.kingdomMap?.cells?.[resume.kingdomCell]?.status==='completed' &&
+      activeRun.kingdomMap.cells[resume.kingdomCell].selectedEncounter?.id===resume.id;
+    if (settled) {
+      // Recover the exact save produced by older broken "Services" clicks.
+      // Do not wait for the whole combat-route bootstrap to reach a completed Settlement.
+      await import('./settlement-app.mjs');
+      const current=readRun();
+      if (!current || current.ended || current.id!==runId ||
+          current.activeTravelChoice?.id!==resume.id) return;
+      const owner=globalThis.RPChessSettlement;
+      if(!owner?.open)throw new Error('Settlement scene owner is unavailable');
+      owner.open({detail:{source:'roster',runId,choice:current.activeTravelChoice}});
+      if(document.querySelector('[data-settlement-screen]')?.hidden!==false)
+        throw new Error('Saved Settlement scene did not become active');
+    } else if (!legacyTravel && !activeRun.activeTravelChoice) {
+      const { openMap } = await import('./kingdom-map-app.mjs?v=20261111-goblin-npc-floor-v1');
+      const current = readRun();
+      if (!current || current.ended || current.id !== runId) return;
+      openMap({ detail:{ source:'roster', runId } });
+      if (document.querySelector('[data-kingdom-map-screen]')?.hidden !== false) {
+        throw new Error('Kingdom map did not become active');
+      }
+    } else {
+      const travelChoice = await ensureTravelChoiceReady();
+      const current = readRun();
+      if (!travelChoice || !current || current.ended || current.id !== runId) return;
+      travelChoice.open({ detail:{ source:'roster', runId } });
+    }
   } catch (error) {
     console.error('[RPChess] Start Journey failed', error);
+    // A failed dynamic import should never look like an unresponsive button.
+    const notice = document.createElement('p');
+    notice.dataset.rosterJourneyError = '';
+    notice.setAttribute('role', 'alert');
+    notice.className = 'roster-journey-error';
+    notice.textContent = currentLanguage() === 'en' ?
+      'Journey could not open. Please try again.' :
+      'Не удалось открыть Путешествие. Попробуйте ещё раз.';
+    rosterScreen?.querySelector('.roster-heading')?.append(notice);
   } finally {
     journeyPending = false;
     if (journeyButton) journeyButton.disabled = false;

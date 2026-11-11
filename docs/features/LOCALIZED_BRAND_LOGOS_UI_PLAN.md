@@ -41,4 +41,4 @@
 
 - The source `title_wordmark.png` is retained as an archival source file only unless a future product decision explicitly requests deletion. It will not remain in the runtime asset allowlist or visible UI.
 - The Pages workflow is manual for production release. A branch preview never changes the VK version.
-- GitHub and Notion checklists must be updated together after every meaningful milestone.
+- For all subsequent milestones, update the relevant **GitHub** checklists/specs only. The prior mandatory GitHub–Notion sync rule is **rescinded effective 10.11.2026**; historical Notion references above record past work, not an active requirement.

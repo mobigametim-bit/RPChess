@@ -41,7 +41,7 @@ async function captureFlagScreens(browser, width, height) {
     await page.screenshot({ path:path.join(FLAG_SCREENSHOT_DIR,`menu-${width}x${height}.png`),fullPage:false });
     await assertViewportContained(page, '[data-chronicle-panel]', `${label} Chronicle frame`);
     await assertPageFitsViewport(page, `${label} menu`);
-    const menuButtonHeight = await page.locator('.reboot-menu-actions .reboot-button').first().evaluate((node) => node.getBoundingClientRect().height);
+    // Result CTA dimensions follow responsive typography, not the pictogram sizes.
     await page.evaluate((key) => {
       const run = JSON.parse(localStorage.getItem(key));
       run.ended = true;
@@ -63,7 +63,10 @@ async function captureFlagScreens(browser, width, height) {
     }
     await assertFlagSafety(page,'.endless-run-panel','.endless-run-flag-content',`${label} result`);
     const buttonHeights = await page.locator('.endless-run-actions .reboot-button').evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().height));
-    assert(buttonHeights.every((height) => Math.abs(height-menuButtonHeight)<3), `${label}: result buttons ${buttonHeights} differ from menu ${menuButtonHeight}`);
+    // The compact landscape CSS intentionally sets 36px CTA height at <=540px.
+    assert(buttonHeights.length===3 && buttonHeights.every((h)=>h>=34&&h<=64) &&
+      Math.max(...buttonHeights)-Math.min(...buttonHeights)<=2,
+      `${label}: result CTAs must remain three matching, touch-sized buttons: ${buttonHeights}`);
     const brokenIcons = await page.locator('.endless-run-metric img').evaluateAll((images) => images.filter((img) => !img.complete || !img.naturalWidth).map((img) => img.getAttribute('src')));
     assert.deepStrictEqual(brokenIcons,[],`${label}: broken result icons`);
   } finally {
@@ -143,6 +146,7 @@ async function auditPortraitFlow(browser,width,height,language){
     assert(result.scrollWidth<=result.vw+2,`${label}: no horizontal overflow: ${JSON.stringify(result)}`);
     assert(result.buttonHeight>=46,`${label}: menu touch target must be at least 46 CSS px`);
     await page.locator('[data-new-game]').click();
+    await page.locator('[data-journey-choice-modal]:not([hidden]) [data-journey-new]').click();
     await page.locator('[data-player-identity-modal]:not([hidden])').waitFor({state:'visible'});
     const modal=await page.locator('[data-player-identity-modal] .identity-panel').first().boundingBox();
     assert(modal&&modal.width<=width+2&&modal.x+modal.width<=width+2&&modal.x>=-1,`${label}: identity form must fit portrait; modal=${JSON.stringify(modal)}`);
@@ -169,6 +173,7 @@ async function auditMenuModals(page, label) {
   await page.locator('[data-language-modal] .reboot-close').click();
 
   await page.locator('[data-new-game]').first().click();
+  await page.locator('[data-journey-choice-modal]:not([hidden]) [data-journey-new]').click();
   await page.locator('[data-player-identity-modal]:not([hidden])').waitFor({ state: 'visible' });
   await assertViewportContained(page, '[data-player-identity-modal]:not([hidden]) .identity-panel', `${label} Identity frame`);
   await assertFrameContains(page, '[data-player-identity-modal]:not([hidden]) .identity-panel', ['[data-player-identity-input]', '[data-player-identity-submit]', '[data-player-identity-close]'], `${label} Identity ownership`);
@@ -196,7 +201,7 @@ async function auditViewport(browser, width, height, language) {
     await assertFlagSafety(page, '[data-chronicle-panel]', '.chronicle-safe', `${label} Chronicle`);
     await assertPageFitsViewport(page, `${label} Chronicle`);
 
-    await page.locator('[data-continue-run]').click();
+    await page.locator('[data-continue-run]').click();await page.locator('[data-journey-choice-modal]:not([hidden]) [data-journey-continue]').click();
     await page.locator('[data-roster-travel]').click();
     await page.locator('[data-travel-choice-screen]:not([hidden])').waitFor();
     await assertPageFitsViewport(page, `${label} Travel`);

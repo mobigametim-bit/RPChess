@@ -160,7 +160,7 @@ export const EXTRA_EN_EXACT = Object.freeze({
   'Горизонтали доски': 'Board ranks',
   'Вертикали доски': 'Board files',
   'Боевой строй': 'Battle Formation',
-  'Свободный слот — дешёвый Наёмник. Замена оставленного в резерве здорового героя стоит как его лечение.': 'An open slot uses a cheap Mercenary. Replacing a healthy hero left in reserve costs as much as healing them.',
+  'Свободный слот — наёмник. Замена здорового героя из резерва оплачивается по тарифу наёмника соответствующего типа.': 'An open slot uses a mercenary. Replacing a healthy reserve hero costs the mercenary rate for that piece type.',
   'СОСТАВ И ОПЛАТА НАЁМНИКОВ': 'MERCENARY ROSTER AND PAYMENT',
   'Именные герои': 'Named Heroes',
   'Наёмники': 'Mercenaries',

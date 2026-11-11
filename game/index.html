@@ -55,7 +55,7 @@
   <link rel="stylesheet" href="css/arena.css?v=20260924-6">
   <link rel="stylesheet" href="css/tournament.css?v=20261103-gold-flight-1">
   <link rel="stylesheet" href="css/finished-game-review.css?v=20261108-piece-verdicts-1">
-  <link rel="stylesheet" href="css/combat-centered-layout.css?v=20261018-centered1">
+  <link rel="stylesheet" href="css/combat-centered-layout.css?v=20261110-icon-rail-v4">
   <link rel="stylesheet" href="css/piece-drag.css?v=20261018-drag1">
   <link rel="stylesheet" href="css/roster-formation.css?v=20261017-1">
   <link rel="stylesheet" href="css/portrait-ui.css?v=20261022-portrait-motion1" data-portrait-ui-css>
@@ -63,6 +63,8 @@
   <link rel="stylesheet" href="css/tournament-v4.css?v=20261107-portrait-toolbar-1">
   <link rel="stylesheet" href="css/font-goznak.css?v=20261106-goznak-release-1" data-goznak-ui>
   <link rel="stylesheet" href="css/mentor-training.css?v=20261108-king-check-aura-v2">
+  <link rel="stylesheet" href="css/main-menu-approved.css?v=20261110-journey-choice-v1">
+  <link rel="stylesheet" href="css/hud-nav-icons.css?v=20261110-roster-icons-v5">
 </head>
 <body>
   <div class="game-loading-screen" data-game-loading role="status" aria-live="polite" aria-label="Загрузка игры">
@@ -84,20 +86,21 @@
     }, 22000);
   </script>
   <div id="app">
-    <main class="reboot-menu-screen" data-reboot-foundation aria-label="Главное меню игры Герои Шаха и Мата" data-i18n-aria-label="menu.ariaLabel">
+    <main class="reboot-menu-screen mm-menu-approved" data-reboot-foundation aria-label="Главное меню игры Герои Шаха и Мата" data-i18n-aria-label="menu.ariaLabel">
+      <div class="mm-kingdom-stage" data-main-menu-kingdom aria-label="Ваше королевство" hidden></div>
+      <img class="mm-brand-logo" data-brand-logo src="generated_assets/logo_ru.png" alt="Герои Шаха и Мата" decoding="async">
       <div class="reboot-menu-screen__layout">
         <section class="reboot-menu-screen__main">
-          <img class="reboot-wordmark" data-brand-logo src="generated_assets/logo_ru.png" alt="Герои Шаха и Мата">
-          <div class="reboot-menu-actions" aria-label="Главное меню" data-i18n-aria-label="menu.actionsLabel">
-            <button class="reboot-button reboot-button--primary" type="button" data-new-game data-i18n="menu.newGame">Новое Путешествие</button>
-            <button class="reboot-button reboot-button--primary" type="button" data-continue-run data-i18n="menu.continue" disabled aria-disabled="true">Продолжить</button>
-            <button class="reboot-button reboot-button--primary" type="button" data-arena-open>Арена</button>
-            <button class="reboot-button reboot-button--primary" type="button" data-tournament-open>Турнир</button>
+          <nav class="reboot-menu-actions" aria-label="Главное меню" data-i18n-aria-label="menu.actionsLabel">
+            <button class="mm-menu-icon" type="button" data-new-game data-continue-run aria-label="Путешествие" title="Путешествие"><img src="assets/ui/main-menu-journey.png" alt="" aria-hidden="true"></button>
+            <button class="mm-menu-icon" type="button" data-arena-open aria-label="Арена" title="Арена"><img src="assets/ui/main-menu-arena.png" alt="" aria-hidden="true"></button>
+            <button class="mm-menu-icon" type="button" data-tournament-open aria-label="Турнир" title="Турнир"><img src="assets/ui/main-menu-tournament.png" alt="" aria-hidden="true"></button>
+            <button class="mm-menu-icon" type="button" data-mentor-open aria-label="Наставник" title="Наставник"><img src="assets/ui/main-menu-mentor.png" alt="" aria-hidden="true"></button>
             <div class="reboot-menu-secondary">
-              <button class="reboot-button reboot-button--primary" type="button" data-settings data-i18n="menu.settings">Настройки</button>
-              <button class="reboot-button reboot-button--primary" type="button" data-language data-i18n="menu.language">Язык</button>
+              <button class="mm-menu-icon" type="button" data-settings aria-label="Настройки" title="Настройки"><img src="assets/ui/main-menu-settings.png" alt="" aria-hidden="true"></button>
+              <button class="mm-menu-icon" type="button" data-language aria-label="Язык" title="Язык"><img src="assets/ui/main-menu-language.png" alt="" aria-hidden="true"></button>
             </div>
-          </div>
+          </nav>
         </section>
       </div>
     </main>
@@ -292,6 +295,27 @@
   <div class="skirmish-toast" data-skirmish-toast role="status" aria-live="polite" hidden></div>
   <div class="arena-dialog" data-arena-dialog hidden></div>
 
+  <!-- Main menu: explicit Journey choice, separate from run creation/storage. -->
+  <div class="reboot-modal" data-journey-choice-modal hidden>
+    <section class="reboot-modal__panel journey-choice-panel ui-panel-surface" role="dialog"
+      aria-modal="true" aria-labelledby="journey-choice-title" aria-describedby="journey-choice-note">
+      <header class="reboot-modal__header">
+        <div>
+          <div class="reboot-eyebrow" data-i18n="menu.journeyKicker">ПУТЕШЕСТВИЕ</div>
+          <h2 id="journey-choice-title" data-i18n="menu.journeyTitle">Выберите действие</h2>
+        </div>
+        <button class="reboot-close" type="button" data-close-modal data-i18n-aria-label="menu.journeyClose" aria-label="Закрыть выбор путешествия">×</button>
+      </header>
+      <p class="journey-choice-note" id="journey-choice-note" data-journey-choice-note></p>
+      <div class="journey-choice-actions">
+        <button class="reboot-button reboot-button--primary" type="button"
+          data-journey-new data-i18n="menu.journeyNew">Новая игра</button>
+        <button class="reboot-button reboot-button--primary" type="button"
+          data-journey-continue data-i18n="menu.journeyContinue" disabled>Продолжить путешествие</button>
+      </div>
+    </section>
+  </div>
+
   <div class="reboot-modal" data-game-setup-modal hidden>
     <section class="reboot-modal__panel classic-commander-panel classic-setup-panel" role="dialog" aria-modal="true" aria-labelledby="game-setup-title">
       <header class="reboot-modal__header">
@@ -399,13 +423,13 @@
   </div>
 
   <script type="module" src="js/pwa-install.mjs?v=20261104-2"></script>
-  <script type="module" src="js/screen-loading.mjs?v=20261016-1"></script>
-  <script type="module" src="js/reboot-foundation.mjs?v=20261025-simple-pieces-1"></script>
-  <script type="module" src="js/roster-app.mjs?v=20260827-skirmish-1"></script>
+  <script type="module" src="js/screen-loading.mjs?v=20261111-menu-texture-gate-v1"></script>
+  <script type="module" src="js/reboot-foundation.mjs?v=20261111-goblin-npc-floor-v1"></script>
+  <script type="module" src="js/roster-app.mjs?v=20261111-goblin-npc-floor-v1"></script>
   <script type="module" src="js/classic-chess-app.mjs?v=20261108-figure-wording-v2"></script>
-  <script type="module" src="js/arena-app.mjs?v=20261108-piece-verdicts-1"></script>
+  <script type="module" src="js/arena-app.mjs?v=20261110-icon-preserve"></script>
   <script type="module" src="js/skirmish-app.mjs?v=20261023-named-resume-ad1"></script>
-  <script type="module" src="js/tournament-app.mjs?v=20261108-piece-verdicts-1"></script>
+  <script type="module" src="js/tournament-app.mjs?v=20261110-icon-preserve"></script>
   <script type="module" src="js/board-view-toggle.mjs?v=20261103-board-switch-tournament-1"></script>
   <script type="module" src="js/mentor-training-app.mjs?v=20261108-task-narration-v2"></script>
 </body>

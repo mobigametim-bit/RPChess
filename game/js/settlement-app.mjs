@@ -304,6 +304,9 @@ function openSettlement(event) {
   }
   showSettlement();
   renderSettlement();
+  // Emit only after the scene is visible. The Kingdom's completed-service
+  // revisit invokes the owner directly rather than rpchess:settlement-open.
+  globalThis.dispatchEvent(new CustomEvent('rpchess:settlement-shown'));
 }
 
 function continuePath() {
@@ -313,12 +316,36 @@ function continuePath() {
   busy = true;
   audio()?.click?.();
   const suppliesBefore = activeRun.supplies;
-  activeRun = writeRun(completeSettlement(activeRun));
+  const selected=activeRun.activeTravelChoice;
+  let finished=completeSettlement(activeRun);
+  const map=activeRun.kingdomMap,cell=map?.cells?.[selected?.kingdomCell];
+  if(cell&&cell.selectedEncounter?.id===selected.id&&activeRun.currentSettlement){
+    finished={...finished,kingdomMap:{...map,cells:{...map.cells,
+      [selected.kingdomCell]:{...cell,settlementState:activeRun.currentSettlement}}}};
+  }
+  activeRun = writeRun(finished);
   if (activeRun.supplies !== suppliesBefore) throw new Error('Settlement exit must not spend Supplies');
   globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated', { detail:{ source:'settlement-complete' } }));
   hideSettlement();
   busy = false;
-  globalThis.dispatchEvent(new CustomEvent('rpchess:travel-open', { detail: { source: 'settlement-complete', runId: activeRun.id } }));
+  const detail={source:'settlement-complete',runId:activeRun.id};
+  if(selected?.kingdomCell&&activeRun.kingdomMap){
+    // The map owns the return from both first visits and free revisits.
+    // Never rely on Travel Choice having finished its optional bootstrap:
+    // otherwise this button can hide the Settlement and leave a blank screen.
+    if(globalThis.RPChessKingdomMap?.open){
+      globalThis.RPChessKingdomMap.open({detail});
+    }else{
+      void import('./kingdom-map-app.mjs?v=20261111-goblin-npc-floor-v1')
+        .then(({openMap})=>openMap({detail}))
+        .catch(error=>{
+          console.error('[RPChess] Return from Settlement to Kingdom failed',error);
+          globalThis.dispatchEvent(new CustomEvent('rpchess:run-continue'));
+        });
+    }
+    return;
+  }
+  globalThis.dispatchEvent(new CustomEvent('rpchess:travel-open', {detail}));
 }
 
 function syncRun() {

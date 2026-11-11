@@ -47,7 +47,7 @@ This keeps live language switching without reload, while making final text width
 10. Rename Cloudflare/Wrangler to an explicit manual deployment path; GitHub Pages remains automatic production from `main`.
 11. Simplify build/gate duplication and resource optimizer behavior.
 12. Run targeted tests after each root-cause batch; run the broad Chromium suite before major merge.
-13. Synchronize `FULL_PROJECT_REVIEW_REPORT.md`, `CURRENT_STATE.md`, numbered GitHub docs and Notion after accepted remediation lands.
+13. Update the relevant repository documents (`FULL_PROJECT_REVIEW_REPORT.md`, `CURRENT_STATE.md` and numbered GitHub docs) after accepted remediation lands. **GitHub is the sole required documentation destination; Notion is optional, not a gate (policy 10.11.2026).**
 
 ## Reporting rule
 
