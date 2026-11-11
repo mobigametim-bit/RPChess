@@ -116,7 +116,7 @@ function reserveBattleTerritories(map){
  const red=new Set(existing.flatMap(t=>t.cells));
  const battleCells=Object.entries(map.cells||{}).filter(([id,c])=>
   c?.selectedEncounter?.type==='battle'&&!c.completedOnce&&c.status!=='completed'&&
-  !existing.some(t=>t.id===id));
+  !existing.some(t=>t.id===id)).sort(([a],[b])=>a.localeCompare(b,'en'));
  // Reserve each Battle's center before allocating neighbors. Otherwise an
  // earlier generated province can consume the center of a nearby Battle.
  const battleCenters=new Set([...existing.map(t=>t.id),...battleCells.map(([id])=>id)]);
@@ -124,22 +124,33 @@ function reserveBattleTerritories(map){
   const [cx,cy]=id.split(',').map(Number);
   const target=Math.max(1,Math.floor(difficultyForStars(cell.selectedEncounter.stars).elo/200));
   const cells=[];
-  // Distinct battle territories may touch, but never overlap. Deterministic
-  // Manhattan-ring ordering gives organic contiguous provinces in free land.
-  const radius=target+3,candidates=[];
-  for(let dy=-radius;dy<=radius;dy++)for(let dx=-radius;dx<=radius;dx++){
-   const dist=Math.abs(dx)+Math.abs(dy);if(dist>radius)continue;
-   const tile=keyOf(cx+dx,cy+dy);
-   candidates.push({id:tile,dist,
-    jitter:(hashString(map.seed+':red-province:'+id+':'+tile)>>>0)/4294967296*.8});
-  }
-  candidates.sort((a,b)=>a.dist+a.jitter-b.dist-b.jitter||
-   a.id.localeCompare(b.id,'en'));
-  for(const candidate of candidates){
-   if(cells.length>=target)break;
-   if(committed.has(candidate.id)||red.has(candidate.id)||
-      candidate.id!==id&&battleCenters.has(candidate.id))continue;
-   cells.push(candidate.id);red.add(candidate.id);
+  // Grow a contiguous cardinal region outward, avoiding player cells,
+  // other Battle centers and previously reserved enemy territory. Blue land
+  // containing a legacy Battle center is treated as an origin, never stolen.
+  const frontier=new Set([id]),visited=new Set();
+  const appendNeighbors=tile=>{
+   const [x,y]=tile.split(',').map(Number);
+   for(const [dx,dy] of CARDINAL){
+    const n=keyOf(x+dx,y+dy);
+    if(!visited.has(n)&&!frontier.has(n)&&!committed.has(n)&&
+       !red.has(n)&&!battleCenters.has(n))frontier.add(n);
+   }
+  };
+  while(cells.length<target&&frontier.size){
+   const candidates=[...frontier].sort((a,b)=>{
+    const score=tile=>{
+     const [x,y]=tile.split(',').map(Number);
+     return Math.abs(x-cx)+Math.abs(y-cy)+
+      (hashString(map.seed+':red-province:'+id+':'+tile)>>>0)/4294967296*.8;
+    };
+    return score(a)-score(b)||a.localeCompare(b,'en');
+   });
+   const tile=candidates[0];frontier.delete(tile);visited.add(tile);
+   if(!committed.has(tile)&&!red.has(tile)&&
+      (tile===id||!battleCenters.has(tile))){
+    cells.push(tile);red.add(tile);
+    appendNeighbors(tile);
+   }else if(tile===id)appendNeighbors(tile);
   }
   if(territories===existing)territories=[...existing];
   territories.push({id,encounterId:cell.selectedEncounter.id,cells});
