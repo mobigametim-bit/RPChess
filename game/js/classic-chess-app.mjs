@@ -671,6 +671,11 @@ attachPieceDrag(board, {
     board.querySelector('[data-square="' + square + '"]')?.classList.add('classic-square--selected');
     for (const move of selectedMoves) board.querySelector('[data-square="' + (move.uciTo || move.to) + '"]')
       ?.classList.add(move.capture ? 'classic-square--capture' : 'classic-square--legal');
+    // Drag selection only mutates CSS classes; the combat owners observe
+    // childList updates, so their overlays otherwise never see this selection.
+    globalThis.dispatchEvent?.(new CustomEvent('rpchess:chess-selection-changed',{
+      detail:{square,combatOwner}
+    }));
   },
   onDrop: (from,to) => {
     if (to && selectedMoves.some(move => (move.uciTo || move.to) === to)) executeMove(from,to);
