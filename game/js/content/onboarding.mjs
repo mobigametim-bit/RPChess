@@ -231,7 +231,9 @@ function ensureStyles() {
  0 0 0 200vmax rgba(2,5,9,.82);
 }
 .rpchess-onboarding--welcome .rpchess-onboarding__layout{
- z-index:1;align-self:start;margin-top:clamp(4px,3vh,26px)
+ z-index:1;align-self:start;margin-top:clamp(4px,3vh,26px);
+ /* Reserve enough headroom for the portrait above the welcome panel. */
+ --rpchess-jester-card-start:clamp(210px,31vh,256px)
 }
 .rpchess-onboarding__layout{
  position:relative;isolation:isolate;box-sizing:border-box;min-width:0;
@@ -288,6 +290,13 @@ body.rpchess-onboarding-open{overflow:hidden!important}
  .rpchess-onboarding__tip{padding:7px 10px;gap:9px}
  .rpchess-onboarding__body{font-size:clamp(11px,1.6vw,13px)!important;line-height:1.3!important}
  .rpchess-onboarding__button.reboot-button{min-width:115px;min-height:34px;padding:5px 12px!important}
+ /* Welcome-specific geometry must override the shared short-screen rule. */
+ .rpchess-onboarding--welcome .rpchess-onboarding__layout{
+  --rpchess-jester-card-start:160px
+ }
+ .rpchess-onboarding--welcome .rpchess-onboarding__portrait{
+  width:145px;max-height:145px
+ }
 }
 @media (orientation:portrait) and (max-width:620px){
  .rpchess-onboarding--welcome .rpchess-onboarding__layout{
@@ -301,6 +310,12 @@ body.rpchess-onboarding-open{overflow:hidden!important}
  .rpchess-onboarding__card{min-height:0;max-height:calc(100dvh - 125px);padding:16px!important}
  .rpchess-onboarding__title{font-size:19px!important}
  .rpchess-onboarding__body{font-size:14px!important}
+ .rpchess-onboarding--welcome .rpchess-onboarding__layout{
+  --rpchess-jester-card-start:185px
+ }
+ .rpchess-onboarding--welcome .rpchess-onboarding__portrait{
+  width:165px;max-height:175px
+ }
 }
 `;
   document.head.append(style);
