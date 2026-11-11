@@ -19,6 +19,49 @@ function parseTile(id){
  const [x,y]=id.split(',').map(Number);
  return Number.isSafeInteger(x)&&Number.isSafeInteger(y)?{x,y}:null;
 }
+// Enemy Battle sovereignty. The province is reserved in saves but the red
+// ink and boundary never disclose cells that have not been explored.
+function drawEnemyBattleTerritories(ctx,{map,view,columns,rows}){
+ if(!ctx||!map||!view)return 0;
+ const left=view.x-Math.floor(columns/2),top=view.y-Math.floor(rows/2);
+ const red=new Set((map.battleTerritories||[]).flatMap(b=>b.cells||[])
+  .filter(id=>map.cells?.[id]?.explored===true));
+ if(!red.size)return 0;
+ ctx.save();ctx.beginPath();
+ for(const id of red){
+  const p=parseTile(id);if(!p)continue;
+  ctx.rect((p.x-left)*TILE,(p.y-top)*TILE,TILE,TILE);
+ }
+ ctx.fillStyle='rgba(215,42,48,.19)';ctx.fill();
+ let borders=0;
+ for(const id of red){
+  const p=parseTile(id);if(!p)continue;
+  if(p.x<left-2||p.x>left+columns+1||p.y<top-2||p.y>top+rows+1)continue;
+  for(const [side,dx,dy,edge] of SIDES){
+   if(red.has((p.x+dx)+','+(p.y+dy)))continue;
+   const [ax,ay,bx,by]=edge(p.x-left,p.y-top);
+   const x1=ax*TILE,y1=ay*TILE,x2=bx*TILE,y2=by*TILE;
+   const hash=hashString(map.seed+':red-edge:'+id+':'+side)>>>0;
+   const amplitude=(3+hash%4)*(hash&16?-1:1);
+   const nx=-(y2-y1)/TILE,ny=(x2-x1)/TILE;
+   ctx.beginPath();ctx.moveTo(x1,y1);
+   ctx.bezierCurveTo(x1+(x2-x1)*.23+nx*amplitude,
+    y1+(y2-y1)*.23+ny*amplitude,
+    x1+(x2-x1)*.72-nx*amplitude*.62,
+    y1+(y2-y1)*.72-ny*amplitude*.62,x2,y2);
+   ctx.lineCap='round';ctx.lineJoin='round';
+   ctx.strokeStyle='rgba(100,13,22,.99)';ctx.lineWidth=10;
+   ctx.shadowColor='rgba(255,36,48,.9)';ctx.shadowBlur=19;ctx.stroke();
+   ctx.shadowBlur=0;
+   ctx.strokeStyle='rgba(231,44,62,.97)';ctx.lineWidth=6;ctx.stroke();
+   ctx.setLineDash([10,6]);ctx.strokeStyle='rgba(255,205,203,.92)';
+   ctx.lineWidth=2.1;ctx.stroke();ctx.setLineDash([]);
+   borders++;
+  }
+ }
+ ctx.restore();
+ return borders;
+}
 // Drawn on the *terrain* layer in parchment mode, beside the natural roads.
 // Unlike event roads, sovereignty strokes must stay beneath world landmarks.
 function drawKingdomBoundary(ctx,{map,view,columns,rows}){
@@ -26,7 +69,8 @@ function drawKingdomBoundary(ctx,{map,view,columns,rows}){
  const left=view.x-Math.floor(columns/2),top=view.y-Math.floor(rows/2);
  const owned=new Set([...(map.centralOwnedCells||[]),
   ...(map.outposts||[]).flatMap(post=>post.cells||[]),
-  ...Object.keys(map.cells||{}).filter(id=>map.cells[id]?.annexed)]);
+  ...Object.keys(map.cells||{}).filter(id=>map.cells[id]?.annexed),
+  ...(map.battleConqueredCells||[])]);
  ctx.save();ctx.beginPath();
  for(const id of Object.keys(map.cells||{})){
   const p=parseTile(id);
@@ -119,7 +163,8 @@ function drawKingdomOverlay(canvas,{map,view,columns,rows,drawBorder=true,drawRo
  const cells=map.cells||{};
  const owned=new Set([...(map.centralOwnedCells||[]),
   ...(map.outposts||[]).flatMap(post=>post.cells||[]),
-  ...Object.keys(cells).filter(id=>cells[id]?.annexed)]);
+  ...Object.keys(cells).filter(id=>cells[id]?.annexed),
+  ...(map.battleConqueredCells||[])]);
  // Clip roads and sovereignty lines to explored/revealed fog circles. Ownership
  // by Power is not scouting and must not disclose an unknown location.
  ctx.save();ctx.beginPath();
@@ -156,6 +201,7 @@ function drawKingdomOverlay(canvas,{map,view,columns,rows,drawBorder=true,drawRo
   glowCount++;
  }
  ctx.restore();
+ const enemyBorderCount=drawEnemyBattleTerritories(ctx,{map,view,columns,rows});
  const roadCount=drawKingdomRoads(ctx,{map,view,columns,rows,paint:drawRoads});
  // The overlay is beneath all site and king art; never cut off the road
  // before its endpoint. Roads physically reach the tile centers.
@@ -166,5 +212,6 @@ function drawKingdomOverlay(canvas,{map,view,columns,rows,drawBorder=true,drawRo
  canvas.dataset.journeyRoadSegments=String(visibleTravelRoads(map).length);
  canvas.dataset.ownedRoadSegments=String(visibleRoyalRoads(map).length);
  canvas.dataset.borderSegments=String(borderCount);
+ canvas.dataset.enemyBorderSegments=String(enemyBorderCount);
 }
-export {drawKingdomOverlay,drawKingdomBoundary,drawKingdomRoads};
+export {drawKingdomOverlay,drawKingdomBoundary,drawEnemyBattleTerritories,drawKingdomRoads};
