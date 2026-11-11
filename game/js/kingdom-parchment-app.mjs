@@ -3,7 +3,7 @@
  */
 import {PARCHMENT_TILE,randomAt,terrainAt,pickSprite,hash32} from './kingdom-parchment-core.mjs?v=20261111-parchment-png-only-v1';
 import {VISUAL} from './kingdom-world-config.mjs?v=20261109-atlas-visual5';
-import {drawKingdomBoundary,drawKingdomRoads} from './kingdom-map-overlay.mjs?v=20261110-natural-road-layer-v4';
+import {drawKingdomBoundary,drawEnemyBattleTerritories,drawKingdomRoads} from './kingdom-map-overlay.mjs?v=20261111-battle-province-v1';
 
 const PAPER_TILE_SRC='assets/kingdom-parchment/parchment_tile_256.webp',PAPER_TILE_SIZE=256;
 const spriteCache=new Map();
@@ -295,6 +295,7 @@ function renderParchment(canvas,{seed,view,columns,rows,map,resolution=1}){
  // generated highways. Decorations may overlap both road kinds equally.
  canvas.dataset.playerRoadSegments=String(drawKingdomRoads(ctx,{map,view,columns,rows}));
  canvas.dataset.roadLayer='terrain';
+ canvas.dataset.enemyBorderSegments=String(drawEnemyBattleTerritories(ctx,{map,view,columns,rows}));
  canvas.dataset.borderSegments=String(drawKingdomBoundary(ctx,{map,view,columns,rows}));
  drawTerrainSymbols(ctx,seed,left,top,columns,rows,repaint);
  drawOptionalNature(ctx,seed,left,top,columns,rows,map,repaint);
