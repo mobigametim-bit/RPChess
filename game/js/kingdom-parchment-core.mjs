@@ -12,6 +12,9 @@ const GROUPS=Object.freeze({
 const PARCHMENT_TILE=142,PARCHMENT_CHUNK_CELLS=4;
 // Additional uploaded artwork is discovered at build time, not guessed by filename.
 const PARCHMENT_MODE_KEY='rpchess.kingdom.visual.v1';
+// The build inserts this meta only after converting all 112 master SVGs.
+const PARCHMENT_RUNTIME_FORMAT=typeof document!=='undefined' &&
+ document.querySelector('meta[name="rpchess-parchment-raster"]')?.content==='png'?'png':'svg';
 function hash32(value){
  let hash=2166136261;
  for(const char of String(value)){hash^=char.charCodeAt(0);hash=Math.imul(hash,16777619);}
@@ -40,12 +43,12 @@ function spritePath(kind,index){
  const group=GROUPS[kind];
  if(!group)return null;
  const n=Math.max(0,Math.min(group.length-1,Math.floor(Number(index)||0)));
- return 'assets/kingdom-parchment/'+kind+'/'+group[n]+'.svg';
+ return 'assets/kingdom-parchment/'+kind+'/'+group[n]+'.'+PARCHMENT_RUNTIME_FORMAT;
 }
 function pickSprite(seed,kind,x,y,salt='sprite'){
  const group=GROUPS[kind];
  return group?spritePath(kind,hash32(seed+':'+kind+':'+x+':'+y+':'+salt)%group.length):null;
 }
 function chunkCoordinate(cell){return Math.floor(cell/PARCHMENT_CHUNK_CELLS);}
-export {GROUPS,PARCHMENT_TILE,PARCHMENT_CHUNK_CELLS,PARCHMENT_MODE_KEY,
+export {GROUPS,PARCHMENT_TILE,PARCHMENT_CHUNK_CELLS,PARCHMENT_MODE_KEY,PARCHMENT_RUNTIME_FORMAT,
  hash32,randomAt,noise2D,terrainAt,spritePath,pickSprite,chunkCoordinate};
