@@ -1598,6 +1598,7 @@ async function assertTileImage(page,cellId){
       return {root:rootBox.toJSON(),map:map.toJSON(),panel:panel.toJSON(),zoom:zoom.toJSON(),
         title:day.getBoundingClientRect().toJSON(),dayText:day.textContent,
         dayFontPx:parseFloat(getComputedStyle(day).fontSize),
+        dayScrollWidth:day.scrollWidth,dayClientWidth:day.clientWidth,
         nav:nav.getBoundingClientRect().toJSON(),
         heading:heading.getBoundingClientRect().toJSON(),
         header:header.getBoundingClientRect().toJSON(),
@@ -1620,6 +1621,9 @@ async function assertTileImage(page,cellId){
     assert(ui.title.right<=ui.heading.right-1,
       'long day label must fit its commandbar heading at '+width+'x'+height+
       ': '+JSON.stringify({title:ui.title,heading:ui.heading,font:ui.dayFontPx}));
+    assert(ui.dayScrollWidth<=ui.dayClientWidth+1,
+      'the Day text itself must be fully visible with no glyph clipping at '+width+'x'+height+
+      ': '+JSON.stringify({scroll:ui.dayScrollWidth,client:ui.dayClientWidth,font:ui.dayFontPx}));
 
     assert(ui.map.height>160&&ui.map.width>220,'Map viewport unusable at '+width+'x'+height);
     assert(ui.panel.top>=ui.map.top-2&&ui.panel.bottom<=ui.map.bottom+2,
