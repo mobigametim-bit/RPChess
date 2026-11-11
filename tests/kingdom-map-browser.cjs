@@ -345,10 +345,7 @@ async function assertTileImage(page,cellId){
     'territory boundary is on the original natural-road terrain layer, below later event roads');
   // Exercise actual uploaded sprites in the bundled dist, not just the
   // procedural Canvas fallback that worked before the artist supplied art.
-  const parchmentFormat=await page.evaluate(()=>document.querySelector(
-    'meta[name="rpchess-parchment-raster"]')?.content==='png'?'png':'svg');
-  assert.equal(parchmentFormat,process.env.RPCHESS_PARCHMENT_EXPECT_FORMAT||'svg',
-    'Parchment distribution format must match the QA build');
+  const parchmentFormat='png'; // PNG-only runtime without SVG fallback.
   const artProbe=await page.evaluate(async format=>{
     const files=[
       'parchment_base_variations/01_light_ochre_plain.svg',
@@ -412,7 +409,7 @@ async function assertTileImage(page,cellId){
   assert.equal(Object.keys(manifest.groups).length,7,
     'the atlas contains five core groups, one marsh group and one landmark group');
   assert.equal(manifest.groups.marsh_wasteland_optional?.length,16,
-    'all sixteen correct marsh SVGs are included');
+    'all sixteen correct marsh PNGs are included');
   assert(manifest.groups.marsh_wasteland_optional.includes('01_pale_marsh.'+parchmentFormat)&&
     !manifest.groups.marsh_wasteland_optional.includes('01_straight_line.'+parchmentFormat),
     'marsh sprites must not be mislabeled frame shapes');
@@ -521,15 +518,12 @@ async function assertTileImage(page,cellId){
     'procedurally painted terrain and fog must both have visible pixels');
   assert.deepEqual(await read(page),before,'retired Classic preference must not modify the Journey save');
   await page.screenshot({path:path.join(output,'kingdom-parchment-experiment.png')});
-  // Issue #191: record actual playable SVG/PNG map states at default/min/max zoom
+  // Issue #191: record actual playable PNG map states at default/min/max zoom
   // without creating another permanent browser suite.
   if(process.env.RPCHESS_PARCHMENT_QA_SCREENSHOT_DIR){
     const qaDir=process.env.RPCHESS_PARCHMENT_QA_SCREENSHOT_DIR;
     fs.mkdirSync(qaDir,{recursive:true});
-    const format=await page.evaluate(()=>document.querySelector(
-      'meta[name="rpchess-parchment-raster"]')?.content==='png'?'png':'svg');
-    assert.equal(format,process.env.RPCHESS_PARCHMENT_EXPECT_FORMAT||'svg',
-      'Parchment QA must exercise the requested distribution, not a fallback');
+    const format='png'; // Production and Preview always use PNG.
     const sample=await page.evaluate(async extension=>{
       const target='assets/kingdom-parchment/forest_clusters/01_small_grove.'+extension;
       const response=await fetch(target,{cache:'no-store'});

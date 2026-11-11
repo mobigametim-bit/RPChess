@@ -1,4 +1,4 @@
-/* Opt-in no-browser verification: rasterize all 112 pixel-vector masters in a
+/* PNG production verification: rasterize all 112 pixel-vector masters in a
  * throwaway directory. Never modify checked-in art or production dist.
  */
 const assert=require('node:assert/strict');
@@ -15,7 +15,6 @@ try{
  const dest=path.join(temp,'assets/kingdom-parchment');
  fs.mkdirSync(path.dirname(dest),{recursive:true});
  fs.cpSync(source,dest,{recursive:true});
- fs.copyFileSync(path.join(repo,'game/index.html'),path.join(temp,'index.html'));
  const manifest={groups:Object.fromEntries(GROUPS.map(group=>[
   group,fs.readdirSync(path.join(dest,group)).filter(name=>name.endsWith('.svg')).sort()
  ]))};
@@ -24,8 +23,6 @@ try{
  assert.equal(report.count,112);
  assert(report.pngBytes<3*1024*1024,'PNG output should be comfortably under 3 MiB');
  assert(report.svgBytes>30*1024*1024,'Expected 33 MiB input masters');
- assert(fs.readFileSync(path.join(temp,'index.html'),'utf8')
-    .includes('name="rpchess-parchment-raster" content="png"'));
  const outputManifest=JSON.parse(fs.readFileSync(path.join(dest,'extra-manifest.json'),'utf8'));
  for(const group of GROUPS){
    assert.equal(outputManifest.groups[group].length,16);
@@ -35,7 +32,7 @@ try{
      const info=parsePng(fs.readFileSync(full));
      assert.deepEqual([info.width,info.height],[128,128]);
      assert.equal(fs.existsSync(full.replace(/\.png$/,'.svg')),false,
-       'ship only PNGs in experimental dist');
+       'ship only PNGs in every dist');
    }
  }
  fs.mkdirSync(out,{recursive:true});
