@@ -704,7 +704,7 @@ function render(){
    }
    if(visible&&outpostCenters.has(id)){
     const tower=document.createElement('img');tower.className='km-object km-object--outpost';
-    tower.src='assets/kingdom-parchment/decor_minor_landmarks/04_watchtower.svg';
+    tower.src='assets/kingdom-parchment/decor_minor_landmarks/04_watchtower.png';
     tower.alt='';tower.loading='lazy';btn.append(tower);
    }
    if(visible&&cell?.production&&owned&&cell.status==='completed'){
