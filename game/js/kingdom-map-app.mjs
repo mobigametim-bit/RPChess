@@ -38,9 +38,8 @@ const COPY={
    buildOutpost:'Построить аванпост',earn:'Добыть',onArena:'на Арене',arenaUnavailable:'Арена пока недоступна',outpost:'Аванпост',outpostDetail:'Удалённое владение королевства',
    outpostNeed:'Недостаточно осколков чести',outpostBuilt:'Аванпост построен',
    moveKing:'Перетащите короля для перемещения',collect:'Собрать',battleReady:'Защитник вернулся. Войди в клетку для нового боя.',
-   recruitsReady:'Рекруты готовы. Система найма появится в следующем этапе.',
    needCompanion:'Стычка отложена: нужен хотя бы один боец помимо короля. Пополните отряд.',
-   empty:'Открывайте территорию, чтобы основать королевство',
+
    completedDetail:'Место освоено. Можно вернуться сюда в любой момент.',zoomGroup:'Масштаб карты',zoomIn:'Увеличить масштаб',zoomOut:'Уменьшить масштаб',zoomReset:'Сбросить масштаб карты'},
  en:{day:'Day',shards:'Honor shards',castle:'Castle',supply:'Supplies',power:'Power',points:'Annexation points',
    hidden:'Unexplored territory',empty:'Quiet terrain',safeTerrain:'No encounter at this location.',annex:'Annex · 1 point',annexed:'Part of your kingdom',
@@ -51,9 +50,8 @@ const COPY={
    buildOutpost:'Build outpost',earn:'Earn',onArena:'in Arena',arenaUnavailable:'Arena is not available yet',outpost:'Outpost',outpostDetail:'A remote kingdom holding',
    outpostNeed:'Not enough Honor shards',outpostBuilt:'Outpost constructed',
    moveKing:'Drag the king to move',collect:'Collect',battleReady:'Defender returned. Enter the cell for a rematch.',
-   recruitsReady:'Recruits are ready. Hiring will be added in the next stage.',
    needCompanion:'Skirmish postponed: recruit at least one fighter besides your King.',
-   empty:'Explore the realm to found a kingdom',
+
    completedDetail:'This location is cleared. You can return at any time.',zoomGroup:'Map zoom',zoomIn:'Zoom in',zoomOut:'Zoom out',zoomReset:'Reset map zoom'}
 };
 // Atlas view scales the original 142px logical tiles to an interactive 87px default.
