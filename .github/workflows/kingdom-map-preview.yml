@@ -53,7 +53,7 @@ jobs:
           license=$(find /tmp/rpchess-stockfish-package/package -iname 'Copying.txt' -o -iname 'COPYING.txt' | head -n 1)
           test -n "$license"
           cp "$license" /tmp/rpchess-stockfish-verified/COPYING.txt
-          RPCHESS_STOCKFISH_ASSET_DIR=/tmp/rpchess-stockfish-verified npm run gate:local
+          RPCHESS_INCLUDE_ATLAS_LAB=1 RPCHESS_STOCKFISH_ASSET_DIR=/tmp/rpchess-stockfish-verified npm run gate:local
       - name: Save distribution size report
         uses: actions/upload-artifact@v4
         with:
