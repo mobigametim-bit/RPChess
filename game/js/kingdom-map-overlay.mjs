@@ -2,7 +2,7 @@
  * No gameplay mutations, no tile hitboxes, no leaks outside charted fog. */
 import {PARCHMENT_TILE} from './kingdom-parchment-core.mjs';
 import {hashString} from './race-assets.mjs';
-import {visibleRoyalRoads,visibleTravelRoads} from './kingdom-road-network.mjs?v=20261110-roadgrid-v3';
+import {visibleRoyalRoads,visibleTravelRoads} from './kingdom-road-network.mjs?v=20261111-polish-v1';
 import {drawSandstoneRoad} from './kingdom-road-paving.mjs?v=20261110-graystone-v3';
 import {VISUAL} from './kingdom-world-config.mjs?v=20261109-atlas-visual5';
 
