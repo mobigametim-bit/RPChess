@@ -158,6 +158,24 @@ function normalizeKingdomEconomy(candidate,base=DEFAULT_KINGDOM_ECONOMY){
   for(const weights of Object.values(result.recruits.levelWeights))if(!PIECE_TYPES.some(type=>weights[type]>0))weights.pawn=100;
   return result;
 }
+// Weekly resource yields scale with the route's 1..12-star difficulty.
+// Recruits and battle-defender respawn are deliberately not resources.
+const WEEKLY_RESOURCE_FIELDS=Object.freeze({
+  settlement:Object.freeze({gold:'settlementGold'}),
+  caravan:Object.freeze({gold:'caravanGold',supplies:'caravanSupplies'}),
+  event:Object.freeze({gold:'eventGold',supplies:'eventSupplies'}),
+  puzzle:Object.freeze({shards:'puzzleShards'})
+});
+function weeklyProductionMultiplier(stars){
+  return Number.isSafeInteger(stars)?Math.max(1,Math.min(12,stars)):1;
+}
+function weeklyResourceProduction(type,kind,stars,settings=DEFAULT_KINGDOM_ECONOMY){
+  const field=WEEKLY_RESOURCE_FIELDS[type]?.[kind];
+  if(!field)return null; // e.g. skirmish recruits and battle respawn: no multiplier
+  const base=settings?.production?.[field];
+  if(!Number.isSafeInteger(base)||base<0)return null;
+  return base*weeklyProductionMultiplier(stars);
+}
 function economyValue(path,settings=DEFAULT_KINGDOM_ECONOMY){
   return path.split('.').reduce((obj,key)=>obj?.[key],settings);
 }
@@ -170,4 +188,4 @@ function recruitTypeForLevel(level,seed,settings=DEFAULT_KINGDOM_ECONOMY){
   for(const type of PIECE_TYPES){roll-=weights[type];if(roll<0)return type;}
   return 'pawn';
 }
-export {PIECE_TYPES,PIECE_LABELS,NAMED_HERO_LABELS,DEFAULT_KINGDOM_ECONOMY,ECONOMY_GROUPS,ECONOMY_LABELS,economyClone,normalizeKingdomEconomy,economyValue,recruitTypeForLevel};
+export {PIECE_TYPES,PIECE_LABELS,NAMED_HERO_LABELS,DEFAULT_KINGDOM_ECONOMY,ECONOMY_GROUPS,ECONOMY_LABELS,economyClone,normalizeKingdomEconomy,economyValue,recruitTypeForLevel,WEEKLY_RESOURCE_FIELDS,weeklyProductionMultiplier,weeklyResourceProduction};
