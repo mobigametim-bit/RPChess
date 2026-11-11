@@ -182,7 +182,7 @@
   }
   body.kingdom-map-active .kingdom-map-screen .km-heading{
     grid-area:day!important;
-    display:flex!important;align-items:center!important;
+    display:flex!important;flex-direction:row!important;align-items:center!important;
     justify-content:space-between!important;gap:7px!important;
     height:100%!important;min-height:52px!important;
     padding:7px 9px!important;margin:0!important;
