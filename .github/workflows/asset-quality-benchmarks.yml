@@ -1,0 +1,36 @@
+name: Parchment raster visual QA (non-release)
+on:
+  push:
+    branches: [feature/asset-quality-benchmarks-20261111]
+    paths:
+      - '.github/workflows/asset-quality-benchmarks.yml'
+      - 'scripts/asset-quality-benchmarks.cjs'
+      - 'game/assets/kingdom-parchment/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  visual-compare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install browser benchmark tooling
+        run: |
+          npm ci --no-audit --no-fund
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
+          npx playwright install chromium
+      - name: Compare all parchment SVG and rasterized variants
+        run: node scripts/asset-quality-benchmarks.cjs
+      - name: Upload pixel-diff report and sample images
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: parchment-visual-quality
+          path: test-results/asset-quality/
+          retention-days: 14
+          if-no-files-found: error
