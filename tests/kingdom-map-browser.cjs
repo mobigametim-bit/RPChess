@@ -1651,6 +1651,47 @@ async function assertTileImage(page,cellId){
   }
   await servicesPage.setViewportSize({width:1280,height:720});
   await servicesPage.close();
-  console.log('KINGDOM MAP PASS — click-inspect, king drag, shortest routes, event stop, map pan, step supplies');
+  // A scouted undefeated Battle shows its persistent red province. Player
+  // territory and count stay untouched; unfogged red ink must paint on paper.
+  const enemy=await browser.newPage({viewport:{width:1280,height:720},reducedMotion:'reduce'});
+  await enemy.goto(url,{waitUntil:'domcontentloaded'});
+  await startNewRun(enemy,{playerName:'Province QA',legacyTravel:false});
+  await enemy.locator('[data-roster-travel]').click();
+  await enemy.locator('[data-kingdom-map-screen]:not([hidden])').waitFor({timeout:16000});
+  const redStats=await enemy.evaluate(async storage=>{
+    const core=await import('./js/kingdom-map-core.mjs?v=20261111-battle-province-v1');
+    let run=JSON.parse(localStorage.getItem(storage));
+    const origin={x:5,y:4},id='5,4';
+    const choice=core.randomEncounter(run,origin,500,{
+      type:'battle',biome:'plains',landmark:null,raceTag:'orcs',paths:{}});
+    let map={...run.kingdomMap,king:origin,pendingCell:null,
+      cells:{...run.kingdomMap.cells,
+        [id]:{status:'revealed',explored:true,selectedEncounter:choice}}};
+    map=core.reserveBattleTerritories(map);
+    const province=map.battleTerritories.find(t=>t.id===id);
+    if(!province||!province.cells.includes(id))throw Error('Battle red province missing origin');
+    for(const tile of province.cells)if(!map.cells[tile])
+      map.cells[tile]={status:'completed',type:'empty',explored:true};
+    run.kingdomMap=map;
+    localStorage.setItem(storage,JSON.stringify(run));
+    globalThis.RPChessKingdomMap.open();
+    const real=globalThis.RPChessKingdomMap.map;
+    return {red:province.cells.length,owned:core.playerTerritoryCount(real),
+      redBorders:document.querySelector('[data-kingdom-parchment]')?.dataset.enemyBorderSegments,
+      counter:document.querySelector('[data-kingdom-points]')?.textContent,
+      blueOverlap:province.cells.filter(tile=>core.isOwned(real,tile))};
+  },key);
+  assert(redStats.red>=2&&redStats.red<=13,'red province must have ELO/200 cells');
+  assert.equal(redStats.counter,String(redStats.owned),
+    'territory HUD counts the actual unique owned area, excluding enemy provinces');
+  assert.deepEqual(redStats.blueOverlap,[],'blue and red provinces must not overlap');
+  assert(Number(redStats.redBorders)>0,'red Battle boundaries must draw on parchment');
+  if(process.env.RPCHESS_UI_SCREENSHOT_DIR){
+    fs.mkdirSync(process.env.RPCHESS_UI_SCREENSHOT_DIR,{recursive:true});
+    await enemy.screenshot({path:path.join(process.env.RPCHESS_UI_SCREENSHOT_DIR,
+      'battle-red-territory.png'),fullPage:false});
+  }
+  await enemy.close();
+  console.log('KINGDOM MAP PASS — click-inspect, king drag, shortest routes, event stop, map pan, step supplies, red provinces');
  }finally{await browser.close()}
 })().catch(e=>{console.error(e.stack||e);process.exitCode=1});
