@@ -95,10 +95,10 @@ const DEFAULT_KINGDOM_ECONOMY=Object.freeze({
   },
   production:{
     weekDays:7,
-    settlementGold:20,
-    caravanGold:12,caravanSupplies:5,
-    eventGold:10,eventSupplies:4,
-    puzzleShards:5,
+    settlementGold:10,
+    caravanGold:5,caravanSupplies:5,
+    eventGold:2,eventSupplies:2,
+    puzzleShards:1,
     skirmishRecruits:1,
     battleRespawnWeeks:1
   },
