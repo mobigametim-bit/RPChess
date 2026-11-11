@@ -6,7 +6,7 @@ import {combatTheme} from './race-assets.mjs';
 import {worldAt,biomeAt} from './kingdom-world-core.mjs?v=20261109-kingdom-feedback1';
 import {SCOUT_RADIUS} from './kingdom-world-config.mjs';
 import {KINGDOM_OUTPOST_SHARD_COST} from './arena-core.mjs?v=20261109-kingdom-economy-v7';
-import {DEFAULT_KINGDOM_ECONOMY} from './kingdom-economy-config.mjs';
+import {DEFAULT_KINGDOM_ECONOMY,weeklyResourceProduction} from './kingdom-economy-config.mjs';
 import {synchronizeRoyalRoads} from './kingdom-road-network.mjs?v=20261110-roadgrid-v3';
 
 // Live defaults mirror Atlas Lab's canonical economy; change only after acceptance.
@@ -130,7 +130,11 @@ function weekForDay(day){return Math.max(0,Math.floor((day||1)/WEEK_DAYS));}
 function productionFor(map,id,type,week){
  const choices=PROTOTYPE_YIELDS[type];if(!choices)return null;
  const kinds=Object.keys(choices),kind=kinds[hashString(map.seed+':production:'+id+':'+week)%kinds.length];
- return {id:'production:'+id+':'+week+':'+kind,week,kind,amount:choices[kind]};
+ const stars=map.cells?.[id]?.selectedEncounter?.stars;
+ // Only gold, supplies and shards scale. Skirmish recruits and Battle
+ // defender respawn keep their fixed weekly amount/duration.
+ const scaled=weeklyResourceProduction(type,kind,stars);
+ return {id:'production:'+id+':'+week+':'+kind,week,kind,amount:scaled??choices[kind]};
 }
 function settleWeeklyProduction(map){
  const week=weekForDay(map.day);

@@ -1,0 +1,7 @@
+name = "rpchess-atlas-economy-preview"
+compatibility_date = "2026-11-11"
+
+# Isolated balancing sandbox; never modifies production Pages.
+[assets]
+directory = "../dist"
+not_found_handling = "single-page-application"

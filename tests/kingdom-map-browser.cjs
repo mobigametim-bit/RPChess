@@ -1173,7 +1173,7 @@ async function assertTileImage(page,cellId){
   assert.equal(await collectButton.getAttribute('data-production-kind'),'gold');
   const beforeClaim=(await read(walking)).gold;
   await collectButton.click();
-  assert.strictEqual((await read(walking)).gold,beforeClaim+20);
+  assert.strictEqual((await read(walking)).gold,beforeClaim+10);
   assert.equal(await walking.locator('[data-kingdom-collect="'+ownedProducer+'"]').count(),0);
   assert.equal((await read(walking)).kingdomMap.productionClaims.length,1);
   const afterClaim=(await read(walking)).gold;
@@ -1446,7 +1446,39 @@ async function assertTileImage(page,cellId){
   assert(countsAfter<=countsBefore,'forbidding all neighbors cannot create more events');
   assert.equal(await labPage.locator('#simControls').count(),1);
   assert.equal(await labPage.locator('#controls').count(),1);
-  assert.deepStrictEqual(atlasErrors,[],'original v6 extension must not emit page errors');
+  // Reuse Atlas Lab's real browser QA to verify the editor's N-level preview.
+  await labPage.locator('#labEconomyTab').click();
+  await labPage.locator('#kmEconomyPreviewStars').fill('5');
+  await labPage.locator('#kmEconomyPreviewStars').dispatchEvent('change');
+  const productionPreview=await labPage.evaluate(()=>{
+    const value=(type,kind)=>[...document.querySelectorAll('#kmEconomyProductionPreview tbody tr')]
+      .find(row=>row.dataset.productionType===type&&row.dataset.productionKind===kind)
+      ?.lastElementChild?.textContent;
+    return {level:document.querySelector('#kmEconomyPreviewStars')?.value,
+      settlement:value('settlement','gold'),caravanGold:value('caravan','gold'),
+      caravanSupplies:value('caravan','supplies'),eventGold:value('event','gold'),
+      eventSupplies:value('event','supplies'),puzzle:value('puzzle','shards'),
+      recruits:value('skirmish','recruits'),respawn:value('battle','battle'),
+      exported:window.RPChessAtlasEconomy.exportConfig()};
+  });
+  assert.deepStrictEqual({
+    level:productionPreview.level,settlement:productionPreview.settlement,
+    caravanGold:productionPreview.caravanGold,caravanSupplies:productionPreview.caravanSupplies,
+    eventGold:productionPreview.eventGold,eventSupplies:productionPreview.eventSupplies,
+    puzzle:productionPreview.puzzle,recruits:productionPreview.recruits,respawn:productionPreview.respawn
+  },{level:'5',settlement:'50',caravanGold:'25',caravanSupplies:'25',
+    eventGold:'10',eventSupplies:'10',puzzle:'5',recruits:'1',respawn:'1'},
+    'Atlas Lab weekly calculator must show base×N resources and fixed non-resources');
+  assert.equal(productionPreview.exported.economy.production.settlementGold,10,
+    'preview N is UI-only and must not change exported base economy');
+  if(process.env.RPCHESS_ATLAS_ECON_SCREENSHOT_DIR){
+    fs.mkdirSync(process.env.RPCHESS_ATLAS_ECON_SCREENSHOT_DIR,{recursive:true});
+    await labPage.screenshot({
+      path:path.join(process.env.RPCHESS_ATLAS_ECON_SCREENSHOT_DIR,'atlas-economy-N5.png'),
+      fullPage:true
+    });
+  }
+  assert.deepStrictEqual(atlasErrors,[],'Atlas Lab economy and original simulator must not emit page errors');
   await labPage.close();
   // Regression: revisiting a cleared Settlement used to hide the Kingdom
   // without opening Services, then persisted an active choice that blocked

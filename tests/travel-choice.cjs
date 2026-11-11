@@ -357,12 +357,35 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   assert.strictEqual(weekly.day,7);
   assert.strictEqual(mapCore.weekForDay(weekly.day),1);
   const ready=weekly.cells[producerId].production;
-  assert(ready&&ready.kind==='gold'&&ready.amount===20,
+  assert(ready&&ready.kind==='gold'&&ready.amount===10,
     'Day 7 queues one Gold reward for an owned completed Settlement');
   assert.strictEqual(mapCore.settleWeeklyProduction(weekly),weekly,
     'production is generated at most once per week');
+  // N = route level for resource rewards; old level-I routes remain unchanged.
+  const economy=await import(pathToFileURL(path.join(game,'js/kingdom-economy-config.mjs')).href);
+  const fiveStarMap={...productionMap,cells:{...productionMap.cells,
+    [producerId]:{...productionMap.cells[producerId],
+      selectedEncounter:{...productionMap.cells[producerId].selectedEncounter,stars:5}}}};
+  const fiveStarWeek=mapCore.settleWeeklyProduction({...fiveStarMap,day:7,processedThroughWeek:0});
+  assert.strictEqual(fiveStarWeek.cells[producerId].production.amount,50,
+    'level-V Settlement must produce 10×5 Gold per week');
+  assert.deepStrictEqual([
+    economy.weeklyResourceProduction('caravan','gold',5),
+    economy.weeklyResourceProduction('caravan','supplies',5),
+    economy.weeklyResourceProduction('event','gold',5),
+    economy.weeklyResourceProduction('event','supplies',5),
+    economy.weeklyResourceProduction('puzzle','shards',5)
+  ],[25,25,10,10,5],'the five resource payouts must scale with route level');
+  assert.deepStrictEqual([
+    economy.weeklyResourceProduction('settlement','gold',12),
+    economy.weeklyResourceProduction('settlement','gold',undefined),
+    economy.weeklyResourceProduction('skirmish','recruits',12),
+    economy.weeklyResourceProduction('battle','battle',12)
+  ],[120,10,null,null],'cap at level XII, legacy level I and exclude non-resources');
+
+
   const collected=mapCore.collectProduction(weekly,producerId);
-  assert(collected.ok&&collected.kind==='gold'&&collected.amount===20);
+  assert(collected.ok&&collected.kind==='gold'&&collected.amount===10);
   assert(!mapCore.collectProduction(collected.map,producerId).ok,
     'the same reward cannot be claimed twice');
   assert.deepStrictEqual(mapCore.advanceDay(collected.map,'economic-day:5'),collected.map,
