@@ -71,7 +71,7 @@ jobs:
             for(let attempt=0;attempt<12;attempt++){
               try{
                 const paths=[
-                  ['/', 'kingdom-map'],
+                  ['/', 'data-reboot-foundation'],
                   ['/js/kingdom-map-core.mjs','reserveBattleTerritories'],
                   ['/js/kingdom-map-app.mjs','playerTerritoryCount'],
                   ['/js/kingdom-map-overlay.mjs','drawEnemyBattleTerritories'],
