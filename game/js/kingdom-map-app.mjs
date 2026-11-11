@@ -291,7 +291,7 @@ function castleCard(map){
     (lang()==='en'?', cost ':', стоимость ')+price+' '+(lang()==='en'?'gold':'золота'));
   buy.title=buy.getAttribute('aria-label');
   const piece=document.createElement('img');piece.className='km-castle-recruit__piece';
-  piece.src=boardRacePiecePath(race,type,'w');piece.alt='';
+  piece.src=boardRacePiecePath(race,type,'w');piece.alt=label;
   piece.title=label;piece.loading='lazy';piece.decoding='async';
   piece.setAttribute('aria-hidden','true');
   const owned=document.createElement('span');owned.className='km-castle-recruit__count';
