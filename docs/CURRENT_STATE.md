@@ -4,19 +4,19 @@
 **Production source:** `main`; the September 2026 production baseline retained below is historical and should not be mistaken for the latest feature-branch state.  
 **Latest separately verified Pages release SHA:** not established in this document; deployment is manual.  
 **Production URL:** https://mobigametim-bit.github.io/RPChess/  
-**Current active development:** [Draft PR #192](https://github.com/mobigametim-bit/RPChess/pull/192) (responsive Kingdom/Roster plus opt-in parchment PNG) and [Issue #191](https://github.com/mobigametim-bit/RPChess/issues/191) (complete raster visual/release gate). PR #190 merged into `main` on 2026-11-11.  
+**Accepted release:** [PR #192](https://github.com/mobigametim-bit/RPChess/pull/192) (responsive Journey/Roster and PNG-only parchment), [Issue #191](https://github.com/mobigametim-bit/RPChess/issues/191) accepted by owner 11.11.2026. PR #190 merged on 11.11.2026.  
 **Active specs:** `docs/KINGDOM_EXPLORATION_ECONOMY_BIOME_DESIGN.md`, `docs/KINGDOM_ECONOMY_ARMY_SPEC.md`, `docs/features/KINGDOM_ROADS_AND_TRAVELERS_PLAN.md`.
 
 This file separates production history from active feature work. Older September milestones and acceptance receipts below are retained as historical evidence, not current claims of unimplemented features. The GitHub Pages site is updated only by a manually dispatched Pages workflow from `main`; regular PR checks validate without publishing.
 
 
-## Active QA release gate — 11.11.2026
+## Accepted release gate — 11.11.2026
 
-- PR #190, Infinite Kingdom / settlements / NPC / tutorial, is merged. The dated notes below about its Draft state are **historical**.
-- PR #192 stays Draft and unmerged until both responsive UI and Issue #191 raster PNG release candidate have passed the owner's game playtest.
-- Issue #191: 112 source SVGs remain untouched, conversion runs in distribution only. The PNG runtime is **opt-in**, using `RPCHESS_PARCHMENT_RASTER=1`; a separate Cloudflare Worker and evidence bundle are validated in `.github/workflows/parchment-raster-preview.yml`.
-- Required raster acceptance: screenshots of actual Journey in 1366×768 and 844×390 at 55/117/220 zoom, pixel parity, real dist and ZIP deltas, and informational headless frame pacing. A successful CI does not replace owner acceptance.
-- Neither Issue #191 nor PR #192 is merged into production at this stage.
+- Owner accepted Issue #191's raster visual comparison and authorized closing it and merging PR #192.
+- Production converts all 112 parchment source SVG masters to PNG, removes their SVG copies from `dist/`, and requests PNG unconditionally. No opt-in flag, HTML metadata switch or SVG runtime fallback exists.
+- Original SVGs remain versioned editable source art and are never shipped as a runtime option. Unrelated SVG art continues as before.
+- [Measured SVG vs PNG QA](https://github.com/mobigametim-bit/RPChess/actions/runs/43035867834): pixel parity 0% changed at 128/142/284px; saving 33,494,228 bytes in dist and 2,153,318 bytes in ZIP. CI frame pacing is not a real phone benchmark.
+- PR #192 also delivers the accepted responsive Journey/Roster layouts and the completed Settlement entrance icon. Public GitHub Pages requires a separate manual deploy workflow; merging code alone does not publish.
 
 ## Historical feature branch — Infinite Kingdom, 10.11.2026
 
