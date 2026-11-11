@@ -83,6 +83,43 @@ class MemoryStorage {
   assert(foundation.indexOf("import('./content/monetization.mjs?v=20261111-polish-v1')") < foundation.indexOf("import('./battle-route.mjs?v=20261111-polish-v1')"), 'Ad gate must register before route owners');
   assert(foundation.includes('bindStarvationRescue'), 'Starvation rescue must bind only after the Starvation owner exists');
 
+  // Regression: a rewarded rescue must restore the casualty, pay exactly
+  // one trip, then start the Kingdom Skirmish through beginEncounter().
+  const persistence=await import(pathToFileURL(path.join(root,'game/js/run-persistence.mjs')).href);
+  const core=await import(pathToFileURL(path.join(root,'game/js/kingdom-map-core.mjs')).href);
+  const initial=persistence.createRun({id:'ad-rescue-kingdom',now:1000});
+  const map=core.createKingdomMap(initial,500);
+  const route=core.randomEncounter(initial,{x:1,y:0},500,
+    {type:'skirmish',biome:'plains',landmark:null,raceTag:null,paths:{}});
+  const entry=core.enterCell(map,{x:1,y:0},route);
+  assert(entry.ok);
+  const companion=initial.roster.find(c=>!c.isRunKing);
+  const starving={...initial,supplies:0,kingdomMap:entry.map,
+    roster:initial.roster.map(c=>c.id===companion.id?{...c,status:'dead'}:c),
+    activeTravelChoice:{...route,supplyCostAtSelection:1,supplyPaid:0,
+      starvationVictimId:companion.id,starvationVictimPreviousStatus:'healthy',
+      starvationAcknowledged:false}};
+  const rescueId=monetization.rescueReceiptId(starving.id,route.id);
+  const rescued=monetization.applyStarvationRescue(starving,rescueId);
+  assert.equal(rescued.supplies,4,'5 rewarded supplies pay the single already selected -1 trip');
+  assert.equal(rescued.roster.find(c=>c.id===companion.id).status,'healthy');
+  assert.equal(rescued.activeTravelChoice.starvationVictimId,undefined);
+  assert.deepStrictEqual(monetization.applyStarvationRescue(rescued,rescueId),rescued,
+    'same rewarded receipt cannot credit or resurrect twice');
+  let entered=0;
+  globalThis.RPChessTravelChoice={resumeMapEncounter(choice){
+    entered++;assert.equal(choice.id,route.id);
+    const begun=core.beginEncounter(rescued.kingdomMap,choice.kingdomCell);
+    assert(begun.ok&&begun.map.cells[choice.kingdomCell].status==='in_progress',
+      'rewarded Skirmish must advance the persisted map before launching combat');
+    assert(!core.beginEncounter(begun.map,choice.kingdomCell).ok,
+      'already started Skirmish cannot be started again');
+    return true;
+  }};
+  assert(monetization.dispatchRescuedEncounter(rescued));
+  assert.equal(entered,1,'rewarded rescue must invoke canonical encounter gate exactly once');
+  delete globalThis.RPChessTravelChoice;
+
   // A mobile VK host can expose ShowNativeAds but omit CheckNativeAds and
   // SetSupportedHandlers. The rewarded tap must still reach the host directly.
   const bus = new EventTarget();
