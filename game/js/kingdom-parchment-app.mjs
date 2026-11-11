@@ -1,7 +1,7 @@
 /* Optional parchment atlas: an optimized, seamless author-provided ground tile.
  * The existing nature SVGs, world rivers and fog remain separate layers.
  */
-import {PARCHMENT_TILE,randomAt,terrainAt,pickSprite,hash32} from './kingdom-parchment-core.mjs';
+import {PARCHMENT_TILE,randomAt,terrainAt,pickSprite,hash32,PARCHMENT_RUNTIME_FORMAT} from './kingdom-parchment-core.mjs';
 import {VISUAL} from './kingdom-world-config.mjs?v=20261109-atlas-visual5';
 import {drawKingdomBoundary,drawKingdomRoads} from './kingdom-map-overlay.mjs?v=20261110-natural-road-layer-v4';
 
@@ -49,7 +49,7 @@ function probeArt(){
  assetProbe=new Image();
  assetProbe.onload=()=>{assetsReady=true;queueRedraw();};
  assetProbe.onerror=()=>{assetsReady=false;queueRedraw();};
- assetProbe.src='assets/kingdom-parchment/forest_clusters/01_small_grove.svg';
+ assetProbe.src='assets/kingdom-parchment/forest_clusters/01_small_grove.'+PARCHMENT_RUNTIME_FORMAT;
 }
 function getArt(src,repaint){
  if(assetsReady!==true)return null;
@@ -77,7 +77,10 @@ function drawTiledPaper(ctx,left,top,width,height,repaint){
 }
 function drawVector(ctx,src,x,y,width,height,alpha,repaint){
  const art=getArt(src,repaint);if(!art)return false;
- ctx.save();ctx.globalAlpha=alpha;ctx.drawImage(art,x,y,width,height);ctx.restore();
+ ctx.save();ctx.globalAlpha=alpha;
+ // Pre-rendered pixel art must not be blurred on canvas zoom/repaint.
+ if(PARCHMENT_RUNTIME_FORMAT==='png')ctx.imageSmoothingEnabled=false;
+ ctx.drawImage(art,x,y,width,height);ctx.restore();
  return true;
 }
 function drawBasePatches(ctx,seed,left,top,width,height,repaint){
