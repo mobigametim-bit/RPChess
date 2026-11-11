@@ -1,0 +1,122 @@
+name: Atlas Economy N-Level Production Preview
+on:
+  push:
+    branches:
+      - feature/atlas-weekly-production-by-stars-20261111
+    paths:
+      - '.github/workflows/atlas-economy-preview.yml'
+      - 'atlas-economy-preview/**'
+      - 'game/**'
+      - 'scripts/**'
+      - 'tests/kingdom-map-browser.cjs'
+      - 'tests/travel-choice.cjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: rpchess-atlas-economy-preview-20261111
+  cancel-in-progress: true
+jobs:
+  build-test-preview:
+    if: github.repository == 'mobigametim-bit/RPChess' && github.ref == 'refs/heads/feature/atlas-weekly-production-by-stars-20261111'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm/rpchess-runtime-assets-v1
+          key: rpchess-runtime-assets-v1-${{ runner.os }}-${{ hashFiles('game/assets/**/*.png', 'game/generated_assets/*.png', 'scripts/*asset*.cjs', 'scripts/runtime-assets-build.cjs') }}
+          restore-keys: |
+            rpchess-runtime-assets-v1-${{ runner.os }}-
+      - name: Build game and Atlas Lab with verified engine
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund
+          npm pack stockfish@18.0.0 --silent --pack-destination /tmp
+          mkdir -p /tmp/rpchess-stockfish-package /tmp/rpchess-stockfish-verified
+          tar -xzf /tmp/stockfish-18.0.0.tgz -C /tmp/rpchess-stockfish-package
+          package=/tmp/rpchess-stockfish-package/package
+          for name in stockfish-18-lite-single.js stockfish-18-lite-single.wasm; do
+            source=$(find "$package" -type f -name "$name" -print -quit)
+            test -n "$source"
+            cp "$source" "/tmp/rpchess-stockfish-verified/$name"
+          done
+          license=$(find "$package" -type f -iname 'Copying.txt' -print -quit)
+          test -n "$license"
+          cp "$license" /tmp/rpchess-stockfish-verified/COPYING.txt
+          RPCHESS_INCLUDE_ATLAS_LAB=1 RPCHESS_STOCKFISH_ASSET_DIR=/tmp/rpchess-stockfish-verified npm run gate:local
+      - name: Ensure editor and updated game logic ship in preview
+        run: |
+          node <<'NODE'
+          const assert=require('node:assert/strict'),fs=require('node:fs');
+          const editor=fs.readFileSync('dist/js/kingdom-economy-lab.mjs','utf8');
+          const game=fs.readFileSync('dist/js/kingdom-map-core.mjs','utf8');
+          const config=fs.readFileSync('dist/js/kingdom-economy-config.mjs','utf8');
+          assert(editor.includes('kmEconomyProductionPreview'));
+          assert(editor.includes('weeklyResourceProduction'));
+          assert(config.includes('weeklyProductionMultiplier'));
+          assert(game.includes('weeklyResourceProduction(type,kind,stars)'));
+          assert(fs.statSync('dist/atlas-lab.html').size>100);
+          console.log('Economy preview: production base×N UI and game formula bundled.');
+          NODE
+      - name: Real Kingdom and Atlas Economy Chromium regression
+        env:
+          RPCHESS_BROWSER_TEST: kingdom-map-browser.cjs
+          RPCHESS_JOURNEY_PICKER_ONLY: '1'
+          RPCHESS_ATLAS_ECON_SCREENSHOT_DIR: test-results/atlas-economy
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
+          npx playwright install chromium
+          npm run test:browser
+      - name: Save N=5 Atlas Economy actual-browser screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: atlas-economy-N5-browser
+          path: test-results/atlas-economy/
+          retention-days: 14
+          if-no-files-found: warn
+      - name: Deploy isolated Atlas Economy Cloudflare preview
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          grep -Fx 'name = "rpchess-atlas-economy-preview"' atlas-economy-preview/wrangler.toml
+          npx wrangler deploy --config atlas-economy-preview/wrangler.toml
+      - name: Verify published interactive N-level Atlas Lab
+        run: |
+          node <<'NODE'
+          const assert=require('node:assert/strict');
+          (async()=>{
+            const base='https://rpchess-atlas-economy-preview.mobigametim.workers.dev';
+            for(let i=0;i<12;i++){
+              try{
+                const checks=[
+                  ['/atlas-lab.html','RPChessAtlasSimulation'],
+                  ['/js/kingdom-economy-lab.mjs','kmEconomyProductionPreview'],
+                  ['/js/kingdom-economy-config.mjs','weeklyProductionMultiplier'],
+                  ['/js/kingdom-map-core.mjs','weeklyResourceProduction(type,kind,stars)']
+                ];
+                for(const [path,needle] of checks){
+                  const r=await fetch(base+path,{cache:'no-store'});
+                  assert.equal(r.status,200,path);
+                  assert((await r.text()).includes(needle),path+' missing '+needle);
+                }
+                console.log('Atlas Economy N=level preview published and available.');
+                return;
+              }catch(err){
+                if(i===11)throw err;
+                await new Promise(resolve=>setTimeout(resolve,3000));
+              }
+            }
+          })().catch(e=>{console.error(e);process.exitCode=1});
+          NODE
