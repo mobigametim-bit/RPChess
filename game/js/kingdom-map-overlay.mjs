@@ -201,7 +201,7 @@ function drawKingdomOverlay(canvas,{map,view,columns,rows,drawBorder=true,drawRo
   glowCount++;
  }
  ctx.restore();
- const enemyBorderCount=drawEnemyBattleTerritories(ctx,{map,view,columns,rows});
+ const enemyBorderCount=drawBorder?drawEnemyBattleTerritories(ctx,{map,view,columns,rows}):0;
  const roadCount=drawKingdomRoads(ctx,{map,view,columns,rows,paint:drawRoads});
  // The overlay is beneath all site and king art; never cut off the road
  // before its endpoint. Roads physically reach the tile centers.
