@@ -2,7 +2,7 @@
  * The existing nature SVGs, world rivers and fog remain separate layers.
  */
 import {PARCHMENT_TILE,randomAt,terrainAt,pickSprite,hash32} from './kingdom-parchment-core.mjs?v=20261111-parchment-png-only-v1';
-import {VISUAL} from './kingdom-world-config.mjs?v=20261109-atlas-visual5';
+import {VISUAL} from './kingdom-world-config.mjs?v=20261112-fog98-v1';
 import {drawKingdomBoundary,drawEnemyBattleTerritories,drawKingdomRoads} from './kingdom-map-overlay.mjs?v=20261112-province-colors-v1';
 
 const PAPER_TILE_SRC='assets/kingdom-parchment/parchment_tile_256.webp',PAPER_TILE_SIZE=256;

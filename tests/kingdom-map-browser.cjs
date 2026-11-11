@@ -125,6 +125,10 @@ async function assertTileImage(page,cellId){
     return Boolean(button&&piece.alt&&piece.naturalWidth&&coin.naturalWidth&&!button.textContent.includes('зол.'));
   })));
   assert.equal(recruitArt.length,5,'all five permanent Army roles have Castle hire buttons');
+  assert.equal(await page.locator('.km-castle-recruit button .km-castle-recruit__piece').count(),5,
+    'all recruit images must be inside their clickable tiles');
+  assert.equal(await page.locator('.km-castle-recruit button .km-castle-recruit__count').count(),5,
+    'each recruit button must show its live owned count');
   assert(recruitArt.every(Boolean),'Castle recruit art and Gold currency icons must decode');
   assert.deepEqual(await page.locator('[data-kingdom-army-count]').allTextContents(),
     ['×0','×0','×0','×0','×0'],

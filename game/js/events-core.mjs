@@ -106,8 +106,18 @@ function heroById(run, heroId) {
   return (run?.roster || []).find((hero) => hero?.id === heroId) || null;
 }
 
+function hasEventSkirmishCompanion(run){
+  // Event Skirmishes use named healthy companions, not anonymous Castle Army.
+  return Boolean((run?.roster||[]).some(c=>!c?.isRunKing&&c?.status==='healthy'));
+}
+function choiceMayStartSkirmish(choice){
+  return [...(choice.successEffects||[]),...(choice.failureEffects||[]),
+    ...(choice.alwaysEffects||[])].some(e=>e?.type==='combat'&&e.combatType==='skirmish');
+}
 function choiceAvailability(run, choice) {
   const normalized = normalizeChoice(choice);
+  if(choiceMayStartSkirmish(normalized)&&!hasEventSkirmishCompanion(run))
+    return {enabled:false,reason:'skirmish-needs-companion',hero:null,choice:normalized};
   let requiredHero = null;
   if (normalized.requiredHeroId) {
     requiredHero = heroById(run, normalized.requiredHeroId);
@@ -234,4 +244,4 @@ function eventCombatCompleted(run) {
 
 if (EVENT_CATALOG.length !== EVENT_COUNT) throw new Error(`Events catalog must contain ${EVENT_COUNT} events, got ${EVENT_CATALOG.length}`);
 
-export { EVENT_COUNT, ROLE_TYPES, normalizeChoice, normalizedEvent, shuffledEventIds, nextEventId, isEventState, createEventState, livingRoleHero, choiceAvailability, deterministicRoll, resolveEventChoice, completeEvent, markEventCombatStarted, eventCombatCompleted };
+export { EVENT_COUNT, ROLE_TYPES, normalizeChoice, normalizedEvent, shuffledEventIds, nextEventId, isEventState, createEventState, livingRoleHero, hasEventSkirmishCompanion, choiceAvailability, deterministicRoll, resolveEventChoice, completeEvent, markEventCombatStarted, eventCombatCompleted };

@@ -246,7 +246,7 @@ async function kingdomBackdropContract(browser) {
       assert(m.focus&&m.territory&&m.scale>0,'castle camera must be present at '+label);
       assert(Math.abs(m.worldCenter[0]-m.focus.centerX)<2&&
         Math.abs(m.worldCenter[1]-m.focus.centerY)<2,
-        label+': castle must be exactly at focus center');
+        label+': kingdom center must be at focus center');
       assert(m.focus.bottom<=m.navTop-9,
         label+': owned kingdom must stay above icon dock');
       if(m.landscape&&m.flagLeft)
@@ -254,22 +254,30 @@ async function kingdomBackdropContract(browser) {
           label+': owned kingdom must stay left of Chronicle');
       // The outer HALF of every extreme cell must be inside the free region.
       // Maximal fit uses the near-exact zoom, not a tiny fit-to-entire-screen.
-      const owned=m.territory,castle=owned.castle,T=142;
-      const left=m.focus.centerX+(owned.minX-castle.x-.5)*T*m.scale;
-      const right=m.focus.centerX+(owned.maxX-castle.x+.5)*T*m.scale;
-      const top=m.focus.centerY+(owned.minY-castle.y-.5)*T*m.scale;
-      const bottom=m.focus.centerY+(owned.maxY-castle.y+.5)*T*m.scale;
+      const owned=m.territory,T=142;
+      const cx=(owned.minX+owned.maxX)/2,cy=(owned.minY+owned.maxY)/2;
+      const left=m.focus.centerX+(owned.minX-cx-.5)*T*m.scale;
+      const right=m.focus.centerX+(owned.maxX-cx+.5)*T*m.scale;
+      const top=m.focus.centerY+(owned.minY-cy-.5)*T*m.scale;
+      const bottom=m.focus.centerY+(owned.maxY-cy+.5)*T*m.scale;
       assert(left>=m.focus.left-2&&right<=m.focus.right+2&&
         top>=m.focus.top-2&&bottom<=m.focus.bottom+2,
         label+': whole kingdom perimeter must fit marked zone: '+JSON.stringify(m));
       const padding=Math.min(18,Math.max(7,Math.min(m.focus.width,m.focus.height)*.025));
-      const xRadius=Math.max(castle.x-owned.minX,owned.maxX-castle.x)+.5;
-      const yRadius=Math.max(castle.y-owned.minY,owned.maxY-castle.y)+.5;
+      const xRadius=(owned.maxX-owned.minX+1)/2;
+      const yRadius=(owned.maxY-owned.minY+1)/2;
       const ideal=Math.min((m.focus.width/2-padding)/(xRadius*T),
         (m.focus.height/2-padding)/(yRadius*T));
       assert(Math.abs(m.scale-ideal)/Math.max(ideal,.0001)<.001,
         label+': scale must be maximal and determined by owned boundaries');
     }
+    const conquestBounds=await page.evaluate(async()=>{
+      const {boundsOf}=await import('./js/kingdom-menu-preview.mjs?v=20261112-owned-bounds-v1');
+      const map=JSON.parse(localStorage.getItem('rpchess.reboot.v1.run')).kingdomMap;
+      return boundsOf({...map,battleConqueredCells:[...(map.battleConqueredCells||[]),'17,-9']});
+    });
+    assert(conquestBounds.maxX>=17&&conquestBounds.minY<=-9,
+      'menu must include remote conquered Battle province cells, even without stored cell entries');
     assert.deepStrictEqual(errors,[],'backdrop browser errors');
   }finally{await page.close();}
 }

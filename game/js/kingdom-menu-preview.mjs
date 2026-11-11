@@ -1,12 +1,12 @@
 /* Compact, live, read-only kingdom projection for the six responsive main-menu layouts.
  * Reuses the game's parchment, roads and NPC renderers; never mutates the saved run. */
 import {readRun} from './run-persistence.mjs';
-import {validateKingdomMap} from './kingdom-map-core.mjs?v=20261111-battle-province-v1';
+import {validateKingdomMap} from './kingdom-map-core.mjs?v=20261112-province-colors-v1';
 import {kingdomMapSprite,kingdomEncounterSprite} from './kingdom-map-assets.mjs';
 import {PARCHMENT_TILE} from './kingdom-parchment-core.mjs?v=20261111-parchment-png-only-v1';
 import {commanderPieceArt} from './commander-portraits.mjs';
-import {renderParchment,renderParchmentFog,parchmentAssetsSettled} from './kingdom-parchment-app.mjs?v=20261111-battle-province-v1';
-import {drawKingdomOverlay} from './kingdom-map-overlay.mjs?v=20261111-battle-province-v1';
+import {renderParchment,renderParchmentFog,parchmentAssetsSettled} from './kingdom-parchment-app.mjs?v=20261112-fog98-v1';
+import {drawKingdomOverlay} from './kingdom-map-overlay.mjs?v=20261112-province-colors-v1';
 import {animateTravelers,stopTravelers} from './kingdom-traveler-renderer.mjs?v=20261111-npc-floor-v1';
 
 const TILE=142,MAX_CANVAS=1900;
@@ -21,6 +21,7 @@ function boundsOf(map){
   const ids=new Set([castle.x+','+castle.y,
     ...(map.centralOwnedCells||[]),
     ...(map.outposts||[]).flatMap(post=>[post.id,...(post.cells||[])]),
+    ...(map.battleConqueredCells||[]),
     ...Object.entries(map.cells||{}).filter(([,cell])=>cell?.annexed).map(([id])=>id)]);
   let minX=castle.x,maxX=castle.x,minY=castle.y,maxY=castle.y;
   for(const id of ids){
@@ -62,11 +63,11 @@ function cameraFor(map){
   const territory=boundsOf(map);
   if(!territory)return null;
   const focus=focusRegion();
-  const castle=territory.castle;
-  // Include the full perimeter of EACH border cell, not just its center.
-  // Symmetric distance is necessary because the castle must remain centered.
-  const maxX=Math.max(castle.x-territory.minX,territory.maxX-castle.x)+.5;
-  const maxY=Math.max(castle.y-territory.minY,territory.maxY-castle.y)+.5;
+  // Every owned land cell must fit, even remote provinces captured in Battles.
+  const center={x:(territory.minX+territory.maxX)/2,
+    y:(territory.minY+territory.maxY)/2};
+  const maxX=(territory.maxX-territory.minX+1)/2;
+  const maxY=(territory.maxY-territory.minY+1)/2;
   const padding=Math.min(18,Math.max(7,Math.min(focus.width,focus.height)*.025));
   const scale=Math.max(.0001,Math.min(
     (focus.width/2-padding)/(maxX*TILE),
@@ -79,8 +80,8 @@ function cameraFor(map){
   const halfColumns=Math.max(4,Math.ceil(radiusX+1));
   const halfRows=Math.max(3,Math.ceil(radiusY+1));
   const columns=halfColumns*2+1,rows=halfRows*2+1;
-  return {focus,scale,territory,center:castle,columns,rows,
-    left:castle.x-halfColumns,top:castle.y-halfRows};
+  return {focus,scale,territory,center,columns,rows,
+    left:center.x-halfColumns,top:center.y-halfRows};
 }
 function canvas(className){
   const element=document.createElement('canvas');
@@ -104,8 +105,7 @@ function fit(){
   const camera=cameraFor(map);
   if(!camera)return;
   const {focus,scale,territory}=camera;
-  // CSS transforms apply about the top-left. The world center is EXACTLY
-  // the Castle because camera.center is pinned to map.castle.
+  // The map midpoint, not the castle, is anchored in the free menu region.
   const x=focus.centerX-Number(world.dataset.worldWidth)*scale/2;
   const y=focus.centerY-Number(world.dataset.worldHeight)*scale/2;
   world.style.left='0px';world.style.top='0px';
@@ -133,7 +133,9 @@ function render(){
   if(!b){clear();return;}
   const owned=(map.centralOwnedCells||[]).length;
   const signature=[run.id,run.savedAt||run.updatedAt||'',map.day||0,map.king.x,map.king.y,
-    Object.keys(map.cells||{}).length,owned,b.columns,b.rows].join(':');
+    Object.keys(map.cells||{}).length,owned,(map.battleConqueredCells||[]).length,
+    (map.outposts||[]).length,b.territory.minX,b.territory.maxX,
+    b.territory.minY,b.territory.maxY,b.columns,b.rows].join(':');
   if(signature===lastKey&&stage.firstElementChild){fit();return;}
   lastKey=signature;stage.hidden=false;
   menu.classList.add('mm-has-kingdom');

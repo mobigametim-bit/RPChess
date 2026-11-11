@@ -37,7 +37,7 @@ const VISUAL=Object.freeze({
   "landmarkDensity": 0.62,
   "landmarkSize": 0.75,
   "landmarkOpacity": 0.92,
-  "fogOpacity": 0.88,
+  "fogOpacity": 0.98,
   "fogRadius": 1.1,
   "fogInner": 0.32,
   "fogInkOpacity": 0.2,

@@ -17,7 +17,7 @@ import {FLAVOR_POOLS} from './travel-choice-core.mjs';
 import {translateLegacy} from './i18n.mjs';
 import {commanderPortrait,commanderTitle} from './commander-portraits.mjs';
 import {kingdomMapSprite,kingdomEncounterSprite} from './kingdom-map-assets.mjs';
-import {renderParchment,renderParchmentFog} from './kingdom-parchment-app.mjs?v=20261112-province-colors-v1';
+import {renderParchment,renderParchmentFog} from './kingdom-parchment-app.mjs?v=20261112-fog98-v1';
 import {drawKingdomOverlay} from './kingdom-map-overlay.mjs?v=20261112-province-colors-v1';
 import {animateTravelers,stopTravelers} from './kingdom-traveler-renderer.mjs?v=20261111-npc-floor-v1';
 import {ATLAS_VIEW} from './kingdom-world-config.mjs?v=20261109-atlas-visual5';
@@ -40,7 +40,7 @@ const COPY={
    moveKing:'Перетащите короля для перемещения',collect:'Собрать',battleReady:'Защитник вернулся. Войди в клетку для нового боя.',
    needCompanion:'Стычка отложена: нужен хотя бы один боец помимо короля. Пополните отряд.',
 
-   completedDetail:'Место освоено. Можно вернуться сюда в любой момент.',zoomGroup:'Масштаб карты',zoomIn:'Увеличить масштаб',zoomOut:'Уменьшить масштаб',zoomReset:'Сбросить масштаб карты'},
+   zoomGroup:'Масштаб карты',zoomIn:'Увеличить масштаб',zoomOut:'Уменьшить масштаб',zoomReset:'Сбросить масштаб карты'},
  en:{day:'Day',shards:'Honor shards',castle:'Castle',supply:'Supplies',power:'Power',points:'Annexation points',
    hidden:'Unexplored territory',empty:'Quiet terrain',safeTerrain:'No encounter at this location.',annex:'Annex · 1 point',annexed:'Part of your kingdom',
    complete:'Cleared',failed:'Failed — retry encounter',inProgress:'Encounter in progress',
@@ -52,7 +52,7 @@ const COPY={
    moveKing:'Drag the king to move',collect:'Collect',battleReady:'Defender returned. Enter the cell for a rematch.',
    needCompanion:'Skirmish postponed: recruit at least one fighter besides your King.',
 
-   completedDetail:'This location is cleared. You can return at any time.',zoomGroup:'Map zoom',zoomIn:'Zoom in',zoomOut:'Zoom out',zoomReset:'Reset map zoom'}
+   zoomGroup:'Map zoom',zoomIn:'Zoom in',zoomOut:'Zoom out',zoomReset:'Reset map zoom'}
 };
 // Atlas view scales the original 142px logical tiles to an interactive 87px default.
 const MAP_LAYOUT=Object.freeze({cellPx:142,eventScalePercent:73,kingPx:92,inspectorWidthPercent:25});
@@ -284,25 +284,23 @@ function castleCard(map){
   const price=DEFAULT_KINGDOM_ECONOMY.castle.recruitGold[type];
   const row=document.createElement('div');row.className='km-castle-recruit';
   const label=lang()==='en'?({pawn:'Pawn',knight:'Knight',bishop:'Bishop',rook:'Rook',queen:'Queen'}[type]):PIECE_LABELS[type];
-  const piece=document.createElement('img');piece.className='km-castle-recruit__piece';
-  piece.src=boardRacePiecePath(race,type,'w');piece.alt=label;piece.title=label;
-  piece.loading='lazy';piece.decoding='async';
-  const portrait=document.createElement('span');portrait.className='km-castle-recruit__portrait';
-  portrait.append(piece);
-  const owned=document.createElement('span');owned.className='km-castle-recruit__count';
-  owned.dataset.kingdomArmyCount=type;
-  owned.textContent='×'+typeCounts[type];
-  owned.title=(lang()==='en'?'In your army: ':'В армии: ')+typeCounts[type];
-  portrait.append(owned);
   const buy=document.createElement('button');buy.type='button';buy.dataset.kingdomCastleHire=type;
   buy.disabled=gold<price;buy.setAttribute('aria-disabled',String(buy.disabled));
-  buy.setAttribute('aria-label',(lang()==='en'?'Hire ':'Нанять ')+label+' · '+price+' '+(lang()==='en'?'gold':'золота'));
-  const action=document.createElement('span');action.textContent=lang()==='en'?'Hire':'Нанять';
+  buy.setAttribute('aria-label',(lang()==='en'?'Hire ':'Нанять ')+label+
+    (lang()==='en'?', owned ':', в наличии ')+typeCounts[type]+
+    (lang()==='en'?', cost ':', стоимость ')+price+' '+(lang()==='en'?'gold':'золота'));
+  buy.title=buy.getAttribute('aria-label');
+  const piece=document.createElement('img');piece.className='km-castle-recruit__piece';
+  piece.src=boardRacePiecePath(race,type,'w');piece.alt='';
+  piece.title=label;piece.loading='lazy';piece.decoding='async';
+  piece.setAttribute('aria-hidden','true');
+  const owned=document.createElement('span');owned.className='km-castle-recruit__count';
+  owned.dataset.kingdomArmyCount=type;owned.textContent='×'+typeCounts[type];
   const amount=document.createElement('strong');amount.textContent=String(price);
-  const coin=document.createElement('img');coin.className='km-castle-recruit__gold';coin.src=GOLD_ICON;
-  coin.alt='';coin.setAttribute('aria-hidden','true');coin.decoding='async';
-  buy.append(action,amount,coin);
-  row.append(portrait,buy);recruitment.append(row);
+  const coin=document.createElement('img');coin.className='km-castle-recruit__gold';
+  coin.src=GOLD_ICON;coin.alt='';coin.setAttribute('aria-hidden','true');coin.decoding='async';
+  buy.append(piece,owned,amount,coin);
+  row.append(buy);recruitment.append(row);
  }
  details.append(recruitment);visual.append(icon);card.append(visual,details);return card;
 }
@@ -347,8 +345,6 @@ function routeCard(choice,run,cell,canVisitSettlement=false){
  }
  if(completed){
   card.classList.add('km-route-card--completed');
-  const note=document.createElement('span');note.className='km-route-card__cleared';
-  note.textContent=tr('completedDetail');stats.append(note);
  }else{
  const cost=resourceBadge(t('travel.cost',{cost:TRAVEL_SUPPLY_COST}),SUPPLIES_ICON,'-'+TRAVEL_SUPPLY_COST);
  cost.classList.toggle('is-empty',(run.supplies||0)<TRAVEL_SUPPLY_COST);stats.append(cost);
