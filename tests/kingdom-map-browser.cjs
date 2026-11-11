@@ -690,11 +690,11 @@ async function assertTileImage(page,cellId){
   assert.equal(await page.locator('.km-heading').innerText(),'День 1');
   assert.equal(await page.locator('[data-kingdom-shards]').textContent(),'37',
     'Honor shards reflect the persistent Arena ledger, not current run data');
-  assert.equal(await page.locator('[data-kingdom-points]').textContent(),'5/5',
-    'the header shows five automatically held lands out of five Power-based capacity');
+  assert.equal(await page.locator('[data-kingdom-points]').textContent(),'6',
+    'the header shows six distinct owned tiles: castle plus five automatic lands');
   const liveNpcCount=Number(await page.locator('[data-kingdom-travelers]').getAttribute('data-walker-count'));
   assert(Number.isInteger(liveNpcCount)&&liveNpcCount<=5,
-    'HUD 5/5 may spawn at most five decorative NPCs, one per type');
+    'Five annexed lands (plus the castle) may spawn at most five decorative NPCs, one per type');
   assert.equal(await page.locator('[data-kingdom-power]').textContent(),'500',
     'Power appears in the shared resource strip with its real rating');
   assert.equal(await page.locator('[data-kingdom-threat]').count(),0,
