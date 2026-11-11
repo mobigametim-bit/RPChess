@@ -20,7 +20,8 @@ function ownedKeys(map){
  return new Set([String(map.castle.x)+','+String(map.castle.y),
   ...(map.centralOwnedCells||[]),
   ...(map.outposts||[]).flatMap(post=>post.cells||[]),
-  ...Object.keys(map.cells||{}).filter(k=>map.cells[k]?.annexed)]);
+  ...Object.keys(map.cells||{}).filter(k=>map.cells[k]?.annexed),
+  ...(map.battleConqueredCells||[])]);
 }
 function eligibleRoadNodes(map){
  if(!map?.castle||!map?.cells)return [];
