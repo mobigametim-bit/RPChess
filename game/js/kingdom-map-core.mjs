@@ -8,7 +8,7 @@ import {SCOUT_RADIUS} from './kingdom-world-config.mjs';
 import {difficultyForStars} from './encounter-difficulty.mjs';
 import {KINGDOM_OUTPOST_SHARD_COST} from './arena-core.mjs?v=20261109-kingdom-economy-v7';
 import {DEFAULT_KINGDOM_ECONOMY,weeklyResourceProduction} from './kingdom-economy-config.mjs';
-import {synchronizeRoyalRoads} from './kingdom-road-network.mjs?v=20261110-roadgrid-v3';
+import {synchronizeRoyalRoads} from './kingdom-road-network.mjs?v=20261111-polish-v1';
 
 // Live defaults mirror Atlas Lab's canonical economy; change only after acceptance.
 const production=DEFAULT_KINGDOM_ECONOMY.production;
