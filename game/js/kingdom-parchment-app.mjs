@@ -3,7 +3,7 @@
  */
 import {PARCHMENT_TILE,randomAt,terrainAt,pickSprite,hash32} from './kingdom-parchment-core.mjs?v=20261111-parchment-png-only-v1';
 import {VISUAL} from './kingdom-world-config.mjs?v=20261109-atlas-visual5';
-import {drawKingdomBoundary,drawEnemyBattleTerritories,drawKingdomRoads} from './kingdom-map-overlay.mjs?v=20261111-battle-province-v1';
+import {drawKingdomBoundary,drawEnemyBattleTerritories,drawKingdomRoads} from './kingdom-map-overlay.mjs?v=20261112-province-colors-v1';
 
 const PAPER_TILE_SRC='assets/kingdom-parchment/parchment_tile_256.webp',PAPER_TILE_SIZE=256;
 const spriteCache=new Map();
@@ -236,6 +236,7 @@ function ownedIds(map){
  if(map?.castle)ids.add(map.castle.x+','+map.castle.y);
  for(const post of map?.outposts||[])for(const id of post.cells||[])ids.add(id);
  for(const [id,cell] of Object.entries(map?.cells||{}))if(cell.annexed)ids.add(id);
+ for(const id of map?.battleConqueredCells||[])ids.add(id);
  return ids;
 }
 function drawFog(ctx,map,left,top,width,height,resolution=1){
@@ -259,10 +260,14 @@ function drawFog(ctx,map,left,top,width,height,resolution=1){
   gradient.addColorStop(1,'rgba(0,0,0,0)');
   f.fillStyle=gradient;f.fillRect(cx-radius,cy-radius,2*radius,2*radius);
  }
- // Every owned tile must be completely free of fog, not merely its center.
- // Keep the radial scouting gradient outside the kingdom border.
+ // The same polygon is visible before and after Battle victory; scouting its
+ // defender exposes political borders but leaves other encounter icons hidden.
+ const political=ownedIds(map);
+ for(const province of map?.battleTerritories||[])
+  if(map?.cells?.[province.id]?.explored===true)
+   for(const id of province.cells||[])political.add(id);
  f.fillStyle='#000';
- for(const id of ownedIds(map)){
+ for(const id of political){
   const [x,y]=id.split(',').map(Number);
   if(!Number.isFinite(x)||!Number.isFinite(y)||x<left-1||y<top-1||x>left+width||y>top+height)continue;
   f.fillRect((x-left)*PARCHMENT_TILE,(y-top)*PARCHMENT_TILE,PARCHMENT_TILE,PARCHMENT_TILE);
@@ -296,6 +301,7 @@ function renderParchment(canvas,{seed,view,columns,rows,map,resolution=1}){
  canvas.dataset.playerRoadSegments=String(drawKingdomRoads(ctx,{map,view,columns,rows}));
  canvas.dataset.roadLayer='terrain';
  canvas.dataset.enemyBorderSegments=String(drawEnemyBattleTerritories(ctx,{map,view,columns,rows}));
+ canvas.dataset.enemyProvinceCount=String((map?.battleTerritories||[]).filter(p=>map.cells?.[p.id]?.explored===true).length);
  canvas.dataset.borderSegments=String(drawKingdomBoundary(ctx,{map,view,columns,rows}));
  drawTerrainSymbols(ctx,seed,left,top,columns,rows,repaint);
  drawOptionalNature(ctx,seed,left,top,columns,rows,map,repaint);

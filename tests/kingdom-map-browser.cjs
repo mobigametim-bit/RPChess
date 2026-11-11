@@ -1668,28 +1668,39 @@ async function assertTileImage(page,cellId){
     const origin={x:5,y:4},id='5,4';
     const choice=core.randomEncounter(run,origin,500,{
       type:'battle',biome:'plains',landmark:null,raceTag:'orcs',paths:{}});
+    const second={x:6,y:4},secondId='6,4';
+    const other=core.randomEncounter(run,second,600,{
+      type:'battle',biome:'hills',landmark:null,raceTag:'goblins',paths:{}});
     let map={...run.kingdomMap,king:origin,pendingCell:null,
       cells:{...run.kingdomMap.cells,
-        [id]:{status:'revealed',explored:true,selectedEncounter:choice}}};
+        [id]:{status:'revealed',explored:true,selectedEncounter:choice},
+        [secondId]:{status:'revealed',explored:true,selectedEncounter:other}}};
     map=core.reserveBattleTerritories(map);
     const province=map.battleTerritories.find(t=>t.id===id);
     if(!province||!province.cells.includes(id))throw Error('Battle red province missing origin');
-    for(const tile of province.cells)if(!map.cells[tile])
-      map.cells[tile]={status:'completed',type:'empty',explored:true};
+    for(const territory of map.battleTerritories)
+      for(const tile of territory.cells)if(!map.cells[tile])
+        map.cells[tile]={status:'completed',type:'empty',explored:false};
     run.kingdomMap=map;
     localStorage.setItem(storage,JSON.stringify(run));
     globalThis.RPChessKingdomMap.open();
     const real=globalThis.RPChessKingdomMap.map;
     return {red:province.cells.length,owned:core.playerTerritoryCount(real),
+      colors:[real.battleTerritories.find(p=>p.id===id)?.colorIndex,
+        real.battleTerritories.find(p=>p.id===secondId)?.colorIndex],
+      provinces:document.querySelector('[data-kingdom-parchment]')?.dataset.enemyProvinceCount,
       redBorders:document.querySelector('[data-kingdom-parchment]')?.dataset.enemyBorderSegments,
       counter:document.querySelector('[data-kingdom-points]')?.textContent,
       blueOverlap:province.cells.filter(tile=>core.isOwned(real,tile))};
   },key);
-  assert(redStats.red>=2&&redStats.red<=13,'red province must have ELO/200 cells');
+  assert(redStats.red>=2&&redStats.red<=13,'Battle province must have ELO/200 cells');
+  assert(redStats.colors.every(Number.isInteger)&&new Set(redStats.colors).size===2,
+    'neighboring Battles must render with distinct persistent colors');
+  assert.equal(redStats.provinces,'2','both colored enemy borders render separately');
   assert.equal(redStats.counter,String(redStats.owned),
     'territory HUD counts the actual unique owned area, excluding enemy provinces');
   assert.deepEqual(redStats.blueOverlap,[],'blue and red provinces must not overlap');
-  assert(Number(redStats.redBorders)>0,'red Battle boundaries must draw on parchment');
+  assert(Number(redStats.redBorders)>0,'colored Battle borders must draw on parchment');
   if(process.env.RPCHESS_UI_SCREENSHOT_DIR){
     fs.mkdirSync(process.env.RPCHESS_UI_SCREENSHOT_DIR,{recursive:true});
     await enemy.screenshot({path:path.join(process.env.RPCHESS_UI_SCREENSHOT_DIR,

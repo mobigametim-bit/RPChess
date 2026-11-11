@@ -515,6 +515,10 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
     [overlapId]:{status:'revealed',explored:false,selectedEncounter:overlapBattle}}};
   const reserved=mapCore.reserveBattleTerritories(seeded);
   assert.equal(reserved.battleTerritories.length,2);
+  const colorA=reserved.battleTerritories.find(p=>p.id===enemyBattleId).colorIndex;
+  const colorB=reserved.battleTerritories.find(p=>p.id===overlapId).colorIndex;
+  assert(Number.isInteger(colorA)&&Number.isInteger(colorB)&&colorA!==colorB,
+    'active Battles must keep different non-player territory colors');
   const redA=reserved.battleTerritories.find(p=>p.id===enemyBattleId).cells;
   const redB=reserved.battleTerritories.find(p=>p.id===overlapId).cells;
   assert.equal(redA.length,6,'Battle V owns six cells including its center');
@@ -553,6 +557,12 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   const conquered=mapCore.finishEncounter(scored,enemyBattleId,{success:true,opponentPower:1200});
   assert(conquered.ok);
   assert.equal(conquered.map.battleTerritories.length,1);
+  assert.deepStrictEqual(conquered.map.battleTerritories[0].cells,redB,
+    'conquest must retain the neighboring Battle province unchanged');
+  assert.equal(conquered.map.battleTerritories[0].colorIndex,colorB,
+    'remaining enemy color must not change after capture');
+  assert.deepStrictEqual(new Set(conquered.map.battleConqueredCells),new Set(redA),
+    'victory must transfer exactly the originally painted cells');
   assert(redA.every(id=>mapCore.isOwned(conquered.map,id)));
   assert.equal(conquered.map.centralOwnedCells.length,startMap.centralOwnedCells.length);
   assert.equal(conquered.map.uniqueFirstConquests[0].bonusLands,0);

@@ -2,6 +2,7 @@
  * No gameplay mutations, no tile hitboxes, no leaks outside charted fog. */
 import {PARCHMENT_TILE} from './kingdom-parchment-core.mjs';
 import {hashString} from './race-assets.mjs';
+import {BATTLE_PROVINCE_HUES} from './kingdom-map-core.mjs?v=20261112-province-colors-v1';
 import {visibleRoyalRoads,visibleTravelRoads} from './kingdom-road-network.mjs?v=20261111-polish-v1';
 import {drawSandstoneRoad} from './kingdom-road-paving.mjs?v=20261110-graystone-v3';
 import {VISUAL} from './kingdom-world-config.mjs?v=20261109-atlas-visual5';
@@ -19,47 +20,54 @@ function parseTile(id){
  const [x,y]=id.split(',').map(Number);
  return Number.isSafeInteger(x)&&Number.isSafeInteger(y)?{x,y}:null;
 }
-// Enemy Battle sovereignty. The province is reserved in saves but the red
-// ink and boundary never disclose cells that have not been explored.
+// Scouting a Battle reveals its political boundary, not hidden event icons.
+// Each Battle's persisted set is painted separately: no merged red union.
+function visibleBattleProvinces(map){
+ return (map.battleTerritories||[]).filter(p=>map.cells?.[p.id]?.explored===true);
+}
+function politicalClipKeys(map){
+ return new Set([...(map.battleConqueredCells||[]),
+  ...visibleBattleProvinces(map).flatMap(p=>p.cells||[])]);
+}
 function drawEnemyBattleTerritories(ctx,{map,view,columns,rows}){
  if(!ctx||!map||!view)return 0;
  const left=view.x-Math.floor(columns/2),top=view.y-Math.floor(rows/2);
- const red=new Set((map.battleTerritories||[]).flatMap(b=>b.cells||[])
-  .filter(id=>map.cells?.[id]?.explored===true));
- if(!red.size)return 0;
- ctx.save();ctx.beginPath();
- for(const id of red){
-  const p=parseTile(id);if(!p)continue;
-  ctx.rect((p.x-left)*TILE,(p.y-top)*TILE,TILE,TILE);
- }
- ctx.fillStyle='rgba(215,42,48,.19)';ctx.fill();
  let borders=0;
- for(const id of red){
-  const p=parseTile(id);if(!p)continue;
-  if(p.x<left-2||p.x>left+columns+1||p.y<top-2||p.y>top+rows+1)continue;
-  for(const [side,dx,dy,edge] of SIDES){
-   if(red.has((p.x+dx)+','+(p.y+dy)))continue;
-   const [ax,ay,bx,by]=edge(p.x-left,p.y-top);
-   const x1=ax*TILE,y1=ay*TILE,x2=bx*TILE,y2=by*TILE;
-   const hash=hashString(map.seed+':red-edge:'+id+':'+side)>>>0;
-   const amplitude=(3+hash%4)*(hash&16?-1:1);
-   const nx=-(y2-y1)/TILE,ny=(x2-x1)/TILE;
-   ctx.beginPath();ctx.moveTo(x1,y1);
-   ctx.bezierCurveTo(x1+(x2-x1)*.23+nx*amplitude,
-    y1+(y2-y1)*.23+ny*amplitude,
-    x1+(x2-x1)*.72-nx*amplitude*.62,
-    y1+(y2-y1)*.72-ny*amplitude*.62,x2,y2);
-   ctx.lineCap='round';ctx.lineJoin='round';
-   ctx.strokeStyle='rgba(100,13,22,.99)';ctx.lineWidth=10;
-   ctx.shadowColor='rgba(255,36,48,.9)';ctx.shadowBlur=19;ctx.stroke();
-   ctx.shadowBlur=0;
-   ctx.strokeStyle='rgba(231,44,62,.97)';ctx.lineWidth=6;ctx.stroke();
-   ctx.setLineDash([10,6]);ctx.strokeStyle='rgba(255,205,203,.92)';
-   ctx.lineWidth=2.1;ctx.stroke();ctx.setLineDash([]);
-   borders++;
+ for(const province of visibleBattleProvinces(map)){
+  const tiles=new Set(province.cells||[]);
+  if(!tiles.size)continue;
+  const index=Number.isInteger(province.colorIndex)?province.colorIndex:0;
+  const hue=BATTLE_PROVINCE_HUES[index]??BATTLE_PROVINCE_HUES[0];
+  ctx.save();ctx.beginPath();
+  for(const id of tiles){
+   const p=parseTile(id);if(p)ctx.rect((p.x-left)*TILE,(p.y-top)*TILE,TILE,TILE);
   }
+  ctx.fillStyle='hsla('+hue+',88%,50%,.19)';ctx.fill();
+  for(const id of tiles){
+   const p=parseTile(id);if(!p)continue;
+   if(p.x<left-2||p.x>left+columns+1||p.y<top-2||p.y>top+rows+1)continue;
+   for(const [side,dx,dy,edge] of SIDES){
+    if(tiles.has((p.x+dx)+','+(p.y+dy)))continue;
+    const [ax,ay,bx,by]=edge(p.x-left,p.y-top);
+    const x1=ax*TILE,y1=ay*TILE,x2=bx*TILE,y2=by*TILE;
+    const hash=hashString(map.seed+':province-edge:'+province.id+':'+id+':'+side)>>>0;
+    const amplitude=(3+hash%4)*(hash&16?-1:1);
+    const nx=-(y2-y1)/TILE,ny=(x2-x1)/TILE;
+    ctx.beginPath();ctx.moveTo(x1,y1);
+    ctx.bezierCurveTo(x1+(x2-x1)*.23+nx*amplitude,
+     y1+(y2-y1)*.23+ny*amplitude,
+     x1+(x2-x1)*.72-nx*amplitude*.62,
+     y1+(y2-y1)*.72-ny*amplitude*.62,x2,y2);
+    ctx.lineCap='round';ctx.lineJoin='round';ctx.setLineDash([]);
+    ctx.strokeStyle='hsla('+hue+',75%,22%,.99)';ctx.lineWidth=10;
+    ctx.shadowColor='hsla('+hue+',95%,58%,.9)';ctx.shadowBlur=19;ctx.stroke();
+    ctx.shadowBlur=0;ctx.strokeStyle='hsla('+hue+',94%,54%,.97)';ctx.lineWidth=6;ctx.stroke();
+    ctx.setLineDash([10,6]);ctx.strokeStyle='hsla('+hue+',98%,84%,.96)';ctx.lineWidth=2.1;ctx.stroke();
+    ctx.setLineDash([]);borders++;
+   }
+  }
+  ctx.restore();
  }
- ctx.restore();
  return borders;
 }
 // Drawn on the *terrain* layer in parchment mode, beside the natural roads.
@@ -72,7 +80,7 @@ function drawKingdomBoundary(ctx,{map,view,columns,rows}){
   ...Object.keys(map.cells||{}).filter(id=>map.cells[id]?.annexed),
   ...(map.battleConqueredCells||[])]);
  ctx.save();ctx.beginPath();
- for(const id of Object.keys(map.cells||{})){
+ for(const id of new Set([...Object.keys(map.cells||{}),...politicalClipKeys(map)])){
   const p=parseTile(id);
   if(!p||p.x<left-2||p.x>left+columns+1||p.y<top-2||p.y>top+rows+1)continue;
   const x=(p.x-left+.5)*TILE,y=(p.y-top+.5)*TILE;
@@ -168,7 +176,7 @@ function drawKingdomOverlay(canvas,{map,view,columns,rows,drawBorder=true,drawRo
  // Clip roads and sovereignty lines to explored/revealed fog circles. Ownership
  // by Power is not scouting and must not disclose an unknown location.
  ctx.save();ctx.beginPath();
- for(const id of Object.keys(cells)){
+ for(const id of new Set([...Object.keys(cells),...politicalClipKeys(map)])){
   const p=parseTile(id);
   if(!p||p.x<left-2||p.x>left+columns+1||p.y<top-2||p.y>top+rows+1)continue;
   const x=(p.x-left+.5)*TILE,y=(p.y-top+.5)*TILE;
@@ -213,5 +221,6 @@ function drawKingdomOverlay(canvas,{map,view,columns,rows,drawBorder=true,drawRo
  canvas.dataset.ownedRoadSegments=String(visibleRoyalRoads(map).length);
  canvas.dataset.borderSegments=String(borderCount);
  canvas.dataset.enemyBorderSegments=String(enemyBorderCount);
+ canvas.dataset.enemyProvinceCount=String(visibleBattleProvinces(map).length);
 }
-export {drawKingdomOverlay,drawKingdomBoundary,drawEnemyBattleTerritories,drawKingdomRoads};
+export {drawKingdomOverlay,drawKingdomBoundary,drawEnemyBattleTerritories,visibleBattleProvinces,drawKingdomRoads};
