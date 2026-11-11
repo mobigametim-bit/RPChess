@@ -272,6 +272,15 @@ function ensureStyles() {
 body.rpchess-onboarding-open{overflow:hidden!important}
 @media (max-height:430px){
  .rpchess-onboarding{padding:7px}
+ .rpchess-onboarding--welcome .rpchess-onboarding__layout{
+  --rpchess-jester-card-start:79px;align-self:start;margin-top:1px
+ }
+ .rpchess-onboarding--welcome .rpchess-onboarding__portrait{
+  width:115px;max-height:92px
+ }
+ .rpchess-onboarding--welcome .rpchess-onboarding__card{
+  padding:10px 14px!important;gap:7px
+ }
  .rpchess-onboarding__layout{width:min(660px,calc(100vw - 14px));--rpchess-jester-card-start:94px;padding-top:var(--rpchess-jester-card-start)}
  .rpchess-onboarding__portrait{top:auto;bottom:calc(100% - var(--rpchess-jester-card-start) - 16px);left:clamp(14px,3vw,30px);width:clamp(132px,18vw,155px);max-height:155px}
  .rpchess-onboarding__card{min-height:0;max-height:calc(100dvh - 108px);padding:12px 16px!important;gap:9px;border-radius:15px!important}
@@ -281,6 +290,12 @@ body.rpchess-onboarding-open{overflow:hidden!important}
  .rpchess-onboarding__button.reboot-button{min-width:115px;min-height:34px;padding:5px 12px!important}
 }
 @media (orientation:portrait) and (max-width:620px){
+ .rpchess-onboarding--welcome .rpchess-onboarding__layout{
+  --rpchess-jester-card-start:150px;margin-top:clamp(4px,2vh,12px)
+ }
+ .rpchess-onboarding--welcome .rpchess-onboarding__portrait{
+  width:150px;max-height:150px
+ }
  .rpchess-onboarding__layout{width:min(420px,calc(100vw - 20px));--rpchess-jester-card-start:112px;padding-top:var(--rpchess-jester-card-start)}
  .rpchess-onboarding__portrait{left:18px;top:auto;bottom:calc(100% - var(--rpchess-jester-card-start) - 16px);width:165px;max-height:175px}
  .rpchess-onboarding__card{min-height:0;max-height:calc(100dvh - 125px);padding:16px!important}

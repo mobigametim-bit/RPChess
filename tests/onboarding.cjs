@@ -8,6 +8,7 @@ const foundation = fs.readFileSync(path.join(root, 'game/js/reboot-foundation.mj
 const cloud = fs.readFileSync(path.join(root, 'game/js/cloud-save.mjs'), 'utf8');
 const kingdom = fs.readFileSync(path.join(root, 'game/js/kingdom-map-app.mjs'), 'utf8');
 const settlement = fs.readFileSync(path.join(root, 'game/js/settlement-app.mjs'), 'utf8');
+const disabledPreload = fs.readFileSync(path.join(root, 'tests/onboarding-disabled-preload.cjs'), 'utf8');
 
 const approved = ["welcome","identity","roster","kingdomMap","kingdomCastle","kingdomProduction","artifact","skirmishChess","battleChess","event","settlement","puzzle","caravanChess","starvation","chronicle","arenaCatalog","arenaFoe","arenaArtifact","arenaChess"];
 const arrayMatch = onboarding.match(/const INCLUDED_HINTS = Object\.freeze\(\[([\s\S]*?)\]\);/);
@@ -51,6 +52,8 @@ assert(onboarding.includes('rpchess-onboarding__spotlight')&&onboarding.includes
 assert(onboarding.includes("target.click()"),'welcome must open the existing Journey choice');
 assert(onboarding.includes('К путешествию')&&onboarding.includes('Open Journey'),
   'first-run Journey action must exist in RU and EN');
+assert(disabledPreload.includes('browser.newContext')&&disabledPreload.includes('context.addInitScript'),
+  'non-onboarding Chromium suites must suppress the welcome for explicit browser contexts');
 assert(onboarding.includes('rpchess:arena-catalog-shown'),'Arena first-visit tutorial wiring missing');
 for(const event of ['rpchess:kingdom-map-shown',
   'rpchess:kingdom-castle-inspected','rpchess:kingdom-production-collected'])

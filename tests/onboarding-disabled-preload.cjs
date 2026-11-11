@@ -11,6 +11,16 @@ const COMPLETE_STATE = JSON.stringify({
 const originalLaunch = playwright.chromium.launch.bind(playwright.chromium);
 playwright.chromium.launch = async (...args) => {
   const browser = await originalLaunch(...args);
+  const originalNewContext = browser.newContext.bind(browser);
+  browser.newContext = async (...contextArgs) => {
+    const context = await originalNewContext(...contextArgs);
+    // Some viewport suites call browser.newContext() then context.newPage().
+    // Install before navigating, so the welcome cannot cover unrelated scenes.
+    await context.addInitScript(({key,value}) => {
+      try { localStorage.setItem(key,value); } catch {}
+    }, {key:TUTORIAL_KEY,value:COMPLETE_STATE});
+    return context;
+  };
   const originalNewPage = browser.newPage.bind(browser);
   browser.newPage = async (...pageArgs) => {
     const page = await originalNewPage(...pageArgs);
