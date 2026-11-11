@@ -56,7 +56,7 @@ globalThis.RPChessOnboardingReady = onboardingReady;
 // Monetization installs before route modules so the interstitial gate can intercept semantic Travel
 // transitions before scene owners. All VK ad calls stay behind platform.ads; standalone Web is a no-op.
 const monetizationReady = cloudReady
-  .then(() => import('./content/monetization.mjs'))
+  .then(() => import('./content/monetization.mjs?v=20261111-polish-v1'))
   .then((module) => {
     module.installMonetization();
     return module;
@@ -113,7 +113,7 @@ globalThis.RPChessMainMenuReady=menuReady;
 // replaces only the public starvation entry point with the optional rewarded-rescue gate.
 const routeReady = Promise.all([cloudReady, monetizationReady])
   .then(async ([, monetization]) => {
-    const route = await import('./battle-route.mjs');
+    const route = await import('./battle-route.mjs?v=20261111-polish-v1');
     monetization?.bindStarvationRescue?.();
     monetization?.reconcileCompletedRewards?.();
     return route;
