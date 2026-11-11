@@ -1,0 +1,108 @@
+name: RPChess Kingdom + Roster UI playable QA
+on:
+  push:
+    branches:
+      - feature/kingdom-roster-responsive-raster-20261111
+    paths:
+      - '.github/workflows/responsive-ui-preview.yml'
+      - 'responsive-ui-preview/**'
+      - 'game/**'
+      - 'scripts/**'
+      - 'tests/kingdom-map-browser.cjs'
+      - 'tests/travel-choice.cjs'
+      - 'docs/CURRENT_STATE.md'
+      - 'tests/roster-browser.cjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: rpchess-responsive-ui-qa-20261111
+  cancel-in-progress: true
+jobs:
+  build-test-deploy:
+    if: github.repository == 'mobigametim-bit/RPChess' && github.ref == 'refs/heads/feature/kingdom-roster-responsive-raster-20261111'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm/rpchess-runtime-assets-v1
+          key: rpchess-runtime-assets-v1-${{ runner.os }}-${{ hashFiles('game/assets/**/*.png', 'game/generated_assets/*.png', 'scripts/*asset*.cjs', 'scripts/runtime-assets-build.cjs') }}
+          restore-keys: |
+            rpchess-runtime-assets-v1-${{ runner.os }}-
+      - name: Build isolated game with verified Stockfish engine
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund
+          npm pack stockfish@18.0.0 --silent --pack-destination /tmp
+          mkdir -p /tmp/rpchess-stockfish-package /tmp/rpchess-stockfish-verified
+          tar -xzf /tmp/stockfish-18.0.0.tgz -C /tmp/rpchess-stockfish-package
+          package=/tmp/rpchess-stockfish-package/package
+          for name in stockfish-18-lite-single.js stockfish-18-lite-single.wasm; do
+            source=$(find "$package" -type f -name "$name" -print -quit)
+            test -n "$source"
+            cp "$source" "/tmp/rpchess-stockfish-verified/$name"
+          done
+          license=$(find "$package" -type f -iname 'Copying.txt' -print -quit)
+          test -n "$license"
+          cp "$license" /tmp/rpchess-stockfish-verified/COPYING.txt
+          RPCHESS_INCLUDE_ATLAS_LAB=1 RPCHESS_STOCKFISH_ASSET_DIR=/tmp/rpchess-stockfish-verified npm run gate:local
+      - name: Test accepted layout and capture 12 actual game screenshots
+        env:
+          RPCHESS_UI_SCREENSHOT_DIR: test-results/responsive-ui
+          RPCHESS_JOURNEY_PICKER_ONLY: '1'
+          RPCHESS_BROWSER_TEST: kingdom-map-browser.cjs,roster-browser.cjs
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
+          npx playwright install chromium
+          npm run test:browser
+      - name: Save responsive game screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kingdom-roster-12-game-screens
+          path: test-results/responsive-ui/
+          retention-days: 14
+          if-no-files-found: warn
+      - name: Deploy isolated Cloudflare UI preview
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          grep -Fx 'name = "rpchess-layout-preview"' responsive-ui-preview/wrangler.toml
+          npx wrangler deploy --config responsive-ui-preview/wrangler.toml
+      - name: Verify live icon and layout assets
+        run: |
+          node <<'NODE'
+          const assert=require('node:assert/strict');
+          (async()=>{
+            const base='https://rpchess-layout-preview.mobigametim.workers.dev';
+            for(let i=0;i<12;i++){
+              try{
+                for(const route of ['/', '/css/kingdom-roster-polish.css',
+                  '/assets/ui/hud-main-menu.png','/assets/ui/hud-squad.png',
+                  '/assets/ui/main-menu-settings.png','/assets/ui/main-menu-journey.png']){
+                  const res=await fetch(base+route,{cache:'no-store'});
+                  assert.equal(res.status,200,route);
+                  if(route.endsWith('.png'))assert((res.headers.get('content-type')||'').includes('image/png'),route);
+                  if(route.endsWith('.css'))assert((await res.text()).includes('.km-heading-glory'),route);
+                }
+                console.log('Responsive UI preview live and original PNG icons served: PASS');
+                return;
+              }catch(error){
+                console.log('Cloudflare propagation '+(i+1)+'/12: '+error.message);
+                if(i===11)throw error;
+                await new Promise(resolve=>setTimeout(resolve,3000));
+              }
+            }
+          })().catch(error=>{console.error(error);process.exitCode=1});
+          NODE

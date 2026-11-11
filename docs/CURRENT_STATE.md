@@ -4,12 +4,21 @@
 **Production source:** `main`; the September 2026 production baseline retained below is historical and should not be mistaken for the latest feature-branch state.  
 **Latest separately verified Pages release SHA:** not established in this document; deployment is manual.  
 **Production URL:** https://mobigametim-bit.github.io/RPChess/  
-**Current active development:** Infinite Kingdom / «Бесконечное королевство», Draft [PR #190](https://github.com/mobigametim-bit/RPChess/pull/190).  
+**Accepted release:** [PR #192](https://github.com/mobigametim-bit/RPChess/pull/192) (responsive Journey/Roster and PNG-only parchment), [Issue #191](https://github.com/mobigametim-bit/RPChess/issues/191) accepted by owner 11.11.2026. PR #190 merged on 11.11.2026.  
 **Active specs:** `docs/KINGDOM_EXPLORATION_ECONOMY_BIOME_DESIGN.md`, `docs/KINGDOM_ECONOMY_ARMY_SPEC.md`, `docs/features/KINGDOM_ROADS_AND_TRAVELERS_PLAN.md`.
 
 This file separates production history from active feature work. Older September milestones and acceptance receipts below are retained as historical evidence, not current claims of unimplemented features. The GitHub Pages site is updated only by a manually dispatched Pages workflow from `main`; regular PR checks validate without publishing.
 
-## Active feature branch — Infinite Kingdom, 10.11.2026
+
+## Accepted release gate — 11.11.2026
+
+- Owner accepted Issue #191's raster visual comparison and authorized closing it and merging PR #192.
+- Production converts all 112 parchment source SVG masters to PNG, removes their SVG copies from `dist/`, and requests PNG unconditionally. No opt-in flag, HTML metadata switch or SVG runtime fallback exists.
+- Original SVGs remain versioned editable source art and are never shipped as a runtime option. Unrelated SVG art continues as before.
+- [Measured SVG vs PNG QA](https://github.com/mobigametim-bit/RPChess/actions/runs/43035867834): pixel parity 0% changed at 128/142/284px; saving 33,494,228 bytes in dist and 2,153,318 bytes in ZIP. CI frame pacing is not a real phone benchmark.
+- PR #192 also delivers the accepted responsive Journey/Roster layouts and the completed Settlement entrance icon. Public GitHub Pages requires a separate manual deploy workflow; merging code alone does not publish.
+
+## Historical feature branch — Infinite Kingdom, 10.11.2026
 
 - Draft PR #190 has a playable isolated Cloudflare Preview; it is not merged into `main`. Hex/grid world, six biome semantics, fog, calendar, territory, Castle recruits, weekly production, Arena Shards and settlement economy have working implementation paths. Final long-run/mobile acceptance is open.
 - Author's Atlas Lab v6 economy preset dated 09.11.2026 is committed as `docs/KINGDOM_ECONOMY_APPROVED_20261110.json`. The Skirmish runtime is **named-heroes only**; ordinary Army recruits are for other eligible modes. Roster tab labels: `Герои / Heroes`, `Армия / Army`.

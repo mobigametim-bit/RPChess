@@ -536,3 +536,58 @@ body.arena-active .resource-hud{display:none!important}
  .km-castle-recruit__count{font-size:15px}
  .km-castle-recruit button{min-width:110px;padding:6px}
 }
+
+/* Cleared Settlement: the visit icon lives in the marked top-right area of
+   the card, replacing the former full-width "Settlement services" button.
+   Grid reserves the title/status column and avoids overlaps at every size. */
+.kingdom-map-screen .km-route-card--visitable-settlement .km-route-card__details{
+ display:grid;grid-template-columns:minmax(0,1fr) clamp(48px,5.2vw,68px);
+ grid-template-areas:"title entrance" "status entrance" "stats stats";
+ align-items:start;column-gap:5px;row-gap:7px
+}
+.kingdom-map-screen .km-route-card--visitable-settlement .km-route-card__details>h3{
+ grid-area:title;min-width:0;overflow-wrap:anywhere
+}
+.kingdom-map-screen .km-route-card--visitable-settlement .km-route-card__details>.km-route-card__status{
+ grid-area:status;min-width:0
+}
+.kingdom-map-screen .km-route-card--visitable-settlement .km-route-card__stats{
+ grid-area:stats;min-width:0
+}
+.kingdom-map-screen .km-route-card__settlement-entrance{
+ grid-area:entrance;justify-self:end;align-self:start;display:flex;
+ justify-content:center;align-items:center;
+ width:clamp(48px,5.2vw,68px);height:clamp(48px,5.2vw,68px);
+ min-width:44px;min-height:44px;
+ margin:0;padding:0;border:0;border-radius:6px;
+ background:transparent;box-shadow:none;cursor:pointer;
+ touch-action:manipulation;transition:filter .12s ease,transform .12s ease
+}
+.kingdom-map-screen .km-route-card__settlement-entrance img{
+ display:block;width:100%;height:100%;object-fit:contain;
+ pointer-events:none;user-select:none;
+ filter:drop-shadow(0 3px 4px rgba(0,0,0,.65))
+}
+.kingdom-map-screen .km-route-card__settlement-entrance:hover{
+ filter:brightness(1.16);transform:translateY(-1px)
+}
+.kingdom-map-screen .km-route-card__settlement-entrance:focus-visible{
+ outline:3px solid #f3d189;outline-offset:2px
+}
+.kingdom-map-screen .km-route-card__settlement-entrance:disabled{
+ opacity:.55;cursor:progress;pointer-events:none
+}
+@media(max-width:790px){
+ .kingdom-map-screen .km-route-card--visitable-settlement .km-route-card__details{
+  grid-template-columns:minmax(0,1fr) 48px;column-gap:4px;row-gap:5px
+ }
+ .kingdom-map-screen .km-route-card--visitable-settlement .km-route-card__details>h3{
+  font-size:clamp(18px,3.2vw,25px)
+ }
+ .kingdom-map-screen .km-route-card__settlement-entrance{
+  width:48px;height:48px
+ }
+}
+@media(prefers-reduced-motion:reduce){
+ .kingdom-map-screen .km-route-card__settlement-entrance{transition:none}
+}

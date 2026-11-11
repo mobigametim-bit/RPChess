@@ -17,7 +17,7 @@ import {FLAVOR_POOLS} from './travel-choice-core.mjs';
 import {translateLegacy} from './i18n.mjs';
 import {commanderPortrait,commanderTitle} from './commander-portraits.mjs';
 import {kingdomMapSprite,kingdomEncounterSprite} from './kingdom-map-assets.mjs';
-import {renderParchment,renderParchmentFog} from './kingdom-parchment-app.mjs?v=20261110-natural-road-layer-v4';
+import {renderParchment,renderParchmentFog} from './kingdom-parchment-app.mjs?v=20261111-parchment-png-only-v1';
 import {drawKingdomOverlay} from './kingdom-map-overlay.mjs?v=20261110-natural-road-layer-v4';
 import {animateTravelers,stopTravelers} from './kingdom-traveler-renderer.mjs?v=20261111-npc-floor-v1';
 import {ATLAS_VIEW} from './kingdom-world-config.mjs?v=20261109-atlas-visual5';
@@ -306,7 +306,7 @@ function castleCard(map){
  }
  details.append(recruitment);visual.append(icon);card.append(visual,details);return card;
 }
-function routeCard(choice,run,cell){
+function routeCard(choice,run,cell,canVisitSettlement=false){
  // Uses the Travel scene's canonical type, star, supply and reward rules.
  // Intentionally omits flavor; this will fly out of the entered map tile.
  const card=document.createElement('article');card.className='km-route-card km-route-card--'+choice.type;
@@ -363,7 +363,23 @@ function routeCard(choice,run,cell){
   stats.append(resourceBadge(t('travel.rewardAria',{reward:amount}),GOLD_ICON,'+'+amount));
  }
  }
- details.append(name,status,stats);visual.append(icon);
+ details.append(name,status,stats);
+ // Keep the original Settlement visit action inside its card, not as a
+ // floating text button below the card. Only the King's cleared Settlement
+ // can offer this free revisit (the old visibility contract).
+ if(completed&&choice.type==='settlement'&&canVisitSettlement){
+  card.classList.add('km-route-card--visitable-settlement');
+  const entrance=document.createElement('button');
+  entrance.type='button';entrance.className='km-route-card__settlement-entrance';
+  entrance.dataset.kingdomServices='';
+  entrance.setAttribute('aria-label',tr('services'));
+  entrance.title=tr('services');
+  const entranceIcon=document.createElement('img');
+  entranceIcon.src='assets/ui/settlement_entrance_64x64.png';
+  entranceIcon.alt='';entranceIcon.setAttribute('aria-hidden','true');
+  entrance.append(entranceIcon);details.append(entrance);
+ }
+ visual.append(icon);
  if(defender)visual.append(defender);
  card.append(visual,details);return card;
 }
@@ -382,7 +398,7 @@ function screenReady(){
  screen.dataset.kingdomMapScreen='';screen.hidden=true;
  screen.innerHTML=`<div class="km-shell">
  <header class="km-header">
- <div class="km-heading"><h1 data-kingdom-day></h1></div>
+ <div class="km-heading"><h1 data-kingdom-day></h1><span class="km-heading-glory" data-kingdom-heading-glory><img src="${GLORY_ICON}" alt="" aria-hidden="true"><strong data-kingdom-heading-glory-value></strong></span></div>
  <div class="km-commandbar">
  <div class="km-commander-meta"><img class="km-commander-portrait" data-kingdom-portrait alt=""></div>
  <div class="km-resource-group">
@@ -410,7 +426,6 @@ function screenReady(){
  <div class="km-inspector-summary" data-kingdom-summary>
  <h2 data-kingdom-inspector-title></h2><p data-kingdom-inspector-text></p></div>
  <div class="km-inspector-buttons"><button type="button" data-kingdom-annex hidden></button>
- <button type="button" data-kingdom-services hidden></button>
  <button type="button" data-kingdom-outpost hidden></button>
  <button type="button" data-kingdom-build-settlement hidden></button>
  <button type="button" data-kingdom-earn-shards hidden></button></div>
@@ -424,10 +439,15 @@ function screenReady(){
  screen.querySelector('[data-kingdom-menu]').addEventListener('click',()=>{hideMap();globalThis.RPChessRoster?.returnToMenu?.();});
  // No manual annex clicks: the growing border follows persistent Power and wins.
  screen.addEventListener('click',event=>{
+  // Route cards are replaced when a map tile changes. Delegate the entrance
+  // click so it keeps the same behavior without retaining detached buttons.
+  const entrance=event.target.closest('[data-kingdom-services]');
+  if(entrance&&screen.contains(entrance)){
+   event.preventDefault();void visitSettlement();return;
+  }
   const btn=event.target.closest('[data-kingdom-castle-hire]');
   if(btn&&screen.contains(btn))hireCastleUnit(btn.dataset.kingdomCastleHire);
  });
- screen.querySelector('[data-kingdom-services]').addEventListener('click',visitSettlement);
  screen.querySelector('[data-kingdom-outpost]').addEventListener('click',constructOutpost);
  screen.querySelector('[data-kingdom-build-settlement]').addEventListener('click',constructSettlement);
  screen.querySelector('[data-kingdom-earn-shards]').addEventListener('click',goToArena);
@@ -597,7 +617,12 @@ function render(){
   ['.km-resource--points',tr('lands')],
   ['.km-resource--shards',tr('shards')]
  ]){const item=screen.querySelector(selector);item.title=label;item.setAttribute('aria-label',label);}
- screen.querySelector('[data-kingdom-glory]').textContent=String(gloryForRun(run.journeyStep,power));
+ const glory=String(gloryForRun(run.journeyStep,power));
+ screen.querySelector('[data-kingdom-glory]').textContent=glory;
+ screen.querySelector('[data-kingdom-heading-glory-value]').textContent=glory;
+ const gloryLabel=runtimeT(currentLanguage(),'chronicle.glory');
+ const headingGlory=screen.querySelector('[data-kingdom-heading-glory]');
+ headingGlory.title=gloryLabel;headingGlory.setAttribute('aria-label',gloryLabel);
  screen.querySelector('[data-kingdom-points]').textContent=Math.max(0,(map.centralOwnedCells||[]).length-1)+'/'+territoryCapacity(map);
  screen.querySelector('[data-kingdom-shards]').textContent=String(honorShards());
  const cells=document.createDocumentFragment(),productions=document.createDocumentFragment();
@@ -773,12 +798,15 @@ function render(){
  const knownChosen=chosen&&(isOwned(map,selected)||chosen.explored)?chosen:null;
  const info=knownChosen||(!chosen?current:null);
  const castleSelected=(selected||keyOf(map.king.x,map.king.y))===keyOf(map.castle.x,map.castle.y);
+ const selectedId=selected||keyOf(map.king.x,map.king.y);
  const slot=screen.querySelector('[data-kingdom-route-slot]');
  const summary=screen.querySelector('[data-kingdom-summary]');
  const activeChoice=Boolean(info?.selectedEncounter);
  slot.hidden=!(activeChoice||castleSelected);summary.hidden=Boolean(activeChoice||castleSelected);
  if(castleSelected)slot.replaceChildren(castleCard(map));
- else if(activeChoice)slot.replaceChildren(routeCard(info.selectedEncounter,run,info));
+ else if(activeChoice)slot.replaceChildren(routeCard(info.selectedEncounter,run,info,
+  Boolean(knownChosen&&selectedId===keyOf(map.king.x,map.king.y)&&
+   knownChosen.status==='completed'&&knownChosen.selectedEncounter?.type==='settlement')));
  else{
   slot.replaceChildren();
   const header=(map.outposts||[]).some(p=>p.id===(selected||keyOf(map.king.x,map.king.y)))?tr('outpost'):info?.type==='castle'?tr('castle'):
@@ -789,8 +817,8 @@ function render(){
   screen.querySelector('[data-kingdom-inspector-title]').textContent=header;
   screen.querySelector('[data-kingdom-inspector-text]').textContent=description;
  }
- const ann=screen.querySelector('[data-kingdom-annex]'),services=screen.querySelector('[data-kingdom-services]'),outpost=screen.querySelector('[data-kingdom-outpost]'),earn=screen.querySelector('[data-kingdom-earn-shards]'),settlementBuild=screen.querySelector('[data-kingdom-build-settlement]');
- const id=selected||keyOf(map.king.x,map.king.y);
+ const ann=screen.querySelector('[data-kingdom-annex]'),outpost=screen.querySelector('[data-kingdom-outpost]'),earn=screen.querySelector('[data-kingdom-earn-shards]'),settlementBuild=screen.querySelector('[data-kingdom-build-settlement]');
+ const id=selectedId;
  const selectedPoint=parsePoint(id);
  ann.hidden=true; // Annexation is now automatic; keep the legacy button inert.
  const canPlaceSettlement=Boolean(selectedPoint&&canBuildSettlement(map,selectedPoint));
@@ -816,9 +844,7 @@ function render(){
  earn.replaceChildren(document.createTextNode(tr('earn')+' '),shardIcon(),
   document.createTextNode(' '+tr('onArena')));
  earn.title=tr('earn')+' '+tr('shards')+' '+tr('onArena');
- services.hidden=!(id===keyOf(map.king.x,map.king.y)&&knownChosen?.status==='completed'&&knownChosen.selectedEncounter?.type==='settlement');
- services.textContent=tr('services');
- const hint=screen.querySelector('[data-kingdom-hint]');
+  const hint=screen.querySelector('[data-kingdom-hint]');
  hint.hidden=!map.pendingCell;
  hint.textContent=map.pendingCell?tr('pending'):'';
 }

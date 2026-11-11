@@ -40,7 +40,7 @@ function spritePath(kind,index){
  const group=GROUPS[kind];
  if(!group)return null;
  const n=Math.max(0,Math.min(group.length-1,Math.floor(Number(index)||0)));
- return 'assets/kingdom-parchment/'+kind+'/'+group[n]+'.svg';
+ return 'assets/kingdom-parchment/'+kind+'/'+group[n]+'.png';
 }
 function pickSprite(seed,kind,x,y,salt='sprite'){
  const group=GROUPS[kind];

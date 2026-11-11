@@ -1,0 +1,38 @@
+name: QA Parchment raster (non-release)
+on:
+  push:
+    branches:
+      - feature/kingdom-roster-responsive-raster-20261111
+    paths:
+      - scripts/prepare-parchment-raster.cjs
+      - tests/parchment-raster-qa.cjs
+      - tests/parchment-raster-pixels.cjs
+      - .github/workflows/parchment-raster-qa.yml
+      - game/assets/kingdom-parchment/**
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  raster-verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Convert 112 source sprites only in temporary QA directory
+        run: node tests/parchment-raster-qa.cjs
+      - name: Install Chromium for 112-sprite pixel parity
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
+          npx playwright install chromium
+      - name: Compare SVG and PNG pixels at 128, 142 and 284 px
+        run: node tests/parchment-raster-pixels.cjs
+      - name: Keep raster samples and size report
+        uses: actions/upload-artifact@v4
+        with:
+          name: parchment-raster-qa
+          path: test-results/parchment-raster-qa/
+          retention-days: 14
+          if-no-files-found: error

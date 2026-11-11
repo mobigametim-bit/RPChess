@@ -63,6 +63,8 @@ async function assertTileImage(page,cellId){
  try{
   fs.mkdirSync(output,{recursive:true});
   const page=await browser.newPage({viewport:{width:1366,height:768}});
+  if(process.env.RPCHESS_PARCHMENT_QA_SCREENSHOT_DIR)
+    await page.addInitScript(()=>performance.setResourceTimingBufferSize(3000));
   const errors=[];page.on('pageerror',e=>errors.push(String(e.stack||e)));
   const failedAssets=[];
   page.on('console',msg=>{if(msg.type()==='error')failedAssets.push(msg.text());});
@@ -343,14 +345,15 @@ async function assertTileImage(page,cellId){
     'territory boundary is on the original natural-road terrain layer, below later event roads');
   // Exercise actual uploaded sprites in the bundled dist, not just the
   // procedural Canvas fallback that worked before the artist supplied art.
-  const artProbe=await page.evaluate(async()=>{
+  const parchmentFormat='png'; // PNG-only runtime without SVG fallback.
+  const artProbe=await page.evaluate(async format=>{
     const files=[
       'parchment_base_variations/01_light_ochre_plain.svg',
       'forest_clusters/01_small_grove.svg',
       'mountain_clusters/01_single_summit.svg',
       'hills_rocks/01_three_hills.svg',
       'fog_of_war_shapes/01_broad_blot.svg'
-    ];
+    ].map(name=>name.replace(/\.svg$/,'.'+format));
     return Promise.all(files.map(async file=>{
       const src='assets/kingdom-parchment/'+file;
       const response=await fetch(src,{cache:'no-store'});
@@ -359,9 +362,9 @@ async function assertTileImage(page,cellId){
       try{await img.decode();}catch{return {file,status:response.status,decoded:false};}
       return {file,status:response.status,decoded:img.naturalWidth===128&&img.naturalHeight===128};
     }));
-  });
+  },parchmentFormat);
   for(const sprite of artProbe)assert.equal(sprite.status===200&&sprite.decoded,true,
-    'artist SVG must be shipped and decoded at 128px: '+sprite.file);
+    'artist parchment '+parchmentFormat.toUpperCase()+' must decode at 128px: '+sprite.file);
   // The six artist-repaired road-event sprites must remain actual vectors
   // with the author's transparent margins, not raster images or opaque tiles.
   const correctedSprites=[
@@ -406,13 +409,14 @@ async function assertTileImage(page,cellId){
   assert.equal(Object.keys(manifest.groups).length,7,
     'the atlas contains five core groups, one marsh group and one landmark group');
   assert.equal(manifest.groups.marsh_wasteland_optional?.length,16,
-    'all sixteen correct marsh SVGs are included');
-  assert(manifest.groups.marsh_wasteland_optional.includes('01_pale_marsh.svg')&&
-    !manifest.groups.marsh_wasteland_optional.includes('01_straight_line.svg'),
+    'all sixteen correct marsh PNGs are included');
+  assert(manifest.groups.marsh_wasteland_optional.includes('01_pale_marsh.'+parchmentFormat)&&
+    !manifest.groups.marsh_wasteland_optional.includes('01_straight_line.'+parchmentFormat),
     'marsh sprites must not be mislabeled frame shapes');
   for(const [group,names] of Object.entries(manifest.groups)){
-    assert.equal(names.length,16,'each valid sprite group has 16 SVGs: '+group);
-    assert(names.every(name=>name.endsWith('.svg')),'sprite group must be SVG-only: '+group);
+    assert.equal(names.length,16,'each valid sprite group has 16 assets: '+group);
+    assert(names.every(name=>name.endsWith('.'+parchmentFormat)),
+      'sprite group must match the SVG/PNG build: '+group);
   }
   const expectedCore=['fog_of_war_shapes','forest_clusters','hills_rocks',
     'mountain_clusters','parchment_base_variations'];
@@ -439,7 +443,7 @@ async function assertTileImage(page,cellId){
   assert(tileAsset.ok&&tileAsset.w===256&&tileAsset.h===256&&tileAsset.size<5000,
     'real compressed user parchment WebP is repeated in the renderer, without paper noise');
   assert.equal(await atlas.getAttribute('data-parchment-art'),'loaded',
-    'the parchment renderer uses the uploaded SVGs rather than its fallback');
+    'the parchment renderer uses the authored artwork rather than its fallback');
   // Procedural world-space roads and rivers are independent of the retired
   // road_segments/river_segments assets: exercise both Canvas stroke types.
   const lineArt=await page.evaluate(async()=>{
@@ -514,6 +518,84 @@ async function assertTileImage(page,cellId){
     'procedurally painted terrain and fog must both have visible pixels');
   assert.deepEqual(await read(page),before,'retired Classic preference must not modify the Journey save');
   await page.screenshot({path:path.join(output,'kingdom-parchment-experiment.png')});
+  // Issue #191: record actual playable PNG map states at default/min/max zoom
+  // without creating another permanent browser suite.
+  if(process.env.RPCHESS_PARCHMENT_QA_SCREENSHOT_DIR){
+    const qaDir=process.env.RPCHESS_PARCHMENT_QA_SCREENSHOT_DIR;
+    fs.mkdirSync(qaDir,{recursive:true});
+    const format='png'; // Production and Preview always use PNG.
+    const sample=await page.evaluate(async extension=>{
+      const target='assets/kingdom-parchment/forest_clusters/01_small_grove.'+extension;
+      const response=await fetch(target,{cache:'no-store'});
+      return {status:response.status,mime:response.headers.get('content-type')||'',
+        bytes:(await response.arrayBuffer()).byteLength,target};
+    },format);
+    assert.equal(sample.status,200,'the raster/vector artwork must be served');
+    assert(sample.mime.includes(format==='png'?'image/png':'image/svg+xml'),
+      'sample artwork must have the expected MIME: '+JSON.stringify(sample));
+    const capture=async(name,expected)=>{
+      await page.waitForFunction(expected=>globalThis.RPChessKingdomMap?.zoom===expected&&
+        document.querySelector('[data-kingdom-world]')?.dataset.mapZoom===String(expected),
+        expected,{timeout:15000});
+      await page.waitForTimeout(250); // let deferred canvas images complete before the screenshot
+      await page.screenshot({path:path.join(qaDir,name+'.png'),fullPage:false});
+    };
+    await capture('desktop-1366x768-default',117);
+    const zoomTo=async(kind,count)=>{
+      await page.evaluate(({kind,count})=>{
+        const control=document.querySelector('[data-kingdom-zoom-'+kind+']');
+        for(let n=0;n<count;n++)control.click();
+      },{kind,count});
+    };
+    await zoomTo('out',30);
+    await capture('desktop-1366x768-min55',55);
+    await zoomTo('in',30);
+    await capture('desktop-1366x768-max220',220);
+    await page.locator('[data-kingdom-zoom-reset]').click();
+    await page.setViewportSize({width:844,height:390});
+    await capture('phone-844x390-default',117);
+    await zoomTo('out',30);
+    await capture('phone-844x390-min55',55);
+    await zoomTo('in',30);
+    await capture('phone-844x390-max220',220);
+    await page.locator('[data-kingdom-zoom-reset]').click();
+    await page.setViewportSize({width:1366,height:768});
+    await page.waitForFunction(()=>globalThis.RPChessKingdomMap?.zoom===117&&
+      document.querySelector('[data-kingdom-world]')?.dataset.mapZoom==='117');
+    // Headless Chromium CI benchmark: alternate adjacent zoom levels to
+    // force real map redraws. Informational only, not a device-FPS guarantee.
+    const frames=await page.evaluate(()=>new Promise(resolve=>{
+      const plus=document.querySelector('[data-kingdom-zoom-in]');
+      const minus=document.querySelector('[data-kingdom-zoom-out]');
+      const samples=[];let last=null,n=0;
+      const frame=now=>{
+        if(last!==null)samples.push(now-last);
+        last=now;
+        if(n<120){
+          (n%2===0?plus:minus).click();
+          n++;requestAnimationFrame(frame);
+        }else resolve(samples);
+      };
+      requestAnimationFrame(frame);
+    }));
+    await page.locator('[data-kingdom-zoom-reset]').click();
+    const sorted=[...frames].sort((a,b)=>a-b),elapsed=frames.reduce((a,b)=>a+b,0);
+    const resourceStats=await page.evaluate(()=>{
+      const all=performance.getEntriesByType('resource').filter(x=>
+        x.name.includes('/assets/kingdom-parchment/'));
+      return {requests:all.length,meanDurationMs:all.length?
+        all.reduce((n,x)=>n+x.duration,0)/all.length:0,
+        maxDurationMs:Math.max(0,...all.map(x=>x.duration))};
+    });
+    const perf={format,sample,resourceStats,headlessCI:true,activeZoomFrames:frames.length,
+      fps:elapsed?1000*frames.length/elapsed:0,
+      medianFrameMs:sorted[Math.floor(sorted.length*.5)],
+      p95FrameMs:sorted[Math.floor(sorted.length*.95)]};
+    fs.writeFileSync(path.join(qaDir,'parchment-map-benchmark.json'),
+      JSON.stringify(perf,null,2)+'\n');
+    console.log('Parchment real game benchmark: '+JSON.stringify(perf));
+    assert.equal(await page.evaluate(()=>globalThis.RPChessKingdomMap.zoom),117);
+  }
   assert.equal(await atlas.count(),1,'parchment remains the only supported Kingdom map skin');
 
   assert.deepEqual(before.kingdomMap.king,{x:0,y:0});
@@ -841,6 +923,10 @@ async function assertTileImage(page,cellId){
    await page.locator('[data-kingdom-map-screen]:not([hidden])').waitFor({timeout:15000});
    const lost=await read(page);
    assert.equal(lost.kingdomMap.cells['1,0'].status,'failed');
+   // Scene visibility may precede the inspector's asynchronous final paint.
+   // Wait for the settled single card; never accept a persistent duplicate.
+   await page.waitForFunction(()=>document.querySelectorAll('[data-kingdom-route-card]').length===1,
+     null,{timeout:7000});
    assert.equal(await page.locator('[data-kingdom-route-card]').count(),1,
      'after retreat the unfinished route card must stay selected');
    assert.equal(await page.locator('[data-kingdom-route-card]').getAttribute('data-kingdom-route-status'),
@@ -1367,6 +1453,45 @@ async function assertTileImage(page,cellId){
   },key);
   const servicesButton=servicesPage.locator('[data-kingdom-services]');
   await servicesButton.waitFor({state:'visible'});
+  assert.equal(await servicesPage.locator('[data-kingdom-services]').count(),1,
+    'Exactly one Settlement entrance must exist (not a second text button)');
+  assert.equal(await servicesPage.locator('.km-inspector-buttons [data-kingdom-services]').count(),0,
+    'Old services button below the card must be removed');
+  for(const [width,height] of [[1440,900],[1180,820],[844,390],
+    [900,1440],[820,1180],[390,844]]){
+    await servicesPage.setViewportSize({width,height});
+    await servicesButton.waitFor({state:'visible',timeout:8000});
+    await servicesPage.waitForTimeout(80); // allow responsive geometry to settle
+    const entrance=await servicesButton.evaluate(button=>{
+      const card=button.closest('.km-route-card--visitable-settlement');
+      const details=button.closest('.km-route-card__details');
+      const rect=button.getBoundingClientRect(),container=details?.getBoundingClientRect();
+      const icon=button.querySelector('img');
+      return {inCard:Boolean(card),width:rect.width,height:rect.height,
+        x:rect.left,y:rect.top,right:rect.right,bottom:rect.bottom,
+        details:container?.toJSON(),src:icon?.getAttribute('src'),
+        loaded:Boolean(icon?.complete&&icon.naturalWidth===64&&icon.naturalHeight===64),
+        aria:button.getAttribute('aria-label'),title:button.title,
+        visible:getComputedStyle(button).display!=='none'};
+    });
+    assert(entrance.inCard&&entrance.visible&&entrance.loaded,
+      'Settlement icon must render inside the completed card '+width+'x'+height);
+    assert(entrance.src==='assets/ui/settlement_entrance_64x64.png',
+      'Settlement must use uploaded image, not a text button');
+    assert(entrance.width>=44&&entrance.height>=44&&entrance.aria&&entrance.title,
+      'Settlement entrance must stay accessible and touchable '+width+'x'+height+': '+JSON.stringify(entrance));
+    assert(entrance.x>=entrance.details.left+entrance.details.width*.52&&
+      entrance.right<=entrance.details.right+1&&
+      entrance.y>=entrance.details.top-1&&entrance.bottom<=entrance.details.bottom+1,
+      'Settlement entrance should occupy top-right of the card '+width+'x'+height+
+      ': '+JSON.stringify(entrance));
+    if(process.env.RPCHESS_UI_SCREENSHOT_DIR){
+      fs.mkdirSync(process.env.RPCHESS_UI_SCREENSHOT_DIR,{recursive:true});
+      await servicesPage.screenshot({path:path.join(process.env.RPCHESS_UI_SCREENSHOT_DIR,
+        'settlement-entrance-'+width+'x'+height+'.png'),fullPage:false});
+    }
+  }
+  await servicesPage.setViewportSize({width:1280,height:720});
   const provisionsBefore=(await read(servicesPage)).supplies;
   await servicesButton.click();
   await servicesPage.locator('[data-settlement-screen]:not([hidden])').waitFor({timeout:15000});
@@ -1394,6 +1519,70 @@ async function assertTileImage(page,cellId){
     'Settlement exit must preserve provisions after reload');
   assert.equal(finishedServices.kingdomMap.cells['1,0'].status,'completed');
   assert.deepEqual(serviceErrors,[],'Settlement revisit must not throw browser errors');
+
+  // Existing completed-Settlement fixture doubles as a responsive map check.
+  for(const [width,height] of [[1440,900],[1180,820],[844,390],[900,1440],[820,1180],[390,844]]){
+    await servicesPage.setViewportSize({width,height});
+    const ui=await servicesPage.locator('[data-kingdom-map-screen]').evaluate(root=>{
+      const rect=selector=>root.querySelector(selector)?.getBoundingClientRect();
+      const rootBox=root.getBoundingClientRect(),map=rect('.km-map-frame');
+      const panel=rect('.km-inspector'),zoom=rect('.km-zoom-controls');
+      const bar=root.querySelector('.km-resource-group');
+      const nav=root.querySelector('.km-actions'),day=root.querySelector('.km-heading h1');
+      const heading=root.querySelector('.km-heading'),header=root.querySelector('.km-header');
+      const headingCSS=getComputedStyle(heading),headerCSS=getComputedStyle(header);
+      const navIcons=[...nav.querySelectorAll('button')].map(el=>({
+        image:getComputedStyle(el).backgroundImage,
+        box:el.getBoundingClientRect().toJSON()
+      }));
+      const mirror=root.querySelector('[data-kingdom-heading-glory]');
+      return {root:rootBox.toJSON(),map:map.toJSON(),panel:panel.toJSON(),zoom:zoom.toJSON(),
+        title:day.getBoundingClientRect().toJSON(),nav:nav.getBoundingClientRect().toJSON(),
+        heading:heading.getBoundingClientRect().toJSON(),
+        header:header.getBoundingClientRect().toJSON(),
+        headingCSS:{display:headingCSS.display,justify:headingCSS.justifyContent,
+          width:headingCSS.width,gridArea:headingCSS.gridArea,margin:headingCSS.margin},
+        headerCSS:{display:headerCSS.display,areas:headerCSS.gridTemplateAreas,
+          cols:headerCSS.gridTemplateColumns},
+        navIcons,mirror:mirror.getBoundingClientRect().toJSON(),
+        mirrorDisplay:getComputedStyle(mirror).display,
+        originalGloryDisplay:getComputedStyle(root.querySelector('.km-resource--glory')).display,
+        originalGlory:root.querySelector('[data-kingdom-glory]').textContent,
+        mirrorGlory:root.querySelector('[data-kingdom-heading-glory-value]').textContent,
+        touch:navIcons.map(item=>item.box.height),
+        resourceOverflow:bar.scrollWidth>bar.clientWidth,resourceScroll:getComputedStyle(bar).overflowX};
+    });
+    assert(ui.root.width<=width+2&&ui.root.height<=height+2,
+      'Map must fit '+width+'x'+height+': '+JSON.stringify(ui));
+    assert(ui.map.height>160&&ui.map.width>220,'Map viewport unusable at '+width+'x'+height);
+    assert(ui.panel.top>=ui.map.top-2&&ui.panel.bottom<=ui.map.bottom+2,
+      'Inspector must fit map at '+width+'x'+height);
+    assert(ui.zoom.top>=ui.map.top-2&&ui.zoom.bottom<=ui.map.bottom+2,
+      'Zoom must fit map at '+width+'x'+height);
+    if(process.env.RPCHESS_UI_SCREENSHOT_DIR){
+      fs.mkdirSync(process.env.RPCHESS_UI_SCREENSHOT_DIR,{recursive:true});
+      await servicesPage.screenshot({path:path.join(process.env.RPCHESS_UI_SCREENSHOT_DIR,
+        'journey-'+width+'x'+height+'.png'),fullPage:false});
+    }
+    if(height>width){
+      assert(Math.abs((ui.title.top+ui.title.bottom)/2-(ui.nav.top+ui.nav.bottom)/2)<12,
+        'Portrait Journey: Day and PNG actions must share header row '+width+'x'+height+
+        ': '+JSON.stringify(ui));
+      assert(ui.navIcons.map(item=>item.image).every((value,i)=>value.includes(
+        ['hud-squad.png','main-menu-settings.png','hud-main-menu.png'][i])),
+        'Journey must use the original Squad, Settings and Castle menu PNGs');
+      if(width<=599){
+        assert(ui.mirrorDisplay!=='none'&&ui.originalGloryDisplay==='none'&&
+          ui.mirrorGlory===ui.originalGlory&&
+          ui.title.right<=ui.mirror.left+2&&ui.mirror.right<=ui.nav.left+2,
+          'Phone portrait Glory must be left of nav icons beside Day N');
+      }
+    }
+    if(width<=844)assert(ui.touch.every(h=>h>=39)&&
+      (!ui.resourceOverflow||ui.resourceScroll==='auto'),
+      'Phone map controls and resource strip must be reachable');
+  }
+  await servicesPage.setViewportSize({width:1280,height:720});
   await servicesPage.close();
   console.log('KINGDOM MAP PASS — click-inspect, king drag, shortest routes, event stop, map pan, step supplies');
  }finally{await browser.close()}

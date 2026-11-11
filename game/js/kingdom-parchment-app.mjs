@@ -1,13 +1,13 @@
 /* Optional parchment atlas: an optimized, seamless author-provided ground tile.
  * The existing nature SVGs, world rivers and fog remain separate layers.
  */
-import {PARCHMENT_TILE,randomAt,terrainAt,pickSprite,hash32} from './kingdom-parchment-core.mjs';
+import {PARCHMENT_TILE,randomAt,terrainAt,pickSprite,hash32} from './kingdom-parchment-core.mjs?v=20261111-parchment-png-only-v1';
 import {VISUAL} from './kingdom-world-config.mjs?v=20261109-atlas-visual5';
 import {drawKingdomBoundary,drawKingdomRoads} from './kingdom-map-overlay.mjs?v=20261110-natural-road-layer-v4';
 
 const PAPER_TILE_SRC='assets/kingdom-parchment/parchment_tile_256.webp',PAPER_TILE_SIZE=256;
 const spriteCache=new Map();
-const MAX_SPRITES=128; // 112 vector atlas assets can coexist without reload churn.
+const MAX_SPRITES=128; // 112 PNG atlas assets can coexist without reload churn.
 let assetProbe=null,assetsReady=null,latest=null,redrawQueued=false;
 let extraManifestRequested=false,extraManifestSettled=false;
 const extraGroups={marsh:[],landmarks:[]};
@@ -25,7 +25,7 @@ function requestExtraManifest(){
     ['landmarks','decor_minor_landmarks']
    ]){
     const names=Array.isArray(groups[folder])?groups[folder]:[];
-    extraGroups[kind]=names.filter(file=>/\.(svg|png)$/i.test(file))
+    extraGroups[kind]=names.filter(file=>/\.png$/i.test(file))
       .map(file=>'assets/kingdom-parchment/'+folder+'/'+file);
    }
    queueRedraw();
@@ -49,7 +49,7 @@ function probeArt(){
  assetProbe=new Image();
  assetProbe.onload=()=>{assetsReady=true;queueRedraw();};
  assetProbe.onerror=()=>{assetsReady=false;queueRedraw();};
- assetProbe.src='assets/kingdom-parchment/forest_clusters/01_small_grove.svg';
+ assetProbe.src='assets/kingdom-parchment/forest_clusters/01_small_grove.png';
 }
 function getArt(src,repaint){
  if(assetsReady!==true)return null;
@@ -77,7 +77,10 @@ function drawTiledPaper(ctx,left,top,width,height,repaint){
 }
 function drawVector(ctx,src,x,y,width,height,alpha,repaint){
  const art=getArt(src,repaint);if(!art)return false;
- ctx.save();ctx.globalAlpha=alpha;ctx.drawImage(art,x,y,width,height);ctx.restore();
+ ctx.save();ctx.globalAlpha=alpha;
+ // Pre-rendered pixel art must not be blurred on canvas zoom/repaint.
+ ctx.imageSmoothingEnabled=false;
+ ctx.drawImage(art,x,y,width,height);ctx.restore();
  return true;
 }
 function drawBasePatches(ctx,seed,left,top,width,height,repaint){

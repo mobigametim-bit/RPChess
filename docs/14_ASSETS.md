@@ -146,5 +146,14 @@ Append one of the following role/race prompts.
 - **Queen:** Fae queen, ethereal fairy sovereign, elaborate floral crown, luminous wings, elegant magical armor.
 - **King:** Fae king, ancient fairy monarch, branch-and-gold crown, luminous ceremonial armor, magical blade.
 
+## Kingdom parchment — PNG-only production (Issue #191 accepted 11.11.2026)
+
+All **112** `128×128` parchment sprites ship as PNG in every normal build (`npm run build`, VK, Pages and other distributions). The seven groups of source SVGs remain only as editable masters in `game/assets/kingdom-parchment/`, **not** as runtime fallback.
+
+- `scripts/prepare-parchment-raster.cjs` converts the copied SVGs **only in `dist/`**, removes copied SVGs and updates `extra-manifest.json` to PNG paths. This happens unconditionally in every build, with no environment or HTML metadata switch.
+- The parchment JS requests `.png` with nearest-neighbor Canvas scaling. Other game SVGs (event/castle artwork) are not converted.
+- [Owner-approved QA](https://github.com/mobigametim-bit/RPChess/actions/runs/43035867834) checked all 112 images at 128/142/284px with zero changed pixels. The previous dist/ZIP comparison saved 33,494,228 and 2,153,318 bytes respectively.
+- Keep source SVGs in Git for future artwork editing only, never for a production runtime option.
+
 ## Variant naming
 Future variants use predictable names such as `undead_pawn_01.png`, `undead_pawn_02.png`, `elf_knight_01.png`, etc. Character identity can reference a reusable visual archetype so hundreds of named recruits do not require hundreds of fully unique base models.
