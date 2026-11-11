@@ -66,7 +66,7 @@ ENTRYPOINTS.forEach((entrypoint) => assertAcyclic(entrypoint));
 
 const foundation = read('js/reboot-foundation.mjs');
 const travelCssIndex = foundation.indexOf('data-travel-choice-css');
-const routeImportIndex = foundation.indexOf("import('./battle-route.mjs')");
+const routeImportIndex = foundation.indexOf("import('./battle-route.mjs");
 assert(travelCssIndex >= 0, 'Foundation must own Travel CSS loading');
 assert(routeImportIndex >= 0, 'Foundation must load the battle route');
 assert(travelCssIndex < routeImportIndex, 'Travel CSS must be installed before the battle route loads');
