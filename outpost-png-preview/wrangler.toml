@@ -1,0 +1,7 @@
+name = "rpchess-outpost-preview"
+compatibility_date = "2026-11-11"
+
+# Isolated outpost-PNG hotfix acceptance build. Does not touch live RPChess.
+[assets]
+directory = "../dist"
+not_found_handling = "single-page-application"
