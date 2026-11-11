@@ -172,7 +172,7 @@ function render(){
   for(const post of map.outposts||[]){
     const [x,y]=String(post.id||'').split(',').map(Number);
     if(Number.isSafeInteger(x)&&Number.isSafeInteger(y)&&map.cells?.[post.id]?.explored)
-      add('assets/kingdom-parchment/decor_minor_landmarks/04_watchtower.svg',
+      add('assets/kingdom-parchment/decor_minor_landmarks/04_watchtower.png',
         {x,y},'mm-kingdom-site',TILE*.73);
   }
   world.append(items);
