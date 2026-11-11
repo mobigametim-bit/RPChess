@@ -106,6 +106,27 @@ async function assertOneScreen(page,label){
     if(frame.sw>frame.cw+1)assert(['auto','scroll'].includes(frame.overflowX),'overflowing Roster catalog must own horizontal scrolling');
     if(frame.sh>frame.ch+1)assert(['auto','scroll'].includes(frame.overflowY),'overflowing Roster catalog must own vertical scrolling');
 
+
+    // Reuse the same persisted run instead of a new test suite or fixture.
+    for(const [width,height] of [[1440,900],[1180,820],[844,390],[900,1440],[820,1180],[390,844]]){
+      await mobile.setViewportSize({width,height});
+      const ui=await mobile.evaluate(()=>{
+        const root=document.querySelector('[data-roster-screen]');
+        const c=root.querySelector('.roster-catalog').getBoundingClientRect();
+        const b=root.querySelector('[data-roster-board]').getBoundingClientRect();
+        const action=root.querySelector('[data-roster-travel]').getBoundingClientRect();
+        return {sw:document.documentElement.scrollWidth,
+          root:root.getBoundingClientRect().toJSON(),catalog:c.toJSON(),
+          board:b.toJSON(),action:action.toJSON()};
+      });
+      assert(ui.sw<=width+2&&ui.root.width<=width+2,
+        'Roster horizontal overflow at '+width+'x'+height);
+      assert(ui.action.height>=(width<=844?39:35)&&ui.board.width>180,
+        'Journey CTA and Roster formation unusable at '+width+'x'+height);
+      if(width>height&&height<=540)assert(ui.catalog.bottom<=height+2,
+        'Landscape catalog must fit viewport '+width+'x'+height);
+    }
+    await mobile.setViewportSize({width:844,height:390});
     assert.deepStrictEqual(errors,[]);
     assert.deepStrictEqual(mobileErrors,[]);
     await mobile.close();
