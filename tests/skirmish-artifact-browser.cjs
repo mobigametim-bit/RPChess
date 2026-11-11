@@ -49,8 +49,7 @@ const watchdog = setTimeout(() => { console.error('Combat launch blocked browser
               fen:snapshot?.fen,choice:JSON.parse(localStorage.getItem('rpchess.reboot.v1.run'))?.combatArtifactChoice,
               targets:Object.fromEntries(cells.filter(c=>c.dataset.visionDepth).map(c=>[c.dataset.square,c.dataset.visionDepth])),
               dragOrigin:document.querySelectorAll('.rpchess-drag-origin').length,
-              dragGhost:document.querySelectorAll('.rpchess-piece-drag-ghost').length,
-              errors:errors};
+              dragGhost:document.querySelectorAll('.rpchess-piece-drag-ghost').length};
           });
           throw new Error('Skirmish X-ray drag-overlay diagnostics: '+JSON.stringify(diagnostics)+': '+error.message);
         }
