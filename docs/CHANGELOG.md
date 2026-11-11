@@ -1,3 +1,15 @@
+## 2026-11-12 — Infinite Kingdom Polish: HUMAN ACCEPTED, PR #195 merged
+- Владелец подтвердил приёмку исправлений и дал разрешение на merge и production deploy.
+- [PR #195](https://github.com/mobigametim-bit/RPChess/pull/195) слит в `main` merge-коммитом `87b80a8c41e19d783a65aadcba7780c2475b5b3e`.
+- Главная карта Королевства в меню теперь охватывает всю принадлежащую игроку территорию, включая завоёванные провинции Битв.
+- При единственном здоровом Короле выбор события, который может вызвать Стычку, заблокирован; добавлена защитная обработка возобновлённого события.
+- Плотность тумана войны: `fogOpacity=0.98`.
+- В карточке Замка компактные кнопки найма показывают тип фигуры, `×N`, цену и иконку золота.
+- Из карточек освоенных мест убрано повторяющееся сообщение; status и действия сохраняются.
+- Дополнительно включены независимые цвета провинций Битв, корректная передача территории при победе, адаптивный заголовок «День», проверки рекламного сценария и артефактов.
+- Целевой Kingdom Polish QA: [SUCCESS](https://github.com/mobigametim-bit/RPChess/actions/runs/43117953680). Полная PR-регрессия: [SUCCESS](https://github.com/mobigametim-bit/RPChess/actions/runs/43117961723).
+- Production GitHub Pages выпускается отдельным release-коммитом; выпуск и проверка production URL фиксируются в GitHub Actions.
+
 # RPChess Reboot Changelog
 
 ## 2026-11-11 — Accepted PNG-only parchment and Journey/Roster release
