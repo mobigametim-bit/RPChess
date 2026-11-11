@@ -65,7 +65,7 @@ async function main(){
     'js/resources-core.mjs','js/resources-app.mjs','js/settlement-core.mjs','js/settlement-app.mjs','js/starvation-core.mjs','js/starvation-app.mjs','js/events-data.mjs','js/events-core.mjs','js/events-app.mjs','js/events','js/puzzles',
     'assets/ui/main-menu-journey.png','assets/ui/main-menu-arena.png','assets/ui/main-menu-tournament.png',
     'assets/ui/main-menu-mentor.png','assets/ui/main-menu-settings.png','assets/ui/main-menu-language.png',
-    'assets/ui/hud-main-menu.png','assets/ui/hud-squad.png',
+    'assets/ui/hud-main-menu.png','assets/ui/hud-squad.png','assets/ui/settlement_entrance_64x64.png',
     'assets/kingdom-travelers/walkers_64.png','assets/pieces/fantasy','assets/vfx/pin_ice_full.png','assets/vfx/pin_ice_partial.png','assets/vfx/aura_white.png','assets/vfx/aura_black.png','assets/vfx/aura_red.png','assets/artifacts','assets/boards/obstacles','assets/boards/neutral/tile_light.png','assets/boards/neutral/tile_dark.png','assets/doctrines/cavalry/emblem.png','assets/doctrines/royal_court/emblem.png','fonts','music','SFX',
     ...collectKingdomMapAssetPaths(source),...collectBoardAssetPaths(source),...collectPieceAssetPaths(source),...collectPortraitAssetPaths(source),...collectBackgroundAssetPaths(source),...COMMANDER_ART,...NAMED_PAWN_ART,...NAMED_PAWN_PORTRAITS,...NAMED_BISHOP_ART,...NAMED_BISHOP_PORTRAITS,...NAMED_KNIGHT_ART,...NAMED_KNIGHT_PORTRAITS,...NAMED_ROOK_ART,...NAMED_ROOK_PORTRAITS,...NAMED_QUEEN_ART,...NAMED_QUEEN_PORTRAITS,...GENERATED_RUNTIME_ASSETS
   ])copy(relative);

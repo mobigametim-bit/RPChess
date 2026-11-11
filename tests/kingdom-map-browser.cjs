@@ -1367,6 +1367,38 @@ async function assertTileImage(page,cellId){
   },key);
   const servicesButton=servicesPage.locator('[data-kingdom-services]');
   await servicesButton.waitFor({state:'visible'});
+  assert.equal(await servicesPage.locator('[data-kingdom-services]').count(),1,
+    'Exactly one Settlement entrance must exist (not a second text button)');
+  assert.equal(await servicesPage.locator('.km-inspector-buttons [data-kingdom-services]').count(),0,
+    'Old services button below the card must be removed');
+  for(const [width,height] of [[1440,900],[1180,820],[844,390],
+    [900,1440],[820,1180],[390,844]]){
+    await servicesPage.setViewportSize({width,height});
+    const entrance=await servicesButton.evaluate(button=>{
+      const card=button.closest('.km-route-card--visitable-settlement');
+      const details=button.closest('.km-route-card__details');
+      const rect=button.getBoundingClientRect(),container=details?.getBoundingClientRect();
+      const icon=button.querySelector('img');
+      return {inCard:Boolean(card),width:rect.width,height:rect.height,
+        x:rect.left,y:rect.top,right:rect.right,bottom:rect.bottom,
+        details:container?.toJSON(),src:icon?.getAttribute('src'),
+        loaded:Boolean(icon?.complete&&icon.naturalWidth===64&&icon.naturalHeight===64),
+        aria:button.getAttribute('aria-label'),title:button.title,
+        visible:getComputedStyle(button).display!=='none'};
+    });
+    assert(entrance.inCard&&entrance.visible&&entrance.loaded,
+      'Settlement icon must render inside the completed card '+width+'x'+height);
+    assert(entrance.src==='assets/ui/settlement_entrance_64x64.png',
+      'Settlement must use uploaded image, not a text button');
+    assert(entrance.width>=44&&entrance.height>=44&&entrance.aria&&entrance.title,
+      'Settlement entrance must stay accessible and touchable '+width+'x'+height);
+    assert(entrance.x>=entrance.details.left+entrance.details.width*.52&&
+      entrance.right<=entrance.details.right+1&&
+      entrance.y>=entrance.details.top-1&&entrance.bottom<=entrance.details.bottom+1,
+      'Settlement entrance should occupy top-right of the card '+width+'x'+height+
+      ': '+JSON.stringify(entrance));
+  }
+  await servicesPage.setViewportSize({width:1280,height:720});
   const provisionsBefore=(await read(servicesPage)).supplies;
   await servicesButton.click();
   await servicesPage.locator('[data-settlement-screen]:not([hidden])').waitFor({timeout:15000});
