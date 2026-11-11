@@ -1,6 +1,6 @@
 /* Third Atlas Lab v6 tab. Sandbox edits NEVER mutate the active RPChess run. */
 import {DEFAULT_KINGDOM_ECONOMY,ECONOMY_GROUPS,ECONOMY_LABELS,PIECE_TYPES,
-  economyClone,normalizeKingdomEconomy} from './kingdom-economy-config.mjs';
+  economyClone,normalizeKingdomEconomy,weeklyProductionMultiplier,weeklyResourceProduction} from './kingdom-economy-config.mjs';
 
 const storageKey='rpchess.atlas-lab.economy.draft.v1';
 const $=id=>document.getElementById(id);
@@ -28,6 +28,15 @@ sheet.textContent=`
 .km-econ-invalid{color:#f1a781!important}
 .km-econ-foot{font-size:11px;color:#abb8a5;margin-top:10px}
 .km-econ-status{font-size:12px;min-width:200px;color:#d9c38c}
+.km-econ-production-guide{font-size:12px;color:#e8d39c;margin:12px 0;padding:11px;background:#25372b;border:1px solid #76653f;border-radius:7px;line-height:1.6}
+.km-econ-production-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:14px 0 8px;color:#ebd5a0;font-size:13px}
+.km-econ-production-head input{width:76px;padding:6px;border:1px solid #806b44;border-radius:6px;background:#101b16;color:#fff1be;text-align:center}
+.km-econ-production-table{border-collapse:collapse;width:100%;font-size:12px;font-variant-numeric:tabular-nums}
+.km-econ-production-table td,.km-econ-production-table th{border-top:1px solid #38463b;padding:8px 6px;text-align:right;white-space:nowrap}
+.km-econ-production-table td:first-child,.km-econ-production-table th:first-child{text-align:left;white-space:normal}
+.km-econ-production-table th{font-weight:600;color:#e6c98b}
+.km-econ-production-table td:last-child{font-weight:700;color:#f8e0a0}
+.km-econ-production-table tr[data-fixed] td:last-child{color:#a7c6b3}
 @media(max-width:740px){.km-econ-toolbar h2{width:100%}.shell.economy-active .km-economy-panel{grid-row:2;min-height:500px}}
 `;
 document.head.append(sheet);
@@ -38,9 +47,10 @@ area.innerHTML=`<div class="km-econ-toolbar"><h2>Экономика Короле
 <button id="kmEconomyExport">↓ Экспорт JSON</button><button id="kmEconomyImport">↑ Импорт JSON</button>
 <button id="kmEconomyReset">↺ Сброс экономики</button><input id="kmEconomyFile" type="file" accept=".json,application/json" hidden>
 <span id="kmEconomyStatus" class="km-econ-status" role="status"></span></div>
-<p class="km-econ-help">Здесь можно изменить любую цену и награду, не затрагивая сохранённую игру. Экспорт сохраняет конфигурацию для утверждения и переноса в сборку. Цены именных героев редактируются поимённо; рекруты различаются по расе и типу. Строительство поселения вне владений должно быть дороже по обеим валютам.</p>
+<p class="km-econ-help">Здесь можно изменить любую цену и награду, не затрагивая сохранённую игру. Экспорт сохраняет конфигурацию для утверждения и переноса в сборку. Цены именных героев редактируются поимённо; рекруты различаются по расе и типу. Строительство поселения вне владений должно быть дороже по обеим валютам. Недельная добыча золота, припасов и осколков: базовое значение × N, где N — число звёзд освоенного путевого события (1–12). Рекруты Стычки и возвращение защитника Битвы не умножаются.</p>
 <div id="kmEconomyGroups" class="km-econ-groups"></div>`;
 let draft=economyClone();
+let previewLevel=3; // Preview only: changing the selected star level does not alter the export.
 try{const raw=localStorage.getItem(storageKey);if(raw)draft=normalizeKingdomEconomy(JSON.parse(raw))}catch{}
 const status=msg=>{$('kmEconomyStatus').textContent=msg};
 function store(){try{localStorage.setItem(storageKey,JSON.stringify(draft))}catch{}}
@@ -76,6 +86,56 @@ function makeField(field,section){
  };
  section.append(row);
 }
+const productionPreviewRows=Object.freeze([
+ ['Поселение','settlement','gold','settlementGold'],
+ ['Караван · золото','caravan','gold','caravanGold'],
+ ['Караван · припасы','caravan','supplies','caravanSupplies'],
+ ['Событие · золото','event','gold','eventGold'],
+ ['Событие · припасы','event','supplies','eventSupplies'],
+ ['Задача · осколки','puzzle','shards','puzzleShards'],
+ ['Стычка · рекруты','skirmish','recruits','skirmishRecruits'],
+ ['Битва · возрождение (нед.)','battle','battle','battleRespawnWeeks']
+]);
+function renderProductionPreview(group){
+ const help=document.createElement('p');help.className='km-econ-production-guide';
+ help.textContent='Ресурсы за неделю = база × N, где N = звёзды путевого события. Значения выше — база при N=1. Рекруты Стычки и время возврата защитника Битвы не умножаются.';
+ group.append(help);
+ const control=document.createElement('div');control.className='km-econ-production-head';
+ const label=document.createElement('label');label.htmlFor='kmEconomyPreviewStars';
+ label.textContent='Пример для уровня события (звёзды):';
+ const level=document.createElement('input');level.id='kmEconomyPreviewStars';
+ level.type='number';level.min='1';level.max='12';level.step='1';level.value=String(previewLevel);
+ level.setAttribute('aria-label','Уровень путевого события от 1 до 12');
+ level.onchange=()=>{
+  const value=Number(level.value);
+  if(!Number.isSafeInteger(value)||value<1||value>12){
+   level.value=String(previewLevel);status('Уровень события должен быть от 1 до 12');return;
+  }
+  previewLevel=value;render();
+ };
+ const marker=document.createElement('strong');marker.id='kmEconomyPreviewMultiplier';
+ marker.textContent='N = ×'+weeklyProductionMultiplier(previewLevel);
+ control.append(label,level,marker);group.append(control);
+ const table=document.createElement('table');table.className='km-econ-production-table';
+ table.id='kmEconomyProductionPreview';
+ const thead=document.createElement('thead'),head=document.createElement('tr');
+ for(const value of ['Источник','База','N','Итого за неделю']){
+  const cell=document.createElement('th');cell.textContent=value;head.append(cell);
+ }
+ thead.append(head);table.append(thead);
+ const tbody=document.createElement('tbody');
+ for(const [name,type,kind,key]of productionPreviewRows){
+  const base=draft.production[key],calculated=weeklyResourceProduction(type,kind,previewLevel,draft);
+  const row=document.createElement('tr');row.dataset.productionType=type;
+  row.dataset.productionKind=kind;
+  if(calculated===null)row.dataset.fixed='';
+  for(const value of [name,base,calculated===null?'—':'×'+previewLevel,calculated??base]){
+   const cell=document.createElement('td');cell.textContent=String(value);row.append(cell);
+  }
+  tbody.append(row);
+ }
+ table.append(tbody);group.append(table);
+}
 function render(){
  const root=$('kmEconomyGroups');root.replaceChildren();
  for(const group of ECONOMY_GROUPS){
@@ -84,6 +144,7 @@ function render(){
   const source=pickGroup(group);
   const pathPrefix=group[1]==='settlementServices'&&group[2]==='namedHeroPrices'?['settlementServices','namedHeroPrices']:[group[1]];
   for(const field of fields(source,pathPrefix))makeField(field,block);
+  if(group[1]==='production')renderProductionPreview(block);
   if(group[1]==='recruits'){
     const tip=document.createElement('p');tip.className='km-econ-foot';
     tip.textContent='Уровни I–V: относительные веса пешки, коня, слона, ладьи, ферзя. Допускается не сумма 100: веса нормализуются при выдаче рекрута.';block.append(tip);
@@ -93,7 +154,7 @@ function render(){
 }
 function getConfig(){return economyClone(draft)}
 function setConfig(input){draft=normalizeKingdomEconomy(input?.economy||input);store();render();status('Экономика импортирована в редактор')}
-function exportConfig(){return {format:'rpchess.kingdom.economy.v1',savedAt:new Date().toISOString(),economy:getConfig(),note:'Экспорт из Atlas Lab: требуется утверждение и перенос разработчиком; текущий забег не затронут'};}
+function exportConfig(){return {format:'rpchess.kingdom.economy.v1',savedAt:new Date().toISOString(),economy:getConfig(),productionScaling:'resources = base × routeStars (clamped 1..12); skirmish recruits and battle respawn unscaled',note:'Экспорт из Atlas Lab: требуется утверждение и перенос разработчиком; текущий забег не затронут'};}
 function download(data,name){const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),5000)}
 $('kmEconomyExport').onclick=()=>download(exportConfig(),'RPChess_Kingdom_Economy_Config.json');
 $('kmEconomyImport').onclick=()=>$('kmEconomyFile').click();
