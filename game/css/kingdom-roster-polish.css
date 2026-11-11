@@ -158,3 +158,164 @@
   min-height:40px;min-width:40px;
  }
 }
+
+
+/* Approved v3 navigation: the same PNGs used by the live Main Menu/Roster.
+ * Keep the original buttons and event handlers, never replace with glyphs.
+ * Header is a two-row 3-column grid in portrait: title + icons / avatar + stats.
+ */
+.kingdom-map-screen .km-heading-glory{display:none!important}
+@media (orientation:portrait){
+  body.kingdom-map-active .kingdom-map-screen .km-header{
+    display:grid!important;
+    grid-template-columns:52px minmax(0,1fr) max-content!important;
+    grid-template-rows:minmax(52px,auto) minmax(48px,auto)!important;
+    grid-template-areas:"day day actions" "portrait resources resources"!important;
+    align-items:center!important;gap:0!important;
+    min-height:0!important;height:auto!important;max-height:none!important;
+    overflow:visible!important;
+  }
+  /* Display contents promotes the existing buttons and resources into grid
+     areas. Their DOM order/handlers and keyboard traversal are unchanged. */
+  body.kingdom-map-active .kingdom-map-screen .km-commandbar{
+    display:contents!important;
+  }
+  body.kingdom-map-active .kingdom-map-screen .km-heading{
+    grid-area:day!important;
+    display:flex!important;align-items:center!important;
+    justify-content:space-between!important;gap:7px!important;
+    height:100%!important;min-height:52px!important;
+    padding:7px 9px!important;margin:0!important;
+    white-space:normal!important;overflow:hidden!important;
+    border-right:0!important;border-bottom:1px solid #bd925351!important;
+  }
+  body.kingdom-map-active .kingdom-map-screen .km-heading h1{
+    font-size:clamp(21px,3.4vw,31px)!important;white-space:nowrap!important;
+    margin:0!important;min-width:0!important;line-height:1.1!important;
+  }
+  body.kingdom-map-active .kingdom-map-screen .km-actions{
+    grid-area:actions!important;
+    display:flex!important;align-items:center!important;justify-content:flex-end!important;
+    flex-wrap:nowrap!important;gap:clamp(2px,.65vw,8px)!important;
+    padding:5px 8px 5px 2px!important;margin:0!important;
+    min-height:52px!important;width:auto!important;max-width:none!important;
+    border-bottom:1px solid #bd925351!important;
+  }
+  body.kingdom-map-active .kingdom-map-screen .km-commander-meta{
+    grid-area:portrait!important;display:flex!important;
+    justify-content:center!important;align-items:center!important;
+    width:52px!important;min-width:0!important;
+    border-right:1px solid #a7834f55!important;
+  }
+  body.kingdom-map-active .kingdom-map-screen .km-resource-group{
+    grid-area:resources!important;display:flex!important;
+    width:100%!important;min-width:0!important;max-width:100%!important;
+    flex-wrap:nowrap!important;justify-content:flex-start!important;
+    overflow-x:auto!important;overflow-y:hidden!important;
+    gap:clamp(7px,1.2vw,17px)!important;
+    padding:6px 8px!important;
+  }
+  /* Explicit PNG style wins against generic portrait .reboot-button rules.
+     Icon order: Squad map, Settings gear, Main Menu castle. */
+  html[data-landscape-ui='1'] body.kingdom-map-active .kingdom-map-screen
+    .km-actions :is([data-kingdom-roster],[data-kingdom-settings],[data-kingdom-menu]){
+    display:inline-block!important;flex:0 0 auto!important;
+    width:clamp(42px,6vw,58px)!important;min-width:clamp(42px,6vw,58px)!important;
+    max-width:clamp(42px,6vw,58px)!important;
+    height:clamp(42px,6vw,58px)!important;min-height:clamp(42px,6vw,58px)!important;
+    max-height:clamp(42px,6vw,58px)!important;
+    padding:0!important;margin:0!important;border:0!important;
+    border-radius:0!important;
+    background:transparent var(--hud-nav-image) center/contain no-repeat!important;
+    box-shadow:none!important;color:transparent!important;
+    font-size:0!important;line-height:0!important;white-space:nowrap!important;
+    overflow:visible!important;touch-action:manipulation!important;
+  }
+}
+/* Roster, portrait phone + tablet: title and three original scene icons
+ * form the top row. Remove the brand logo to return vertical space to pieces. */
+@media (orientation:portrait) and (max-width:1100px){
+  html[data-landscape-ui='1'] body.roster-active .roster-screen .roster-shell{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) max-content!important;
+    grid-template-rows:auto minmax(0,1fr)!important;
+    grid-template-areas:"title actions" "layout layout"!important;
+    align-items:start!important;gap:8px!important;
+    width:min(100%,800px)!important;height:auto!important;
+  }
+  html[data-landscape-ui='1'] body.roster-active .roster-screen .roster-topbar{
+    display:contents!important;
+  }
+  html[data-landscape-ui='1'] body.roster-active .roster-screen .roster-logo{
+    display:none!important;
+  }
+  html[data-landscape-ui='1'] body.roster-active .roster-screen .roster-heading{
+    grid-area:title!important;display:block!important;
+    align-self:center!important;
+    margin:0!important;padding:0!important;min-width:0!important;
+  }
+  html[data-landscape-ui='1'] body.roster-active .roster-screen .roster-heading .reboot-eyebrow{
+    display:none!important;
+  }
+  html[data-landscape-ui='1'] body.roster-active .roster-screen .roster-heading h1{
+    font-size:clamp(28px,4.6vw,43px)!important;
+    margin:0!important;line-height:1.1!important;white-space:nowrap!important;
+  }
+  html[data-landscape-ui='1'] body.roster-active .roster-screen .roster-topbar__actions{
+    grid-area:actions!important;display:flex!important;align-items:center!important;
+    justify-content:flex-end!important;flex-wrap:nowrap!important;
+    width:auto!important;min-width:0!important;max-width:none!important;
+    gap:clamp(3px,.7vw,8px)!important;margin:0!important;padding:0!important;
+    grid-template-columns:none!important;
+  }
+  html[data-landscape-ui='1'] body.roster-active .roster-screen
+    .roster-topbar__actions .roster-journey-button{
+    grid-column:auto!important;
+  }
+  html[data-landscape-ui='1'] body.roster-active .roster-screen .roster-layout{
+    grid-area:layout!important;min-width:0!important;grid-column:1/-1!important;
+  }
+  /* Original Roster navigation PNGs: Journey map, Settings gears, Castle menu.
+     Force pictograms even if portrait styles set 100%-wide text buttons. */
+  html[data-landscape-ui='1'] body.roster-active .roster-screen .roster-topbar__actions
+   :is([data-roster-travel],[data-settings],[data-roster-menu]){
+    display:inline-block!important;flex:0 0 auto!important;
+    width:clamp(42px,6vw,58px)!important;min-width:clamp(42px,6vw,58px)!important;
+    max-width:clamp(42px,6vw,58px)!important;
+    height:clamp(42px,6vw,58px)!important;min-height:clamp(42px,6vw,58px)!important;
+    max-height:clamp(42px,6vw,58px)!important;
+    padding:0!important;margin:0!important;border:0!important;border-radius:0!important;
+    background:transparent var(--hud-nav-image) center/contain no-repeat!important;
+    box-shadow:none!important;color:transparent!important;
+    font-size:0!important;line-height:0!important;white-space:nowrap!important;
+    overflow:visible!important;touch-action:manipulation!important;
+  }
+}
+/* Phone portrait: Glory goes between Day N and pictograms, never
+ * duplicated in the secondary horizontal resource strip. */
+@media (orientation:portrait) and (max-width:599px){
+  body.kingdom-map-active .kingdom-map-screen .km-heading{
+    gap:5px!important;padding:4px 7px!important;
+  }
+  body.kingdom-map-active .kingdom-map-screen .km-heading h1{
+    font-size:clamp(19px,5vw,24px)!important;
+  }
+  body.kingdom-map-active .kingdom-map-screen .km-heading-glory{
+    display:inline-flex!important;align-items:center!important;justify-content:flex-end!important;
+    flex:0 0 auto!important;margin-left:auto!important;gap:3px!important;
+    white-space:nowrap!important;color:#ffe5aa!important;
+  }
+  body.kingdom-map-active .kingdom-map-screen .km-heading-glory img{
+    width:24px!important;height:24px!important;object-fit:contain!important;
+  }
+  body.kingdom-map-active .kingdom-map-screen .km-heading-glory strong{
+    font:800 15px/1 Inter,Arial,sans-serif!important;
+    font-variant-numeric:tabular-nums!important;
+  }
+  body.kingdom-map-active .kingdom-map-screen .km-resource-group .km-resource--glory{
+    display:none!important;
+  }
+  body.kingdom-map-active .kingdom-map-screen .km-actions{
+    gap:2px!important;padding-inline:0 5px!important;
+  }
+}

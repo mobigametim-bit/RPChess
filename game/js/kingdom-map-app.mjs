@@ -382,7 +382,7 @@ function screenReady(){
  screen.dataset.kingdomMapScreen='';screen.hidden=true;
  screen.innerHTML=`<div class="km-shell">
  <header class="km-header">
- <div class="km-heading"><h1 data-kingdom-day></h1></div>
+ <div class="km-heading"><h1 data-kingdom-day></h1><span class="km-heading-glory" data-kingdom-heading-glory><img src="${GLORY_ICON}" alt="" aria-hidden="true"><strong data-kingdom-heading-glory-value></strong></span></div>
  <div class="km-commandbar">
  <div class="km-commander-meta"><img class="km-commander-portrait" data-kingdom-portrait alt=""></div>
  <div class="km-resource-group">
@@ -597,7 +597,12 @@ function render(){
   ['.km-resource--points',tr('lands')],
   ['.km-resource--shards',tr('shards')]
  ]){const item=screen.querySelector(selector);item.title=label;item.setAttribute('aria-label',label);}
- screen.querySelector('[data-kingdom-glory]').textContent=String(gloryForRun(run.journeyStep,power));
+ const glory=String(gloryForRun(run.journeyStep,power));
+ screen.querySelector('[data-kingdom-glory]').textContent=glory;
+ screen.querySelector('[data-kingdom-heading-glory-value]').textContent=glory;
+ const gloryLabel=runtimeT(currentLanguage(),'chronicle.glory');
+ const headingGlory=screen.querySelector('[data-kingdom-heading-glory]');
+ headingGlory.title=gloryLabel;headingGlory.setAttribute('aria-label',gloryLabel);
  screen.querySelector('[data-kingdom-points]').textContent=Math.max(0,(map.centralOwnedCells||[]).length-1)+'/'+territoryCapacity(map);
  screen.querySelector('[data-kingdom-shards]').textContent=String(honorShards());
  const cells=document.createDocumentFragment(),productions=document.createDocumentFragment();
