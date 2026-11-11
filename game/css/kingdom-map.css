@@ -270,6 +270,7 @@ body.kingdom-map-active .resource-hud{display:none!important}
 }
 .kingdom-map-screen .km-heading h1{
  margin:0;font-size:clamp(25px,2.4vw,34px);line-height:1.1;
+ max-width:100%;min-width:0;white-space:nowrap;
 }
 .kingdom-map-screen .km-commandbar{
  display:grid;grid-template-columns:86px minmax(0,1fr) max-content;
