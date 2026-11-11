@@ -1452,6 +1452,13 @@ async function assertTileImage(page,cellId){
     'Atlas Lab weekly calculator must show base×N resources and fixed non-resources');
   assert.equal(productionPreview.exported.economy.production.settlementGold,20,
     'preview N is UI-only and must not change exported base economy');
+  if(process.env.RPCHESS_ATLAS_ECON_SCREENSHOT_DIR){
+    fs.mkdirSync(process.env.RPCHESS_ATLAS_ECON_SCREENSHOT_DIR,{recursive:true});
+    await labPage.screenshot({
+      path:path.join(process.env.RPCHESS_ATLAS_ECON_SCREENSHOT_DIR,'atlas-economy-N5.png'),
+      fullPage:true
+    });
+  }
   assert.deepStrictEqual(atlasErrors,[],'Atlas Lab economy and original simulator must not emit page errors');
   await labPage.close();
   // Regression: revisiting a cleared Settlement used to hide the Kingdom
