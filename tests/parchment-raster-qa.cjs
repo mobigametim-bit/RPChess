@@ -40,6 +40,14 @@ try{
  }
  fs.mkdirSync(out,{recursive:true});
  fs.writeFileSync(path.join(out,'report.json'),JSON.stringify(report,null,2)+'\n');
+ // Keep all 112 generated sprites for independent Chromium pixel parity QA.
+ for(const group of GROUPS){
+  const target=path.join(out,'converted',group);
+  fs.mkdirSync(target,{recursive:true});
+  for(const name of outputManifest.groups[group]){
+   fs.copyFileSync(path.join(dest,group,name),path.join(target,name));
+  }
+ }
  // Contact images are the original alpha-preserving decoded output; art review
  // can open them, while all 112 source SVGs remain in the repository.
  for(const group of GROUPS)fs.copyFileSync(path.join(dest,group,outputManifest.groups[group][0]),
