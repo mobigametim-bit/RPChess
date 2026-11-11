@@ -582,6 +582,14 @@ function fitDayHeading(dayNode){
  ctx.font=style.fontWeight+' '+max+'px '+style.fontFamily;
  const natural=ctx.measureText(dayNode.textContent).width;
  if(natural>usable)dayNode.style.fontSize=Math.max(9,Math.floor(max*usable/natural*.97))+'px';
+ // A font loaded after the initial measurement may have wider glyphs than
+ // canvas estimated. Compare actual layout boxes and shrink until no digits
+ // are clipped inside the fixed-width heading (including mobile landscape).
+ let size=parseFloat(getComputedStyle(dayNode).fontSize)||max;
+ while(size>9&&dayNode.scrollWidth>dayNode.clientWidth+1){
+  size=Math.max(9,size-1);
+  dayNode.style.fontSize=size+'px';
+ }
 }
 function render(){
  const run=readRun();if(!run||!validateKingdomMap(run.kingdomMap)||!screen||screen.hidden)return;
