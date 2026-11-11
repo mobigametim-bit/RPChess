@@ -7,6 +7,7 @@ on:
       - '.github/workflows/parchment-raster-preview.yml'
       - 'parchment-raster-preview/**'
       - 'tests/kingdom-map-browser.cjs'
+      - 'docs/14_ASSETS.md'
       - 'scripts/prepare-parchment-raster.cjs'
       - 'scripts/build.cjs'
   workflow_dispatch:

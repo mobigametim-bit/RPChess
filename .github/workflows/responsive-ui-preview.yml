@@ -9,6 +9,7 @@ on:
       - 'game/**'
       - 'scripts/**'
       - 'tests/kingdom-map-browser.cjs'
+      - 'docs/CURRENT_STATE.md'
       - 'tests/roster-browser.cjs'
   workflow_dispatch:
 permissions:
