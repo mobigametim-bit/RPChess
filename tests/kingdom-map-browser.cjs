@@ -1589,6 +1589,13 @@ async function assertTileImage(page,cellId){
   // Existing completed-Settlement fixture doubles as a responsive map check.
   for(const [width,height] of [[1440,900],[1180,820],[844,390],[900,1440],[820,1180],[390,844]]){
     await servicesPage.setViewportSize({width,height});
+    // Viewport changes are asynchronous relative to resize listeners; sample
+    // the heading only after its real browser reflow and adaptive fit settle.
+    await servicesPage.waitForFunction(()=>{
+      const day=document.querySelector('[data-kingdom-day]');
+      return day&&day.textContent.includes('166166')&&
+        day.scrollWidth<=day.clientWidth+1;
+    },null,{timeout:7000});
     const ui=await servicesPage.locator('[data-kingdom-map-screen]').evaluate(root=>{
       const rect=selector=>root.querySelector(selector)?.getBoundingClientRect();
       const rootBox=root.getBoundingClientRect(),map=rect('.km-map-frame');
