@@ -1,5 +1,14 @@
 # RPChess Reboot Changelog
 
+## 2026-11-11 — Accepted PNG-only parchment and Journey/Roster release
+
+- Owner accepted Issue #191 and authorized closing it and merging PR #192.
+- Every production build converts 112 authored SVG parchment sprites into 128×128 PNGs inside dist, deletes the corresponding distributed SVG copies and loads PNG only. Removed the runtime format fallback and opt-in build flag.
+- Original authored SVG masters remain source files in Git for future art edits, but cannot be selected in the game. Unrelated SVG event/castle artwork is unchanged.
+- Prior 112×3 pixel tests showed 0% changed pixels at 128/142/284px; full distribution decreased 33,494,228 bytes, ZIP by 2,153,318 bytes. CI frame-pacing numbers are not phone FPS.
+- PR #192 includes accepted responsive Journey/Roster and completed Settlement entrance icon. Production GitHub Pages requires separate dispatch after code merge.
+
+
 > Historical entries record the delivery rules and assets that applied at their original dates. Current production/remediation policy is defined by `CURRENT_STATE.md`, `16_UI_UX.md`, `17_TECH_ARCHITECTURE.md` and `REVIEW_REMEDIATION_DECISIONS.md`; historical Cloudflare or `ui_button_primary.png` receipts do not override it.
 
 ## 2026-09-24 — Arena plan and documentation reconciliation
