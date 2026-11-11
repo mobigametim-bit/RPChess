@@ -52,7 +52,7 @@ class MemoryStorage {
     "platform.ads.show('reward')",
     "platform.ads.check('reward')",
     'event.stopImmediatePropagation',
-    "source:'travel-choice'",
+    "resumeMapEncounter?.(choice)",
     'eligibleAfterStep:choice.step + 1',
     'REWARDED_INTERSTITIAL_COOLDOWN_MS = 60_000',
     'STARVATION_RESCUE_SUPPLIES = 5',
