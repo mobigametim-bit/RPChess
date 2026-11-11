@@ -990,7 +990,10 @@ async function assertTileImage(page,cellId){
      'finished events retain their original beautiful route card');
    assert.equal(await completedCard.locator('.km-route-card__icon').count(),1);
    assert.equal(await completedCard.locator('.km-route-card__defender').count(),0);
-   assert.equal(await completedCard.locator('.km-route-card__cleared').count(),1);
+   assert.equal(await completedCard.locator('.km-route-card__cleared').count(),0,
+     'cleared cards must not repeat the redundant location-completed explanation');
+   assert(!/Место освоено|This location is cleared/i.test(await completedCard.innerText()),
+     'completed card must omit the deprecated verbose cleared message');
    assert.equal(await completedCard.locator('.km-route-resource').count(),0,
      'a completed encounter does not advertise a fresh supply charge or repeat reward');
    assert.equal(await page.locator('.km-kingdom-overlay').count(),1,
