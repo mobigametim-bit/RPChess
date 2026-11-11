@@ -357,6 +357,28 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
     'Day 7 queues one Gold reward for an owned completed Settlement');
   assert.strictEqual(mapCore.settleWeeklyProduction(weekly),weekly,
     'production is generated at most once per week');
+  // N = route level for resource rewards; old level-I routes remain unchanged.
+  const economy=await import(pathToFileURL(path.join(game,'js/kingdom-economy-config.mjs')).href);
+  const fiveStarMap={...productionMap,cells:{...productionMap.cells,
+    [producerId]:{...productionMap.cells[producerId],
+      selectedEncounter:{...productionMap.cells[producerId].selectedEncounter,stars:5}}}};
+  const fiveStarWeek=mapCore.settleWeeklyProduction({...fiveStarMap,day:7,processedThroughWeek:0});
+  assert.strictEqual(fiveStarWeek.cells[producerId].production.amount,100,
+    'level-V Settlement must produce 20×5 Gold per week');
+  assert.deepStrictEqual([
+    economy.weeklyResourceProduction('caravan','gold',5),
+    economy.weeklyResourceProduction('caravan','supplies',5),
+    economy.weeklyResourceProduction('event','gold',5),
+    economy.weeklyResourceProduction('event','supplies',5),
+    economy.weeklyResourceProduction('puzzle','shards',5)
+  ],[60,25,50,20,25],'the five resource payouts must scale with route level');
+  assert.deepStrictEqual([
+    economy.weeklyResourceProduction('settlement','gold',12),
+    economy.weeklyResourceProduction('settlement','gold',undefined),
+    economy.weeklyResourceProduction('skirmish','recruits',12),
+    economy.weeklyResourceProduction('battle','battle',12)
+  ],[240,20,null,null],'cap at level XII, legacy level I and exclude non-resources');
+
   const collected=mapCore.collectProduction(weekly,producerId);
   assert(collected.ok&&collected.kind==='gold'&&collected.amount===20);
   assert(!mapCore.collectProduction(collected.map,producerId).ok,
