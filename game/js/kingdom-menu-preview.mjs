@@ -1,12 +1,12 @@
 /* Compact, live, read-only kingdom projection for the six responsive main-menu layouts.
  * Reuses the game's parchment, roads and NPC renderers; never mutates the saved run. */
 import {readRun} from './run-persistence.mjs';
-import {validateKingdomMap} from './kingdom-map-core.mjs?v=20261110-roadgrid-v3';
+import {validateKingdomMap} from './kingdom-map-core.mjs?v=20261111-battle-province-v1';
 import {kingdomMapSprite,kingdomEncounterSprite} from './kingdom-map-assets.mjs';
 import {PARCHMENT_TILE} from './kingdom-parchment-core.mjs?v=20261111-parchment-png-only-v1';
 import {commanderPieceArt} from './commander-portraits.mjs';
-import {renderParchment,renderParchmentFog,parchmentAssetsSettled} from './kingdom-parchment-app.mjs?v=20261111-parchment-png-only-v1';
-import {drawKingdomOverlay} from './kingdom-map-overlay.mjs?v=20261110-natural-road-layer-v4';
+import {renderParchment,renderParchmentFog,parchmentAssetsSettled} from './kingdom-parchment-app.mjs?v=20261111-battle-province-v1';
+import {drawKingdomOverlay} from './kingdom-map-overlay.mjs?v=20261111-battle-province-v1';
 import {animateTravelers,stopTravelers} from './kingdom-traveler-renderer.mjs?v=20261111-npc-floor-v1';
 
 const TILE=142,MAX_CANVAS=1900;
