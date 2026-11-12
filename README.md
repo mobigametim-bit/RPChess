@@ -1,6 +1,6 @@
 # RPChess Reboot
 
-Fantasy chess roguelite built around **classical 8×8 chess**, persistent named heroes and a Journey loop. The in-progress **Infinite Kingdom** replaces the three-route map with an explorable world in Draft PR #190; the released production game remains on `main`.
+Fantasy chess roguelite built around **classical 8×8 chess**, persistent named heroes and a Journey loop. **Infinite Kingdom** is part of the production game on `main` (accepted PR #195, 12 November 2026).
 
 ## Current development mode
 
@@ -15,7 +15,7 @@ Active development happens through feature branches and human playtest gates bef
 
 The source-of-truth documentation lives under [`docs/`](docs/). Start with the current operational snapshot:
 
-- [`CURRENT_STATE.md`](docs/CURRENT_STATE.md) — current accepted production/runtime/deployment state;
+- [`CURRENT_STATE.md`](docs/CURRENT_STATE.md) — production/runtime state and historical receipts;\n- [`DEVELOPMENT_WORKFLOW.md`](docs/DEVELOPMENT_WORKFLOW.md) — **approved focused-PR / full pre-merge testing, release gates, and branch retention rules**;
 - [`KINGDOM_EXPLORATION_ECONOMY_BIOME_DESIGN.md`](docs/KINGDOM_EXPLORATION_ECONOMY_BIOME_DESIGN.md) — Infinite Kingdom design, feature-stage progress and acceptance;
 - [`KINGDOM_ECONOMY_ARMY_SPEC.md`](docs/KINGDOM_ECONOMY_ARMY_SPEC.md) — economy, permanent Army, recruitment and settlement balance;
 - [`KINGDOM_ROADS_AND_TRAVELERS_PLAN.md`](docs/features/KINGDOM_ROADS_AND_TRAVELERS_PLAN.md) — updated roads and animated travelers (planned, not yet implemented);
@@ -59,14 +59,12 @@ npm test
 npm run build
 ```
 
-For the canonical project gate use `npm run gate:local`. Browser acceptance uses Playwright/Chromium through the repository browser-test runner.
+For the canonical project gate use `npm run gate:local`. The complete pre-merge gate is `npm run gate:full` (including all 36 default Chromium suites). During development, GitHub runs only selected coupled tests based on the PR diff. See [development rules](docs/DEVELOPMENT_WORKFLOW.md).
 
 ## Production
 
-The accepted `main` build is published to **GitHub Pages** only when the Pages workflow is dispatched manually:
+Production: https://mobigametim-bit.github.io/RPChess/
 
-https://mobigametim-bit.github.io/RPChess/
-
-`.github/workflows/pages.yml` validates pull requests with the canonical build plus real Chromium checks under the `/RPChess/` project subpath. Pull-request and ordinary `main` push runs do **not** deploy; only a manual `workflow_dispatch` on `main` publishes the validated `dist/` artifact.
+PRs run focused tests; after explicit human acceptance the `release-approved` label triggers full pre-merge validation. Merge alone does not publish. Production Pages publishes only on an authorized release commit or workflow dispatch from `main`, after its own production verification. See [CI and branch governance](docs/DEVELOPMENT_WORKFLOW.md).
 
 Cloudflare configuration remains in the repository for compatibility/legacy preview workflows, but GitHub Pages is the canonical public production host.
