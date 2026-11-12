@@ -7,7 +7,7 @@
 2. Во время разработки используем **адресный CI**: исходники, базовые технические контракты, сборка для игровых изменений и Node/Chromium-тесты только изменённых и сопряжённых систем. Непонятные изменения получают консервативный smoke/fallback; новая функциональность обязана иметь покрытие своего основного контракта. Не создаём дополнительные тесты ради количества.
 3. Выкладываем **изолированный playable QA preview**, если нужна ручная проверка. Никаких PR-деплоев в production.
 4. Владелец **лично принимает** результат и прямо говорит «сливай» / «принимаю, сливай». До этого PR остаётся незавершённым, в `main` ничего не попадает.
-5. Только **после приёмки** уполномоченный участник ставит на PR label `release-approved`. По нему workflow `.github/workflows/release-gate.yml` выполняет **`npm run gate:full`**: source/static, Node-регрессии, контент, puzzle validation, build/assets, **все 37 текущих real-Chromium browser suites**. Красный или не запущенный release gate **не разрешает** merge.
+5. Только **после приёмки** уполномоченный участник ставит на PR label `release-approved`. По нему workflow `.github/workflows/release-gate.yml` выполняет **`npm run gate:full`**: source/static, Node-регрессии, контент, puzzle validation, build/assets, **все 36 текущих real-Chromium browser suites**. Красный или не запущенный release gate **не разрешает** merge.
 6. Merge допустим лишь при `PR Focused Checks = success` и `Release Gate = success` для **точного текущего PR head + актуальной base**. Любой дополнительный commit после приёмки требует нового прогона; изменение `main` требует обновить PR и повторить проверку. Нельзя обходить это прямым push или настройкой `admin bypass`.
 7. Сливаем проверенный PR в `main`. Production deploy запускается **отдельно**, по явной команде владельца и через разрешённый release-коммит / ручной workflow `.github/workflows/pages.yml`. Деплой из PR запрещён. После публикации проверяем GitHub Actions и production URL.
 8. В отчёте фиксируем PR, SHA, тесты, QA URL, результат deploy и **следующие шаги**.
@@ -57,9 +57,9 @@
 - **3 открытых Draft PR**, требующих сохранения source-веток:
   - [#180](https://github.com/mobigametim-bit/RPChess/pull/180) `feature/ru-netlify-gateway-20261106`;
   - [#158](https://github.com/mobigametim-bit/RPChess/pull/158) `feature/scene-preload-transitions-20261016`;
-  - [#137](https://github.com/mobigametim-bit/RPChess/pull/137) `platform/vk-games`.
+  - [#136](https://github.com/mobigametim-bit/RPChess/pull/136) `platform/vk-games`.
 - У репозитория по GitHub metadata размер `894980 KiB` (~874 MiB), что **не равно** объёму «222 копий проекта».
-- Исходный `pages.yml` запускал все локальные тесты + **23 из 37** Chromium suites в каждом PR/push. Исходный `full-project-review.yml` запускал лишь **17 из 37**; обе конфигурации нуждались в нормализации.
+- Исходный `pages.yml` запускал все локальные тесты + **23 из 36** Chromium suites в каждом PR/push. Исходный `full-project-review.yml` запускал лишь **17 из 36**; обе конфигурации нуждались в нормализации.
 - Состояние слияния, устаревания и уникальности всех 222 веток **не установлено** одной только выдачей списка refs. Перед удалением нужен полный compare/commit-date аудит; имена и даты в названиях не являются достаточным доказательством.
 
 Реализацию нового процесса в отдельном PR нельзя считать принятой/активной до merge и зелёных проверок. Эта запись фиксирует утверждённые правила и исходный снимок репозитория.
