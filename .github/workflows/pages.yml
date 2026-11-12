@@ -1,7 +1,6 @@
 name: Deploy RPChess to GitHub Pages
 
 on:
-  pull_request:
   push:
     branches:
       - main
@@ -18,6 +17,10 @@ concurrency:
 
 jobs:
   build:
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'push' && (startsWith(github.event.head_commit.message, 'deploy: active Glory menu sync') || startsWith(github.event.head_commit.message, 'deploy: yandex gateway client') || startsWith(github.event.head_commit.message, 'deploy: tournament routing recovery') || startsWith(github.event.head_commit.message, 'deploy: vk profile conflict recovery') || startsWith(github.event.head_commit.message, 'deploy: mobile vk profile transport and localization') || startsWith(github.event.head_commit.message, 'deploy: mentor training rollout') || startsWith(github.event.head_commit.message, 'deploy: kingdom map release'))))
     # Keep Playwright 1.54 compatible with the runner OS for production deploys.
     runs-on: ubuntu-24.04
     timeout-minutes: 60
