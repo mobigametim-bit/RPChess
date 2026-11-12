@@ -1,0 +1,38 @@
+name: GitHub Branch Inventory (read-only)
+
+on:
+  push:
+    branches: [chore/ci-release-gate-branch-hygiene-20261112]
+    paths:
+      - scripts/audit-github-branches.cjs
+      - .github/workflows/branch-inventory.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  inventory:
+    name: Branch Inventory - dry run
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate no-delete policy
+        run: node scripts/audit-github-branches.cjs --self-test
+      - name: Compare all branches against main and inventory workflows
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/audit-github-branches.cjs
+      - name: Save JSON and Markdown audit results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rpchess-github-hygiene-audit
+          path: test-results/branch-audit/
+          retention-days: 30
+          if-no-files-found: warn
