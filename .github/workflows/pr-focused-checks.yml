@@ -1,0 +1,88 @@
+name: PR Focused Checks
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-focused-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  focused:
+    name: PR Focused Checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Check changed-file selector itself
+        run: node scripts/select-pr-tests.cjs --self-test
+      - name: Select change-related Node and browser regressions
+        id: scope
+        env:
+          RPCHESS_BASE_SHA: ${{ github.event.pull_request.base.sha || 'origin/main' }}
+        run: node scripts/select-pr-tests.cjs
+      - name: Build prerequisite dependency installation
+        if: steps.scope.outputs.has_runtime_changes == 'true'
+        run: npm ci --no-audit --no-fund
+      - name: Fast source, code-health and dependency checks
+        if: steps.scope.outputs.has_runtime_changes == 'true'
+        run: |
+          npm run verify
+          npm run test:code-health
+          npm run test:security
+      - name: Prepare verified Stockfish engine for production-equivalent build
+        if: steps.scope.outputs.has_runtime_changes == 'true'
+        run: |
+          set -euo pipefail
+          npm pack stockfish@18.0.0 --silent --pack-destination /tmp
+          mkdir -p /tmp/rpchess-stockfish-package /tmp/rpchess-stockfish-verified
+          tar -xzf /tmp/stockfish-18.0.0.tgz -C /tmp/rpchess-stockfish-package
+          package=/tmp/rpchess-stockfish-package/package
+          for name in stockfish-18-lite-single.js stockfish-18-lite-single.wasm; do
+            source=$(find "$package" -type f -name "$name" -print -quit)
+            test -n "$source"
+            cp "$source" "/tmp/rpchess-stockfish-verified/$name"
+          done
+          license=$(find "$package" -type f -iname 'Copying.txt' -print -quit)
+          test -n "$license"
+          cp "$license" /tmp/rpchess-stockfish-verified/COPYING.txt
+      - name: Build changed game candidate
+        if: steps.scope.outputs.has_runtime_changes == 'true'
+        env:
+          RPCHESS_STOCKFISH_ASSET_DIR: /tmp/rpchess-stockfish-verified
+        run: npm run build
+      - name: Run focused Node regression tests
+        if: steps.scope.outputs.node_tests != ''
+        env:
+          PR_NODE_TESTS: ${{ steps.scope.outputs.node_tests }}
+        run: |
+          set -euo pipefail
+          IFS=',' read -ra tests <<< "$PR_NODE_TESTS"
+          for test in "${tests[@]}"; do
+            echo "::group::Node test $test"
+            node "tests/$test"
+            echo "::endgroup::"
+          done
+      - name: Install Playwright and Chromium only for selected browser tests
+        if: steps.scope.outputs.browser_tests != ''
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
+          npx playwright install chromium
+      - name: Run coupled real-Chromium regressions
+        if: steps.scope.outputs.browser_tests != ''
+        env:
+          RPCHESS_BROWSER_TEST: ${{ steps.scope.outputs.browser_tests }}
+          RPCHESS_GATE_PREFIX: /RPChess
+        run: npm run test:browser
