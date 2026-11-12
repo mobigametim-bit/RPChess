@@ -2,6 +2,10 @@ name: Auto-clean merged PR branch (safe)
 on:
   pull_request:
     types: [closed]
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/merged-branch-cleanup.yml
 permissions:
   contents: write
   pull-requests: read
@@ -53,3 +57,113 @@ jobs:
             console.log('Deleted fully integrated merged PR branch: '+branch);
           })().catch(e=>{console.error(e);process.exitCode=1;});
           NODE
+
+  retire_history:
+    name: Retire 22 verified integrated branches (one-shot)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate every branch before deletion; record results
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node <<'NODE'
+          const fs=require('node:fs');
+          const repo='mobigametim-bit/RPChess',token=process.env.GH_TOKEN;
+          if(process.env.GITHUB_REPOSITORY!==repo||process.env.GITHUB_REF!=='refs/heads/main')
+            throw Error('Historical branch retirement only runs on RPChess main');
+          const targets=[
+            ["assets/register-01-production","95ee6d5b1578a42d8f41d9bd5b4eb2ab476ad5b1"],
+            ["assets/register-01-runtime-application","2390f7a0b91f64eef86d6c23beca98abb6acaee4"],
+            ["audit/full-project-review-2026-09-08-runtime","e92831ca5d6e0c14fb2d919e410180ce77b97ce6"],
+            ["audit/full-project-review-2026-09-08","24885b2da20bc5063e4b4f5101a34f6d7aa2ddde"],
+            ["docs/current-state-sync","51a3b985c91c91eb51de4b2ebd6f088834ce57a4"],
+            ["feature/iron-marches-production-closure","ade86271113f4ad734ee81afd691482547a3f10d"],
+            ["feature/king-pin-ice-safety-check","7bff5fd17553e38d08d85cd62ac760a384c0756d"],
+            ["feature/live-device-glyph-polish","b277c5d9e08ab0ac4c61f60a16cdda28692ac04d"],
+            ["feature/post-live-test-ui-followup","8949f022ea983e9f37899fd0e171fbc683e92ba5"],
+            ["feature/post-pages-ui-polish","335118f385c0db913a90ad5fd7a8b38904cd3cc3"],
+            ["feature/register-01-05-asset-audit","b5b8482ae5fa09019cc155f362c3c8e69140d803"],
+            ["feature/supplies-resource-icon","f1c6b86f93e9e9c4ff3fedc6f2f97ba80ee9a637"],
+            ["feature/travel-choice-tmp-check","6a5f4b7cc2c920afc1309a876a5a44c43eac1b06"],
+            ["fix/battle-solo-king-run-end","f4b0304d2776dde6ca72267f5a3adb9a186f3794"],
+            ["perf/background-asset-runtime-budget-probe","ccaf567c9c4ee98f1c6044c1577cf7dc9a83ab89"],
+            ["platform/vk-premoderation-2026-09-13","f4b0304d2776dde6ca72267f5a3adb9a186f3794"],
+            ["rendering/browser-modular-board","da77c18f7c462c8f3223e9fc63d9567a0558bdf4"],
+            ["runtime/vertical-slice-adapter","d9407fe596f120f0f88a5487232858eaa3a1eb99"],
+            ["temp-noop","d0d2d86df45d47d45b105fc7bab28921760757fa"],
+            ["tmp-invalid","6df1a65ffca36413d99415eab1f0e5ccddbd5dbe"],
+            ["tmp-stop","6df1a65ffca36413d99415eab1f0e5ccddbd5dbe"],
+            ["ui/reserve-presentation","735451a6568b2ab5c0b9b73e1914e87458a3f3a4"],
+          ];
+          const reserved=/^(?:main|deploy|Legasy|archive\/|backup\/|rollback\/|release\/|night\/)/;
+          const workflows=fs.readdirSync('.github/workflows')
+            .filter(x=>/\.ya?ml$/.test(x)&&x!=='merged-branch-cleanup.yml')
+            .map(x=>fs.readFileSync('.github/workflows/'+x,'utf8')).join('\n');
+          async function request(path,method='GET'){
+            const response=await fetch('https://api.github.com/repos/'+repo+path,{
+              method,headers:{Accept:'application/vnd.github+json',
+              Authorization:'Bearer '+token,'X-GitHub-Api-Version':'2022-11-28',
+              'User-Agent':'RPChess-one-shot-verified-history-retirement'}});
+            if(response.status===404)return null;
+            const body=await response.text();
+            if(!response.ok)throw Error(method+' '+path+' failed '+response.status+' '+body.slice(0,250));
+            return method==='DELETE'?true:JSON.parse(body);
+          }
+          const report={date:new Date().toISOString(),target_count:targets.length,deleted:[],skipped:[],errors:[]};
+          async function run(){
+            // All open PRs, not only PRs open at the time of the earlier audit.
+            let open=[];
+            for(let n=1;n<=20;n++){
+              const page=await request('/pulls?state=open&per_page=100&page='+n);
+              open.push(...page);
+              if(page.length<100)break;
+            }
+            const active=new Set(open.filter(p=>p.head?.repo?.full_name===repo).map(p=>p.head.ref));
+            for(const [branch,sha] of targets){
+              const skip=reason=>{report.skipped.push({branch,reason});console.log('SKIP '+branch+': '+reason);};
+              try{
+                if(reserved.test(branch)||active.has(branch)||workflows.includes(branch)){
+                  skip('reserved, open PR or workflow reference');continue;
+                }
+                const current=await request('/branches/'+encodeURIComponent(branch));
+                if(!current){skip('already absent');continue;}
+                if(current.protected||current.commit?.sha!==sha){
+                  skip('protected or head SHA changed');continue;
+                }
+                const comparison=await request('/compare/main...'+encodeURIComponent(branch));
+                if(comparison?.ahead_by!==0){
+                  skip('nonzero or unknown unique commit count');continue;
+                }
+                const latest=await request('/branches/'+encodeURIComponent(branch));
+                if(!latest||latest.protected||latest.commit?.sha!==sha){
+                  skip('head changed during audit');continue;
+                }
+                await request('/git/refs/heads/'+encodeURIComponent(branch),'DELETE');
+                report.deleted.push({branch,sha});
+                console.log('DELETED '+branch+' '+sha);
+              }catch(error){
+                report.errors.push({branch,error:String(error)});
+                console.error('ERROR '+branch, String(error));
+              }
+            }
+          }
+          run().then(()=>{
+            fs.mkdirSync('test-results/branch-retirement',{recursive:true});
+            fs.writeFileSync('test-results/branch-retirement/result.json',JSON.stringify(report,null,2)+'\n');
+            console.log('Branch retirement summary: '+JSON.stringify({
+              requested:report.target_count,deleted:report.deleted.length,
+              skipped:report.skipped.length,errors:report.errors.length}));
+            if(report.errors.length)process.exitCode=1;
+          }).catch(error=>{console.error(error);process.exitCode=1;});
+          NODE
+      - name: Archive deletion receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verified-branch-retirement-20261112
+          path: test-results/branch-retirement/result.json
+          if-no-files-found: warn
+          retention-days: 30
