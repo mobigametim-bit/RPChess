@@ -17,51 +17,18 @@ Chess layer ничего не знает о Gold, Supplies, Events или campai
 
 Зелёный CI сам по себе не заменяет Human Acceptance для UI/gameplay изменений.
 
-## Локальные technical gates
-Минимально достаточный автоматизированный контракт:
+## Тестирование и защита выпуска (утверждено 12.11.2026)
 
-1. `npm ci --no-audit --no-fund`
-2. `npm run gate:local`
-   - source/static verification;
-   - deterministic Node regressions;
-   - content/puzzle validation;
-   - production build в `dist/`;
-   - runtime asset optimization/budget checks.
-3. Для полного browser gate устанавливаются Playwright/Chromium и выполняется `npm run test:browser` либо соответствующий scoped browser contract.
+Единственный актуальный подробный контракт: [DEVELOPMENT_WORKFLOW.md](DEVELOPMENT_WORKFLOW.md).
 
-Постоянный `.github/workflows/full-project-review.yml` запускается вручную для milestone/release validation и выполняет все 17 Chromium-контрактов. Pages workflow сохраняет минимальный обязательный smoke subset.
+- В ходе PR — `.github/workflows/pr-focused-checks.yml`: source/security/build minimum и выбор Node/real-Chromium регрессий по затронутым и сопряжённым модулям.
+- После **прямой Human Acceptance** — label `release-approved` и обязательный `.github/workflows/release-gate.yml` → `npm run gate:full` с **36** уникальными default browser suites. До приёмки этот check блокирует merge.
+- `.github/workflows/full-project-review.yml` — ручной аудит всех 36 suite с отчётом обо всех отказах; прежнее ограничение 17 suite отменено.
+- `main` принимает только проверенный PR, production GitHub Pages выходит отдельно по явно разрешённому релизу.
+- `.github/workflows/pages.yml` не выполняет полный Pages gate в каждом PR или в обычном push в `main`; release коммит или ручной запуск выполняет build + Pages subpath smoke и deployment.
+- Нужна настройка branch protection на `main`: обязательные PR Focused Checks / Release Gate, up-to-date branch, запрет direct push/bypass. Это отдельный административный шаг.
 
-Browser runner поднимает production `dist/` через standalone static server и проверяет реальный Chromium, а не dev DOM approximation.
-
-## GitHub Pages — canonical production delivery
-
-Публичный production RPChess размещён на GitHub Pages:
-
-`https://mobigametim-bit.github.io/RPChess/`
-
-Канонический workflow: `.github/workflows/pages.yml`.
-
-### Pull request run
-На каждом PR workflow:
-
-1. checkout;
-2. Node 22 + npm cache/runtime-asset cache;
-3. `npm ci --no-audit --no-fund`;
-4. `npm run gate:local`;
-5. проверка размера `dist` — Pages artifact должен оставаться < 1 GB;
-6. установка Playwright + Chromium;
-7. real-Chromium verification production build под реальным project prefix `/RPChess/`;
-8. **без deploy**.
-
-Таким образом PR доказывает, что кандидат собирается и работает в тех же subpath-условиях, в которых будет опубликован.
-
-### Push to main
-Push в `main` повторяет тот же build/browser gate. Только после успеха:
-
-- `dist/` загружается как Pages artifact;
-- job `deploy` публикует его в environment `github-pages`.
-
-Post-merge production verification считается закрытым только после зелёных build **и** deploy jobs на SHA нового `main`.
+Production URL: https://mobigametim-bit.github.io/RPChess/
 
 ## Runtime asset pipeline
 High-resolution source/master assets могут оставаться в `game/`, но production `dist/` проходит runtime optimization/budget pipelines. На текущем production state ими покрыты, среди прочего:
@@ -90,12 +57,8 @@ Cloudflare **не является текущим canonical public production ho
 - Screen owner создаёт и размещает собственный DOM/CSS; post-render reparenting и compatibility patch chains запрещены.
 
 ## GitHub Actions
-GitHub Actions снова является частью активного delivery contract через `.github/workflows/pages.yml`:
 
-- PR: canonical build + Pages/subpath Chromium validation;
-- `main`: тот же gate + deploy.
-
-Отдельные diagnostic/manual workflows могут существовать дополнительно, но не заменяют canonical Pages workflow.
+Актуальный workflow contract описан в [DEVELOPMENT_WORKFLOW.md](DEVELOPMENT_WORKFLOW.md). Новые задачи используют `pr-focused-checks.yml` + `release-gate.yml`, production — `pages.yml`.
 
 ## Merge rule
 До merge player-facing изменения должны иметь:
@@ -105,4 +68,4 @@ GitHub Actions снова является частью активного deliv
 - Human Acceptance пользователя, если меняется видимый UI/gameplay;
 - обновление применимых документов GitHub (`docs/`, `README.md`, PR) как единственного обязательного источника истины; Notion не требуется и не блокирует merge.
 
-После merge обязателен успешный GitHub Pages production run на новом `main`.
+После merge production deploy выполняется только по отдельной команде владельца; успешность подтверждается GitHub Pages build + deploy jobs.

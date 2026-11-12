@@ -39,7 +39,7 @@ jobs:
           npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
           npx playwright install --with-deps chromium
 
-      - name: Run every browser contract and collect all failures
+      - name: Audit all 36 Chromium suites and collect failures
         env:
           RPCHESS_GATE_PREFIX: /RPChess
         shell: bash
@@ -48,21 +48,40 @@ jobs:
           failed=0
           tests=(
             reboot-foundation-browser.cjs
+            chronicle-localization-browser.cjs
+            localization-ui-browser.cjs
             classic-chess-browser.cjs
+            mentor-training-browser.cjs
+            simplified-pieces-browser.cjs
+            arena-browser.cjs
+            piercing-vision-browser.cjs
+            fork-master-browser.cjs
             race-board-themes-browser.cjs
             king-pin-ice-browser.cjs
             responsive-viewport-browser.cjs
+            portrait-key-scenes-browser.cjs
+            tournament-v4-browser.cjs
+            onboarding-browser.cjs
             roster-browser.cjs
+            cloud-continue-browser.cjs
             skirmish-browser.cjs
+            skirmish-artifact-browser.cjs
+            skirmish-mobile-browser.cjs
             battle-browser.cjs
+            combat-resume-browser.cjs
+            caravan-browser.cjs
+            caravan-reward-viewport-browser.cjs
+            combat-menu-browser.cjs
             combat-side-colors-browser.cjs
             combat-aura-move-sync-browser.cjs
             battle-animation-art-browser.cjs
             travel-choice-browser.cjs
+            kingdom-map-browser.cjs
             resources-browser.cjs
             settlement-browser.cjs
             starvation-browser.cjs
             events-browser.cjs
+            mobile-run-summary-browser.cjs
             puzzles-browser.cjs
           )
           for test in "${tests[@]}"; do

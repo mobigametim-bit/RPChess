@@ -192,7 +192,16 @@ async function kingdomBackdropContract(browser) {
         stage.querySelector('.mm-kingdom-parchment')?.width>0;
     },null,{timeout:16000});
     for(const [width,height] of [[1440,900],[1024,768],[844,390],[768,1024],[390,844]]){
+      // The menu camera refits on resize asynchronously. Wait for the NEW focus
+      // geometry before asserting its position against the NEW icon dock.
+      const previousFocus=await page.locator('[data-main-menu-kingdom]').getAttribute('data-kingdom-focus');
       await page.setViewportSize({width,height});
+      if(width!==1440||height!==900){
+        await page.waitForFunction(before=>{
+          const stage=document.querySelector('[data-main-menu-kingdom]');
+          return stage?.dataset.kingdomFocus&&stage.dataset.kingdomFocus!==before;
+        },previousFocus,{timeout:10000});
+      }
       await page.waitForFunction(()=>{
         const stage=document.querySelector('[data-main-menu-kingdom]');
         const world=stage?.querySelector('[data-main-menu-world]');
@@ -282,21 +291,31 @@ async function kingdomBackdropContract(browser) {
   }finally{await page.close();}
 }
 
-async function portraitLockContract(browser) {
-  const page = await browser.newPage({ viewport:{ width:390, height:844 } });
-  const errors=[]; page.on('pageerror', (error)=>errors.push(String(error.stack||error)));
+async function portraitResponsiveContract(browser) {
+  // Portrait now supports actual UI (no forced orientation blocker in index.html).
+  // Check real touchable menu/choice flow and reject horizontal overflow.
+  const page=await browser.newPage({viewport:{width:390,height:844}});
+  const errors=[];page.on('pageerror',error=>errors.push(String(error.stack||error)));
   try {
     await clearState(page);
-    const lock = await waitForVisible(page, '[data-orientation-lock]', 'Portrait orientation lock');
-    await assertInsideViewport(lock, 'portrait orientation lock');
-    const rect = await lock.evaluate((element)=>{ const box=element.getBoundingClientRect(); return { w:box.width,h:box.height,vw:innerWidth,vh:innerHeight }; });
-    assert(Math.abs(rect.w-rect.vw)<=TOLERANCE && Math.abs(rect.h-rect.vh)<=TOLERANCE, 'portrait lock must cover the viewport');
-    assert((await lock.innerText()).includes('Поверните устройство'));
-    await assertDocumentFits(page, 'portrait lock');
-    assert.deepStrictEqual(errors, [], `portrait errors:\n${errors.join('\n')}`);
-  } finally { await page.close(); }
+    const menu=await waitForVisible(page,'[data-reboot-foundation]:not([hidden])','Portrait main menu');
+    await page.locator('[data-game-loading]').waitFor({state:'hidden',timeout:30000});
+    assert.equal(await menu.locator('.mm-menu-icon').count(),6,'Portrait menu keeps all six navigation icons');
+    assert.equal(await page.locator('[data-orientation-lock]:visible').count(),0,'Portrait must not be blocked');
+    const dimensions=await page.evaluate(()=>({
+      scrollWidth:document.documentElement.scrollWidth,
+      clientWidth:document.documentElement.clientWidth
+    }));
+    assert(dimensions.scrollWidth<=dimensions.clientWidth+TOLERANCE,
+      'Portrait menu must not overflow horizontally: '+JSON.stringify(dimensions));
+    await menu.locator('[data-new-game]').click();
+    const choices=await waitForVisible(page,'[data-journey-choice-modal]:not([hidden])','Portrait Journey choice');
+    await assertInsideViewport(choices.locator('.journey-choice-panel'),'Portrait Journey choice panel');
+    await choices.locator('[data-close-modal]').click();
+    assert.equal(await choices.isHidden(),true,'Portrait Journey picker must close');
+    assert.deepStrictEqual(errors,[],'Portrait responsive UI errors');
+  }finally{await page.close();}
 }
-
 
 /* Focused PR gate for the new Journey-choice UX. Existing full Foundation
  * acceptance still runs normally; its older Roster assumptions are separate. */
@@ -372,8 +391,8 @@ async function journeyPickerContract(browser){
       await desktopContract(browser);
       await landscapePhoneContract(browser);
       await kingdomBackdropContract(browser);
-      await portraitLockContract(browser);
-      console.log('Reboot Foundation one-screen desktop/landscape/portrait Chromium acceptance: PASS');
+      await portraitResponsiveContract(browser);
+      console.log('Reboot Foundation desktop/landscape/portrait responsive Chromium acceptance: PASS');
     }
   } finally { await browser.close(); }
 })().catch((error)=>{ console.error(error.stack||error); process.exitCode=1; });

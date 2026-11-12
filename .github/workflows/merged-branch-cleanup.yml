@@ -1,0 +1,55 @@
+name: Auto-clean merged PR branch (safe)
+on:
+  pull_request:
+    types: [closed]
+permissions:
+  contents: write
+  pull-requests: read
+jobs:
+  cleanup:
+    name: Delete merged, fully integrated PR branch
+    if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Skip protected refs and only delete the exact merged head
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PR_HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          PR_BRANCH: ${{ github.event.pull_request.head.ref }}
+          PR_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          node <<'NODE'
+          const fs=require('node:fs'),path=require('node:path');
+          const repo=process.env.GITHUB_REPOSITORY,branch=process.env.PR_BRANCH;
+          const keep=/^(?:main|deploy|Legasy|archive\/|backup\/|rollback\/|release\/|night\/)/;
+          function skip(why){console.log('Preserved branch '+branch+': '+why);process.exit(0)}
+          if(!branch||process.env.PR_HEAD_REPO!==repo||keep.test(branch))skip('protected or foreign PR head');
+          const workflows=fs.readdirSync('.github/workflows').filter(f=>/\.ya?ml$/.test(f)&&f!=='merged-branch-cleanup.yml')
+            .map(f=>fs.readFileSync(path.join('.github/workflows',f),'utf8')).join('\n');
+          // Branch-specific old preview jobs may depend on this ref.
+          if(workflows.includes(branch))skip('branch referenced by a workflow');
+          const request=async(endpoint,method='GET')=>{
+            const r=await fetch('https://api.github.com/repos/'+repo+endpoint,{method,headers:{
+              Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28',
+              Authorization:'Bearer '+process.env.GITHUB_TOKEN,'User-Agent':'RPChess-safe-merge-cleaner'}});
+            if(r.status===404)return null;
+            if(!r.ok)throw Error(method+' '+endpoint+' '+r.status+' '+(await r.text()).slice(0,250));
+            return method==='DELETE'?true:r.json();
+          };
+          (async()=>{
+            const b=await request('/branches/'+encodeURIComponent(branch));
+            if(!b)return skip('branch already removed');
+            if(b.protected||b.commit?.sha!==process.env.PR_SHA)return skip('protected or SHA changed after merge');
+            const open=await request('/pulls?state=open&per_page=100');
+            if(open.some(p=>p.head?.repo?.full_name===repo&&p.head?.ref===branch))return skip('another open PR uses this branch');
+            const compare=await request('/compare/main...'+encodeURIComponent(branch));
+            if(!compare||compare.ahead_by!==0)return skip('has unmerged unique commit history');
+            // Revalidate head SHA immediately before deletion to minimize races.
+            const latest=await request('/branches/'+encodeURIComponent(branch));
+            if(!latest||latest.protected||latest.commit?.sha!==process.env.PR_SHA)return skip('head changed during safety check');
+            await request('/git/refs/heads/'+encodeURIComponent(branch),'DELETE');
+            console.log('Deleted fully integrated merged PR branch: '+branch);
+          })().catch(e=>{console.error(e);process.exitCode=1;});
+          NODE

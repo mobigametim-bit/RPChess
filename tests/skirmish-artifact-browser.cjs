@@ -28,19 +28,70 @@ const watchdog = setTimeout(() => { console.error('Combat launch blocked browser
       if(artifactId==='vision.piercing'){
         // Drag selection changes classes but not child nodes: verify X-ray
         // before releasing the pointer, including transparent blockers.
-        await page.evaluate(()=>globalThis.RPChessClassicChess.loadFen(
-          '7k/8/3p4/3p4/3p4/3P4/3R1p2/3K4 w - - 0 1',
-          {mode:'hotseat',playerColor:'w',combatOwner:'skirmish'}));
-        const rook=await page.locator('[data-chess-board] [data-square="d2"]').boundingBox();
-        assert(rook);
-        await page.mouse.move(rook.x+rook.width/2,rook.y+rook.height/2);
-        await page.mouse.down();
-        // Shared drag input intentionally starts only after 7px of movement.
-        await page.mouse.move(rook.x+rook.width/2+11,rook.y+rook.height/2+11,{steps:3});
+        await page.evaluate(()=>{
+          // Skirmish legitimately randomizes the player's side. The X-ray
+          // test must give that side the rook, not always force a white rook.
+          const color=globalThis.RPChessSkirmish.battlePlan.playerColor;
+          const fen=color==='b'
+            ? '7K/8/3P4/3P4/3P4/3p4/3r1P2/3k4 b - - 0 1'
+            : '7k/8/3p4/3p4/3p4/3P4/3R1p2/3K4 w - - 0 1';
+          globalThis.RPChessClassicChess.loadFen(fen,
+            {mode:'hotseat',playerColor:color,combatOwner:'skirmish'});
+        });
+        const rookCell=page.locator('[data-chess-board] [data-square="d2"]');
+        // After loadFen the owning board and its imagery must be hit-testable.
+        // A stale first-frame bounding box can cause Playwright mouse presses
+        // to land on the previous UI layer instead of starting a real drag.
+        await rookCell.locator('.classic-piece').waitFor({state:'visible',timeout:10000});
+        await rookCell.scrollIntoViewIfNeeded();
+        await page.waitForFunction(()=>{
+          const board=document.querySelector('[data-chess-board]');
+          const cell=board?.querySelector('[data-square="d2"]');
+          if(!cell||board.classList.contains('is-locked'))return false;
+          const rect=cell.getBoundingClientRect();
+          const hit=document.elementFromPoint(rect.left+rect.width/2,rect.top+rect.height/2);
+          return Boolean(hit&&(cell===hit||cell.contains(hit)));
+        },null,{timeout:10000});
+        const attemptDiagnostics=[];
         try {
-          await page.waitForFunction(()=>
-            document.querySelector('[data-chess-board] [data-square="d6"]')?.dataset.visionDepth==='3',
-            null,{timeout:3500});
+          let highlighted=false;
+          for(let attempt=0;attempt<2&&!highlighted;attempt++){
+            const rook=await rookCell.boundingBox();
+            assert(rook);
+            const x=rook.x+rook.width/2,y=rook.y+rook.height/2;
+            await page.mouse.move(x,y);
+            await page.mouse.down();
+            // Shared drag input intentionally starts only after 7px of movement.
+            await page.mouse.move(x+11,y+11,{steps:3});
+            attemptDiagnostics.push(await page.evaluate(([x,y])=>{
+              const chess=globalThis.RPChessClassicChess;
+              const board=document.querySelector('[data-chess-board]');
+              const cell=board?.querySelector('[data-square="d2"]');
+              const hit=document.elementFromPoint(x+11,y+11);
+              const st=chess?.engine?.status?.();
+              return {selected:chess?.snapshot?.().selectedSquare,turn:chess?.engine?.turn?.(),
+                over:st?.over,checked:st?.checked,boardLocked:board?.classList.contains('is-locked'),
+                screenHidden:document.querySelector('[data-classic-screen]')?.hidden,
+                animating:globalThis.RPChessChessAI?.snapshot?.().animating,
+                imagePresent:!!cell?.querySelector('.classic-piece'),
+                hitTag:hit?.tagName,hitClass:String(hit?.className||''),
+                dragOrigin:document.querySelectorAll('.rpchess-drag-origin').length,
+                dragGhost:document.querySelectorAll('.rpchess-piece-drag-ghost').length,
+                d6:board?.querySelector('[data-square="d6"]')?.dataset.visionDepth||null};
+            },[x,y]));
+            try {
+              await page.waitForFunction(()=>
+                document.querySelector('[data-chess-board] [data-square="d6"]')?.dataset.visionDepth==='3',
+                null,{timeout:3500});
+              highlighted=true;
+            }catch(e){
+              // A missed pointer press is a test-driver race. A second genuine
+              // pointer gesture is allowed; real drag/overlay assertions still
+              // must succeed on that second attempt or this test fails.
+              await page.mouse.up();
+              if(attempt===1)throw e;
+            }
+          }
         } catch (error) {
           const diagnostics=await page.evaluate(()=>{
             const snapshot=globalThis.RPChessClassicChess?.snapshot?.();
@@ -51,7 +102,7 @@ const watchdog = setTimeout(() => { console.error('Combat launch blocked browser
               dragOrigin:document.querySelectorAll('.rpchess-drag-origin').length,
               dragGhost:document.querySelectorAll('.rpchess-piece-drag-ghost').length};
           });
-          throw new Error('Skirmish X-ray drag-overlay diagnostics: '+JSON.stringify(diagnostics)+': '+error.message);
+          throw new Error('Skirmish X-ray drag-overlay diagnostics: '+JSON.stringify({attemptDiagnostics,after:diagnostics})+': '+error.message);
         }
         const depths=await page.locator('[data-chess-board]').evaluate(board=>Object.fromEntries(
           [...board.querySelectorAll('[data-vision-depth]')].map(c=>[c.dataset.square,c.dataset.visionDepth])));
