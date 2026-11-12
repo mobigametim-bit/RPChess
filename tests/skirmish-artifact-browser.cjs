@@ -45,6 +45,7 @@ const watchdog = setTimeout(() => { console.error('Combat launch blocked browser
           const hit=document.elementFromPoint(rect.left+rect.width/2,rect.top+rect.height/2);
           return Boolean(hit&&(cell===hit||cell.contains(hit)));
         },null,{timeout:10000});
+        const attemptDiagnostics=[];
         try {
           let highlighted=false;
           for(let attempt=0;attempt<2&&!highlighted;attempt++){
@@ -55,6 +56,22 @@ const watchdog = setTimeout(() => { console.error('Combat launch blocked browser
             await page.mouse.down();
             // Shared drag input intentionally starts only after 7px of movement.
             await page.mouse.move(x+11,y+11,{steps:3});
+            attemptDiagnostics.push(await page.evaluate(([x,y])=>{
+              const chess=globalThis.RPChessClassicChess;
+              const board=document.querySelector('[data-chess-board]');
+              const cell=board?.querySelector('[data-square="d2"]');
+              const hit=document.elementFromPoint(x+11,y+11);
+              const st=chess?.engine?.status?.();
+              return {selected:chess?.snapshot?.().selectedSquare,turn:chess?.engine?.turn?.(),
+                over:st?.over,checked:st?.checked,boardLocked:board?.classList.contains('is-locked'),
+                screenHidden:document.querySelector('[data-classic-screen]')?.hidden,
+                animating:globalThis.RPChessChessAI?.snapshot?.().animating,
+                imagePresent:!!cell?.querySelector('.classic-piece'),
+                hitTag:hit?.tagName,hitClass:String(hit?.className||''),
+                dragOrigin:document.querySelectorAll('.rpchess-drag-origin').length,
+                dragGhost:document.querySelectorAll('.rpchess-piece-drag-ghost').length,
+                d6:board?.querySelector('[data-square="d6"]')?.dataset.visionDepth||null};
+            },[x,y]));
             try {
               await page.waitForFunction(()=>
                 document.querySelector('[data-chess-board] [data-square="d6"]')?.dataset.visionDepth==='3',
@@ -78,7 +95,7 @@ const watchdog = setTimeout(() => { console.error('Combat launch blocked browser
               dragOrigin:document.querySelectorAll('.rpchess-drag-origin').length,
               dragGhost:document.querySelectorAll('.rpchess-piece-drag-ghost').length};
           });
-          throw new Error('Skirmish X-ray drag-overlay diagnostics: '+JSON.stringify(diagnostics)+': '+error.message);
+          throw new Error('Skirmish X-ray drag-overlay diagnostics: '+JSON.stringify({attemptDiagnostics,after:diagnostics})+': '+error.message);
         }
         const depths=await page.locator('[data-chess-board]').evaluate(board=>Object.fromEntries(
           [...board.querySelectorAll('[data-vision-depth]')].map(c=>[c.dataset.square,c.dataset.visionDepth])));
