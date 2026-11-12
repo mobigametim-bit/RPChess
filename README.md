@@ -15,7 +15,8 @@ Active development happens through feature branches and human playtest gates bef
 
 The source-of-truth documentation lives under [`docs/`](docs/). Start with the current operational snapshot:
 
-- [`CURRENT_STATE.md`](docs/CURRENT_STATE.md) — production/runtime state and historical receipts;\n- [`DEVELOPMENT_WORKFLOW.md`](docs/DEVELOPMENT_WORKFLOW.md) — **approved focused-PR / full pre-merge testing, release gates, and branch retention rules**;
+- [`CURRENT_STATE.md`](docs/CURRENT_STATE.md) — production/runtime state and historical receipts;
+- [`DEVELOPMENT_WORKFLOW.md`](docs/DEVELOPMENT_WORKFLOW.md) — **approved focused-PR / full pre-merge testing, release gates, and branch retention rules**;
 - [`KINGDOM_EXPLORATION_ECONOMY_BIOME_DESIGN.md`](docs/KINGDOM_EXPLORATION_ECONOMY_BIOME_DESIGN.md) — Infinite Kingdom design, feature-stage progress and acceptance;
 - [`KINGDOM_ECONOMY_ARMY_SPEC.md`](docs/KINGDOM_ECONOMY_ARMY_SPEC.md) — economy, permanent Army, recruitment and settlement balance;
 - [`KINGDOM_ROADS_AND_TRAVELERS_PLAN.md`](docs/features/KINGDOM_ROADS_AND_TRAVELERS_PLAN.md) — updated roads and animated travelers (planned, not yet implemented);
