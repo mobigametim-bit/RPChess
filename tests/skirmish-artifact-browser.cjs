@@ -28,9 +28,16 @@ const watchdog = setTimeout(() => { console.error('Combat launch blocked browser
       if(artifactId==='vision.piercing'){
         // Drag selection changes classes but not child nodes: verify X-ray
         // before releasing the pointer, including transparent blockers.
-        await page.evaluate(()=>globalThis.RPChessClassicChess.loadFen(
-          '7k/8/3p4/3p4/3p4/3P4/3R1p2/3K4 w - - 0 1',
-          {mode:'hotseat',playerColor:'w',combatOwner:'skirmish'}));
+        await page.evaluate(()=>{
+          // Skirmish legitimately randomizes the player's side. The X-ray
+          // test must give that side the rook, not always force a white rook.
+          const color=globalThis.RPChessSkirmish.battlePlan.playerColor;
+          const fen=color==='b'
+            ? '7K/8/3P4/3P4/3P4/3p4/3r1P2/3k4 b - - 0 1'
+            : '7k/8/3p4/3p4/3p4/3P4/3R1p2/3K4 w - - 0 1';
+          globalThis.RPChessClassicChess.loadFen(fen,
+            {mode:'hotseat',playerColor:color,combatOwner:'skirmish'});
+        });
         const rookCell=page.locator('[data-chess-board] [data-square="d2"]');
         // After loadFen the owning board and its imagery must be hit-testable.
         // A stale first-frame bounding box can cause Playwright mouse presses
