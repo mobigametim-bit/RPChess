@@ -192,7 +192,16 @@ async function kingdomBackdropContract(browser) {
         stage.querySelector('.mm-kingdom-parchment')?.width>0;
     },null,{timeout:16000});
     for(const [width,height] of [[1440,900],[1024,768],[844,390],[768,1024],[390,844]]){
+      // The menu camera refits on resize asynchronously. Wait for the NEW focus
+      // geometry before asserting its position against the NEW icon dock.
+      const previousFocus=await page.locator('[data-main-menu-kingdom]').getAttribute('data-kingdom-focus');
       await page.setViewportSize({width,height});
+      if(width!==1440||height!==900){
+        await page.waitForFunction(before=>{
+          const stage=document.querySelector('[data-main-menu-kingdom]');
+          return stage?.dataset.kingdomFocus&&stage.dataset.kingdomFocus!==before;
+        },previousFocus,{timeout:10000});
+      }
       await page.waitForFunction(()=>{
         const stage=document.querySelector('[data-main-menu-kingdom]');
         const world=stage?.querySelector('[data-main-menu-world]');
