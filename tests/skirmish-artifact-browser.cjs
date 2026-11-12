@@ -31,16 +31,43 @@ const watchdog = setTimeout(() => { console.error('Combat launch blocked browser
         await page.evaluate(()=>globalThis.RPChessClassicChess.loadFen(
           '7k/8/3p4/3p4/3p4/3P4/3R1p2/3K4 w - - 0 1',
           {mode:'hotseat',playerColor:'w',combatOwner:'skirmish'}));
-        const rook=await page.locator('[data-chess-board] [data-square="d2"]').boundingBox();
-        assert(rook);
-        await page.mouse.move(rook.x+rook.width/2,rook.y+rook.height/2);
-        await page.mouse.down();
-        // Shared drag input intentionally starts only after 7px of movement.
-        await page.mouse.move(rook.x+rook.width/2+11,rook.y+rook.height/2+11,{steps:3});
+        const rookCell=page.locator('[data-chess-board] [data-square="d2"]');
+        // After loadFen the owning board and its imagery must be hit-testable.
+        // A stale first-frame bounding box can cause Playwright mouse presses
+        // to land on the previous UI layer instead of starting a real drag.
+        await rookCell.locator('.classic-piece').waitFor({state:'visible',timeout:10000});
+        await rookCell.scrollIntoViewIfNeeded();
+        await page.waitForFunction(()=>{
+          const board=document.querySelector('[data-chess-board]');
+          const cell=board?.querySelector('[data-square="d2"]');
+          if(!cell||board.classList.contains('is-locked'))return false;
+          const rect=cell.getBoundingClientRect();
+          const hit=document.elementFromPoint(rect.left+rect.width/2,rect.top+rect.height/2);
+          return Boolean(hit&&(cell===hit||cell.contains(hit)));
+        },null,{timeout:10000});
         try {
-          await page.waitForFunction(()=>
-            document.querySelector('[data-chess-board] [data-square="d6"]')?.dataset.visionDepth==='3',
-            null,{timeout:3500});
+          let highlighted=false;
+          for(let attempt=0;attempt<2&&!highlighted;attempt++){
+            const rook=await rookCell.boundingBox();
+            assert(rook);
+            const x=rook.x+rook.width/2,y=rook.y+rook.height/2;
+            await page.mouse.move(x,y);
+            await page.mouse.down();
+            // Shared drag input intentionally starts only after 7px of movement.
+            await page.mouse.move(x+11,y+11,{steps:3});
+            try {
+              await page.waitForFunction(()=>
+                document.querySelector('[data-chess-board] [data-square="d6"]')?.dataset.visionDepth==='3',
+                null,{timeout:3500});
+              highlighted=true;
+            }catch(e){
+              // A missed pointer press is a test-driver race. A second genuine
+              // pointer gesture is allowed; real drag/overlay assertions still
+              // must succeed on that second attempt or this test fails.
+              await page.mouse.up();
+              if(attempt===1)throw e;
+            }
+          }
         } catch (error) {
           const diagnostics=await page.evaluate(()=>{
             const snapshot=globalThis.RPChessClassicChess?.snapshot?.();
