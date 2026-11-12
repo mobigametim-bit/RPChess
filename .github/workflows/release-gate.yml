@@ -1,0 +1,80 @@
+name: Release Gate
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, labeled, unlabeled, ready_for_review]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-gate-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  release:
+    name: Release Gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Enforce explicit owner acceptance before expensive full gate
+        env:
+          PR_LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          node <<'NODE'
+          const labels=JSON.parse(process.env.PR_LABELS||'[]');
+          if(process.env.EVENT_NAME==='pull_request'&&!labels.includes('release-approved')){
+            console.error('Release Gate BLOCKED: owner has not approved this PR. After explicit acceptance, add release-approved label; this triggers the complete test suite.');
+            process.exit(1);
+          }
+          console.log('Release approval signal detected; running complete regression gate.');
+          NODE
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm/rpchess-runtime-assets-v1
+          key: rpchess-runtime-assets-v1-${{ runner.os }}-${{ hashFiles('game/assets/**/*.png', 'game/generated_assets/*.png', 'scripts/*asset*.cjs', 'scripts/runtime-assets-build.cjs') }}
+          restore-keys: rpchess-runtime-assets-v1-${{ runner.os }}-
+      - name: Install project dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Prepare SHA-verified Stockfish 18 assets
+        run: |
+          set -euo pipefail
+          npm pack stockfish@18.0.0 --silent --pack-destination /tmp
+          mkdir -p /tmp/rpchess-stockfish-package /tmp/rpchess-stockfish-verified
+          tar -xzf /tmp/stockfish-18.0.0.tgz -C /tmp/rpchess-stockfish-package
+          package=/tmp/rpchess-stockfish-package/package
+          for name in stockfish-18-lite-single.js stockfish-18-lite-single.wasm; do
+            source=$(find "$package" -type f -name "$name" -print -quit)
+            test -n "$source"
+            cp "$source" "/tmp/rpchess-stockfish-verified/$name"
+          done
+          license=$(find "$package" -type f -iname 'Copying.txt' -print -quit)
+          test -n "$license"
+          cp "$license" /tmp/rpchess-stockfish-verified/COPYING.txt
+      - name: Install pinned Playwright and Chromium
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
+          npx playwright install chromium
+      - name: Full canonical gate + all 37 real-Chromium browser suites
+        env:
+          RPCHESS_STOCKFISH_ASSET_DIR: /tmp/rpchess-stockfish-verified
+          RPCHESS_GATE_PREFIX: /RPChess
+        run: npm run gate:full
+      - name: Publish release audit evidence (not production)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-gate-evidence-${{ github.sha }}
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 7
