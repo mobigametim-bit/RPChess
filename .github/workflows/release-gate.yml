@@ -65,7 +65,7 @@ jobs:
         run: |
           npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
           npx playwright install chromium
-      - name: Full canonical gate + all 37 real-Chromium browser suites
+      - name: Full canonical gate + all 36 real-Chromium browser suites
         env:
           RPCHESS_STOCKFISH_ASSET_DIR: /tmp/rpchess-stockfish-verified
           RPCHESS_GATE_PREFIX: /RPChess
