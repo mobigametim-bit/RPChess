@@ -9,7 +9,7 @@ import {difficultyForStars} from './encounter-difficulty.mjs';
 import {KINGDOM_OUTPOST_SHARD_COST} from './arena-core.mjs?v=20261109-kingdom-economy-v7';
 import {DEFAULT_KINGDOM_ECONOMY,weeklyResourceProduction} from './kingdom-economy-config.mjs';
 import {synchronizeRoyalRoads} from './kingdom-road-network.mjs?v=20261111-polish-v1';
-import {initialIndustry,validIndustry,settleIndustryWeek,realignLandlockedPiers} from './kingdom-industry-core.mjs';
+import {initialIndustry,validIndustry,settleIndustryWeek,realignLandlockedPiers,siteHasGeographyConflict} from './kingdom-industry-core.mjs';
 
 // Live defaults mirror Atlas Lab's canonical economy; change only after acceptance.
 const production=DEFAULT_KINGDOM_ECONOMY.production;
@@ -279,7 +279,9 @@ function canBuildSettlement(map,point){
   !cell.selectedEncounter&&id!==keyOf(map.castle.x,map.castle.y)&&
   !(map.outposts||[]).some(post=>post.id===id||post.cells?.includes(id))&&
   !(map.industry?.buildings||[]).some(site=>site.id===id)&&
-  !(map.builtSettlements||[]).some(site=>site.id===id));
+  !(map.builtSettlements||[]).some(site=>site.id===id)&&
+   !siteHasGeographyConflict(map,point.x,point.y)&&
+   !worldAt(map.seed,point.x,point.y,{worldGeneratorVersion:map.worldGeneratorVersion||5}).landmark);
 }
 function buildSettlement(map,point,transactionId,{gold,shards,raceTag='humans'}={}){
  if(!canBuildSettlement(map,point)||typeof transactionId!=='string'||!transactionId||
@@ -303,7 +305,11 @@ function canBuildOutpost(map,point){
  const id=keyOf(point.x,point.y),cell=map.cells[id];
  return Boolean(cell?.explored&&cell.status==='completed'&&
   (cell.type==='empty'||cell.completedOnce===true)&&
-  !(map.outposts||[]).some(post=>post.id===id));
+  !(map.outposts||[]).some(post=>post.id===id)&&
+   !(map.builtSettlements||[]).some(site=>site.id===id)&&
+   !(map.industry?.buildings||[]).some(site=>site.id===id)&&
+   !siteHasGeographyConflict(map,point.x,point.y)&&
+   !worldAt(map.seed,point.x,point.y,{worldGeneratorVersion:map.worldGeneratorVersion||5}).landmark);
 }
 function linkOutpostRoad(map,id){
  if((map.outpostRoads||[]).some(road=>road.to===id))return map;
