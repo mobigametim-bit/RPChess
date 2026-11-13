@@ -249,7 +249,7 @@ function drawWaterRoads(ctx,seed,left,top,width,height,map=null){
  }
  ctx.restore();
 }
-function drawTerrainSymbols(ctx,seed,left,top,width,height,repaint){
+function drawTerrainSymbols(ctx,seed,left,top,width,height,repaint,map=null){
  // Mirror Atlas Lab v6 drawNature(), including multiple stamps per node,
  // independent shifts, sprite salts, scale variation and biome mapping.
  const step=VISUAL.stampSpacing;
@@ -259,11 +259,14 @@ function drawTerrainSymbols(ctx,seed,left,top,width,height,repaint){
   const gx=xi*step+step*.38+randomAt(seed,xi,yi,'sx')*step*.24;
   const gy=yi*step+step*.38+randomAt(seed,xi,yi,'sy')*step*.24;
   const t=terrainAt(seed,gx,gy);
-  const kind=t.kind==='forest'?'forest_clusters':
-   t.kind==='mountain'?'mountain_clusters':'hills_rocks';
-  const density=t.kind==='forest'?VISUAL.forestDensity:
-   t.kind==='mountain'?VISUAL.mountainDensity:
-   t.kind==='hill'?VISUAL.hillDensity:VISUAL.plainDensity;
+  const semantic=(map?.worldGeneratorVersion||5)>=6?
+   biomeAt(seed,Math.floor(gx),Math.floor(gy)):t.kind;
+  const kind=semantic==='forest'?'forest_clusters':
+   semantic==='mountain'?'mountain_clusters':'hills_rocks';
+  const density=semantic==='marsh'||semantic==='wasteland'?0:
+   semantic==='forest'?VISUAL.forestDensity:
+   semantic==='mountain'?VISUAL.mountainDensity:
+   (semantic==='hill'||semantic==='hills')?VISUAL.hillDensity:VISUAL.plainDensity;
   for(let i=0;i<Math.min(4,Math.ceil(density));i++){
    if(randomAt(seed,xi,yi,'density'+i)>Math.min(1,density-i))continue;
    const jx=i===0?0:(randomAt(seed,xi,yi,'jx'+i)-.5)*step*.8;
@@ -360,7 +363,7 @@ function renderParchment(canvas,{seed,view,columns,rows,map,resolution=1,detailC
  drawWaterRoads(detailCtx,seed,left,top,columns,rows,map);
  canvas.dataset.playerRoadSegments=String(drawKingdomRoads(detailCtx,{map,view,columns,rows}));
  canvas.dataset.roadLayer=detailCanvas?'terrain-details':'terrain';
- drawTerrainSymbols(detailCtx,seed,left,top,columns,rows,repaint);
+ drawTerrainSymbols(detailCtx,seed,left,top,columns,rows,repaint,map);
  drawOptionalNature(detailCtx,seed,left,top,columns,rows,map,repaint);
  drawFogInk(detailCtx,seed,left,top,columns,rows,map,repaint);
  // Opaque fog still lives in its own upper canvas, above concealed site sprites.
