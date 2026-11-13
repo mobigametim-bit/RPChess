@@ -449,7 +449,8 @@ body.kingdom-map-active .resource-hud{display:none!important}
 .kingdom-map-screen .km-object--industry{
  width:calc(var(--km-event-size-px,103px)*.67);
  height:calc(var(--km-event-size-px,103px)*.67);
- top:48%;left:50%;z-index:8;object-fit:contain;
+ top:48%;left:50%;z-index:8;
+ background-size:900% 100%;background-repeat:no-repeat;
  filter:drop-shadow(0 3px 3px #122016ad);pointer-events:none
 }
 .kingdom-map-screen .km-object--building-site{filter:drop-shadow(0 3px 3px #604018bb)}
