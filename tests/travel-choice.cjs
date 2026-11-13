@@ -846,18 +846,25 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   // New kingdom settlement is an independent purchased service point; outside construction
   // must not annex land and must not let a weekly payout be claimed twice.
   let customMap=mapCore.createKingdomMap({id:'settlement-build-regression'},400,'humans');
-  customMap.cells['20,20']={status:'completed',type:'empty',explored:true,annexed:false};
-  assert(mapCore.canBuildSettlement(customMap,{x:20,y:20}),
+  let buildPoint=null,buildId=null;
+   for(let y=15;y<=35&&!buildPoint;y++)for(let x=15;x<=35;x++){
+    const id=x+','+y,point={x,y};
+    customMap.cells[id]={status:'completed',type:'empty',explored:true,annexed:false};
+    if(mapCore.canBuildSettlement(customMap,point)){buildPoint=point;buildId=id;break;}
+    delete customMap.cells[id];
+   }
+   assert(buildPoint,'there must be a road-free, river-free, landmark-free construction tile');
+  assert(mapCore.canBuildSettlement(customMap,buildPoint),
     'explored vacant foreign cell can host a Settlement');
-  const built=mapCore.buildSettlement(customMap,{x:20,y:20},'settlement-regression',
+  const built=mapCore.buildSettlement(customMap,buildPoint,'settlement-regression',
     {gold:160,shards:30,raceTag:'humans'});
-  assert(built.ok&&!mapCore.isOwned(built.map,{x:20,y:20})&&
-    !mapCore.canBuildSettlement(built.map,{x:20,y:20}),
+  assert(built.ok&&!mapCore.isOwned(built.map,buildPoint)&&
+    !mapCore.canBuildSettlement(built.map,buildPoint),
     'the constructed Settlement must be permanent and must not annex land');
   const producing=mapCore.settleWeeklyProduction({...built.map,day:7,processedThroughWeek:0});
-  const claimed=mapCore.collectProduction(producing,'20,20');
+  const claimed=mapCore.collectProduction(producing,buildId);
   assert(claimed.ok&&claimed.kind==='gold'&&
-    !mapCore.collectProduction(claimed.map,'20,20').ok,
+    !mapCore.collectProduction(claimed.map,buildId).ok,
     'outside Settlement generates a single collectible weekly payout');
 
   console.log('Kingdom map sprite register: PASS (85 standalone SVGs, 14 races, 6 classes, neutral puzzle)');
