@@ -56,6 +56,15 @@ jobs:
         env:
           RPCHESS_STOCKFISH_ASSET_DIR: /tmp/rpchess-stockfish-verified
         run: npm run gate:local
+      - name: Install Chromium for focused Kingdom UI acceptance
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
+          npx playwright install chromium
+      - name: Test real map icons, manual collection, terrain labels and yellow-gray roads
+        env:
+          RPCHESS_BROWSER_TEST: kingdom-map-browser.cjs
+          RPCHESS_GATE_PREFIX: /RPChess
+        run: npm run test:browser
       - name: Verify exact producer sprite atlas and engine module
         run: |
           node -e "const fs=require('fs'),assert=require('assert');const png=fs.readFileSync('dist/assets/kingdom-production/industry-atlas.png');assert.equal(png.readUInt32BE(16),576);assert.equal(png.readUInt32BE(20),64);assert(fs.readFileSync('dist/js/kingdom-industry-core.mjs','utf8').includes('oasis'));console.log('Nine industry sprites and Oasis gameplay code: PASS')"
