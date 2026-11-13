@@ -21,7 +21,7 @@ const WEEK_DAYS=production.weekDays,PROTOTYPE_YIELDS=Object.freeze({
 });
 
 const MAP_VERSION=1;
-const WORLD_GENERATOR_VERSION=5;
+const WORLD_GENERATOR_VERSION=6; // v5 saves keep historical semantic road/landmark locations
 const ROMANS=['I','II','III','IV','V'];
 const TYPES=['battle','skirmish','caravan','event','settlement','puzzle'];
 const EMPTY=Object.freeze({});
@@ -439,10 +439,11 @@ function randomEncounter(run,point,power,planned=null){
  const coord=keyOf(point.x,point.y),worldSeed=run.kingdomMap?.seed||run.id,
   seed=worldSeed+':kingdom:'+coord;
  const possible=PLAYABLE_TRAVEL_TYPES.filter(t=>t!=='skirmish'||hasHealthySkirmishCompanion(run));
- const world=planned||worldAt(worldSeed,point.x,point.y,{allowSkirmish:hasHealthySkirmishCompanion(run)});
+ const world=planned||worldAt(worldSeed,point.x,point.y,{worldGeneratorVersion:run.kingdomMap?.worldGeneratorVersion||WORLD_GENERATOR_VERSION});
  // Keep this public factory compatible with the previous map and its existing
  // regression fixtures. Only revealAround decides whether a cell has a meeting.
- const kind=world.type&&possible.includes(world.type)?world.type:possible[hashString(seed+':kind')%possible.length];
+ // Never reroll a seeded Skirmish just because the squad cannot start it yet.
+ const kind=world.type&&PLAYABLE_TRAVEL_TYPES.includes(world.type)?world.type:possible[hashString(seed+':kind')%possible.length];
  const step=(run.journeyStep||0)+1;
  const base=createTravelChoices({runId:seed,step,types:[kind],playerPower:power})[0];
  const id='kingdom.'+hashString(seed).toString(36);
@@ -490,7 +491,7 @@ function revealAround(map,run,power,radius=SCOUT_RADIUS){
  for(const id of locations){
   if(map.cells[id])continue;
   const [x,y]=id.split(',').map(Number);
-  const world=worldAt(map.seed,x,y,{allowSkirmish:hasHealthySkirmishCompanion(run)});
+  const world=worldAt(map.seed,x,y,{worldGeneratorVersion:map.worldGeneratorVersion||5});
   const entry=world.type?
    {status:'revealed',annexed:isOwned(map,id),explored:false,biome:world.biome,landmark:world.landmark,
     selectedEncounter:randomEncounter({...run,kingdomMap:map},{x,y},power,world)}:
