@@ -284,6 +284,9 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
     'author approved biome encounter density survives in the playable build');
   assert.strictEqual(worldConfig.DENSITY_MULTIPLIER,1.2,
     'new Atlas Lab config increases encounter frequency without rerolling saved cells');
+  for(const name of ['stampOpacity','baseOpacity','roadOpacity','riverOpacity','marshOpacity','landmarkOpacity'])
+    assert.strictEqual(worldConfig.VISUAL[name],1, name+' must paint map scenery fully opaque');
+  assert.strictEqual(worldConfig.VISUAL.fogOpacity,0.98,'fog remains translucent on purpose');
   assert.strictEqual(worldConfig.VISUAL.fogRadius,1.1);
   assert.strictEqual(worldConfig.VISUAL.revealRadius,1.6);
   assert.strictEqual(worldConfig.VISUAL.fogInner,0.32);
