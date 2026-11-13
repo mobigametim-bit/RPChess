@@ -95,6 +95,7 @@ const DEFAULT_KINGDOM_ECONOMY=Object.freeze({
   },
   production:{
     weekDays:7,
+    industryGold:5,industrySupplies:1,
     settlementGold:10,
     caravanGold:5,caravanSupplies:5,
     eventGold:2,eventSupplies:2,
@@ -140,7 +141,7 @@ const ECONOMY_LABELS=Object.freeze({
   caravanRewardGoldBase:'Караван · награда золотом (база)',caravanRewardGoldPerStar:'Караван · золото за звезду',caravanRewardSuppliesBase:'Караван · припасы (база)',caravanRewardSuppliesPer3Stars:'Караван · припасы каждые 3 звезды',caravanRewardArtifactBase:'Караван · заряд артефакта (база)',caravanRewardArtifactPer5Stars:'Караван · заряд каждые 5 звёзд',
   supplyUnitGold:'Лавка · золото за 1 припас',supplyStock:'Лавка · запас припасов',healing:'Лечение',namedHeroPrices:'Именные герои',artifactGoldPerCharge:'Артефакты · золото за заряд',recruitGold:'Цена рекрута · золото',
   goldCost:'Наёмники · золото по типу',reserveReplacementGold:'Замена именного из резерва · золото',supplyGoldValue:'Наёмники · курс 1 Припаса к золоту',outpostShards:'Аванпост · осколки',outpostGold:'Аванпост · золото',settlementOwnedGold:'Поселение на своей земле · золото',settlementOwnedShards:'Поселение на своей земле · осколки',settlementForeignGold:'Поселение за границей · золото',settlementForeignShards:'Поселение за границей · осколки',
-  weekDays:'Игровых дней за неделю',settlementGold:'Поселение · золото',caravanGold:'Караван · золото',caravanSupplies:'Караван · припасы',eventGold:'Событие · золото',eventSupplies:'Событие · припасы',puzzleShards:'Задача · осколки',skirmishRecruits:'Стычка · рекрутов за неделю',battleRespawnWeeks:'Битва · недель до возвращения защитника',
+  weekDays:'Игровых дней за неделю',industryGold:'Промыслы · золото за здание I',industrySupplies:'Промыслы · припасы за здание I',settlementGold:'Поселение · золото',caravanGold:'Караван · золото',caravanSupplies:'Караван · припасы',eventGold:'Событие · золото',eventSupplies:'Событие · припасы',puzzleShards:'Задача · осколки',skirmishRecruits:'Стычка · рекрутов за неделю',battleRespawnWeeks:'Битва · недель до возвращения защитника',
   firstWinShardsBase:'Арена · первая победа (база)',firstWinShardsPer7:'Арена · первая победа, плюс каждые 7 соперников',repeatWinShardsBase:'Арена · повторная победа (база)',repeatWinShardsPer7:'Арена · повторная победа, плюс каждые 7',rewardedAdMultiplier:'Арена · множитель рекламы',squadShards:'Арена · купить расовый отряд',artifactShards:'Арена · артефакты',levelWeights:'Тип фигуры по уровню Стычки',...PIECE_LABELS,...NAMED_HERO_LABELS
 });
 function economyClone(value=DEFAULT_KINGDOM_ECONOMY){return JSON.parse(JSON.stringify(value));}
