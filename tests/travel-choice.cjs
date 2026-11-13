@@ -284,16 +284,23 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
     'author approved biome encounter density survives in the playable build');
   assert.strictEqual(worldConfig.DENSITY_MULTIPLIER,1.2,
     'new Atlas Lab config increases encounter frequency without rerolling saved cells');
-  for(const name of ['stampOpacity','baseOpacity','roadOpacity','riverOpacity','marshOpacity','landmarkOpacity'])
-    assert.strictEqual(worldConfig.VISUAL[name],1, name+' must paint map scenery fully opaque');
+  for(const name of ['stampOpacity','roadOpacity','riverOpacity','marshOpacity','landmarkOpacity'])
+    assert.strictEqual(worldConfig.VISUAL[name],1, name+' keeps primary map scenery opaque');
+  assert.strictEqual(worldConfig.VISUAL.baseOpacity,0.18,'approved base watercolor opacity');
+  assert.deepStrictEqual([worldConfig.VISUAL.forestDensity,worldConfig.VISUAL.stampSize,worldConfig.VISUAL.sizeVariation],[3,2,0.5]);
   assert.strictEqual(worldConfig.VISUAL.fogOpacity,0.98,'fog remains translucent on purpose');
-  assert.strictEqual(worldConfig.VISUAL.fogRadius,1.1);
-  assert.strictEqual(worldConfig.VISUAL.revealRadius,1.6);
+  assert.strictEqual(worldConfig.VISUAL.fogRadius,2);
   assert.strictEqual(worldConfig.VISUAL.fogInner,0.32);
   assert.strictEqual(worldConfig.VISUAL.fogInkOpacity,0.2);
-  assert.strictEqual(worldConfig.VISUAL.fogIrregularity,0.3);
+  assert.strictEqual(worldConfig.VISUAL.wastelandDensity,1.75,
+    'separate v6 wasteland decoration density must be configurable');
+  for(const retired of ['paperContrast','fogIrregularity','revealRadius'])
+    assert.equal(Object.hasOwn(worldConfig.VISUAL,retired),false,
+      retired+' was an obsolete preview-only control and must not leak into live config');
   assert.strictEqual(worldConfig.ATLAS_VIEW.seed,'rpchess-kingdom-2026');
-  assert.strictEqual(worldConfig.ATLAS_VIEW.zoom,117);
+  assert.strictEqual(worldConfig.ATLAS_VIEW.centerX,3.5379944557118823);
+  assert.strictEqual(worldConfig.ATLAS_VIEW.centerY,0.736819093752616);
+  assert.strictEqual(worldConfig.ATLAS_VIEW.zoom,57);
   assert.strictEqual(worldConfig.SETTLEMENT_PROBABILITY_MULTIPLIER,1.2);
   const startingChances=[.12,.22,.11,.10,.28,.17];
   const raised=world.boostSettlementProbability(startingChances);
@@ -325,6 +332,7 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   const startMap=mapCore.createKingdomMap(mapRun,500);
   assert(mapCore.validateKingdomMap(startMap));
   assert.strictEqual(startMap.day,1,'the independent calendar begins on Day 1');
+   assert.equal(startMap.worldGeneratorVersion,6,'new Kingdom worlds must use shared v6 geography');
   // Atlas v6 config (4): radius=1, at most 3 OTHER sites in the 8 neighbors.
   const worldGen=await import(pathToFileURL(path.join(game,'js/kingdom-world-core.mjs')).href);
   const worldSettings=await import(pathToFileURL(path.join(game,'js/kingdom-world-config.mjs')).href);
@@ -348,6 +356,32 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
     assert(count<=3,'each event has at most three other encounters within one king move');
   }
   assert(!worldGen.encounterPresent(seed,0,0),'starting castle stays reserved');
+   // PR #201 compatibility contract: v5 saves retain their old encounter geometry,
+   // while new v6 cells use the exact continuous lines rendered on the parchment.
+   let legacyDifferent=0;
+   for(let y=-12;y<=12;y++)for(let x=-12;x<=12;x++){
+     const old=worldGen.naturalPathAt(seed,x+.5,y+.5,{worldGeneratorVersion:5});
+     const current=worldGen.naturalPathAt(seed,x+.5,y+.5,{worldGeneratorVersion:6});
+     if(old.road!==current.road||old.river!==current.river)legacyDifferent++;
+   }
+   assert(legacyDifferent>0,'old generator v5 geography must remain separate from v6');
+   // PR #201 accessibility contract: an existing Skirmish is postponed, not rerolled.
+   const noCompanion={...mapRun,roster:mapRun.roster.filter(c=>c.isRunKing),
+     army:[],kingdomMap:startMap};
+   const retained=mapCore.randomEncounter(noCompanion,{x:9,y:9},500,
+     {type:'skirmish',biome:'plains',landmark:null,raceTag:'orcs'});
+   assert.strictEqual(retained.type,'skirmish',
+     'a seeded Skirmish must survive when the player has no healthy companion');
+   const geography=await import(pathToFileURL(path.join(game,'js/kingdom-geography.mjs')).href);
+   for(let y=-12;y<=12;y+=4)for(let x=-12;x<=12;x+=4){
+     assert.deepStrictEqual(worldGen.naturalPathAt(seed,x+.5,y+.5),
+       geography.naturalPathAt(seed,x+.5,y+.5),
+       'v6 encounter roads and rivers share rendered geometry');
+     const site=worldGen.landmarkAt(seed,x,y);
+     if(site?.endsWith('_bridge'))assert(geography.closestRiver(seed,x+.5,y+.5).distance<=1,
+       'bridge must be placed near visible river');
+   }
+
   assert.equal(fs.existsSync(path.join(game,'atlas-lab.html')),true,
     'Atlas Lab v6 HTML must be shipped alongside its map preview');
   assert(fs.readFileSync(path.join(game,'atlas-lab.html'),'utf8').includes('Симулировать'),
@@ -433,7 +467,10 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   assert(mapCore.isOwned(outpost.map,remoteId)&&!mapCore.isOwned(remoteMap,remoteId));
   assert.strictEqual(mapCore.territoryCapacity(outpost.map),mapCore.territoryCapacity(startMap),
     'remote outpost does not spend or inflate main-castle land capacity');
-  assert(!mapCore.buildOutpost(outpost.map,remote,'kingdom:outpost:fixture').ok,
+  const across={...remoteMap,royalRoads:[{id:'crossing',from:(remote.x-1)+','+remote.y,to:(remote.x+1)+','+remote.y,bend:0}]};
+   assert(!mapCore.canBuildOutpost(across,remote),
+     'cannot build on a paved road crossing the tile interior');
+   assert(!mapCore.buildOutpost(outpost.map,remote,'kingdom:outpost:fixture').ok,
     'same outpost can never be paid for twice');
   assert.strictEqual(mapCore.migrateKingdomMap(outpost.map),outpost.map,
     'outpost and old save fields stay valid across hydration');
@@ -846,19 +883,24 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   // New kingdom settlement is an independent purchased service point; outside construction
   // must not annex land and must not let a weekly payout be claimed twice.
   let customMap=mapCore.createKingdomMap({id:'settlement-build-regression'},400,'humans');
-  customMap.cells['20,20']={status:'completed',type:'empty',explored:true,annexed:false};
-  assert(mapCore.canBuildSettlement(customMap,{x:20,y:20}),
-    'explored vacant foreign cell can host a Settlement');
-  const built=mapCore.buildSettlement(customMap,{x:20,y:20},'settlement-regression',
+  let sitePoint=null,siteId=null;
+  for(let n=0;n<256&&!sitePoint;n++){
+    const x=20+n%16,y=20+Math.floor(n/16),id=x+','+y;
+    customMap.cells[id]={status:'completed',type:'empty',explored:true,annexed:false};
+    if(mapCore.canBuildSettlement(customMap,{x,y})){sitePoint={x,y};siteId=id;}
+    else delete customMap.cells[id];
+  }
+  assert(sitePoint,'a safe unoccupied foreign tile can host a Settlement');
+  const built=mapCore.buildSettlement(customMap,sitePoint,'settlement-regression',
     {gold:160,shards:30,raceTag:'humans'});
-  assert(built.ok&&!mapCore.isOwned(built.map,{x:20,y:20})&&
-    !mapCore.canBuildSettlement(built.map,{x:20,y:20}),
-    'the constructed Settlement must be permanent and must not annex land');
+  assert(built.ok&&!mapCore.isOwned(built.map,sitePoint)&&
+    !mapCore.canBuildSettlement(built.map,sitePoint),
+    'constructed Settlement must be permanent and not annex foreign land');
   const producing=mapCore.settleWeeklyProduction({...built.map,day:7,processedThroughWeek:0});
-  const claimed=mapCore.collectProduction(producing,'20,20');
+  const claimed=mapCore.collectProduction(producing,siteId);
   assert(claimed.ok&&claimed.kind==='gold'&&
-    !mapCore.collectProduction(claimed.map,'20,20').ok,
-    'outside Settlement generates a single collectible weekly payout');
+    !mapCore.collectProduction(claimed.map,siteId).ok,
+    'outside Settlement generates one collectible weekly payout');
 
   console.log('Kingdom map sprite register: PASS (85 standalone SVGs, 14 races, 6 classes, neutral puzzle)');
   console.log('Travel Choice keeps 6-type ~16.7% pool, owner-keyed RU/EN compact UI and player Threat..Threat+3 encounter contract: PASS');

@@ -4,6 +4,7 @@
 import {visibleRoyalRoads,visibleTravelRoads,eligibleRoadNodes,ownedKeys} from './kingdom-road-network.mjs?v=20261110-roadgrid-v3';
 import {randomAt} from './kingdom-parchment-core.mjs';
 import {VISUAL} from './kingdom-world-config.mjs';
+import {roadYAt,roadDrift} from './kingdom-geography.mjs';
 const TYPES=Object.freeze(['merchant','convoy','courier','patrol','builders']);
 const OWNED_ONLY=new Set(['convoy','patrol','builders']);
 const ROAD_SAMPLES=48;
@@ -61,6 +62,7 @@ function entirelyOwned(edge,owned){
 // These are the exact natural-road equations used by drawWaterRoads; both
 // the art and NPC route derive from the same world coordinates.
 function naturalRoadY(map,index,x){
+ if((map.worldGeneratorVersion||5)>=6)return roadYAt(map.seed,index,x);
  const drift=randomAt(map.seed,1,1,'road')*Math.max(1,VISUAL.roadSpacing)*(8/12);
  const center=index*VISUAL.roadSpacing+drift;
  return center+Math.sin(x*.37+index*2.1)*1.25*VISUAL.roadCurve+
@@ -69,7 +71,7 @@ function naturalRoadY(map,index,x){
 function nearestNaturalRoad(map,origin){
  const p=numeric(origin);if(!p)return null;
  const x=p[0]+.5,y=p[1]+.5,spacing=VISUAL.roadSpacing||8;
- const drift=randomAt(map.seed,1,1,'road')*Math.max(1,spacing)*(8/12);
+ const drift=(map.worldGeneratorVersion||5)>=6?roadDrift(map.seed):randomAt(map.seed,1,1,'road')*Math.max(1,spacing)*(8/12);
  const center=Math.round((y-drift)/spacing);
  let nearest=null,dist=Infinity;
  for(let n=center-2;n<=center+2;n++){

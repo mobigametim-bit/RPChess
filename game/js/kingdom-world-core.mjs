@@ -3,6 +3,7 @@
  * No engine combat outcome, run calendar or resource transaction belongs here.
  */
 import {terrainAt} from './kingdom-parchment-core.mjs';
+import {naturalPathAt as visibleNaturalPathAt,closestRiver} from './kingdom-geography.mjs';
 import {VISUAL,BIOMES,RACE_TAGS_ORDER,ENCOUNTER_TYPES,DENSITY,DENSITY_MULTIPLIER,ENCOUNTER_MIN_SPACING,EVENT_NEARBY_MAX,WORLD_SETTINGS,SETTLEMENT_PROBABILITY_MULTIPLIER,TYPE_WEIGHTS,RACE_WEIGHTS} from './kingdom-world-config.mjs?v=20261109-kingdom-feedback1';
 
 const LANDMARKS=Object.freeze('01_broken_wall 02_stone_circle 03_three_menhirs 04_watchtower 05_abandoned_hut 06_wood_bridge 07_stone_bridge 08_burial_mound 09_dead_tree 10_ruin_arch 11_fallen_column 12_wayside_shrine 13_obelisk 14_pond 15_notable_grove 16_ruined_gate'.split(' '));
@@ -63,13 +64,18 @@ function biomeAt(seed,x,y){
  if(terrain.kind==='forest')return 'forest';
  return 'plains';
 }
-function landmarkAt(seed,x,y,{landmarks=WORLD_SETTINGS.landmarks}={}){
+function landmarkAt(seed,x,y,{landmarks=WORLD_SETTINGS.landmarks,worldGeneratorVersion=6}={}){
  if(!landmarks)return null;
  const chance=clamp(VISUAL.landmarkDensity*.18,0,.22);
- return atlasRandom(seed,x,y,'encounter-landmark-prob')<chance?
-  LANDMARKS[Math.floor(atlasRandom(seed,x,y,'encounter-landmark-id')*LANDMARKS.length)]:null;
+ if(atlasRandom(seed,x,y,'encounter-landmark-prob')>=chance)return null;
+ if(worldGeneratorVersion<=5)
+  return LANDMARKS[Math.floor(atlasRandom(seed,x,y,'encounter-landmark-id')*LANDMARKS.length)];
+ // A bridge is a physical crossing, not an isolated decorative icon.
+ const onRiver=closestRiver(seed,x+.5,y+.5).distance<=1;
+ const choices=onRiver?LANDMARKS:LANDMARKS.filter(name=>!name.endsWith('_bridge'));
+ return choices[Math.floor(atlasRandom(seed,x,y,'encounter-landmark-id')*choices.length)];
 }
-function naturalPathAt(seed,x,y,{roads=WORLD_SETTINGS.roads}={}){
+function legacyNaturalPathAt(seed,x,y,{roads=WORLD_SETTINGS.roads}={}){
  if(!roads)return {road:false,river:false};
  const roadStep=Math.max(1,VISUAL.roadSpacing);
  const roadDrift=atlasRandom(seed,1,1,'road')*roadStep*(8/12);
@@ -83,20 +89,13 @@ function naturalPathAt(seed,x,y,{roads=WORLD_SETTINGS.roads}={}){
   VISUAL.riverCurve*(Math.sin(y*.21+riverIndex*1.7)*2.15+Math.sin(y*.79+riverIndex*.3)*.55);
  return {road:Math.abs(roadY-y)<.8,river:Math.abs(riverX-x)<.7};
 }
+function naturalPathAt(seed,x,y,{roads=WORLD_SETTINGS.roads,worldGeneratorVersion=6}={}){
+ return worldGeneratorVersion<=5?legacyNaturalPathAt(seed,x,y,{roads}):
+  visibleNaturalPathAt(seed,x,y,{roads});
+}
 function normalized(row){
  const total=row.reduce((sum,v)=>sum+Math.max(0,Number(v)||0),0);
  return row.map(v=>total>0?Math.max(0,Number(v)||0)/total:1/row.length);
-}
-function pickWeighted(weights,labels,rnd){
- let sum=0;
- for(const weight of weights)sum+=Math.max(0,weight);
- if(sum<=0)return null;
- let remaining=rnd*sum;
- for(let i=0;i<weights.length;i++){
-  remaining-=Math.max(0,weights[i]);
-  if(remaining<0)return labels[i];
- }
- return labels[labels.length-1];
 }
 function weightedIndex(weights,rnd){let total=0;for(let i=0;i<weights.length;i++){total+=weights[i];if(rnd<total)return i;}return weights.length-1;}
 function scaledWeights(mod,amount){
@@ -181,10 +180,10 @@ function worldAt(seed,x,y,{allowSkirmish=true,spacing=ENCOUNTER_MIN_SPACING,
  settlementProbabilityMultiplier=SETTLEMENT_PROBABILITY_MULTIPLIER,
  biomeInfluence=WORLD_SETTINGS.biomeInfluence,
  landmarkInfluence=WORLD_SETTINGS.landmarkInfluence,roadInfluence=WORLD_SETTINGS.roadInfluence,
- landmarks=WORLD_SETTINGS.landmarks,roads=WORLD_SETTINGS.roads}={}){
+ landmarks=WORLD_SETTINGS.landmarks,roads=WORLD_SETTINGS.roads,worldGeneratorVersion=6}={}){
  const biome=biomeAt(seed,x,y);
- const landmark=landmarkAt(seed,x,y,{landmarks});
- const paths=naturalPathAt(seed,x+.5,y+.5,{roads});
+ const landmark=landmarkAt(seed,x,y,{landmarks,worldGeneratorVersion});
+ const paths=naturalPathAt(seed,x+.5,y+.5,{roads,worldGeneratorVersion});
  if(!encounterPresent(seed,x,y,{spacing,eventNearbyMax,densityMultiplier,biomeDensity}))
   return {biome,landmark,paths,type:null,raceTag:null};
  const idx=BIOMES.indexOf(biome),site=MODIFIERS[landmark]||null;
@@ -211,4 +210,4 @@ function worldAt(seed,x,y,{allowSkirmish=true,spacing=ENCOUNTER_MIN_SPACING,
   raceTag:RACE_TAGS_ORDER[weightedIndex(races,atlasRandom(seed,x,y,'race'))]};
 }
 export {LANDMARKS,MODIFIERS,biomeAt,landmarkAt,naturalPathAt,
- pickWeighted,boostSettlementProbability,atlasRandom,encounterCandidate,encounterPresent,worldAt};
+ boostSettlementProbability,atlasRandom,encounterCandidate,encounterPresent,worldAt};

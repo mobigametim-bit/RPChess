@@ -110,13 +110,21 @@ async function assertTileImage(page,cellId){
    'the old three-card choice is not the live Journey screen');
   const expectedViewportCells=await page.evaluate(()=>{
     const f=document.querySelector('.km-map-frame').getBoundingClientRect();
-    const odd=(px,min)=>{const n=Math.max(min,Math.ceil((px+2)/117));return n%2?n:n+1;};
+    const odd=(px,min)=>{const n=Math.max(min,Math.ceil((px+2)/57));return n%2?n:n+1;};
     return odd(f.width,9)*odd(f.height,7);
   });
   assert.equal(await page.locator('[data-kingdom-cell]').count(),expectedViewportCells,
     'atlas 117px zoom selects an odd full-bleed grid for the viewport');
   const before=await read(page);
   assert(before.kingdomMap&&before.kingdomMap.cells['0,0'].annexed);
+  assert.equal(before.kingdomMap.worldGeneratorVersion,6,
+    'new Kingdom run uses the v6 deterministic world generator');
+  await page.evaluate(()=>globalThis.RPChessKingdomMap.open());
+  const reopened=await read(page);
+  assert.equal(reopened.kingdomMap.worldGeneratorVersion,6,
+    'reopening a v6 save must never downgrade or regenerate its world');
+  assert.equal(reopened.kingdomMap.seed,before.kingdomMap.seed,
+    'world seed and scouted events remain stable across reopen');
   // The castle hire list uses shipped race chess-piece art and the real Gold icon.
   const recruitArt=await page.locator('.km-castle-recruit').evaluateAll(async rows=>Promise.all(rows.map(async row=>{
     const piece=row.querySelector('.km-castle-recruit__piece'),coin=row.querySelector('.km-castle-recruit__gold');
@@ -152,14 +160,24 @@ async function assertTileImage(page,cellId){
     globalThis.RPChessKingdomMap.open();
   },key);
   // Resource affordability must be both semantic and visual, without a full map redraw.
-  await page.evaluate(storage=>{
+  const settlementCellId=await page.evaluate(async storage=>{
+    const {canBuildSettlement}=await import('./js/kingdom-map-core.mjs');
     const arenaKey='rpchess.reboot.v1.arena';
     globalThis.__castleEconomyFixture={run:localStorage.getItem(storage),arena:localStorage.getItem(arenaKey)};
     const run=JSON.parse(localStorage.getItem(storage));run.gold=0;
-    run.kingdomMap.cells['1,1']={type:'empty',status:'completed',explored:true,annexed:false,selectedEncounter:null};
+    let chosen=null;
+    for(let y=-2;y<=2&&!chosen;y++)for(let x=-3;x<=3&&!chosen;x++){
+      const id=x+','+y,previous=run.kingdomMap.cells[id];
+      run.kingdomMap.cells[id]={type:'empty',status:'completed',explored:true,annexed:false,selectedEncounter:null};
+      if(canBuildSettlement(run.kingdomMap,{x,y}))chosen=id;
+      else if(previous)run.kingdomMap.cells[id]=previous;
+      else delete run.kingdomMap.cells[id];
+    }
+    if(!chosen)throw Error('No truly unoccupied visible cell for Settlement purchase fixture');
     localStorage.setItem(storage,JSON.stringify(run));globalThis.RPChessKingdomMap.open();
+    return chosen;
   },key);
-  await page.locator('[data-kingdom-cell="1,1"]').evaluate(cell=>cell.click());
+  await page.locator('[data-kingdom-cell="'+settlementCellId+'"]').evaluate(cell=>cell.click());
   const settlementButton=page.locator('[data-kingdom-build-settlement]');
   assert.equal(await settlementButton.isVisible(),true,'an eligible explored empty cell can host a Settlement');
   assert.equal(await settlementButton.isDisabled(),true,'insufficient Gold must block construction');
@@ -582,7 +600,7 @@ async function assertTileImage(page,cellId){
       await page.waitForTimeout(250); // let deferred canvas images complete before the screenshot
       await page.screenshot({path:path.join(qaDir,name+'.png'),fullPage:false});
     };
-    await capture('desktop-1366x768-default',117);
+    await capture('desktop-1366x768-default',57);
     const zoomTo=async(kind,count)=>{
       await page.evaluate(({kind,count})=>{
         const control=document.querySelector('[data-kingdom-zoom-'+kind+']');
@@ -595,15 +613,15 @@ async function assertTileImage(page,cellId){
     await capture('desktop-1366x768-max220',220);
     await page.locator('[data-kingdom-zoom-reset]').click();
     await page.setViewportSize({width:844,height:390});
-    await capture('phone-844x390-default',117);
+    await capture('phone-844x390-default',57);
     await zoomTo('out',30);
     await capture('phone-844x390-min55',55);
     await zoomTo('in',30);
     await capture('phone-844x390-max220',220);
     await page.locator('[data-kingdom-zoom-reset]').click();
     await page.setViewportSize({width:1366,height:768});
-    await page.waitForFunction(()=>globalThis.RPChessKingdomMap?.zoom===117&&
-      document.querySelector('[data-kingdom-world]')?.dataset.mapZoom==='117');
+    await page.waitForFunction(()=>globalThis.RPChessKingdomMap?.zoom===57&&
+      document.querySelector('[data-kingdom-world]')?.dataset.mapZoom==='57');
     // Headless Chromium CI benchmark: alternate adjacent zoom levels to
     // force real map redraws. Informational only, not a device-FPS guarantee.
     const frames=await page.evaluate(()=>new Promise(resolve=>{
@@ -636,7 +654,7 @@ async function assertTileImage(page,cellId){
     fs.writeFileSync(path.join(qaDir,'parchment-map-benchmark.json'),
       JSON.stringify(perf,null,2)+'\n');
     console.log('Parchment real game benchmark: '+JSON.stringify(perf));
-    assert.equal(await page.evaluate(()=>globalThis.RPChessKingdomMap.zoom),117);
+    assert.equal(await page.evaluate(()=>globalThis.RPChessKingdomMap.zoom),57);
   }
   assert.equal(await atlas.count(),1,'parchment remains the only supported Kingdom map skin');
 
@@ -662,7 +680,7 @@ async function assertTileImage(page,cellId){
     const sprite=document.querySelector('[data-kingdom-cell="0,0"] img.km-object');
     return sprite?.complete&&sprite.naturalWidth===128&&sprite.naturalHeight===128;
   },null,{timeout:15000});
-  // Author's Atlas Lab visual preset (5) zoom is 117 physical px/cell; contents retain 73%/92:142 proportions.
+  // Author's Atlas Lab visual preset (5) zoom is 57 physical px/cell; contents retain 73%/92:142 proportions.
   const dimensions=await page.evaluate(()=>{
    const frame=document.querySelector('.km-map-frame').getBoundingClientRect();
    const world=document.querySelector('.km-world').getBoundingClientRect();
@@ -683,11 +701,11 @@ async function assertTileImage(page,cellId){
   assert(dimensions.world.left<=dimensions.frame.left&&dimensions.world.right>=dimensions.frame.right&&
     dimensions.world.top<=dimensions.frame.top&&dimensions.world.bottom>=dimensions.frame.bottom,
     'enlarged cells must fill the map frame with no empty gutters');
-  assert(Math.abs(dimensions.tile.width-117)<1&&Math.abs(dimensions.tile.height-117)<1,
+  assert(Math.abs(dimensions.tile.width-57)<1&&Math.abs(dimensions.tile.height-57)<1,
     'author preset (5) renders 117px square cells initially');
-  assert(Math.abs(dimensions.king.width-92*117/142)<1&&Math.abs(dimensions.king.height-92*117/142)<1,
+  assert(Math.abs(dimensions.king.width-92*57/142)<1&&Math.abs(dimensions.king.height-92*57/142)<1,
     'the named king scales uniformly with the world');
-  assert(Math.abs(dimensions.object.width-117*.73)<1&&Math.abs(dimensions.object.height-117*.73)<1,
+  assert(Math.abs(dimensions.object.width-57*.73)<1&&Math.abs(dimensions.object.height-57*.73)<1,
     'SVG art remains 73% of the scaled tile');
   assert(dimensions.object.fit==='contain'&&dimensions.cellOverflow==='visible',
     'SVG is contained without object clipping or unwanted stretching');
@@ -702,7 +720,7 @@ async function assertTileImage(page,cellId){
   const beforeZoomRun=await read(page);
   await page.locator('.km-map-frame').hover({position:{x:260,y:180}});
   await page.mouse.wheel(0,-250);
-  await page.waitForFunction(()=>globalThis.RPChessKingdomMap?.zoom>117);
+  await page.waitForFunction(()=>globalThis.RPChessKingdomMap?.zoom>57);
   const wheelZoom=await page.evaluate(()=>globalThis.RPChessKingdomMap.zoom);
   const wheelCell=await page.locator('[data-kingdom-cell="0,0"]').evaluate(el=>el.getBoundingClientRect().width);
   assert(Math.abs(wheelCell-wheelZoom)<1,'mouse wheel magnifies actual map geometry');
@@ -718,10 +736,10 @@ async function assertTileImage(page,cellId){
   assert.equal((await read(page)).kingdomMap.pendingCell,null,
     'two-finger zoom must not accidentally start a Journey encounter');
   await page.locator('[data-kingdom-zoom-reset]').click();
-  await page.waitForFunction(()=>globalThis.RPChessKingdomMap?.zoom===117);
+  await page.waitForFunction(()=>globalThis.RPChessKingdomMap?.zoom===57);
   // updateZoom schedules a paint; wait for the actual replacement DOM as well.
-  await page.waitForFunction(()=>document.querySelector('[data-kingdom-world]')?.dataset.mapZoom==='117');
-  assert.equal(await page.evaluate(()=>localStorage.getItem('rpchess.kingdom.zoom.v2')),'117',
+  await page.waitForFunction(()=>document.querySelector('[data-kingdom-world]')?.dataset.mapZoom==='57');
+  assert.equal(await page.evaluate(()=>localStorage.getItem('rpchess.kingdom.zoom.v3')),'57',
     'reset restores the author zoom and persists it');
   assert.deepEqual(await read(page),beforeZoomRun,'zoom must never edit the run or its saved cells');
   await assertTileImage(page,'0,0','assets/races/humans/board/white.png');
@@ -880,7 +898,7 @@ async function assertTileImage(page,cellId){
       overlap:a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top};
   });
   assert(layers.siteSize>layers.defenderSize&&layers.defenderDepth>layers.siteDepth&&layers.overlap,
-    'enemy guardian must be smaller, overlaid and visually in front of the site');
+    'enemy guardian must be smaller, overlaid and visually in front of the site: '+JSON.stringify(layers));
   const stepPrice=before.kingdomMap.centralOwnedCells.includes('1,0')?0:1;
   assert.equal(moved.supplies,before.supplies-stepPrice,
     'the arrival step charges exactly one Supply outside owned territory');
@@ -1076,7 +1094,9 @@ async function assertTileImage(page,cellId){
    const fx=completedTile.locator('.km-resource-burst');
    assert.equal(await fx.count(),0,
      'a previously paid walking Supply cannot be presented again as an encounter reward');
-   await completedTile.click({position:{x:17,y:17}});
+   // At the approved 57px tile size, a 17px inset overlaps the King's drag handle.
+   // Click the accessible corner of the tile to exercise the actual pointer route.
+   await completedTile.click({position:{x:4,y:4}});
    assert.equal(await page.locator('[data-kingdom-route-card]').count(),1,
      'clicking a cleared location again never reverts to the empty inspector');
    assert.equal(await page.locator('[data-kingdom-route-card]').getAttribute('data-kingdom-route-status'),
@@ -1542,10 +1562,17 @@ async function assertTileImage(page,cellId){
   // the same seed and coordinates, rather than testing two hardcoded fixtures.
   const currentVisual=await labPage.evaluate(()=>
     window.RPChessAtlasSimulation.exportConfig().visual);
-  assert.equal(currentVisual.zoom,117,'Atlas Lab starts with the active game zoom');
+  assert.equal(currentVisual.zoom,57,'Atlas Lab starts with the active game zoom');
+  assert.deepStrictEqual([currentVisual.forestDensity,currentVisual.stampSize,currentVisual.sizeVariation,currentVisual.baseOpacity],[3,2,0.5,0.18],
+    'Atlas Lab and Kingdom share the author-approved renderer preset');
   assert.deepStrictEqual([currentVisual.fogRadius,currentVisual.fogInner,
-   currentVisual.fogInkOpacity,currentVisual.fogIrregularity,currentVisual.revealRadius],
-   [1.1,.32,.2,.3,1.6],'Atlas Lab fog matches the active game visual preset');
+   currentVisual.fogInkOpacity,currentVisual.wastelandDensity],
+   [2,.32,.2,1.75],'Atlas Lab v7 matches approved game fog and wasteland density');
+  for(const retired of ['paperContrast','fogIrregularity','revealRadius'])
+    assert.equal(Object.hasOwn(currentVisual,retired),false,
+      'Atlas Lab should not export unused '+retired+' preview settings');
+  assert.equal(await labPage.locator('#v-wastelandDensity').count(),1,
+    'v7 editor must expose independent wasteland density');
   const atlasGameParity=await labPage.evaluate(async()=>{
    const game=await import('./js/kingdom-world-core.mjs?v=20261109-kingdom-feedback1');
    const atlas=window.RPChessAtlasSimulation;
@@ -1562,7 +1589,7 @@ async function assertTileImage(page,cellId){
    return bad.slice(0,5);
   });
   assert.deepStrictEqual(atlasGameParity,[],
-    'game world generation must agree with author Atlas Lab v6 for same seed');
+    'game world generation must agree with Atlas Lab v7 for the same seed');
   const countsBefore=await labPage.evaluate(()=>{
    const x=window.RPChessAtlasSimulation.getSample();
    return Object.values(x.groups).reduce((a,b)=>a+b,0);
