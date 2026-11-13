@@ -348,6 +348,19 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
     assert(count<=3,'each event has at most three other encounters within one king move');
   }
   assert(!worldGen.encounterPresent(seed,0,0),'starting castle stays reserved');
+  const geography=await import(pathToFileURL(path.join(game,'js/kingdom-geography.mjs')).href);
+  for(let y=-14;y<=14;y++)for(let x=-14;x<=14;x++){
+    const geometric=geography.nearestNaturalPaths(seed,x+.5,y+.5);
+    const semantic=worldGen.naturalPathAt(seed,x+.5,y+.5,{generatorVersion:6});
+    assert.equal(semantic.road,geometric.road,'world road must match rendered geometry');
+    assert.equal(semantic.river,geometric.river,'world river must match rendered geometry');
+    const landmark=worldGen.landmarkAt(seed,x,y,{generatorVersion:6});
+    if(['06_wood_bridge','07_stone_bridge'].includes(landmark))
+      assert(geometric.river,'semantic bridge must be placed next to visible water');
+  }
+  const legacyPath=worldGen.naturalPathAt(seed,5.5,6.5,{generatorVersion:5});
+  assert(typeof legacyPath.road==='boolean'&&typeof legacyPath.river==='boolean',
+    'v5 generated worlds retain their prior path rules');
   assert.equal(fs.existsSync(path.join(game,'atlas-lab.html')),true,
     'Atlas Lab v6 HTML must be shipped alongside its map preview');
   assert(fs.readFileSync(path.join(game,'atlas-lab.html'),'utf8').includes('Симулировать'),
