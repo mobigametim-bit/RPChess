@@ -127,7 +127,7 @@ const path=require('path'),assert=require('assert'),fs=require('fs'),{pathToFile
       if(!ru[key])continue;
       assert(typeof en[key]==='string'&&en[key].trim(),'Missing translated '+id+'.'+key);
       assert(!/[А-Яа-яЁё]/u.test(en[key]),'Cyrillic in EN outcome '+id+'.'+key);
-      const tok=x=>(x.match(/\\{\\{(?:heroName|affectedHeroName)\\}\\}/g)||[]).sort();
+      const tok=x=>(x.match(/\{\{(?:heroName|affectedHeroName)\}\}/g)||[]).sort();
       assert.deepStrictEqual(tok(en[key]),tok(ru[key]),'EN name placeholder parity '+id+'.'+key);
       englishCount++;
     }
@@ -135,7 +135,7 @@ const path=require('path'),assert=require('assert'),fs=require('fs'),{pathToFile
       const translated=en.v?.[key];
       assert(typeof translated==='string'&&translated.trim(),'Missing EN fallback '+id+'.'+key);
       assert(!/[А-Яа-яЁё]/u.test(translated),'Cyrillic in EN fallback '+id+'.'+key);
-      const tok=x=>(x.match(/\\{\\{(?:heroName|affectedHeroName)\\}\\}/g)||[]).sort();
+      const tok=x=>(x.match(/\{\{(?:heroName|affectedHeroName)\}\}/g)||[]).sort();
       assert.deepStrictEqual(tok(translated),tok(ruFallback),'EN fallback placeholder parity '+id+'.'+key);
       englishCount++;
     }
