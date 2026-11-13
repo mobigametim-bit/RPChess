@@ -118,7 +118,7 @@ class MemoryStorage {
   const paidAgain=persistence.writeRun(persistence.readRun(industryStorage),industryStorage,3200);
   assert.equal(paidAgain.gold,incomeRun.gold,'reloading same week never doubles Gold');
   assert.equal(paidAgain.supplies,incomeRun.supplies,'reloading same week never doubles Supplies');
-  const upgraded=kingdom.updatePeak(map,2000);
+  const upgraded=kingdom.updatePeak(paidAgain.kingdomMap,2000);
   assert.equal(industry.industryLevel(upgraded),5,'castle level is the production multiplier');
   assert.equal(industry.industryYield(site,upgraded).amount,industry.industryBase(expected.kind)*5);
   let improved=upgraded;
