@@ -16,7 +16,10 @@ const BUILDING_TYPES=Object.freeze({
 const TYPES_BY_BIOME=Object.freeze(Object.fromEntries(
  ['plains','hills','forest','mountain','marsh','wasteland'].map(biome=>[
   biome,Object.freeze(Object.keys(BUILDING_TYPES).filter(type=>BUILDING_TYPES[type].biomes.includes(biome)))])));
-const SITE_ART='construction_site.png',BUILDING_DIR='assets/kingdom-production/';
+const BUILDING_DIR='assets/kingdom-production/';
+const INDUSTRY_ATLAS=BUILDING_DIR+'industry-atlas.png';
+const INDUSTRY_ATLAS_ORDER=Object.freeze(['construction_site','farm','fishing_pier','gold_mine',
+ 'hunting_lodge','pasture','sawmill','stone_quarry','oasis']);
 const KEY=/^-?\d+,-?\d+$/;
 const integer=n=>Number.isSafeInteger(n)&&n>=0;
 const key=(x,y)=>x+','+y;
@@ -121,7 +124,10 @@ function applyIndustryCredits(run){
   kingdomMap:{...run.kingdomMap,industry:{...industry,
    creditedGold:industry.accruedGold,creditedSupplies:industry.accruedSupplies}}};
 }
-function industrySprite(site,week){return BUILDING_DIR+((site.builtWeek>=week)?SITE_ART:site.kind+'.png');}
-export {BUILDING_TYPES,TYPES_BY_BIOME,BUILDING_DIR,initialIndustry,validIndustry,
+function industrySprite(){return INDUSTRY_ATLAS;}
+function industrySpriteIndex(site,week){
+ return INDUSTRY_ATLAS_ORDER.indexOf(site.builtWeek>=week?'construction_site':site.kind);
+}
+export {BUILDING_TYPES,TYPES_BY_BIOME,BUILDING_DIR,INDUSTRY_ATLAS,INDUSTRY_ATLAS_ORDER,initialIndustry,validIndustry,
  occupiedRoadCells,candidateCells,selectConstruction,settleIndustryWeek,
- industryLevel,industryBase,industryYield,industrySprite,applyIndustryCredits};
+ industryLevel,industryBase,industryYield,industrySprite,industrySpriteIndex,applyIndustryCredits};
