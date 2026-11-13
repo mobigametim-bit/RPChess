@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>RPChess · Atlas Lab v6 — расширенная балансировка Королевства</title>
+<title>RPChess · Atlas Lab v7 — единая география и шесть биомов</title>
 <style>
 :root{--bg:#0b1110;--panel:#131b1a;--panel2:#1c2622;--edge:#3b443a;--gold:#d5b477;--gold2:#f2dda6;--cream:#ebdfbd;--muted:#8d9d91;--green:#8ea889;--danger:#bf8c69;--border:#485443}
 *{box-sizing:border-box}html,body{margin:0;height:100%;font-family:Inter,"Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--cream)}body{overflow:hidden}button,input,select{font:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--gold2);outline-offset:2px}button:disabled{opacity:.45;cursor:default}
@@ -76,7 +76,7 @@
  </header>
  <aside class="side" id="sidebar">
   <div class="side-title">Настройка генератора</div>
-  <p class="hint">Настраивай рельеф, настоящие болотные SVG, малые ориентиры, а также алгоритмические дороги и реки. Удалённые рамки не используются. В JSON сохраняются все параметры для переноса в игровую ветку.</p>
+  <p class="hint">Настраивай шесть биомов, игровые ориентиры и общую геометрию дорог и рек. Параметры соответствуют генератору v6. Удалённые рамки не используются. В JSON сохраняются все параметры для переноса в игровую ветку.</p>
   <div class="section-kicker">Быстрые пресеты</div>
   <div class="preset-list" id="presets"></div>
   <div id="controls"></div>
@@ -108,7 +108,7 @@
  </main>
 <aside class="sim-side" id="simSidebar">
  <div class="side-title">Симулятор Королевства</div>
- <p class="sim-help">Параметры встреч и экономики — <b>предлагаемый баланс</b>, не действующие правила игры. Рельеф и 112 авторских превью общие с редактором слева.</p>
+ <p class="sim-help">Параметры мира соответствуют генератору v6; экономические сценарии — <b>приближённая симуляция</b>. Рельеф и 112 авторских превью общие с редактором слева.</p>
  <div class="sim-section">
   <h3>01 · Исследование и календарь</h3>
   <div id="simControls"></div>
@@ -165,22 +165,10 @@ const IMAGE_DATA = {"mountain_clusters/16_fading_edge.svg":"data:image/png;base6
 const IMG={};let pendingFrame=false, toastTimer=0;
 function renderSoon(){if(pendingFrame)return;pendingFrame=true;requestAnimationFrame(()=>{pendingFrame=false;paint()});}
 for(const [key,source] of Object.entries(IMAGE_DATA)){const image=new Image();image.onload=renderSoon;image.src=source;IMG[key]=image;}
-const BASE={
- seed:'rpchess-kingdom-2026',centerX:0,centerY:0,zoom:92,
- landScale:8.8,detailScale:3.1,wetScale:13.5,largeWeight:.72,
- mountainThreshold:.67,hillThreshold:.56,forestThreshold:.58,
- stampSpacing:3,forestDensity:1,mountainDensity:1,hillDensity:1,plainDensity:.34,
- stampSize:2.1,sizeVariation:.45,stampOpacity:.72,baseOpacity:.34,baseSpacing:6, paperContrast:1,
- roadSpacing:12,roadWidth:1,roadCurve:1,roadOpacity:1,
- riverSpacing:17,riverWidth:1,riverCurve:1,riverOpacity:1,
- marshDensity:.8,marshWetThreshold:.59,marshSize:1.9,marshOpacity:.72,
- landmarkDensity:.16,landmarkSize:1.15,landmarkOpacity:.86,
- fogOpacity:.83,fogRadius:1.34,fogInner:.43,fogInkOpacity:.19,fogIrregularity:0,revealRadius:2.6,
- showFog:true,showObjects:true,showGrid:false,showBiomes:false,showBorders:true,showPatches:true,showNature:true,
- showMarsh:true,showLandmarks:true,showRoads:true,showRivers:true
-};
+const GAME_VISUAL_KEYS=["landScale","detailScale","wetScale","largeWeight","mountainThreshold","hillThreshold","forestThreshold","stampSpacing","forestDensity","mountainDensity","hillDensity","plainDensity","stampSize","sizeVariation","stampOpacity","baseOpacity","baseSpacing","roadSpacing","roadWidth","roadCurve","roadOpacity","riverSpacing","riverWidth","riverCurve","riverOpacity","marshDensity","wastelandDensity","marshWetThreshold","marshSize","marshOpacity","landmarkDensity","landmarkSize","landmarkOpacity","fogOpacity","fogRadius","fogInner","fogInkOpacity"];
+const BASE={"landScale":9.4,"detailScale":4.2,"wetScale":7.5,"largeWeight":0.29,"mountainThreshold":0.63,"hillThreshold":0.56,"forestThreshold":0.44,"stampSpacing":1.55,"forestDensity":2.4,"mountainDensity":1.4,"hillDensity":0.9,"plainDensity":0.35,"stampSize":2.2,"sizeVariation":1.05,"stampOpacity":1,"baseOpacity":1,"baseSpacing":6.5,"paperContrast":1.6,"roadSpacing":5,"roadWidth":1.65,"roadCurve":3,"roadOpacity":1,"riverSpacing":6,"riverWidth":1.2,"riverCurve":1.1,"riverOpacity":1,"marshDensity":2.05,"wastelandDensity":1.75,"marshWetThreshold":0.42,"marshSize":1.85,"marshOpacity":1,"landmarkDensity":0.62,"landmarkSize":0.75,"landmarkOpacity":1,"fogOpacity":0.98,"fogRadius":1.1,"fogInner":0.32,"fogInkOpacity":0.2,"fogIrregularity":0,"revealRadius":1.6,"seed":"rpchess-kingdom-2026","centerX":1.1397535385320217,"centerY":0.8734816261574075,"zoom":117,"showFog":true,"showObjects":true,"showGrid":false,"showBiomes":false,"showBorders":true,"showPatches":true,"showNature":true,"showMarsh":true,"showLandmarks":true,"showRoads":true,"showRivers":true};
 const PRESETS=[
- {id:'current',name:'Как сейчас',desc:'Текущий генератор',values:{...BASE}},
+ {id:'current',name:'Игровой v7',desc:'Настройки генератора v6',values:{...BASE}},
  {id:'atlas',name:'Живой атлас',desc:'Больше деталей',values:{stampSpacing:1.85,forestDensity:1.5,mountainDensity:1.4,hillDensity:1.1,forestThreshold:.53,mountainThreshold:.62,hillThreshold:.53,stampSize:1.75,stampOpacity:.85,baseOpacity:.24,showFog:false,fogOpacity:.6, fogRadius:1.7,fogIrregularity:.6}},
  {id:'forest',name:'Древние леса',desc:'Зелёный мир',values:{stampSpacing:1.55,forestDensity:2.1,forestThreshold:.46,wetScale:11,largeWeight:.76,hillThreshold:.62,mountainThreshold:.71,plainDensity:.19,stampSize:1.9,showFog:false}},
  {id:'highland',name:'Горные земли',desc:'Хребты и холмы',values:{stampSpacing:1.8,mountainThreshold:.56,hillThreshold:.47,mountainDensity:2.1,hillDensity:1.7,forestThreshold:.64,forestDensity:.7,stampSize:1.75,showFog:false}},
@@ -198,46 +186,44 @@ const SECTIONS=[
   ['forestThreshold','Порог леса',.32,.72,.01,'','Ниже — больше лесов, выше — меньше.']
  ]},
  {title:'02 · Природные ассеты',items:[
-  ['stampSpacing','Шаг размещения',1,5,.05,' клетки','Сейчас примерно 3 клетки: по одному набору на 9 клеток.'],
+  ['stampSpacing','Шаг размещения',1,5,.05,' клетки','Игровое значение — 1,55 клетки.'],
   ['forestDensity','Плотность лесов',0,3,.05,'×','Количество лесных элементов внутри соответствующих зон.'],
   ['mountainDensity','Плотность гор',0,3,.05,'×','Количество горных кластеров.'],
   ['hillDensity','Плотность холмов',0,3,.05,'×','Сколько будет холмов и скал.'],
-  ['plainDensity','Декор равнин',0,1,.01,'','Вероятность декора на равнинах (сейчас 0,34).'],
+  ['plainDensity','Декор равнин',0,1,.01,'','Вероятность камней на равнинах.'],
   ['stampSize','Размер кластеров',.5,3.8,.05,' клетки','Влияние на размер SVG-элементов на карте.'],
   ['sizeVariation','Разброс размера',0,1.2,.05,' клетки','Насколько соседние объекты различаются размером.'],
   ['stampOpacity','Непрозрачность природы',.2,1,.02,'','Контраст лесов, холмов и гор.']
  ]},
  {title:'03 · Болота и ориентиры',items:[
-  ['marshDensity','Плотность болот и пустошей',0,3,.05,'×','Больше пятен болотной и мёртвой земли внутри подходящих зон.'],
+  ['marshDensity','Плотность болот',0,3,.05,'×','Только болотные изображения.'],
+   ['wastelandDensity','Плотность пустошей',0,3,.05,'×','Только сухие изображения.'],
   ['marshWetThreshold','Порог сырой местности',.35,.8,.01,'','Ниже — болотные зоны шире, выше — реже.'],
-  ['marshSize','Масштаб болотных объектов',.45,3.4,.05,' клетки','Размер каждого болотного SVG.'],
+  ['marshSize','Размер болот и пустошей',.45,3.4,.05,' клетки','Общий размер климатических объектов.'],
   ['marshOpacity','Непрозрачность болот',0,1,.02,'','Насыщенность болотных и пустошных акцентов.'],
   ['landmarkDensity','Плотность малых ориентиров',0,1,.01,'','Руины, менгиры, курганы и прочий декоративный декор.'],
   ['landmarkSize','Размер ориентиров',.3,2.6,.05,' клетки','Масштаб декора поверх географии.'],
   ['landmarkOpacity','Непрозрачность ориентиров',0,1,.02,'','Контраст небольших объектов.']
  ]},
  {title:'04 · Алгоритмические дороги и реки',items:[
-  ['roadSpacing','Расстояние между дорогами',5,38,.5,' клетки','Интервал между извилистыми горизонтальными дорогами (в игре 12).'],
-  ['roadWidth','Толщина дорог',.25,3,.05,'×','Ширина линии и пунктирной колеи. В игре 1×.'],
+  ['roadSpacing','Расстояние между дорогами',5,38,.5,' клетки','Те же координаты, что и в игре.'],
+  ['roadWidth','Толщина дорог',.25,3,.05,'×','Ширина линии и пунктирной колеи.'],
   ['roadCurve','Извилистость дорог',0,3,.05,'×','Насколько сильно дорога отклоняется в сторону.'],
-  ['roadOpacity','Непрозрачность дорог',0,1,.02,'','0 — дороги невидимы, 1 — как в игре.'],
-  ['riverSpacing','Расстояние между реками',6,50,.5,' клетки','Интервал между вертикальными руслами (в игре 17).'],
-  ['riverWidth','Ширина рек',.2,3,.05,'×','Ширина берега и воды. В игре 1×.'],
+  ['roadOpacity','Непрозрачность дорог',0,1,.02,'','Текущее игровое значение 1.'],
+  ['riverSpacing','Расстояние между реками',6,50,.5,' клетки','Та же формула, что и в игре.'],
+  ['riverWidth','Ширина рек',.2,3,.05,'×','Ширина берега и воды.'],
   ['riverCurve','Извилистость рек',0,3,.05,'×','Амплитуда изгибов русла.'],
   ['riverOpacity','Непрозрачность рек',0,1,.02,'','Насыщенность сине-серых речных русел.']
  ]},
  {title:'05 · Бумага и атмосфера',items:[
   ['baseOpacity','Пятна пергамента',0,1,.02,'','Непрозрачность базовых художественных пятен.'],
-  ['baseSpacing','Расстояние пятен',3,12,.25,' клетки','Дистанция между большими цветовыми облаками.'],
-  ['paperContrast','Фактура бумаги',0,2.6,.05,'×','Насколько заметна процедурная бумажная фактура.']
+  ['baseSpacing','Расстояние пятен',3,12,.25,' клетки','Дистанция между большими цветовыми облаками.']
  ]},
  {title:'06 · Туман войны',items:[
-  ['fogOpacity','Плотность тумана',0,1,.02,'','Сейчас 0,83 — карта кажется очень тёмной.'],
+  ['fogOpacity','Плотность тумана',0,1,.02,'','Текущее игровое значение 0,98.'],
   ['fogRadius','Радиус открытия',.65,3,.05,' клетки','Сейчас 1,34: большое круглое пятно вокруг открытых клеток.'],
   ['fogInner','Ядро ясности',.2,.9,.02,' клетки','Насколько далеко от клетки сохраняется полностью открытая область.'],
-  ['fogIrregularity','Неровность краёв',0,1,.02,'','Новый эксперимент: размывает идеальную окружность.'],
-  ['fogInkOpacity','Чернильные SVG тумана',0,.7,.02,'','Насыщенность декоративных облаков.'],
-  ['revealRadius','Стартовая разведка',0,7,.2,' клетки','Открытая территория вокруг замка в этом стенде.']
+  ['fogInkOpacity','Чернильные SVG тумана',0,.7,.02,'','Насыщенность декоративных облаков.']
  ]},
  {title:'07 · Параметры просмотра',items:[
   ['zoom','Масштаб клетки',45,160,1,' px','В игре логическая клетка равна 142 px; масштаб здесь только визуальный.']
@@ -255,8 +241,7 @@ const SECTIONS=[
   ['showBorders','Границы владений','Показывать контуры присоединённых земель']
  ]}
 ];
-const USER_SELECTED={"seed":"rpchess-kingdom-2026","centerX":1.1397535385320217,"centerY":0.8734816261574075,"zoom":117,"landScale":9.4,"detailScale":4.2,"wetScale":7.5,"largeWeight":0.29,"mountainThreshold":0.63,"hillThreshold":0.56,"forestThreshold":0.44,"stampSpacing":1.55,"forestDensity":2.4,"mountainDensity":1.4,"hillDensity":0.9,"plainDensity":0.35,"stampSize":2.2,"sizeVariation":1.05,"stampOpacity":0.8,"baseOpacity":0.26,"baseSpacing":6.5,"paperContrast":1.6,"roadSpacing":5,"roadWidth":1.65,"roadCurve":3,"roadOpacity":0.56,"riverSpacing":6,"riverWidth":1.2,"riverCurve":1.1,"riverOpacity":0.56,"marshDensity":2.05,"marshWetThreshold":0.42,"marshSize":1.85,"marshOpacity":0.84,"landmarkDensity":0.62,"landmarkSize":0.75,"landmarkOpacity":0.92,"fogOpacity":0.88,"fogRadius":1.1,"fogInner":0.32,"fogInkOpacity":0.2,"fogIrregularity":0.3,"revealRadius":1.6,"showFog":true,"showObjects":true,"showGrid":false,"showBiomes":false,"showBorders":true,"showPatches":true,"showNature":true,"showMarsh":true,"showLandmarks":true,"showRoads":true,"showRivers":true};
-let S={...BASE,...USER_SELECTED};let currentPreset='custom';let explored=new Set();let paintCycles=0;
+const USER_SELECTED={"landScale":9.4,"detailScale":4.2,"wetScale":7.5,"largeWeight":0.29,"mountainThreshold":0.63,"hillThreshold":0.56,"forestThreshold":0.44,"stampSpacing":1.55,"forestDensity":2.4,"mountainDensity":1.4,"hillDensity":0.9,"plainDensity":0.35,"stampSize":2.2,"sizeVariation":1.05,"stampOpacity":1,"baseOpacity":1,"baseSpacing":6.5,"paperContrast":1.6,"roadSpacing":5,"roadWidth":1.65,"roadCurve":3,"roadOpacity":1,"riverSpacing":6,"riverWidth":1.2,"riverCurve":1.1,"riverOpacity":1,"marshDensity":2.05,"wastelandDensity":1.75,"marshWetThreshold":0.42,"marshSize":1.85,"marshOpacity":1,"landmarkDensity":0.62,"landmarkSize":0.75,"landmarkOpacity":1,"fogOpacity":0.98,"fogRadius":1.1,"fogInner":0.32,"fogInkOpacity":0.2,"fogIrregularity":0,"revealRadius":1.6,"seed":"rpchess-kingdom-2026","centerX":1.1397535385320217,"centerY":0.8734816261574075,"zoom":117,"showFog":true,"showObjects":true,"showGrid":false,"showBiomes":false,"showBorders":true,"showPatches":true,"showNature":true,"showMarsh":true,"showLandmarks":true,"showRoads":true,"showRivers":true}; let S={...BASE,...USER_SELECTED};let currentPreset='custom';let explored=new Set();let paintCycles=0;
 const $=id=>document.getElementById(id);
 function format(v,suffix){let n=Math.abs(v-Math.round(v))<.0001?String(Math.round(v)):Number(v).toFixed(2).replace(/0+$/,'').replace(/\.$/,'');return n+(suffix||'');}
 function buildPresetButtons(){const wrap=$('presets');wrap.innerHTML='';for(const p of PRESETS){const b=document.createElement('button');b.className='preset'+(p.id===currentPreset?' active':'');b.type='button';b.innerHTML='<strong>'+p.name+'</strong><small>'+p.desc+'</small>';b.onclick=()=>{const seed=S.seed,cx=S.centerX,cy=S.centerY;S={...BASE,...p.values,seed,centerX:cx,centerY:cy};currentPreset=p.id;explored.clear();syncUI();invalidate();renderSoon()};wrap.append(b)}}
@@ -435,7 +420,7 @@ const TYPE_KEYS=['battle','skirmish','caravan','settlement','event','puzzle'];
 const TYPE_NAMES=['Битва','Стычка','Караван','Поселение','Событие','Задача'];
 const RACE_KEYS=['humans','elves','orcs','undead','dark_elves','dwarves','demons','angels','dragonborn','beastfolk','constructs','animals','fae','goblins'];
 const RACE_NAMES=['Люди','Эльфы','Орки','Нежить','Тёмные эльфы','Гномы','Демоны','Ангелы','Дракониды','Зверолюди','Конструкты','Животные','Феи','Гоблины'];
-const DEFAULT_DENSITY=[34,40,36,30,37,41];
+const DEFAULT_DENSITY=[27,25,36,25,29,18];
 const DEFAULT_TYPES=[
  [12,22,11,10,28,17],[27,23,7,6,17,20],[19,24,13,11,16,17],
  [14,17,24,22,14,9],[20,23,5,5,32,15],[29,27,6,4,19,15]
@@ -502,9 +487,7 @@ function normalized(row){const s=row.reduce((a,v)=>a+Math.max(0,Number(v)||0),0)
    return weights.map((weight,i)=>i===idx?target:weight*otherScale);
  }
  function weighted(arr,v){let acc=0;for(let i=0;i<arr.length;i++){acc+=arr[i];if(v<acc)return i}return arr.length-1}
-const SC_BASE={settlementProbabilityMultiplier:SETTLEMENT_PROBABILITY_MULTIPLIER,densityMultiplier:1,scout:2,biomeInfluence:1,landmarkInfluence:1,roadInfluence:1,initialPower:500,powerGain:30,outpostCost:30,weeklyGold:20,weeklySupplies:5,weeklyShards:5,landmarks:true,roads:true,
-   density:DEFAULT_DENSITY,types:DEFAULT_TYPES,races:DEFAULT_RACES,eventRadius:1,eventNearbyMax:2};
-let C=clone({...SC_BASE,...{"densityMultiplier":1.2,"scout":2,"biomeInfluence":1,"landmarkInfluence":1,"roadInfluence":1,"initialPower":500,"powerGain":30,"outpostCost":30,"weeklyGold":20,"weeklySupplies":5,"weeklyShards":5,"landmarks":true,"roads":true,"density":[27,25,36,25,29,18],"types":[[12,22,11,10,28,17],[27,23,7,6,17,20],[19,24,13,11,16,17],[14,17,24,22,14,9],[20,23,5,5,32,15],[29,27,6,4,19,15]],"races":[[6,22,4,2,4,2,1,1,1,14,2,14,19,8],[5,2,9,3,5,17,6,16,20,5,4,3,1,4],[16,4,12,4,5,17,4,4,7,9,5,5,2,6],[25,6,8,4,3,6,3,5,3,9,6,11,5,6],[4,3,5,24,13,1,8,1,3,8,3,8,7,12],[4,1,13,16,6,3,22,1,9,6,9,2,1,7]],"eventRadius":1,"eventNearbyMax":3}}),run=null,selectedBiome=0,selectedKind='types',simVisible=false,showFog=true,previewMode=false;
+const SC_BASE={settlementProbabilityMultiplier:1.2,densityMultiplier:1.2,scout:2,biomeInfluence:1,landmarkInfluence:1,roadInfluence:1,initialPower:600,powerGain:30,outpostCost:30,weeklyGold:10,weeklySupplies:2,weeklyShards:1,landmarks:true,roads:true,density:DEFAULT_DENSITY,types:DEFAULT_TYPES,races:DEFAULT_RACES,eventRadius:1,eventNearbyMax:3}; let C=clone(SC_BASE),run=null,selectedBiome=0,selectedKind='types',simVisible=false,showFog=true,previewMode=false;
 let simSummary=null,simSummaryKey='',simHover=null,simDrawQueued=false,simCenter={x:0,y:0},stampCount=0;
 const movement=[[0,-1],[1,-1],[1,0],[1,1],[0,1],[-1,1],[-1,0],[-1,-1]];
 let simW=0,simH=0,simCell=68,simLeft=0,simTop=0,simDpr=1;
