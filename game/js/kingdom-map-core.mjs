@@ -9,6 +9,7 @@ import {difficultyForStars} from './encounter-difficulty.mjs';
 import {KINGDOM_OUTPOST_SHARD_COST} from './arena-core.mjs?v=20261109-kingdom-economy-v7';
 import {DEFAULT_KINGDOM_ECONOMY,weeklyResourceProduction} from './kingdom-economy-config.mjs';
 import {synchronizeRoyalRoads} from './kingdom-road-network.mjs?v=20261111-polish-v1';
+import {initialIndustry,validIndustry,settleIndustryWeek} from './kingdom-industry-core.mjs';
 
 // Live defaults mirror Atlas Lab's canonical economy; change only after acceptance.
 const production=DEFAULT_KINGDOM_ECONOMY.production;
@@ -196,6 +197,8 @@ function migrateKingdomMap(map,run=null){
   result={...result,calendarActions:[]};
  if(!Number.isInteger(result.processedThroughWeek))
   result={...result,processedThroughWeek:0};
+ // Old run saves do not receive backdated buildings or free resources.
+ if(!result.industry)result={...result,industry:initialIndustry(weekForDay(result.day))};
  if(!Array.isArray(result.outposts))result={...result,outposts:[]};
  if(!Array.isArray(result.builtSettlements))result={...result,builtSettlements:[]};
  if(!Array.isArray(result.outpostRoads))result={...result,outpostRoads:[]};
@@ -232,21 +235,23 @@ function productionFor(map,id,type,week){
 }
 function settleWeeklyProduction(map){
  const week=weekForDay(map.day);
- if(week<=Math.max(0,map.processedThroughWeek||0))return map;
- let cells=map.cells,created=0;
- for(const [id,cell] of Object.entries(map.cells)){
+ const seeded=map.industry?map:{...map,industry:initialIndustry(weekForDay(Math.max(1,map.day-1)))};
+ const staged=settleIndustryWeek(seeded,week);
+ if(week<=Math.max(0,staged.processedThroughWeek||0))return staged;
+ let cells=staged.cells;
+ for(const [id,cell] of Object.entries(staged.cells)){
   const type=cell?.selectedEncounter?.type;
-  if(cell.status!=='completed'||!cell.selectedEncounter||!(isOwned(map,id)||(map.builtSettlements||[]).some(p=>p.id===id))||
+  if(cell.status!=='completed'||!cell.selectedEncounter||!(isOwned(staged,id)||
+     (staged.builtSettlements||[]).some(p=>p.id===id))||
      cell.production||cell.respawnReady||!PROTOTYPE_YIELDS[type])continue;
-  const production=productionFor(map,id,type,week);
+  const production=productionFor(staged,id,type,week);
   if(!production)continue;
-  if(cells===map.cells)cells={...map.cells};
+  if(cells===staged.cells)cells={...staged.cells};
   cells[id]={...cell,production,
    ...(production.kind==='battle'?{respawnReady:true}:{})};
-  created++;
  }
- return {...map,cells,processedThroughWeek:week,
-  productionCyclesResolved:Math.max(map.productionCyclesResolved||0,week)};
+ return {...staged,cells,processedThroughWeek:week,
+  productionCyclesResolved:Math.max(staged.productionCyclesResolved||0,week)};
 }
 function acknowledgeReturn(map,id){
  const cell=map?.cells?.[id];
@@ -363,7 +368,7 @@ function createKingdomMap(run,playerPower=400,raceTag='humans'){
   peakKingPower:power,annexationPointsSpent:0,battlePointsEarned:0,legacyBonusLands:0,
   creditedBattleEncounterIds:[],uniqueFirstConquests:[],centralOwnedCells:[],
   battleTerritories:[],battleConqueredCells:[],
-  day:1,calendarActions:[],processedThroughWeek:0,outposts:[],builtSettlements:[],productionClaims:[],
+  day:1,calendarActions:[],processedThroughWeek:0,industry:initialIndustry(),outposts:[],builtSettlements:[],productionClaims:[],
   completedRoads:[],lastCompletedRouteCell:null,outpostRoads:[],royalRoads:[],
   completedNewEncounterCount:0,productionCyclesResolved:0});
 }
@@ -376,6 +381,7 @@ function validateKingdomMap(map){
     !Number.isInteger(map.battlePointsEarned)||map.battlePointsEarned<0||
     !Array.isArray(map.creditedBattleEncounterIds))return false;
  if(map.day!=null&&(!Number.isSafeInteger(map.day)||map.day<1))return false;
+ if(!validIndustry(map.industry))return false;
  if(map.outposts!=null&&(!Array.isArray(map.outposts)||
    !map.outposts.every(p=>p&&typeof p.id==='string'&&
      /^-?[0-9]+,-?[0-9]+$/.test(p.id)&&Array.isArray(p.cells)&&
