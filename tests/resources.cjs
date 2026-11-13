@@ -84,6 +84,60 @@ class MemoryStorage {
   assert.strictEqual(persistence.readRun(storage).gold, 137, 'Gold must round-trip through save persistence');
   assert.strictEqual(persistence.readRun(storage).supplies, 4, 'Supplies must round-trip through save persistence');
 
+  // Minimal weekly production regression: reuse the Resources persistence suite,
+  // rather than create a second standalone economy testing framework.
+  const kingdom=await import(pathToFileURL(path.join(game,'js/kingdom-map-core.mjs')).href);
+  const industry=await import(pathToFileURL(path.join(game,'js/kingdom-industry-core.mjs')).href);
+  const industryRun=persistence.createRun({now:3000,id:'production-weekly-fixture'});
+  let map=kingdom.createKingdomMap(industryRun,6500,'humans');
+  assert(industry.candidateCells(map).length>0,
+    'large owned early-game territory must have at least one empty biome-compatible tile');
+  assert.equal(map.industry.buildings.length,0,'new map has no industry before first weekly boundary');
+  for(let n=2;n<=6;n++)map=kingdom.advanceDay(map,'industry-week:day'+n);
+  assert.equal(map.industry.buildings.length,0,'days before 7 must not construct');
+  map=kingdom.advanceDay(map,'industry-week:day7');
+  assert.equal(map.industry.buildings.length,1,'week 1 should found one site');
+  const site=map.industry.buildings[0];
+  assert.equal(site.builtWeek,1);
+  assert.equal(industry.industrySprite(site,1),'assets/kingdom-production/construction_site.png');
+  const expected=industry.industryYield(site,map);
+  assert([5,1].includes(industry.industryBase(expected.kind)));
+  assert(!industry.candidateCells(map).some(candidate=>candidate.id===site.id),
+    'industry cannot occupy an already occupied or existing road tile');
+  assert.deepStrictEqual(kingdom.advanceDay(map,'industry-week:day7'),map,
+    'repeated action ID may not advance day or create a duplicate site');
+  for(let n=8;n<=14;n++)map=kingdom.advanceDay(map,'industry-week:day'+n);
+  assert.equal(map.industry.buildings.length,2,'week 2 adds only one more construction');
+  assert.equal(map.industry.accruedGold,expected.kind==='gold'?expected.amount:0);
+  assert.equal(map.industry.accruedSupplies,expected.kind==='supplies'?expected.amount:0);
+  const industryStorage=new MemoryStorage();
+  const incomeRun=persistence.writeRun({...industryRun,kingdomMap:map},industryStorage,3100);
+  assert.equal(incomeRun.gold,industryRun.gold+map.industry.accruedGold);
+  assert.equal(incomeRun.supplies,industryRun.supplies+map.industry.accruedSupplies);
+  const paidAgain=persistence.writeRun(persistence.readRun(industryStorage),industryStorage,3200);
+  assert.equal(paidAgain.gold,incomeRun.gold,'reloading same week never doubles Gold');
+  assert.equal(paidAgain.supplies,incomeRun.supplies,'reloading same week never doubles Supplies');
+  const upgraded=kingdom.updatePeak(map,2000);
+  assert.equal(industry.industryLevel(upgraded),5,'castle level is the production multiplier');
+  assert.equal(industry.industryYield(site,upgraded).amount,industry.industryBase(expected.kind)*5);
+  let improved=upgraded;
+  for(let n=15;n<=21;n++)improved=kingdom.advanceDay(improved,'industry-week:day'+n);
+  const extras=improved.industry.buildings.slice(0,2).reduce((acc,b)=>{
+    const yieldNow=industry.industryYield(b,improved);
+    acc[yieldNow.kind]+=yieldNow.amount;return acc;
+  },{gold:0,supplies:0});
+  assert.equal(improved.industry.accruedGold-map.industry.accruedGold,extras.gold);
+  assert.equal(improved.industry.accruedSupplies-map.industry.accruedSupplies,extras.supplies);
+  const replay=persistence.writeRun({...paidAgain,kingdomMap:improved},industryStorage,3300);
+  assert.equal(replay.gold,incomeRun.gold+extras.gold,'additional week paid once');
+  assert.equal(replay.supplies,incomeRun.supplies+extras.supplies,'additional Supplies paid once');
+  const prior={...map,day:70};
+  delete prior.industry;
+  const migrated=kingdom.migrateKingdomMap(prior,industryRun);
+  assert.equal(migrated.industry.processedWeek,10,'old save migrates without historical industry');
+  assert.deepStrictEqual(migrated.industry.buildings,[],'old save gains no backdated buildings');
+  assert.equal(migrated.industry.accruedGold,0,'old save gains no retroactive Gold');
+
   const travelSource = fs.readFileSync(path.join(game, 'js/travel-choice-app.mjs'), 'utf8');
   const travelCoreSource = fs.readFileSync(path.join(game, 'js/travel-choice-core.mjs'), 'utf8');
   const appSource = fs.readFileSync(path.join(game, 'js/resources-app.mjs'), 'utf8');
