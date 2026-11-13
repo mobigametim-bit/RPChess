@@ -1,7 +1,7 @@
 /* Atlas Lab v6 world config (4) + visual preset (5), 2026-11-09.
  * Visual settings are author-chosen. Simulation economy is not live yet.
  * Biome order: forest, mountain, hills, plains, marsh, wasteland.
- * All visible terrain stamps, road/river strokes and decorative assets are fully opaque.
+ * Stamps, roads and landmarks are opaque; base watercolor overlay is intentionally translucent.
  * Fog and political tint remain intentionally translucent for gameplay readability.
  * Race order matches race-assets.mjs RACE_TAGS exactly.
  */
@@ -14,14 +14,14 @@ const VISUAL=Object.freeze({
   "hillThreshold": 0.56,
   "forestThreshold": 0.44,
   "stampSpacing": 1.55,
-  "forestDensity": 2.4,
+  "forestDensity": 3,
   "mountainDensity": 1.4,
   "hillDensity": 0.9,
   "plainDensity": 0.35,
-  "stampSize": 2.2,
-  "sizeVariation": 1.05,
+  "stampSize": 2,
+  "sizeVariation": 0.5,
   "stampOpacity": 1,
-  "baseOpacity": 1,
+  "baseOpacity": 0.18,
   "baseSpacing": 6.5,
   "roadSpacing": 5,
   "roadWidth": 1.65,
@@ -30,7 +30,6 @@ const VISUAL=Object.freeze({
   "riverSpacing": 6,
   "riverWidth": 1.2,
   "riverCurve": 1.1,
-  "riverOpacity": 1,
   "marshDensity": 2.05,
   "wastelandDensity": 1.75,
   "marshWetThreshold": 0.42,
@@ -40,13 +39,13 @@ const VISUAL=Object.freeze({
   "landmarkSize": 0.75,
   "landmarkOpacity": 1,
   "fogOpacity": 0.98,
-  "fogRadius": 1.1,
+  "fogRadius": 2,
   "fogInner": 0.32,
-  "fogInkOpacity": 0.2
+  "fogInkOpacity": 0.2,
+  "riverOpacity": 1
 });
 // Atlas editor's approved view; runtime worlds retain their individual run seed.
-const ATLAS_VIEW=Object.freeze({seed:'rpchess-kingdom-2026',centerX:1.1397535385320217,
- centerY:0.8734816261574075,zoom:117});
+const ATLAS_VIEW=Object.freeze({"seed":"rpchess-kingdom-2026","centerX":3.5379944557118823,"centerY":0.736819093752616,"zoom":57});
 const BIOMES=Object.freeze(['forest','mountain','hills','plains','marsh','wasteland']);
 const RACE_TAGS_ORDER=Object.freeze(['humans','elves','orcs','undead','dark_elves','dwarves','demons','angels','dragonborn','beastfolk','constructs','animals','fae','goblins']);
 const ENCOUNTER_TYPES=Object.freeze(['battle','skirmish','caravan','settlement','event','puzzle']);
