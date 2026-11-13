@@ -1094,7 +1094,9 @@ async function assertTileImage(page,cellId){
    const fx=completedTile.locator('.km-resource-burst');
    assert.equal(await fx.count(),0,
      'a previously paid walking Supply cannot be presented again as an encounter reward');
-   await completedTile.click({position:{x:17,y:17}});
+   // At the approved 57px tile size, a 17px inset overlaps the King's drag handle.
+   // Click the accessible corner of the tile to exercise the actual pointer route.
+   await completedTile.click({position:{x:4,y:4}});
    assert.equal(await page.locator('[data-kingdom-route-card]').count(),1,
      'clicking a cleared location again never reverts to the empty inspector');
    assert.equal(await page.locator('[data-kingdom-route-card]').getAttribute('data-kingdom-route-status'),
