@@ -1288,7 +1288,11 @@ async function assertTileImage(page,cellId){
   },key);
   // The first outpost at 4,0 already annexes nearby cardinal cells.
   // Use a safe diagonal-distance site outside its three-cell footprint.
+  // Recent pointer drags temporarily suppress cell clicks for 650ms; honor
+  // that gameplay safety contract instead of racing an ignored test click.
+  await walking.waitForTimeout(690);
   await walking.locator('[data-kingdom-cell="4,2"]').dispatchEvent('click');
+  await walking.locator('[data-kingdom-cell="4,2"].km-cell--selected').waitFor({state:'attached'});
   const earnButton=walking.locator('[data-kingdom-earn-shards]');
   assert(await earnButton.isVisible(),'insufficient shards offer the Earn in Arena button');
   assert.equal(await earnButton.locator('img.km-shard-inline').getAttribute('src'),
