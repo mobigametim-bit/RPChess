@@ -3,6 +3,7 @@
  * No engine combat outcome, run calendar or resource transaction belongs here.
  */
 import {terrainAt} from './kingdom-parchment-core.mjs';
+import {nearestNaturalPaths} from './kingdom-geography.mjs';
 import {VISUAL,BIOMES,RACE_TAGS_ORDER,ENCOUNTER_TYPES,DENSITY,DENSITY_MULTIPLIER,ENCOUNTER_MIN_SPACING,EVENT_NEARBY_MAX,WORLD_SETTINGS,SETTLEMENT_PROBABILITY_MULTIPLIER,TYPE_WEIGHTS,RACE_WEIGHTS} from './kingdom-world-config.mjs?v=20261109-kingdom-feedback1';
 
 const LANDMARKS=Object.freeze('01_broken_wall 02_stone_circle 03_three_menhirs 04_watchtower 05_abandoned_hut 06_wood_bridge 07_stone_bridge 08_burial_mound 09_dead_tree 10_ruin_arch 11_fallen_column 12_wayside_shrine 13_obelisk 14_pond 15_notable_grove 16_ruined_gate'.split(' '));
@@ -63,13 +64,18 @@ function biomeAt(seed,x,y){
  if(terrain.kind==='forest')return 'forest';
  return 'plains';
 }
-function landmarkAt(seed,x,y,{landmarks=WORLD_SETTINGS.landmarks}={}){
+function landmarkAt(seed,x,y,{landmarks=WORLD_SETTINGS.landmarks,generatorVersion=6}={}){
  if(!landmarks)return null;
  const chance=clamp(VISUAL.landmarkDensity*.18,0,.22);
- return atlasRandom(seed,x,y,'encounter-landmark-prob')<chance?
-  LANDMARKS[Math.floor(atlasRandom(seed,x,y,'encounter-landmark-id')*LANDMARKS.length)]:null;
+ if(atlasRandom(seed,x,y,'encounter-landmark-prob')>=chance)return null;
+  const initial=Math.floor(atlasRandom(seed,x,y,'encounter-landmark-id')*LANDMARKS.length);
+  if(generatorVersion<6)return LANDMARKS[initial];
+  // A map bridge must genuinely sit near water. The graphic uses this identity.
+  const nearWater=nearestNaturalPaths(seed,x+.5,y+.5).river;
+  const valid=LANDMARKS.filter(name=>nearWater||!['06_wood_bridge','07_stone_bridge'].includes(name));
+  return valid[initial%valid.length];
 }
-function naturalPathAt(seed,x,y,{roads=WORLD_SETTINGS.roads}={}){
+function legacyNaturalPathAt(seed,x,y,{roads=WORLD_SETTINGS.roads}={}){
  if(!roads)return {road:false,river:false};
  const roadStep=Math.max(1,VISUAL.roadSpacing);
  const roadDrift=atlasRandom(seed,1,1,'road')*roadStep*(8/12);
@@ -82,6 +88,11 @@ function naturalPathAt(seed,x,y,{roads=WORLD_SETTINGS.roads}={}){
  const riverX=riverIndex*riverStep+riverDrift+
   VISUAL.riverCurve*(Math.sin(y*.21+riverIndex*1.7)*2.15+Math.sin(y*.79+riverIndex*.3)*.55);
  return {road:Math.abs(roadY-y)<.8,river:Math.abs(riverX-x)<.7};
+}
+function naturalPathAt(seed,x,y,{roads=WORLD_SETTINGS.roads,generatorVersion=6}={}){
+ if(!roads)return {road:false,river:false};
+ if(generatorVersion<6)return legacyNaturalPathAt(seed,x,y,{roads});
+ return nearestNaturalPaths(seed,x,y);
 }
 function normalized(row){
  const total=row.reduce((sum,v)=>sum+Math.max(0,Number(v)||0),0);
@@ -181,10 +192,10 @@ function worldAt(seed,x,y,{allowSkirmish=true,spacing=ENCOUNTER_MIN_SPACING,
  settlementProbabilityMultiplier=SETTLEMENT_PROBABILITY_MULTIPLIER,
  biomeInfluence=WORLD_SETTINGS.biomeInfluence,
  landmarkInfluence=WORLD_SETTINGS.landmarkInfluence,roadInfluence=WORLD_SETTINGS.roadInfluence,
- landmarks=WORLD_SETTINGS.landmarks,roads=WORLD_SETTINGS.roads}={}){
+ landmarks=WORLD_SETTINGS.landmarks,roads=WORLD_SETTINGS.roads,generatorVersion=6}={}){
  const biome=biomeAt(seed,x,y);
- const landmark=landmarkAt(seed,x,y,{landmarks});
- const paths=naturalPathAt(seed,x+.5,y+.5,{roads});
+ const landmark=landmarkAt(seed,x,y,{landmarks,generatorVersion});
+ const paths=naturalPathAt(seed,x+.5,y+.5,{roads,generatorVersion});
  if(!encounterPresent(seed,x,y,{spacing,eventNearbyMax,densityMultiplier,biomeDensity}))
   return {biome,landmark,paths,type:null,raceTag:null};
  const idx=BIOMES.indexOf(biome),site=MODIFIERS[landmark]||null;
