@@ -124,12 +124,30 @@ class MemoryStorage {
   assert.equal(map.industry.accruedGold,expected.kind==='gold'?expected.amount:0);
   assert.equal(map.industry.accruedSupplies,expected.kind==='supplies'?expected.amount:0);
   const industryStorage=new MemoryStorage();
-  const incomeRun=persistence.writeRun({...industryRun,kingdomMap:map},industryStorage,3100);
+  const waiting=persistence.writeRun({...industryRun,kingdomMap:map},industryStorage,3100);
+  assert.equal(waiting.gold,industryRun.gold,'weekly building income is NOT paid on save');
+  assert.equal(waiting.supplies,industryRun.supplies,'weekly Supplies wait for player collection');
+  assert.deepStrictEqual(industry.industryPending(map,site.id),expected,
+    'newly completed production shows a collectible resource amount');
+  const waitingAgain=persistence.writeRun(persistence.readRun(industryStorage),industryStorage,3200);
+  assert.equal(waitingAgain.gold,waiting.gold,'reload cannot auto-credit pending resources');
+  assert.deepStrictEqual(industry.industryPending(waitingAgain.kingdomMap,site.id),expected,
+    'unclaimed resource survives reload');
+  const collected=industry.collectIndustry(waitingAgain.kingdomMap,site.id);
+  assert(collected.ok,'one click claims the finished building payout');
+  assert.equal(collected.amount,expected.amount);
+  const incomeRun=persistence.writeRun({...waitingAgain,kingdomMap:collected.map,
+    ...(collected.kind==='gold'?{gold:waitingAgain.gold+collected.amount}:
+      {supplies:waitingAgain.supplies+collected.amount})},industryStorage,3250);
   assert.equal(incomeRun.gold,industryRun.gold+map.industry.accruedGold);
   assert.equal(incomeRun.supplies,industryRun.supplies+map.industry.accruedSupplies);
-  const paidAgain=persistence.writeRun(persistence.readRun(industryStorage),industryStorage,3200);
-  assert.equal(paidAgain.gold,incomeRun.gold,'reloading same week never doubles Gold');
-  assert.equal(paidAgain.supplies,incomeRun.supplies,'reloading same week never doubles Supplies');
+  assert.equal(industry.industryPending(incomeRun.kingdomMap,site.id),null,
+    'collected marker disappears after one click');
+  assert.equal(industry.collectIndustry(incomeRun.kingdomMap,site.id).ok,false,
+    'clicking the same building twice never produces two rewards');
+  const paidAgain=persistence.writeRun(persistence.readRun(industryStorage),industryStorage,3300);
+  assert.equal(paidAgain.gold,incomeRun.gold,'reloading after pickup does not duplicate Gold');
+  assert.equal(paidAgain.supplies,incomeRun.supplies,'reloading after pickup does not duplicate Supplies');
   const upgraded=kingdom.updatePeak(paidAgain.kingdomMap,2000);
   assert.equal(industry.industryLevel(upgraded),5,'castle level is the production multiplier');
   assert.equal(industry.industryYield(site,upgraded).amount,industry.industryBase(expected.kind)*5);
@@ -141,9 +159,31 @@ class MemoryStorage {
   },{gold:0,supplies:0});
   assert.equal(improved.industry.accruedGold-map.industry.accruedGold,extras.gold);
   assert.equal(improved.industry.accruedSupplies-map.industry.accruedSupplies,extras.supplies);
-  const replay=persistence.writeRun({...paidAgain,kingdomMap:improved},industryStorage,3300);
-  assert.equal(replay.gold,incomeRun.gold+extras.gold,'additional week paid once');
-  assert.equal(replay.supplies,incomeRun.supplies+extras.supplies,'additional Supplies paid once');
+  const beforeNextClick=persistence.writeRun({...paidAgain,kingdomMap:improved},industryStorage,3400);
+  assert.equal(beforeNextClick.gold,incomeRun.gold,'week 3 resources also wait for manual pickup');
+  assert.equal(beforeNextClick.supplies,incomeRun.supplies);
+  let claimedMap=beforeNextClick.kingdomMap,claimedGold=0,claimedSupplies=0;
+  for(const previousSite of improved.industry.buildings.slice(0,2)){
+    const result=industry.collectIndustry(claimedMap,previousSite.id);
+    assert(result.ok,'previously finished sites must become claimable each week');
+    claimedMap=result.map;
+    if(result.kind==='gold')claimedGold+=result.amount;
+    else claimedSupplies+=result.amount;
+  }
+  assert.deepStrictEqual({gold:claimedGold,supplies:claimedSupplies},extras);
+  const replay=persistence.writeRun({...beforeNextClick,kingdomMap:claimedMap,
+    gold:beforeNextClick.gold+claimedGold,
+    supplies:beforeNextClick.supplies+claimedSupplies},industryStorage,3500);
+  assert.equal(replay.gold,incomeRun.gold+extras.gold,'week 3 Gold paid on manual collection');
+  assert.equal(replay.supplies,incomeRun.supplies+extras.supplies,'week 3 Supplies paid on manual collection');
+  // Backward compatibility: preview saves from automatic payouts lack pending
+  // but already have a credited ledger; do not recreate those paid markers.
+  const legacyIndustry={...map.industry};
+  delete legacyIndustry.pending;
+  legacyIndustry.creditedGold=legacyIndustry.accruedGold;
+  legacyIndustry.creditedSupplies=legacyIndustry.accruedSupplies;
+  assert.equal(industry.industryPending({...map,industry:legacyIndustry},site.id),null,
+    'previously auto-paid preview income must not be claimable a second time');
   const prior={...map,day:70};
   delete prior.industry;
   const migrated=kingdom.migrateKingdomMap(prior,industryRun);
