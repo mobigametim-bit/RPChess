@@ -1,0 +1,3764 @@
+{
+  "count": 537,
+  "variants": [
+    {
+      "id": "E001.H33",
+      "sourceChoiceId": "E001.3",
+      "heroId": "hero.batu_cliff",
+      "heroName": "Бату Утёс",
+      "heroLine": "Здесь можно заставить местность драться за нас"
+    },
+    {
+      "id": "E002.H10",
+      "sourceChoiceId": "E002.4",
+      "heroId": "hero.orion_step",
+      "heroName": "Орион Шаг",
+      "heroLine": "Лучший путь — тот, который враг заметит слишком поздно"
+    },
+    {
+      "id": "E003.H07",
+      "sourceChoiceId": "E003.3",
+      "heroId": "hero.seraph_lyra",
+      "heroName": "Серафима Лира",
+      "heroLine": "Обряд ещё идёт. Просто его некому закончить"
+    },
+    {
+      "id": "E004.H05",
+      "sourceChoiceId": "E004.2",
+      "heroId": "hero.lady_sorn",
+      "heroName": "Леди Сорн",
+      "heroLine": "Говорят все. Решение уже принял один"
+    },
+    {
+      "id": "E005.H03",
+      "sourceChoiceId": "E005.3",
+      "heroId": "hero.brother_orell",
+      "heroName": "Брат Орелл",
+      "heroLine": "Лев на гербе лишний, воск свежий, а подпись поставлена рукой человека, который никогда не видел баронскую канцелярию"
+    },
+    {
+      "id": "E005.H06",
+      "sourceChoiceId": "E005.2",
+      "heroId": "hero.tomas_gate",
+      "heroName": "Томас Вратарь",
+      "heroLine": "Ворота без гарнизона — просто проход. Пошлина без приказа — просто грабёж с печатью"
+    },
+    {
+      "id": "E006.H20",
+      "sourceChoiceId": "E006.3",
+      "heroId": "hero.roan_stag",
+      "heroName": "Роан Олень",
+      "heroLine": "Я схожу вперёд. Если вернусь быстро — всё плохо. Если медленно — ещё хуже"
+    },
+    {
+      "id": "E007.H19",
+      "sourceChoiceId": "E007.2",
+      "heroId": "hero.briar_sister",
+      "heroName": "Сестра Терн",
+      "heroLine": "Формула приветствия изменилась всего на одно слово. Похоже, именно его от нас и ждут"
+    },
+    {
+      "id": "E008.H20",
+      "sourceChoiceId": "E008.2",
+      "heroId": "hero.roan_stag",
+      "heroName": "Роан Олень",
+      "heroLine": "Раненый зверь не бежит от погони. Он выбирает место для последнего прыжка"
+    },
+    {
+      "id": "E009.H14",
+      "sourceChoiceId": "E009.4",
+      "heroId": "hero.viola_mask",
+      "heroName": "Виола Маска",
+      "heroLine": "Вот здесь вы и попытались нас обмануть"
+    },
+    {
+      "id": "E010.H04",
+      "sourceChoiceId": "E010.3",
+      "heroId": "hero.vael_hammer",
+      "heroName": "Ваэль Молот",
+      "heroLine": "Если это вопрос чести, не будем заставлять их ждать ответа"
+    },
+    {
+      "id": "E011.H02",
+      "sourceChoiceId": "E011.4",
+      "heroId": "hero.mara_chain",
+      "heroName": "Мара Цепь",
+      "heroLine": "Не всякая помощь требует красивого приказа"
+    },
+    {
+      "id": "E012.H03",
+      "sourceChoiceId": "E012.2",
+      "heroId": "hero.brother_orell",
+      "heroName": "Брат Орелл",
+      "heroLine": "Озеро не предсказывает. Оно предлагает. Это разные вещи"
+    },
+    {
+      "id": "E013.H01",
+      "sourceChoiceId": "E013.2",
+      "heroId": "hero.aldric_wall",
+      "heroName": "Альдрик Стена",
+      "heroLine": "Если это должно ударить кого-то первым, пусть ударит меня"
+    },
+    {
+      "id": "E014.H14",
+      "sourceChoiceId": "E014.3",
+      "heroId": "hero.viola_mask",
+      "heroName": "Виола Маска",
+      "heroLine": "Если цена написана мелко, значит, именно её и нужно читать вслух"
+    },
+    {
+      "id": "E015.H33",
+      "sourceChoiceId": "E015.3",
+      "heroId": "hero.batu_cliff",
+      "heroName": "Бату Утёс",
+      "heroLine": "Не трогайте ничего. Особенно то, что выглядит безопасным"
+    },
+    {
+      "id": "E016.H28",
+      "sourceChoiceId": "E016.3",
+      "heroId": "hero.suri_ash",
+      "heroName": "Сури Пепел",
+      "heroLine": "Я дам ему причину смотреть туда ещё внимательнее. Цепи снимайте, когда они отвернутся"
+    },
+    {
+      "id": "E017.H26",
+      "sourceChoiceId": "E017.3",
+      "heroId": "hero.velka_urn",
+      "heroName": "Велька Урна",
+      "heroLine": "Он читает знаки правильно. Только вывод каждый раз выбирает тот, за который ему выгоднее заплатить"
+    },
+    {
+      "id": "E018.H31",
+      "sourceChoiceId": "E018.3",
+      "heroId": "hero.temur_wind",
+      "heroName": "Темур Ветер",
+      "heroLine": "Они хотят идти по нашему следу. Хорошо. Оставим им след, который приведёт совсем не туда"
+    },
+    {
+      "id": "E019.H26",
+      "sourceChoiceId": "E019.2",
+      "heroId": "hero.velka_urn",
+      "heroName": "Велька Урна",
+      "heroLine": "Под полотном что-то держится за незавершённый обряд. Я могу оборвать эту связь без лишнего шума"
+    },
+    {
+      "id": "E020.H29",
+      "sourceChoiceId": "E020.3",
+      "heroId": "hero.empress_nahla",
+      "heroName": "Императрица Нахла",
+      "heroLine": "Если уж мёртвые требуют королевский документ, пусть хотя бы форма будет безупречной"
+    },
+    {
+      "id": "E021.H26",
+      "sourceChoiceId": "E021.3",
+      "heroId": "hero.velka_urn",
+      "heroName": "Велька Урна",
+      "heroLine": "Здесь просили не силы. Здесь просили свидетеля"
+    },
+    {
+      "id": "E022.H07",
+      "sourceChoiceId": "E022.3",
+      "heroId": "hero.seraph_lyra",
+      "heroName": "Серафима Лира",
+      "heroLine": "Такие вещи опасны не потому, что мёртвые сильны. А потому, что живые забыли правильные слова"
+    },
+    {
+      "id": "E023.H26",
+      "sourceChoiceId": "E023.3",
+      "heroId": "hero.velka_urn",
+      "heroName": "Велька Урна",
+      "heroLine": "Проклятие держится не на костях, а на том, кому позволили назвать их короной. Разорвём именно это"
+    },
+    {
+      "id": "E024.H31",
+      "sourceChoiceId": "E024.3",
+      "heroId": "hero.temur_wind",
+      "heroName": "Темур Ветер",
+      "heroLine": "Успею перехватить их до поворота. После поворота будет уже бой"
+    },
+    {
+      "id": "E025.H20",
+      "sourceChoiceId": "E025.3",
+      "heroId": "hero.roan_stag",
+      "heroName": "Роан Олень",
+      "heroLine": "Есть путь быстрее. Хорошим он от этого не становится"
+    },
+    {
+      "id": "E026.H08",
+      "sourceChoiceId": "E026.3",
+      "heroId": "hero.ivar_lens",
+      "heroName": "Ивар Линза",
+      "heroLine": "Опаснее не то, что блестит. Опаснее то, на чём оно держится"
+    },
+    {
+      "id": "E027.H29",
+      "sourceChoiceId": "E027.3",
+      "heroId": "hero.empress_nahla",
+      "heroName": "Императрица Нахла",
+      "heroLine": "Я знаю, чего они хотят. Осталось решить, сколько они готовы за это отдать"
+    },
+    {
+      "id": "E028.H14",
+      "sourceChoiceId": "E028.4",
+      "heroId": "hero.viola_mask",
+      "heroName": "Виола Маска",
+      "heroLine": "Они торгуются не за вещь. Они торгуются за право показать, что могут заплатить больше. Это легко испортить"
+    },
+    {
+      "id": "E029.H10",
+      "sourceChoiceId": "E029.2",
+      "heroId": "hero.orion_step",
+      "heroName": "Орион Шаг",
+      "heroLine": "Шёлк выдержит вес, если не заставлять его держать ещё и страх. Я проверю переправу первым"
+    },
+    {
+      "id": "E030.H24",
+      "sourceChoiceId": "E030.3",
+      "heroId": "hero.ysra_moss",
+      "heroName": "Исра Мох",
+      "heroLine": "Им нужен не победитель. Им нужен кто-то, кого можно будет обвинить после"
+    },
+    {
+      "id": "E031.H01",
+      "sourceChoiceId": "E031.2",
+      "heroId": "hero.aldric_wall",
+      "heroName": "Альдрик Стена",
+      "heroLine": "Сначала удержим гору. Потом будем спасать людей"
+    },
+    {
+      "id": "E032.H01",
+      "sourceChoiceId": "E032.2",
+      "heroId": "hero.aldric_wall",
+      "heroName": "Альдрик Стена",
+      "heroLine": "Наконец-то условие, в котором никто не прячет мелкий шрифт"
+    },
+    {
+      "id": "E032.H22",
+      "sourceChoiceId": "E032.3",
+      "heroId": "hero.puck_ember",
+      "heroName": "Пак Уголёк",
+      "heroLine": "Они соревнуются в силе. Значит, никто не будет ждать хитрости"
+    },
+    {
+      "id": "E033.H10",
+      "sourceChoiceId": "E033.3",
+      "heroId": "hero.orion_step",
+      "heroName": "Орион Шаг",
+      "heroLine": "Обоз слишком громкий, чтобы замечать засаду вовремя. Я пройду дорогу раньше него и вернусь с ответом"
+    },
+    {
+      "id": "E034.H07",
+      "sourceChoiceId": "E034.2",
+      "heroId": "hero.seraph_lyra",
+      "heroName": "Серафима Лира",
+      "heroLine": "Это не пароль. Это порядок действий. Ошибёшься в одном знаке — сейф решит, что его уже вскрывают"
+    },
+    {
+      "id": "E034.H08",
+      "sourceChoiceId": "E034.3",
+      "heroId": "hero.ivar_lens",
+      "heroName": "Ивар Линза",
+      "heroLine": "Если не торопить железо, оно обычно само рассказывает, что с ним не так"
+    },
+    {
+      "id": "E035.H08",
+      "sourceChoiceId": "E035.3",
+      "heroId": "hero.ivar_lens",
+      "heroName": "Ивар Линза",
+      "heroLine": "Силовой узел не сломан — его заставили работать против самого себя. Сначала снимем нагрузку, потом полезем внутрь"
+    },
+    {
+      "id": "E036.H31",
+      "sourceChoiceId": "E036.3",
+      "heroId": "hero.temur_wind",
+      "heroName": "Темур Ветер",
+      "heroLine": "Банда ещё на марше. Если перехватить её до теснины, это будет разговор. После теснины — уже бой"
+    },
+    {
+      "id": "E037.H03",
+      "sourceChoiceId": "E037.2",
+      "heroId": "hero.brother_orell",
+      "heroName": "Брат Орелл",
+      "heroLine": "Символ построен на трёх именах. Разрушить нужно среднее — остальные тогда рассыплются сами"
+    },
+    {
+      "id": "E038.H14",
+      "sourceChoiceId": "E038.4",
+      "heroId": "hero.viola_mask",
+      "heroName": "Виола Маска",
+      "heroLine": "Желание уже записано против нас. Я перепишу условия так, чтобы продавцу впервые пришлось читать собственный договор"
+    },
+    {
+      "id": "E039.H03",
+      "sourceChoiceId": "E039.3",
+      "heroId": "hero.brother_orell",
+      "heroName": "Брат Орелл",
+      "heroLine": "Она держит не тело. Она держит обещание. Если переписать того, кому оно дано, круг перестанет понимать, кого удерживать"
+    },
+    {
+      "id": "E040.H01",
+      "sourceChoiceId": "E040.3",
+      "heroId": "hero.aldric_wall",
+      "heroName": "Альдрик Стена",
+      "heroLine": "Угли опасны, пока каждый идёт сам по себе. Под щитами мы превратим переход в одну короткую линию"
+    },
+    {
+      "id": "E041.H17",
+      "sourceChoiceId": "E041.3",
+      "heroId": "hero.old_marin",
+      "heroName": "Старый Марин",
+      "heroLine": "Ритм повторяется. Значит, перед нами не чудо — перед нами правило"
+    },
+    {
+      "id": "E042.H14",
+      "sourceChoiceId": "E042.3",
+      "heroId": "hero.viola_mask",
+      "heroName": "Виола Маска",
+      "heroLine": "Он забрал право толковать условия себе. Значит, мы начнём с того, что заберём это право обратно"
+    },
+    {
+      "id": "E043.H17",
+      "sourceChoiceId": "E043.4",
+      "heroId": "hero.old_marin",
+      "heroName": "Старый Марин",
+      "heroLine": "Печать света не погасла — её разомкнули. Если вернуть последний знак на место, крыло снова будет защищено"
+    },
+    {
+      "id": "E044.H05",
+      "sourceChoiceId": "E044.3",
+      "heroId": "hero.lady_sorn",
+      "heroName": "Леди Сорн",
+      "heroLine": "Весы здесь давно наклонены. Я могу заставить суд хотя бы услышать то, что он уже решил не замечать"
+    },
+    {
+      "id": "E045.H07",
+      "sourceChoiceId": "E045.2",
+      "heroId": "hero.seraph_lyra",
+      "heroName": "Серафима Лира",
+      "heroLine": "Колокол ждёт не силы, а правильной последовательности. Один неверный жест — и он услышит совсем другую молитву"
+    },
+    {
+      "id": "E046.H04",
+      "sourceChoiceId": "E046.3",
+      "heroId": "hero.vael_hammer",
+      "heroName": "Ваэль Молот",
+      "heroLine": "Если страж хочет поединка за звезду, я приму его правила. Но место и дистанцию выберу сам"
+    },
+    {
+      "id": "E047.H17",
+      "sourceChoiceId": "E047.3",
+      "heroId": "hero.old_marin",
+      "heroName": "Старый Марин",
+      "heroLine": "Один голос в хоре повторяет ноты слишком правильно. Найдём его — и поймём, что здесь подменили"
+    },
+    {
+      "id": "E048.H14",
+      "sourceChoiceId": "E048.3",
+      "heroId": "hero.viola_mask",
+      "heroName": "Виола Маска",
+      "heroLine": "Хорошая сделка. Особенно для того, кто её придумал"
+    },
+    {
+      "id": "E049.H20",
+      "sourceChoiceId": "E049.2",
+      "heroId": "hero.roan_stag",
+      "heroName": "Роан Олень",
+      "heroLine": "Дым закрывает перевал, но не следы под ногами. Я узнаю, кто прошёл здесь до пожара"
+    },
+    {
+      "id": "E050.H01",
+      "sourceChoiceId": "E050.2",
+      "heroId": "hero.aldric_wall",
+      "heroName": "Альдрик Стена",
+      "heroLine": "Выдержим. Вопрос только — сколько раз"
+    },
+    {
+      "id": "E051.H14",
+      "sourceChoiceId": "E051.3",
+      "heroId": "hero.viola_mask",
+      "heroName": "Виола Маска",
+      "heroLine": "Золото оставим на потом. Сначала решим, что именно вы продаёте"
+    },
+    {
+      "id": "E052.H04",
+      "sourceChoiceId": "E052.3",
+      "heroId": "hero.vael_hammer",
+      "heroName": "Ваэль Молот",
+      "heroLine": "Клятва требует честного поединка. Значит, победить нужно так, чтобы даже проигравший не смог назвать это обманом"
+    },
+    {
+      "id": "E053.H29",
+      "sourceChoiceId": "E053.4",
+      "heroId": "hero.empress_nahla",
+      "heroName": "Императрица Нахла",
+      "heroLine": "Справедливую долю обычно не приходится пересчитывать четыре раза. Давайте начнём с первой цифры"
+    },
+    {
+      "id": "E054.H03",
+      "sourceChoiceId": "E054.4",
+      "heroId": "hero.brother_orell",
+      "heroName": "Брат Орелл",
+      "heroLine": "Язык старый. Намерение — вполне современное"
+    },
+    {
+      "id": "E055.H24",
+      "sourceChoiceId": "E055.3",
+      "heroId": "hero.ysra_moss",
+      "heroName": "Исра Мох",
+      "heroLine": "Нас пытаются поторопить. Значит, время сейчас на нашей стороне"
+    },
+    {
+      "id": "E056.H20",
+      "sourceChoiceId": "E056.2",
+      "heroId": "hero.roan_stag",
+      "heroName": "Роан Олень",
+      "heroLine": "Свежий. Они ещё не знают, что мы уже рядом"
+    },
+    {
+      "id": "E057.H04",
+      "sourceChoiceId": "E057.3",
+      "heroId": "hero.vael_hammer",
+      "heroName": "Ваэль Молот",
+      "heroLine": "Один против одного? Наконец кто-то предлагает честную глупость"
+    },
+    {
+      "id": "E058.H21",
+      "sourceChoiceId": "E058.4",
+      "heroId": "hero.maeve_root",
+      "heroName": "Мейв Корень",
+      "heroLine": "Пусть идут. Только пусть идут туда, куда мы им оставим дорогу"
+    },
+    {
+      "id": "E059.H19",
+      "sourceChoiceId": "E059.3",
+      "heroId": "hero.briar_sister",
+      "heroName": "Сестра Терн",
+      "heroLine": "Редкий случай: легенда врёт меньше, чем продавец"
+    },
+    {
+      "id": "E060.H20",
+      "sourceChoiceId": "E060.3",
+      "heroId": "hero.roan_stag",
+      "heroName": "Роан Олень",
+      "heroLine": "Следов слишком много, чтобы выбирать самый заметный. Сначала отделим тех, кто шёл, от тех, кто хотел, чтобы его нашли"
+    },
+    {
+      "id": "E061.H08",
+      "sourceChoiceId": "E061.3",
+      "heroId": "hero.ivar_lens",
+      "heroName": "Ивар Линза",
+      "heroLine": "Сломано не там, где шумит"
+    },
+    {
+      "id": "E062.H03",
+      "sourceChoiceId": "E062.3",
+      "heroId": "hero.brother_orell",
+      "heroName": "Брат Орелл",
+      "heroLine": "Командная руна всё ещё отдаёт приказ. Сначала выясним, кому именно она считает себя обязанной подчиняться"
+    },
+    {
+      "id": "E063.H08",
+      "sourceChoiceId": "E063.3",
+      "heroId": "hero.ivar_lens",
+      "heroName": "Ивар Линза",
+      "heroLine": "Голем уже разваливается. Самая опасная деталь сейчас — та, которую кто-нибудь решит вытащить первой"
+    },
+    {
+      "id": "E064.H03",
+      "sourceChoiceId": "E064.2",
+      "heroId": "hero.brother_orell",
+      "heroName": "Брат Орелл",
+      "heroLine": "Читается справа налево. А предупреждение — наоборот"
+    },
+    {
+      "id": "E064.H33",
+      "sourceChoiceId": "E064.3",
+      "heroId": "hero.batu_cliff",
+      "heroName": "Бату Утёс",
+      "heroLine": "Переход есть. Просто сейчас он об этом не знает"
+    },
+    {
+      "id": "E065.H08",
+      "sourceChoiceId": "E065.3",
+      "heroId": "hero.ivar_lens",
+      "heroName": "Ивар Линза",
+      "heroLine": "Станки не сошли с ума одновременно. Один из них задаёт остальным неправильный ритм — найдём первый"
+    },
+    {
+      "id": "E066.H07",
+      "sourceChoiceId": "E066.3",
+      "heroId": "hero.seraph_lyra",
+      "heroName": "Серафима Лира",
+      "heroLine": "Память не разрушена. Она ходит по кругу. Нужно дать ей точку, из которой можно выйти"
+    },
+    {
+      "id": "E067.H20",
+      "sourceChoiceId": "E067.3",
+      "heroId": "hero.roan_stag",
+      "heroName": "Роан Олень",
+      "heroLine": "Кто-то прошёл здесь раньше нас. И очень хотел, чтобы мы этого не заметили"
+    },
+    {
+      "id": "E068.H01",
+      "sourceChoiceId": "E068.3",
+      "heroId": "hero.aldric_wall",
+      "heroName": "Альдрик Стена",
+      "heroLine": "Медведя не нужно побеждать. Нужно убедить его, что дальше щита ничего интересного нет"
+    },
+    {
+      "id": "E069.H03",
+      "sourceChoiceId": "E069.3",
+      "heroId": "hero.brother_orell",
+      "heroName": "Брат Орелл",
+      "heroLine": "Это не украшение. Кто-то очень хотел, чтобы сюда пришёл именно понимающий"
+    },
+    {
+      "id": "E070.H10",
+      "sourceChoiceId": "E070.3",
+      "heroId": "hero.orion_step",
+      "heroName": "Орион Шаг",
+      "heroLine": "Они будут смотреть сюда. Значит, мы пойдём там"
+    },
+    {
+      "id": "E071.H31",
+      "sourceChoiceId": "E071.3",
+      "heroId": "hero.temur_wind",
+      "heroName": "Темур Ветер",
+      "heroLine": "Главное — не смотреть туда, куда можно упасть"
+    },
+    {
+      "id": "E072.H18",
+      "sourceChoiceId": "E072.3",
+      "heroId": "hero.elio_silk",
+      "heroName": "Элио Шёлк",
+      "heroLine": "Там тесно. Значит, большим неприятностям тоже будет тесно"
+    },
+    {
+      "id": "E073.H19",
+      "sourceChoiceId": "E073.3",
+      "heroId": "hero.briar_sister",
+      "heroName": "Сестра Терн",
+      "heroLine": "Грибы отвечают на старый ритуал. Повторим его точно и посмотрим, кого они считают гостями"
+    },
+    {
+      "id": "E074.H01",
+      "sourceChoiceId": "E074.3",
+      "heroId": "hero.aldric_wall",
+      "heroName": "Альдрик Стена",
+      "heroLine": "Страж маленький только издалека. Я приму первый натиск — остальные увидят, как он атакует"
+    },
+    {
+      "id": "E075.H10",
+      "sourceChoiceId": "E075.3",
+      "heroId": "hero.orion_step",
+      "heroName": "Орион Шаг",
+      "heroLine": "Бабочка ведёт слишком уверенно для случайного полёта. Я пойду параллельно и отмечу, где она действительно меняет маршрут"
+    },
+    {
+      "id": "E076.H19",
+      "sourceChoiceId": "E076.3",
+      "heroId": "hero.briar_sister",
+      "heroName": "Сестра Терн",
+      "heroLine": "Это отвечает не на вопрос. Это отвечает на то, чего мы боимся услышать"
+    },
+    {
+      "id": "E077.H19",
+      "sourceChoiceId": "E077.3",
+      "heroId": "hero.briar_sister",
+      "heroName": "Сестра Терн",
+      "heroLine": "Вот эти растут к солнцу. Остальные — к теплу. Ночью это будет существенная разница"
+    },
+    {
+      "id": "E078.H35",
+      "sourceChoiceId": "E078.3",
+      "heroId": "hero.khulan_star",
+      "heroName": "Хулан Звезда",
+      "heroLine": "На клятву лучше отвечать клятвой. Но своей — чтобы никто не решил за нас, что именно мы пообещали"
+    },
+    {
+      "id": "E079.H14",
+      "sourceChoiceId": "E079.4",
+      "heroId": "hero.viola_mask",
+      "heroName": "Виола Маска",
+      "heroLine": "Набор выгодный только потому, что продавец перечисляет полезное и молчит о лишнем. Сейчас посчитаем наоборот"
+    },
+    {
+      "id": "E080.H33",
+      "sourceChoiceId": "E080.2",
+      "heroId": "hero.batu_cliff",
+      "heroName": "Бату Утёс",
+      "heroLine": "Перейти можно. Сначала я превращу эту кучу в конструкцию, которая сама об этом знает"
+    },
+    {
+      "id": "E081.H12",
+      "sourceChoiceId": "E081.3",
+      "heroId": "hero.deacon_mirel",
+      "heroName": "Диакон Мирель",
+      "heroLine": "Самое опасное здесь специально сделано похожим на мелочь"
+    },
+    {
+      "id": "E082.H04",
+      "sourceChoiceId": "E082.2",
+      "heroId": "hero.vael_hammer",
+      "heroName": "Ваэль Молот",
+      "heroLine": "Колёс четыре. Этого уже достаточно для тактики"
+    },
+    {
+      "id": "E083.H32",
+      "sourceChoiceId": "E083.3",
+      "heroId": "hero.altana_bow",
+      "heroName": "Алтана Лук",
+      "heroLine": "Съедобно. Вопрос только — для кого именно. Дайте мне посмотреть, что он бросал в котёл"
+    },
+    {
+      "id": "E084.H14",
+      "sourceChoiceId": "E084.3",
+      "heroId": "hero.viola_mask",
+      "heroName": "Виола Маска",
+      "heroLine": "Теперь можно обсуждать настоящие условия"
+    },
+    {
+      "id": "E085.H10",
+      "sourceChoiceId": "E085.3",
+      "heroId": "hero.orion_step",
+      "heroName": "Орион Шаг",
+      "heroLine": "Овраг удобен для тех, кто хочет смотреть сверху. Я проверю края раньше, чем мы спустимся внутрь"
+    },
+    {
+      "id": "E086.H32",
+      "sourceChoiceId": "E086.3",
+      "heroId": "hero.altana_bow",
+      "heroName": "Алтана Лук",
+      "heroLine": "Это не одна вера. Кто-то собрал обряд из чужих частей — и сделал это совсем недавно"
+    },
+    {
+      "id": "E087.H14",
+      "sourceChoiceId": "E087.3",
+      "heroId": "hero.viola_mask",
+      "heroName": "Виола Маска",
+      "heroLine": "Если трое наёмников продают одну и ту же услугу, пусть сначала объяснят, почему цена у каждого считается честной"
+    },
+    {
+      "id": "E088.H33",
+      "sourceChoiceId": "E088.4",
+      "heroId": "hero.batu_cliff",
+      "heroName": "Бату Утёс",
+      "heroLine": "У всякой стены есть место, которое она считает своим секретом"
+    },
+    {
+      "id": "E089.H15",
+      "sourceChoiceId": "E089.3",
+      "heroId": "hero.renzo_bridge",
+      "heroName": "Ренцо Мост",
+      "heroLine": "Главное — не жадничать на каждом шаге"
+    },
+    {
+      "id": "E090.H14",
+      "sourceChoiceId": "E090.4",
+      "heroId": "hero.viola_mask",
+      "heroName": "Виола Маска",
+      "heroLine": "Теперь можно слушать"
+    },
+    {
+      "id": "E091.H21",
+      "sourceChoiceId": "E091.3",
+      "heroId": "hero.maeve_root",
+      "heroName": "Мейв Корень",
+      "heroLine": "Если бой всё-таки случится, лучше решить заранее, где он случится"
+    },
+    {
+      "id": "E092.H33",
+      "sourceChoiceId": "E092.3",
+      "heroId": "hero.batu_cliff",
+      "heroName": "Бату Утёс",
+      "heroLine": "Вес отряда выдержит. Ошибку — нет"
+    },
+    {
+      "id": "E092.H16",
+      "sourceChoiceId": "E092.1",
+      "heroId": "hero.tessa_gull",
+      "heroName": "Тесса Чайка",
+      "heroLine": "Вода сильная, но предсказуемая. Люди в панике — нет. Пойдём по моей команде"
+    },
+    {
+      "id": "E093.H28",
+      "sourceChoiceId": "E093.3",
+      "heroId": "hero.suri_ash",
+      "heroName": "Сури Пепел",
+      "heroLine": "Если снизу кто-то плачет, шумная лестница — худший способ представиться. Я спущусь первым"
+    },
+    {
+      "id": "E094.H03",
+      "sourceChoiceId": "E094.4",
+      "heroId": "hero.brother_orell",
+      "heroName": "Брат Орелл",
+      "heroLine": "Посвящение стёрто не временем — его меняли. Если восстановить ранний слой, станет ясно, кому была открыта ладонь"
+    },
+    {
+      "id": "E095.H24",
+      "sourceChoiceId": "E095.4",
+      "heroId": "hero.ysra_moss",
+      "heroName": "Исра Мох",
+      "heroLine": "Они уже торгуются. Просто пока делают вид, что спорят о принципах"
+    },
+    {
+      "id": "E096.H32",
+      "sourceChoiceId": "E096.3",
+      "heroId": "hero.altana_bow",
+      "heroName": "Алтана Лук",
+      "heroLine": "Здесь нет следов заклятия. Это хуже. Значит, условие срабатывает только после согласия"
+    },
+    {
+      "id": "E097.H07",
+      "sourceChoiceId": "E097.3",
+      "heroId": "hero.seraph_lyra",
+      "heroName": "Серафима Лира",
+      "heroLine": "Чары держатся не на вещи. Они держатся на условии"
+    },
+    {
+      "id": "E098.H33",
+      "sourceChoiceId": "E098.2",
+      "heroId": "hero.batu_cliff",
+      "heroName": "Бату Утёс",
+      "heroLine": "У башни нет двери для тех, кто ищет дверь. Зато кладка уже показала, где строители боялись собственного веса"
+    },
+    {
+      "id": "E098.H03",
+      "sourceChoiceId": "E098.3",
+      "heroId": "hero.brother_orell",
+      "heroName": "Брат Орелл",
+      "heroLine": "Вход здесь. Просто башня считает дверью не камень, а правильное намерение"
+    },
+    {
+      "id": "E099.H32",
+      "sourceChoiceId": "E099.3",
+      "heroId": "hero.altana_bow",
+      "heroName": "Алтана Лук",
+      "heroLine": "Огонь погас давно. А страх здесь остался свежим"
+    },
+    {
+      "id": "E100.H36",
+      "sourceChoiceId": "E100.4",
+      "heroId": "hero.ergen_cloud",
+      "heroName": "Эрген Облако",
+      "heroLine": "Путь, который сам назначает цену, обычно пытается решить за путника и направление"
+    },
+    {
+      "id": "E101.H11",
+      "sourceChoiceId": "E101.3",
+      "heroId": "hero.abbess_celene",
+      "heroName": "Аббатиса Селена",
+      "heroLine": "Дайте мне десять минут и человека, который умеет писать мелко"
+    },
+    {
+      "id": "E102.H17",
+      "sourceChoiceId": "E102.3",
+      "heroId": "hero.old_marin",
+      "heroName": "Старый Марин",
+      "heroLine": "Оба приказа выпущены одной канцелярией. Второй — через час после первого"
+    },
+    {
+      "id": "E102.H28",
+      "sourceChoiceId": "E102.4",
+      "heroId": "hero.suri_ash",
+      "heroName": "Сури Пепел",
+      "heroLine": "Пока взрослые спорят, кому она принадлежит, она поедет с нами. До города хватит времени разобраться"
+    },
+    {
+      "id": "E103.H24",
+      "sourceChoiceId": "E103.3",
+      "heroId": "hero.ysra_moss",
+      "heroName": "Исра Мох",
+      "heroLine": "Если земля отвечает на договор, значит, одной подписи владельца здесь недостаточно"
+    },
+    {
+      "id": "E104.H18",
+      "sourceChoiceId": "E104.3",
+      "heroId": "hero.elio_silk",
+      "heroName": "Элио Шёлк",
+      "heroLine": "Он не смерти боится. Он боится, что его забудут не там"
+    },
+    {
+      "id": "E105.H33",
+      "sourceChoiceId": "E105.3",
+      "heroId": "hero.batu_cliff",
+      "heroName": "Бату Утёс",
+      "heroLine": "Стена настоящая. Просто она стоит там, где раньше не стояла"
+    },
+    {
+      "id": "E106.H35",
+      "sourceChoiceId": "E106.3",
+      "heroId": "hero.khulan_star",
+      "heroName": "Хулан Звезда",
+      "heroLine": "Кажется, испытание уже идёт. Они просто об этом не знают"
+    },
+    {
+      "id": "E107.H03",
+      "sourceChoiceId": "E107.3",
+      "heroId": "hero.brother_orell",
+      "heroName": "Брат Орелл",
+      "heroLine": "Оно не знает, кто мы. Оно ищет, чем нас можно заставить открыть его"
+    },
+    {
+      "id": "E107.H09",
+      "sourceChoiceId": "E107.3",
+      "heroId": "hero.nemea_quill",
+      "heroName": "Немея Перо",
+      "heroLine": "Письмо, которое читает адресата, всё равно остаётся текстом. Значит, у него есть грамматика — и ошибка, на которой его можно поймать"
+    },
+    {
+      "id": "E108.H17",
+      "sourceChoiceId": "E108.4",
+      "heroId": "hero.old_marin",
+      "heroName": "Старый Марин",
+      "heroLine": "Судья имеет право молчать. Стороны — нет. Пусть сначала договорятся, что именно они считают правдой"
+    },
+    {
+      "id": "E108.H23",
+      "sourceChoiceId": "E108.1",
+      "heroId": "hero.lord_aylen",
+      "heroName": "Лорд Айлен",
+      "heroLine": "Когда символ власти отказывается решать, это хороший повод вернуть решение тем, кто умеет отвечать за последствия"
+    },
+    {
+      "id": "E109.H19",
+      "sourceChoiceId": "E109.3",
+      "heroId": "hero.briar_sister",
+      "heroName": "Сестра Терн",
+      "heroLine": "Дерево помнит ритм. Слова можно восстановить по паузам"
+    },
+    {
+      "id": "E110.H16",
+      "sourceChoiceId": "E110.3",
+      "heroId": "hero.tessa_gull",
+      "heroName": "Тесса Чайка",
+      "heroLine": "Если она хочет соревнования, можно дать ей соревнование"
+    },
+    {
+      "id": "E110.H36",
+      "sourceChoiceId": "E110.2",
+      "heroId": "hero.ergen_cloud",
+      "heroName": "Эрген Облако",
+      "heroLine": "Путь, который ревнует к другим дорогам, всё ещё путь. Иногда ему достаточно напомнить, что его выбрали"
+    },
+    {
+      "id": "E111.H20",
+      "sourceChoiceId": "E111.3",
+      "heroId": "hero.roan_stag",
+      "heroName": "Роан Олень",
+      "heroLine": "Они не исчезли. Их унесли"
+    },
+    {
+      "id": "E112.H35",
+      "sourceChoiceId": "E112.3",
+      "heroId": "hero.khulan_star",
+      "heroName": "Хулан Звезда",
+      "heroLine": "Их спор не о земле. Каждый хочет услышать, что мать любила именно его больше остальных"
+    },
+    {
+      "id": "E112.H23",
+      "sourceChoiceId": "E112.2",
+      "heroId": "hero.lord_aylen",
+      "heroName": "Лорд Айлен",
+      "heroLine": "Разделить землю проще, чем право считать себя единственным наследником. Начнём хотя бы с первого"
+    },
+    {
+      "id": "E113.H02",
+      "sourceChoiceId": "E113.3",
+      "heroId": "hero.mara_chain",
+      "heroName": "Мара Цепь",
+      "heroLine": "Если человек сам бросил оружие, не надо первым делом объяснять ему, кому он теперь принадлежит"
+    },
+    {
+      "id": "E114.H17",
+      "sourceChoiceId": "E114.3",
+      "heroId": "hero.old_marin",
+      "heroName": "Старый Марин",
+      "heroLine": "Это не заклинание дождя. Это заклинание призыва. А вот кого именно — написано очень неразборчиво"
+    },
+    {
+      "id": "E115.H24",
+      "sourceChoiceId": "E115.3",
+      "heroId": "hero.ysra_moss",
+      "heroName": "Исра Мох",
+      "heroLine": "Они не спорят о зубе. Они спорят о том, кто имеет право быть великодушным"
+    },
+    {
+      "id": "E116.H17",
+      "sourceChoiceId": "E116.3",
+      "heroId": "hero.old_marin",
+      "heroName": "Старый Марин",
+      "heroLine": "Он не предсказывает судьбу. Он помнит кровь"
+    },
+    {
+      "id": "E117.H20",
+      "sourceChoiceId": "E117.3",
+      "heroId": "hero.roan_stag",
+      "heroName": "Роан Олень",
+      "heroLine": "Если это командир, с ним надо говорить как с командиром"
+    },
+    {
+      "id": "E118.H02",
+      "sourceChoiceId": "E118.4",
+      "heroId": "hero.mara_chain",
+      "heroName": "Мара Цепь",
+      "heroLine": "Пусть скажет сам. Я достаточно прожила среди людей, которые решали за связанных"
+    },
+    {
+      "id": "E119.H15",
+      "sourceChoiceId": "E119.1",
+      "heroId": "hero.renzo_bridge",
+      "heroName": "Ренцо Мост",
+      "heroLine": "Он не опоздал. Просто дорога закончилась раньше его службы. Давайте дадим ей новый конец"
+    },
+    {
+      "id": "E120.H26",
+      "sourceChoiceId": "E120.3",
+      "heroId": "hero.velka_urn",
+      "heroName": "Велька Урна",
+      "heroLine": "Они пришли не за ним. Они ждут того, кто должен был прийти вместе с ними"
+    },
+    {
+      "id": "E121.H05",
+      "sourceChoiceId": "E121.3",
+      "heroId": "hero.lady_sorn",
+      "heroName": "Леди Сорн",
+      "heroLine": "Он не проклят. Он просто не умеет оставить работу незаконченной"
+    },
+    {
+      "id": "E122.H07",
+      "sourceChoiceId": "E122.3",
+      "heroId": "hero.seraph_lyra",
+      "heroName": "Серафима Лира",
+      "heroLine": "Клятва связывает её. Его держит только чувство вины"
+    },
+    {
+      "id": "E123.H26",
+      "sourceChoiceId": "E123.1",
+      "heroId": "hero.velka_urn",
+      "heroName": "Велька Урна",
+      "heroLine": "Мёртвые редко просят продолжения. Если просят — стоит хотя бы дослушать"
+    },
+    {
+      "id": "E124.H06",
+      "sourceChoiceId": "E124.1",
+      "heroId": "hero.tomas_gate",
+      "heroName": "Томас Вратарь",
+      "heroLine": "Он держал переход дольше, чем существовал его приказ. Теперь смена действительно прибыла"
+    },
+    {
+      "id": "E125.H10",
+      "sourceChoiceId": "E125.3",
+      "heroId": "hero.orion_step",
+      "heroName": "Орион Шаг",
+      "heroLine": "Паутина закрывает дорогу. Но сама дорога всё ещё наша"
+    },
+    {
+      "id": "E126.H14",
+      "sourceChoiceId": "E126.3",
+      "heroId": "hero.viola_mask",
+      "heroName": "Виола Маска",
+      "heroLine": "Он не случайная жертва. Вопрос только в том, какую роль он играет в собственной казни"
+    },
+    {
+      "id": "E127.H26",
+      "sourceChoiceId": "E127.3",
+      "heroId": "hero.velka_urn",
+      "heroName": "Велька Урна",
+      "heroLine": "Она не повторяет его. Она учится быть им"
+    },
+    {
+      "id": "E128.H31",
+      "sourceChoiceId": "E128.3",
+      "heroId": "hero.temur_wind",
+      "heroName": "Темур Ветер",
+      "heroLine": "Не уверен, что паук здесь самый нечестный игрок"
+    },
+    {
+      "id": "E129.H35",
+      "sourceChoiceId": "E129.3",
+      "heroId": "hero.khulan_star",
+      "heroName": "Хулан Звезда",
+      "heroLine": "Тот, кто больше всех торопится увидеть правду, может бояться, что её увидят без него"
+    },
+    {
+      "id": "E130.H07",
+      "sourceChoiceId": "E130.4",
+      "heroId": "hero.seraph_lyra",
+      "heroName": "Серафима Лира",
+      "heroLine": "Она уже знает, где проходит каждая артерия. Вопрос только в том, что она хочет делать с этим знанием"
+    },
+    {
+      "id": "E131.H08",
+      "sourceChoiceId": "E131.3",
+      "heroId": "hero.ivar_lens",
+      "heroName": "Ивар Линза",
+      "heroLine": "Нам не нужен лифт. Нам нужна одна шестерня и способ заставить её подняться"
+    },
+    {
+      "id": "E132.H05",
+      "sourceChoiceId": "E132.3",
+      "heroId": "hero.lady_sorn",
+      "heroName": "Леди Сорн",
+      "heroLine": "Он не написал “лучший кузнец”. Он написал “лучше меня”. Возможно, речь вообще не о кузне"
+    },
+    {
+      "id": "E133.H13",
+      "sourceChoiceId": "E133.3",
+      "heroId": "hero.cassian_coin",
+      "heroName": "Кассиан Монета",
+      "heroLine": "Угол тут ни при чём. Они забыли вес мокрого снега"
+    },
+    {
+      "id": "E134.H12",
+      "sourceChoiceId": "E134.3",
+      "heroId": "hero.deacon_mirel",
+      "heroName": "Диакон Мирель",
+      "heroLine": "Это не замок. Это условие. И кто-то из предков был очень драматичным человеком"
+    },
+    {
+      "id": "E135.H28",
+      "sourceChoiceId": "E135.3",
+      "heroId": "hero.suri_ash",
+      "heroName": "Сури Пепел",
+      "heroLine": "Её нельзя догнать. Но можно заставить дорогу догнать её"
+    },
+    {
+      "id": "E136.H27",
+      "sourceChoiceId": "E136.3",
+      "heroId": "hero.rath_banner",
+      "heroName": "Рат Знамя",
+      "heroLine": "Тебе не нужно любить высоту. Тебе нужно доверять крыльям"
+    },
+    {
+      "id": "E137.H14",
+      "sourceChoiceId": "E137.3",
+      "heroId": "hero.viola_mask",
+      "heroName": "Виола Маска",
+      "heroLine": "Он не прячет ловушку. Он рассчитывает, что никто не дочитает до неё"
+    },
+    {
+      "id": "E138.H15",
+      "sourceChoiceId": "E138.3",
+      "heroId": "hero.renzo_bridge",
+      "heroName": "Ренцо Мост",
+      "heroLine": "Кажется, у нас есть дипломатический инструмент"
+    },
+    {
+      "id": "E139.H12",
+      "sourceChoiceId": "E139.3",
+      "heroId": "hero.deacon_mirel",
+      "heroName": "Диакон Мирель",
+      "heroLine": "Вина здесь не магия. Магия только не даёт человеку забыть, за что ему стыдно"
+    },
+    {
+      "id": "E140.H17",
+      "sourceChoiceId": "E140.1",
+      "heroId": "hero.old_marin",
+      "heroName": "Старый Марин",
+      "heroLine": "Если ведомство не способно отличить заявителя от покойника, проблема не в заявителе"
+    },
+    {
+      "id": "E140.H06",
+      "sourceChoiceId": "E140.3",
+      "heroId": "hero.tomas_gate",
+      "heroName": "Томас Вратарь",
+      "heroLine": "Если это вход, у него должен быть хозяин. Если хозяина нет — его закрывают"
+    },
+    {
+      "id": "E141.H26",
+      "sourceChoiceId": "E141.3",
+      "heroId": "hero.velka_urn",
+      "heroName": "Велька Урна",
+      "heroLine": "Это не бессмертие. Это отсрочка последствий"
+    },
+    {
+      "id": "E142.H14",
+      "sourceChoiceId": "E142.1",
+      "heroId": "hero.viola_mask",
+      "heroName": "Виола Маска",
+      "heroLine": "Хорошая новость: даже бездна признаёт расторжение договора. Плохая — только если всё оформлено правильно"
+    },
+    {
+      "id": "E143.H25",
+      "sourceChoiceId": "E143.1",
+      "heroId": "hero.kael_cinder",
+      "heroName": "Каэль Уголь",
+      "heroLine": "Приказ можно догнать завтра. Людей под этими балками — нет"
+    },
+    {
+      "id": "E144.H13",
+      "sourceChoiceId": "E144.3",
+      "heroId": "hero.cassian_coin",
+      "heroName": "Кассиан Монета",
+      "heroLine": "Спор о собственности можно продолжить после того, как собственность перестанет его уносить"
+    },
+    {
+      "id": "E145.H12",
+      "sourceChoiceId": "E145.3",
+      "heroId": "hero.deacon_mirel",
+      "heroName": "Диакон Мирель",
+      "heroLine": "Он звонит на намерение солгать. Кто-то уже решил, что скажет"
+    },
+    {
+      "id": "E146.H14",
+      "sourceChoiceId": "E146.3",
+      "heroId": "hero.viola_mask",
+      "heroName": "Виола Маска",
+      "heroLine": "Он законен только потому, что никто не предполагал, что кто-то попробует такое написать"
+    },
+    {
+      "id": "E147.H12",
+      "sourceChoiceId": "E147.1",
+      "heroId": "hero.deacon_mirel",
+      "heroName": "Диакон Мирель",
+      "heroLine": "Если покаяние удобно, человек обычно заканчивает его раньше, чем понимает зачем начал"
+    },
+    {
+      "id": "E148.H05",
+      "sourceChoiceId": "E148.3",
+      "heroId": "hero.lady_sorn",
+      "heroName": "Леди Сорн",
+      "heroLine": "Если закон зависит от того, насколько хорош был лекарь, это уже не закон"
+    },
+    {
+      "id": "E148.H11",
+      "sourceChoiceId": "E148.2",
+      "heroId": "hero.abbess_celene",
+      "heroName": "Аббатиса Селена",
+      "heroLine": "Чудо не отменяет вины. Но наказание, которое ничего не исправляет, тоже не становится священным"
+    },
+    {
+      "id": "E149.H26",
+      "sourceChoiceId": "E149.3",
+      "heroId": "hero.velka_urn",
+      "heroName": "Велька Урна",
+      "heroLine": "Кристалл не охлаждает тело. Он меняет само пламя внутри"
+    },
+    {
+      "id": "E150.H11",
+      "sourceChoiceId": "E150.3",
+      "heroId": "hero.abbess_celene",
+      "heroName": "Аббатиса Селена",
+      "heroLine": "Фраза была метафорой. Проблема в том, что клятва услышала её буквально"
+    },
+    {
+      "id": "E151.H19",
+      "sourceChoiceId": "E151.3",
+      "heroId": "hero.briar_sister",
+      "heroName": "Сестра Терн",
+      "heroLine": "Это не голос ребёнка. Кто-то говорит через него из пещеры"
+    },
+    {
+      "id": "E152.H16",
+      "sourceChoiceId": "E152.3",
+      "heroId": "hero.tessa_gull",
+      "heroName": "Тесса Чайка",
+      "heroLine": "Если его хотят проверить как воина, пусть проверяют как воина"
+    },
+    {
+      "id": "E153.H09",
+      "sourceChoiceId": "E153.4",
+      "heroId": "hero.nemea_quill",
+      "heroName": "Немея Перо",
+      "heroLine": "Самая ценная часть этого сокровища — момент, когда кто-то наконец записал правду"
+    },
+    {
+      "id": "E154.H07",
+      "sourceChoiceId": "E154.3",
+      "heroId": "hero.seraph_lyra",
+      "heroName": "Серафима Лира",
+      "heroLine": "Обряд нужен живым. Мёртвым редко требуется правильная форма прощания"
+    },
+    {
+      "id": "E155.H27",
+      "sourceChoiceId": "E155.3",
+      "heroId": "hero.rath_banner",
+      "heroName": "Рат Знамя",
+      "heroLine": "Если человек не может оставить пост, можно временно перенести пост туда, где ему удобно"
+    },
+    {
+      "id": "E155.H06",
+      "sourceChoiceId": "E155.2",
+      "heroId": "hero.tomas_gate",
+      "heroName": "Томас Вратарь",
+      "heroLine": "Пост существует ради ворот, а не ворота ради поста. Перенесём службу туда, где она ещё имеет смысл"
+    },
+    {
+      "id": "E156.H18",
+      "sourceChoiceId": "E156.3",
+      "heroId": "hero.elio_silk",
+      "heroName": "Элио Шёлк",
+      "heroLine": "Животные редко понимают закон. Зато отлично понимают, кто ведёт себя странно"
+    },
+    {
+      "id": "E157.H34",
+      "sourceChoiceId": "E157.3",
+      "heroId": "hero.saran_dawn",
+      "heroName": "Саран Рассвет",
+      "heroLine": "Если совет ждёт от тебя голос предка, начни с собственного"
+    },
+    {
+      "id": "E158.H33",
+      "sourceChoiceId": "E158.3",
+      "heroId": "hero.batu_cliff",
+      "heroName": "Бату Утёс",
+      "heroLine": "Можно сохранить часть старого моста внутри нового. Не как украшение — как опору"
+    },
+    {
+      "id": "E159.H29",
+      "sourceChoiceId": "E159.3",
+      "heroId": "hero.empress_nahla",
+      "heroName": "Императрица Нахла",
+      "heroLine": "Широко — это когда спорят о смысле статьи. Здесь он просто надеется, что никто не прочитает заголовок"
+    },
+    {
+      "id": "E160.H26",
+      "sourceChoiceId": "E160.3",
+      "heroId": "hero.velka_urn",
+      "heroName": "Велька Урна",
+      "heroLine": "Память и плоть — не одно и то же. Первую нужно вернуть семье. О второй можно говорить с Кеш"
+    },
+    {
+      "id": "E161.H13",
+      "sourceChoiceId": "E161.3",
+      "heroId": "hero.cassian_coin",
+      "heroName": "Кассиан Монета",
+      "heroLine": "Он может сидеть. Просто создатель не предусмотрел, что когда-нибудь придётся объяснять зачем"
+    },
+    {
+      "id": "E162.H12",
+      "sourceChoiceId": "E162.3",
+      "heroId": "hero.deacon_mirel",
+      "heroName": "Диакон Мирель",
+      "heroLine": "У него не одна воля. Кто-то дал руке отдельную команду"
+    },
+    {
+      "id": "E163.H27",
+      "sourceChoiceId": "E163.3",
+      "heroId": "hero.rath_banner",
+      "heroName": "Рат Знамя",
+      "heroLine": "Ей не нужно приказать остановиться. Нужно доказать, что лучшая позиция уже была здесь"
+    },
+    {
+      "id": "E163.H36",
+      "sourceChoiceId": "E163.4",
+      "heroId": "hero.ergen_cloud",
+      "heroName": "Эрген Облако",
+      "heroLine": "Не останавливайте её. Дайте направление, которое нам выгоднее"
+    },
+    {
+      "id": "E164.H18",
+      "sourceChoiceId": "E164.3",
+      "heroId": "hero.elio_silk",
+      "heroName": "Элио Шёлк",
+      "heroLine": "Она не охраняет дом. Она выполняет последнюю просьбу ребёнка"
+    },
+    {
+      "id": "E165.H10",
+      "sourceChoiceId": "E165.3",
+      "heroId": "hero.orion_step",
+      "heroName": "Орион Шаг",
+      "heroLine": "Пусть спорят сколько угодно. Небо уже знает, который час"
+    },
+    {
+      "id": "E166.H12",
+      "sourceChoiceId": "E166.3",
+      "heroId": "hero.deacon_mirel",
+      "heroName": "Диакон Мирель",
+      "heroLine": "Я могу проверить непрерывность памяти. Но не могу доказать ему непрерывность души"
+    },
+    {
+      "id": "E167.H34",
+      "sourceChoiceId": "E167.3",
+      "heroId": "hero.saran_dawn",
+      "heroName": "Саран Рассвет",
+      "heroLine": "Он приходит одной дорогой и уходит другой. Значит, можно договориться с его привычкой, даже если нельзя с ним самим"
+    },
+    {
+      "id": "E168.H18",
+      "sourceChoiceId": "E168.1",
+      "heroId": "hero.elio_silk",
+      "heroName": "Элио Шёлк",
+      "heroLine": "Он не ворует случайно. Значит, у его тайника есть история — и порядок"
+    },
+    {
+      "id": "E169.H16",
+      "sourceChoiceId": "E169.3",
+      "heroId": "hero.tessa_gull",
+      "heroName": "Тесса Чайка",
+      "heroLine": "Они не пасут караван. Они не дают ему войти куда-то"
+    },
+    {
+      "id": "E170.H25",
+      "sourceChoiceId": "E170.3",
+      "heroId": "hero.kael_cinder",
+      "heroName": "Каэль Уголь",
+      "heroLine": "Я ничего не делал. Это он что-то решил"
+    },
+    {
+      "id": "E171.H19",
+      "sourceChoiceId": "E171.3",
+      "heroId": "hero.briar_sister",
+      "heroName": "Сестра Терн",
+      "heroLine": "Они молчат не потому, что боятся шума. Они боятся, что оно услышит, где они"
+    },
+    {
+      "id": "E172.H27",
+      "sourceChoiceId": "E172.1",
+      "heroId": "hero.rath_banner",
+      "heroName": "Рат Знамя",
+      "heroLine": "Приказ, который никто не отменил, всё ещё держит солдата в строю. Даже если солдат — черепаха"
+    },
+    {
+      "id": "E173.H22",
+      "sourceChoiceId": "E173.3",
+      "heroId": "hero.puck_ember",
+      "heroName": "Пак Уголёк",
+      "heroLine": "Раз она уже сбежала, ловить поздно. Давайте хотя бы договоримся о времени возвращения"
+    },
+    {
+      "id": "E174.H18",
+      "sourceChoiceId": "E174.3",
+      "heroId": "hero.elio_silk",
+      "heroName": "Элио Шёлк",
+      "heroLine": "Если это суд, кто-то уже подкупает присяжных фруктом"
+    },
+    {
+      "id": "E175.H07",
+      "sourceChoiceId": "E175.3",
+      "heroId": "hero.seraph_lyra",
+      "heroName": "Серафима Лира",
+      "heroLine": "Она питается не весельем. Она питается моментом, когда человек уже не может остановиться"
+    },
+    {
+      "id": "E176.H34",
+      "sourceChoiceId": "E176.1",
+      "heroId": "hero.saran_dawn",
+      "heroName": "Саран Рассвет",
+      "heroLine": "Имя, которое тебе дадут четверо взрослых и один цветок, всё равно носить придётся тебе"
+    },
+    {
+      "id": "E177.H33",
+      "sourceChoiceId": "E177.3",
+      "heroId": "hero.batu_cliff",
+      "heroName": "Бату Утёс",
+      "heroLine": "Можно построить новый мост поверх старого и оставить ей нижний ярус. Фактически — крепость с крышей"
+    },
+    {
+      "id": "E177.H06",
+      "sourceChoiceId": "E177.1",
+      "heroId": "hero.tomas_gate",
+      "heroName": "Томас Вратарь",
+      "heroLine": "Сначала освободим проход. Потом построим укрытие, которое не держит на себе половину дороги"
+    },
+    {
+      "id": "E178.H10",
+      "sourceChoiceId": "E178.3",
+      "heroId": "hero.orion_step",
+      "heroName": "Орион Шаг",
+      "heroLine": "Она ведёт не через лес. Она срезает расстояние"
+    },
+    {
+      "id": "E178.H36",
+      "sourceChoiceId": "E178.1",
+      "heroId": "hero.ergen_cloud",
+      "heroName": "Эрген Облако",
+      "heroLine": "Короткая дорога редко любит тех, кто всё время проверяет, короткая ли она"
+    },
+    {
+      "id": "E179.H21",
+      "sourceChoiceId": "E179.3",
+      "heroId": "hero.maeve_root",
+      "heroName": "Мейв Корень",
+      "heroLine": "Удивительно. Это плохая ложка, но вполне приличная дубина"
+    },
+    {
+      "id": "E180.H29",
+      "sourceChoiceId": "E180.3",
+      "heroId": "hero.empress_nahla",
+      "heroName": "Императрица Нахла",
+      "heroLine": "Это не кредит. Это ловушка, которая умеет считать"
+    },
+    {
+      "id": "E181.H22",
+      "sourceChoiceId": "E181.3",
+      "heroId": "hero.puck_ember",
+      "heroName": "Пак Уголёк",
+      "heroLine": "Он жульничает. Но хуже всего то, что он жульничает грамотно"
+    },
+    {
+      "id": "E182.H31",
+      "sourceChoiceId": "E182.3",
+      "heroId": "hero.temur_wind",
+      "heroName": "Темур Ветер",
+      "heroLine": "Пещеру можно проверить. Но пластину я бы из рук не выпускал"
+    },
+    {
+      "id": "E183.H03",
+      "sourceChoiceId": "E183.3",
+      "heroId": "hero.brother_orell",
+      "heroName": "Брат Орелл",
+      "heroLine": "Голос идёт не изнутри. Заклинание сидит в древесине"
+    },
+    {
+      "id": "E184.H13",
+      "sourceChoiceId": "E184.3",
+      "heroId": "hero.cassian_coin",
+      "heroName": "Кассиан Монета",
+      "heroLine": "В споре между мошенником и страховой компанией я впервые хочу увидеть точную процедуру проверки пульса"
+    },
+    {
+      "id": "E185.H32",
+      "sourceChoiceId": "E185.3",
+      "heroId": "hero.altana_bow",
+      "heroName": "Алтана Лук",
+      "heroLine": "Они оба правы, но говорят о разных рисках. Сначала кровь, потом операция"
+    },
+    {
+      "id": "E186.H30",
+      "sourceChoiceId": "E186.3",
+      "heroId": "hero.daro_last",
+      "heroName": "Даро Последний",
+      "heroLine": "Если бы она хотела его съесть, мы бы нашли совсем другую сцену"
+    },
+    {
+      "id": "E187.H17",
+      "sourceChoiceId": "E187.3",
+      "heroId": "hero.old_marin",
+      "heroName": "Старый Марин",
+      "heroLine": "Пока они спорят о том, кто имеет право его спасать, единственный хозяин тела остаётся без права голоса"
+    },
+    {
+      "id": "E188.H21",
+      "sourceChoiceId": "E188.3",
+      "heroId": "hero.maeve_root",
+      "heroName": "Мейв Корень",
+      "heroLine": "Они уже сделали половину работы друг за друга. Осталось заставить камень и дерево учитывать рост"
+    },
+    {
+      "id": "E188.H15",
+      "sourceChoiceId": "E188.3",
+      "heroId": "hero.renzo_bridge",
+      "heroName": "Ренцо Мост",
+      "heroLine": "Они оба уже построили половину моста. Осталось убедить половины, что у них один берег"
+    },
+    {
+      "id": "E189.H09",
+      "sourceChoiceId": "E189.2",
+      "heroId": "hero.nemea_quill",
+      "heroName": "Немея Перо",
+      "heroLine": "Текст изменился. Это не всегда означает, что он испорчен"
+    },
+    {
+      "id": "E190.H24",
+      "sourceChoiceId": "E190.3",
+      "heroId": "hero.ysra_moss",
+      "heroName": "Исра Мох",
+      "heroLine": "Проблема не в том, имеет ли он право. Проблема в том, что закон написан для мира, где люди умирают только один раз"
+    },
+    {
+      "id": "E191.H27",
+      "sourceChoiceId": "E191.3",
+      "heroId": "hero.rath_banner",
+      "heroName": "Рат Знамя",
+      "heroLine": "Они похожи только снаружи. Один использует давление, другой — очень плохое решение"
+    },
+    {
+      "id": "E192.H20",
+      "sourceChoiceId": "E192.3",
+      "heroId": "hero.roan_stag",
+      "heroName": "Роан Олень",
+      "heroLine": "Он не охраняет лестницу. Он каждый раз закрывает путь тому, кто первым пытается уйти"
+    },
+    {
+      "id": "E193.H08",
+      "sourceChoiceId": "E193.3",
+      "heroId": "hero.ivar_lens",
+      "heroName": "Ивар Линза",
+      "heroLine": "Механически он работает лучше, чем раньше. Проблема у мастера не техническая"
+    },
+    {
+      "id": "E194.H09",
+      "sourceChoiceId": "E194.3",
+      "heroId": "hero.nemea_quill",
+      "heroName": "Немея Перо",
+      "heroLine": "Я думал, что потерял её. Похоже, в какой-то момент я просто перестал искать"
+    },
+    {
+      "id": "E195.H03",
+      "sourceChoiceId": "E195.3",
+      "heroId": "hero.brother_orell",
+      "heroName": "Брат Орелл",
+      "heroLine": "Возможно, это вообще не пароль. Возможно, он ждёт обращения"
+    },
+    {
+      "id": "E196.H36",
+      "sourceChoiceId": "E196.2",
+      "heroId": "hero.ergen_cloud",
+      "heroName": "Эрген Облако",
+      "heroLine": "Если ты действительно знаешь мой следующий путь, назови то, чего я ещё не успел решить"
+    },
+    {
+      "id": "E197.H34",
+      "sourceChoiceId": "E197.3",
+      "heroId": "hero.saran_dawn",
+      "heroName": "Саран Рассвет",
+      "heroLine": "Если здесь уже смогли усадить вместе орка, ангела и тёмную эльфийку, хозяин знает о дорогах больше большинства послов"
+    },
+    {
+      "id": "E198.H21",
+      "sourceChoiceId": "E198.3",
+      "heroId": "hero.maeve_root",
+      "heroName": "Мейв Корень",
+      "heroLine": "Она не оставляет следов. Значит, двигается не по земле. Можно закрыть ей обзор на цель, а не держать взгляд вечно"
+    },
+    {
+      "id": "E199.H05",
+      "sourceChoiceId": "E199.3",
+      "heroId": "hero.lady_sorn",
+      "heroName": "Леди Сорн",
+      "heroLine": "Прежде чем отвечать на вопрос о нашей цели, я бы выяснила, кто решил, что имеет право его задавать"
+    },
+    {
+      "id": "E200.H10",
+      "sourceChoiceId": "E200.3",
+      "heroId": "hero.orion_step",
+      "heroName": "Орион Шаг",
+      "heroLine": "Если дороги нет, это ещё не значит, что нет пути"
+    },
+    {
+      "id": "E200.H36",
+      "sourceChoiceId": "E200.2",
+      "heroId": "hero.ergen_cloud",
+      "heroName": "Эрген Облако",
+      "heroLine": "Если путь обещает привести туда, куда мы действительно идём, я хочу проверить, понимает ли он разницу между целью и названием города"
+    },
+    {
+      "id": "E201.H29",
+      "sourceChoiceId": "E201.3",
+      "heroId": "hero.empress_nahla",
+      "heroName": "Императрица Нахла",
+      "heroLine": "Если это налог, у него должна быть правовая основа. Если услуга — право отказаться"
+    },
+    {
+      "id": "E202.H08",
+      "sourceChoiceId": "E202.3",
+      "heroId": "hero.ivar_lens",
+      "heroName": "Ивар Линза",
+      "heroLine": "Это не мельница создаёт ветер. Она стоит прямо над тем, откуда он выходит"
+    },
+    {
+      "id": "E203.H18",
+      "sourceChoiceId": "E203.1",
+      "heroId": "hero.elio_silk",
+      "heroName": "Элио Шёлк",
+      "heroLine": "Картина — приманка. Интереснее человек, который заранее знал, кого ею ловить"
+    },
+    {
+      "id": "E204.H30",
+      "sourceChoiceId": "E204.3",
+      "heroId": "hero.daro_last",
+      "heroName": "Даро Последний",
+      "heroLine": "Пехота различает людей не по лицам. По привычкам"
+    },
+    {
+      "id": "E204.H25",
+      "sourceChoiceId": "E204.1",
+      "heroId": "hero.kael_cinder",
+      "heroName": "Каэль Уголь",
+      "heroLine": "В строю их различают не по лицам. Дайте команду, которую каждый привык выполнять по-своему"
+    },
+    {
+      "id": "E205.H17",
+      "sourceChoiceId": "E205.3",
+      "heroId": "hero.old_marin",
+      "heroName": "Старый Марин",
+      "heroLine": "Он отвечает на вопросы, которых ему никто не задавал"
+    },
+    {
+      "id": "E206.H28",
+      "sourceChoiceId": "E206.3",
+      "heroId": "hero.suri_ash",
+      "heroName": "Сури Пепел",
+      "heroLine": "Если он решит бежать за нами в одном таком, преимущество всё равно будет у нас"
+    },
+    {
+      "id": "E207.H32",
+      "sourceChoiceId": "E207.3",
+      "heroId": "hero.altana_bow",
+      "heroName": "Алтана Лук",
+      "heroLine": "Это не память. Что-то действительно пришло по его следу"
+    },
+    {
+      "id": "E208.H19",
+      "sourceChoiceId": "E208.1",
+      "heroId": "hero.briar_sister",
+      "heroName": "Сестра Терн",
+      "heroLine": "Сад не просит тишины. Он проверяет, умеем ли мы услышать то, что произойдёт после неё"
+    },
+    {
+      "id": "E209.H05",
+      "sourceChoiceId": "E209.3",
+      "heroId": "hero.lady_sorn",
+      "heroName": "Леди Сорн",
+      "heroLine": "Я польщена. Но у меня уже есть работа"
+    },
+    {
+      "id": "E210.H33",
+      "sourceChoiceId": "E210.3",
+      "heroId": "hero.batu_cliff",
+      "heroName": "Бату Утёс",
+      "heroLine": "Опор нет. Но нагрузка распределяется так, будто сооружение всё ещё здесь"
+    },
+    {
+      "id": "E210.H16",
+      "sourceChoiceId": "E210.1",
+      "heroId": "hero.tessa_gull",
+      "heroName": "Тесса Чайка",
+      "heroLine": "Лодка — не поражение перед мостом. Это просто мост, который умеет двигаться"
+    },
+    {
+      "id": "E211.H20",
+      "sourceChoiceId": "E211.3",
+      "heroId": "hero.roan_stag",
+      "heroName": "Роан Олень",
+      "heroLine": "Быстрое. Тяжёлое. И оно старается обходить нас с ветра"
+    },
+    {
+      "id": "E212.H32",
+      "sourceChoiceId": "E212.3",
+      "heroId": "hero.altana_bow",
+      "heroName": "Алтана Лук",
+      "heroLine": "Зал ждёт не красивой ноты. Он ждёт правильного прощания"
+    },
+    {
+      "id": "E213.H02",
+      "sourceChoiceId": "E213.3",
+      "heroId": "hero.mara_chain",
+      "heroName": "Мара Цепь",
+      "heroLine": "Они репетировали. И очень хотят, чтобы всё прошло по плану"
+    },
+    {
+      "id": "E214.H21",
+      "sourceChoiceId": "E214.3",
+      "heroId": "hero.maeve_root",
+      "heroName": "Мейв Корень",
+      "heroLine": "Это уже не кулинария. Это инженерная задача"
+    },
+    {
+      "id": "E215.H23",
+      "sourceChoiceId": "E215.3",
+      "heroId": "hero.lord_aylen",
+      "heroName": "Лорд Айлен",
+      "heroLine": "Если уничтожить символ, спор не исчезнет. Но хотя бы перестанет притворяться спором о мебели"
+    },
+    {
+      "id": "E216.H16",
+      "sourceChoiceId": "E216.3",
+      "heroId": "hero.tessa_gull",
+      "heroName": "Тесса Чайка",
+      "heroLine": "Хороший разведчик должен замечать кровь раньше, чем она появится"
+    },
+    {
+      "id": "E217.H07",
+      "sourceChoiceId": "E217.3",
+      "heroId": "hero.seraph_lyra",
+      "heroName": "Серафима Лира",
+      "heroLine": "Это не бог. Но у него достаточно памяти, чтобы держать обиду"
+    },
+    {
+      "id": "E218.H25",
+      "sourceChoiceId": "E218.3",
+      "heroId": "hero.kael_cinder",
+      "heroName": "Каэль Уголь",
+      "heroLine": "Когда оно заговорит моим голосом, пусть хотя бы скажет что-нибудь умное"
+    },
+    {
+      "id": "E219.H24",
+      "sourceChoiceId": "E219.3",
+      "heroId": "hero.ysra_moss",
+      "heroName": "Исра Мох",
+      "heroLine": "Юридически он покупатель. Биологически — отдельный вопрос"
+    },
+    {
+      "id": "E220.H17",
+      "sourceChoiceId": "E220.3",
+      "heroId": "hero.old_marin",
+      "heroName": "Старый Марин",
+      "heroLine": "Он купил место для себя. Не право оставить соседнюю землю пустой навечно"
+    },
+    {
+      "id": "E221.H08",
+      "sourceChoiceId": "E221.3",
+      "heroId": "hero.ivar_lens",
+      "heroName": "Ивар Линза",
+      "heroLine": "Пароль, возможно, проще. Но замок тоже вполне убеждаем"
+    },
+    {
+      "id": "E222.H26",
+      "sourceChoiceId": "E222.3",
+      "heroId": "hero.velka_urn",
+      "heroName": "Велька Урна",
+      "heroLine": "Они не поют. Они заставляют память петь за них"
+    },
+    {
+      "id": "E223.H02",
+      "sourceChoiceId": "E223.3",
+      "heroId": "hero.mara_chain",
+      "heroName": "Мара Цепь",
+      "heroLine": "В строю держался бы лучше половины живых"
+    },
+    {
+      "id": "E224.H13",
+      "sourceChoiceId": "E224.3",
+      "heroId": "hero.cassian_coin",
+      "heroName": "Кассиан Монета",
+      "heroLine": "В комнате кто-то есть. Вопрос только — с какой стороны"
+    },
+    {
+      "id": "E225.H05",
+      "sourceChoiceId": "E225.3",
+      "heroId": "hero.lady_sorn",
+      "heroName": "Леди Сорн",
+      "heroLine": "Редкий случай, когда клевета сделана из лучших побуждений"
+    },
+    {
+      "id": "E226.H04",
+      "sourceChoiceId": "E226.3",
+      "heroId": "hero.vael_hammer",
+      "heroName": "Ваэль Молот",
+      "heroLine": "Он не капризничает. Ремень натирает панцирь"
+    },
+    {
+      "id": "E227.H14",
+      "sourceChoiceId": "E227.3",
+      "heroId": "hero.viola_mask",
+      "heroName": "Виола Маска",
+      "heroLine": "Контракт требует результата, но нигде не сказано, что заказчик должен пережить разъяснение условий"
+    },
+    {
+      "id": "E228.H32",
+      "sourceChoiceId": "E228.3",
+      "heroId": "hero.altana_bow",
+      "heroName": "Алтана Лук",
+      "heroLine": "Восьмой угол появляется, когда кто-то решает, что уже понял комнату"
+    },
+    {
+      "id": "E229.H22",
+      "sourceChoiceId": "E229.2",
+      "heroId": "hero.puck_ember",
+      "heroName": "Пак Уголёк",
+      "heroLine": "Я знаю историю, в которой камень победил короля. Правда, камень потом пожалел"
+    },
+    {
+      "id": "E230.H05",
+      "sourceChoiceId": "E230.3",
+      "heroId": "hero.lady_sorn",
+      "heroName": "Леди Сорн",
+      "heroLine": "Пауки здесь ведут себя честнее переговорщиков"
+    },
+    {
+      "id": "E231.H18",
+      "sourceChoiceId": "E231.3",
+      "heroId": "hero.elio_silk",
+      "heroName": "Элио Шёлк",
+      "heroLine": "Если это поможет: первым по торту прошёл вообще третий человек"
+    },
+    {
+      "id": "E232.H33",
+      "sourceChoiceId": "E232.3",
+      "heroId": "hero.batu_cliff",
+      "heroName": "Бату Утёс",
+      "heroLine": "Продолжайте рассуждать — и скоро ответ будет: столько, сколько вся гора"
+    },
+    {
+      "id": "E233.H18",
+      "sourceChoiceId": "E233.3",
+      "heroId": "hero.elio_silk",
+      "heroName": "Элио Шёлк",
+      "heroLine": "Кольца тяжёлые. Вор унёс бороду, но оставил следы масла от украшений"
+    },
+    {
+      "id": "E234.H33",
+      "sourceChoiceId": "E234.3",
+      "heroId": "hero.batu_cliff",
+      "heroName": "Бату Утёс",
+      "heroLine": "Её толкнули руками. Достаточно недавно, чтобы металл ещё дрожал"
+    },
+    {
+      "id": "E234.H30",
+      "sourceChoiceId": "E234.1",
+      "heroId": "hero.daro_last",
+      "heroName": "Даро Последний",
+      "heroLine": "После обвала живые кричат не всегда. Иногда главное — заметить, где камень лежит слишком ровно"
+    },
+    {
+      "id": "E235.H07",
+      "sourceChoiceId": "E235.3",
+      "heroId": "hero.seraph_lyra",
+      "heroName": "Серафима Лира",
+      "heroLine": "С пивом всё в порядке. Возможно, дело не в том, кто должен выпить, а кто должен налить"
+    },
+    {
+      "id": "E236.H27",
+      "sourceChoiceId": "E236.3",
+      "heroId": "hero.rath_banner",
+      "heroName": "Рат Знамя",
+      "heroLine": "Ствол стоит правильно. Камора — нет. Кто-то собрал пушку зеркально"
+    },
+    {
+      "id": "E237.H11",
+      "sourceChoiceId": "E237.3",
+      "heroId": "hero.abbess_celene",
+      "heroName": "Аббатиса Селена",
+      "heroLine": "Если никто не доверяет правилам фонда, проблема уже не в деньгах"
+    },
+    {
+      "id": "E238.H14",
+      "sourceChoiceId": "E238.1",
+      "heroId": "hero.viola_mask",
+      "heroName": "Виола Маска",
+      "heroLine": "Продавец, который заранее перечислил последствия, заслуживает хотя бы одного покупателя, умеющего читать условия"
+    },
+    {
+      "id": "E239.H22",
+      "sourceChoiceId": "E239.3",
+      "heroId": "hero.puck_ember",
+      "heroName": "Пак Уголёк",
+      "heroLine": "Если открыть дверь, они сначала съедят ужин. Потом дверь"
+    },
+    {
+      "id": "E240.H19",
+      "sourceChoiceId": "E240.3",
+      "heroId": "hero.briar_sister",
+      "heroName": "Сестра Терн",
+      "heroLine": "Красный цвет настоящий. Конец света — пока нет"
+    },
+    {
+      "id": "E241.H24",
+      "sourceChoiceId": "E241.3",
+      "heroId": "hero.ysra_moss",
+      "heroName": "Исра Мох",
+      "heroLine": "Без договора у него есть только очень уверенный тон"
+    },
+    {
+      "id": "E242.H02",
+      "sourceChoiceId": "E242.3",
+      "heroId": "hero.mara_chain",
+      "heroName": "Мара Цепь",
+      "heroLine": "Если это не сработает, хотя бы согреется кузнец"
+    },
+    {
+      "id": "E243.H13",
+      "sourceChoiceId": "E243.3",
+      "heroId": "hero.cassian_coin",
+      "heroName": "Кассиан Монета",
+      "heroLine": "Портал держится на самой раме. Если снять петли, возможно, ад останется без входа"
+    },
+    {
+      "id": "E243.H06",
+      "sourceChoiceId": "E243.2",
+      "heroId": "hero.tomas_gate",
+      "heroName": "Томас Вратарь",
+      "heroLine": "Хорошие ворота отличаются от плохих не тем, куда ведут. А тем, умеют ли закрываться вовремя"
+    },
+    {
+      "id": "E244.H12",
+      "sourceChoiceId": "E244.3",
+      "heroId": "hero.deacon_mirel",
+      "heroName": "Диакон Мирель",
+      "heroLine": "Помощь не становится хуже оттого, что оказалась не первой"
+    },
+    {
+      "id": "E245.H11",
+      "sourceChoiceId": "E245.3",
+      "heroId": "hero.abbess_celene",
+      "heroName": "Аббатиса Селена",
+      "heroLine": "Если они умеют считать каждое перо, удивительно, что война вообще помещается в расписание"
+    },
+    {
+      "id": "E246.H24",
+      "sourceChoiceId": "E246.2",
+      "heroId": "hero.ysra_moss",
+      "heroName": "Исра Мох",
+      "heroLine": "Облако не знает ваших границ. Возможно, на этот раз границам придётся пережить это унижение"
+    },
+    {
+      "id": "E246.H36",
+      "sourceChoiceId": "E246.1",
+      "heroId": "hero.ergen_cloud",
+      "heroName": "Эрген Облако",
+      "heroLine": "Пожалуй, это самый убедительный аргумент против неподвижных карт, который я сегодня видел"
+    },
+    {
+      "id": "E247.H32",
+      "sourceChoiceId": "E247.3",
+      "heroId": "hero.altana_bow",
+      "heroName": "Алтана Лук",
+      "heroLine": "Он не уснул. Он слушает то, что поднимается снизу"
+    },
+    {
+      "id": "E248.H08",
+      "sourceChoiceId": "E248.3",
+      "heroId": "hero.ivar_lens",
+      "heroName": "Ивар Линза",
+      "heroLine": "Дварф ругается, но работа хорошая. Очень хорошая"
+    },
+    {
+      "id": "E249.H26",
+      "sourceChoiceId": "E249.3",
+      "heroId": "hero.velka_urn",
+      "heroName": "Велька Урна",
+      "heroLine": "Свет слишком яркий именно там, где должен давать тень"
+    },
+    {
+      "id": "E250.H11",
+      "sourceChoiceId": "E250.3",
+      "heroId": "hero.abbess_celene",
+      "heroName": "Аббатиса Селена",
+      "heroLine": "А ты кому хочешь отдать награду?» «Мне"
+    },
+    {
+      "id": "E251.H31",
+      "sourceChoiceId": "E251.3",
+      "heroId": "hero.temur_wind",
+      "heroName": "Темур Ветер",
+      "heroLine": "Человек, который пишет себе “не ходи туда”, обычно уже знает почему"
+    },
+    {
+      "id": "E252.H32",
+      "sourceChoiceId": "E252.3",
+      "heroId": "hero.altana_bow",
+      "heroName": "Алтана Лук",
+      "heroLine": "Это имя. Но не отца"
+    },
+    {
+      "id": "E253.H14",
+      "sourceChoiceId": "E253.3",
+      "heroId": "hero.viola_mask",
+      "heroName": "Виола Маска",
+      "heroLine": "Сколько тебе платят?"
+    },
+    {
+      "id": "E254.H13",
+      "sourceChoiceId": "E254.3",
+      "heroId": "hero.cassian_coin",
+      "heroName": "Кассиан Монета",
+      "heroLine": "Иногда традиции полезно защищать от погоды"
+    },
+    {
+      "id": "E255.H04",
+      "sourceChoiceId": "E255.3",
+      "heroId": "hero.vael_hammer",
+      "heroName": "Ваэль Молот",
+      "heroLine": "Сражаться в этом нельзя. Но пройти сто шагов — можно, если правильно распределить вес"
+    },
+    {
+      "id": "E256.H32",
+      "sourceChoiceId": "E256.3",
+      "heroId": "hero.altana_bow",
+      "heroName": "Алтана Лук",
+      "heroLine": "Это не источник. Что-то живое двигается под водой"
+    },
+    {
+      "id": "E257.H14",
+      "sourceChoiceId": "E257.3",
+      "heroId": "hero.viola_mask",
+      "heroName": "Виола Маска",
+      "heroLine": "Слово “естественной” здесь есть. Это делает ножницы особенно неуместными"
+    },
+    {
+      "id": "E258.H30",
+      "sourceChoiceId": "E258.3",
+      "heroId": "hero.daro_last",
+      "heroName": "Даро Последний",
+      "heroLine": "С пехотой проще. Пехота хотя бы понимает приказ “не жуй это”"
+    },
+    {
+      "id": "E259.H27",
+      "sourceChoiceId": "E259.3",
+      "heroId": "hero.rath_banner",
+      "heroName": "Рат Знамя",
+      "heroLine": "Если пост перенести вместе со знаком, формально он его не покинет"
+    },
+    {
+      "id": "E260.H32",
+      "sourceChoiceId": "E260.3",
+      "heroId": "hero.altana_bow",
+      "heroName": "Алтана Лук",
+      "heroLine": "Не спрашивайте, как его зовут. Иногда имя — это приглашение"
+    },
+    {
+      "id": "E261.H35",
+      "sourceChoiceId": "E261.3",
+      "heroId": "hero.khulan_star",
+      "heroName": "Хулан Звезда",
+      "heroLine": "Никогда ещё беспристрастность не требовала такого самоконтроля"
+    },
+    {
+      "id": "E262.H19",
+      "sourceChoiceId": "E262.3",
+      "heroId": "hero.briar_sister",
+      "heroName": "Сестра Терн",
+      "heroLine": "Первый голос — память. Второй — нет"
+    },
+    {
+      "id": "E263.H08",
+      "sourceChoiceId": "E263.3",
+      "heroId": "hero.ivar_lens",
+      "heroName": "Ивар Линза",
+      "heroLine": "Если его заставить идти сейчас, через милю он действительно станет памятником трудовому спору"
+    },
+    {
+      "id": "E264.H32",
+      "sourceChoiceId": "E264.3",
+      "heroId": "hero.altana_bow",
+      "heroName": "Алтана Лук",
+      "heroLine": "Механизм повторяет команду. Второй голос команду даёт"
+    },
+    {
+      "id": "E265.H08",
+      "sourceChoiceId": "E265.3",
+      "heroId": "hero.ivar_lens",
+      "heroName": "Ивар Линза",
+      "heroLine": "Солнце оставим на месте. Амбар тоже. А вот зеркало можно поставить"
+    },
+    {
+      "id": "E266.H29",
+      "sourceChoiceId": "E266.3",
+      "heroId": "hero.empress_nahla",
+      "heroName": "Императрица Нахла",
+      "heroLine": "Сделка становится заметно сложнее, когда товар способен отказаться"
+    },
+    {
+      "id": "E267.H03",
+      "sourceChoiceId": "E267.3",
+      "heroId": "hero.brother_orell",
+      "heroName": "Брат Орелл",
+      "heroLine": "Часы не смеются сами. Они вызывают кого-то"
+    },
+    {
+      "id": "E268.H08",
+      "sourceChoiceId": "E268.1",
+      "heroId": "hero.ivar_lens",
+      "heroName": "Ивар Линза",
+      "heroLine": "Сначала я хочу понять, что именно его создатели называли отсутствием Короля. У инженеров бывают опасные определения"
+    },
+    {
+      "id": "E269.H22",
+      "sourceChoiceId": "E269.3",
+      "heroId": "hero.puck_ember",
+      "heroName": "Пак Уголёк",
+      "heroLine": "По-моему, он не захватил дом. Он заселился"
+    },
+    {
+      "id": "E270.H20",
+      "sourceChoiceId": "E270.3",
+      "heroId": "hero.roan_stag",
+      "heroName": "Роан Олень",
+      "heroLine": "Она не считает деньги. Она считает охрану"
+    },
+    {
+      "id": "E271.H20",
+      "sourceChoiceId": "E271.3",
+      "heroId": "hero.roan_stag",
+      "heroName": "Роан Олень",
+      "heroLine": "Он не заманивает. Он торопит"
+    },
+    {
+      "id": "E272.H21",
+      "sourceChoiceId": "E272.3",
+      "heroId": "hero.maeve_root",
+      "heroName": "Мейв Корень",
+      "heroLine": "И, к сожалению для Лема, по делу"
+    },
+    {
+      "id": "E273.H28",
+      "sourceChoiceId": "E273.1",
+      "heroId": "hero.suri_ash",
+      "heroName": "Сури Пепел",
+      "heroLine": "Иногда человек возвращается, а место, которого ты ждал, — нет. Покажем ему дорогу ещё раз"
+    },
+    {
+      "id": "E274.H19",
+      "sourceChoiceId": "E274.3",
+      "heroId": "hero.briar_sister",
+      "heroName": "Сестра Терн",
+      "heroLine": "Это не вода изменила направление. Кто-то наверху собирает добычу"
+    },
+    {
+      "id": "E275.H35",
+      "sourceChoiceId": "E275.3",
+      "heroId": "hero.khulan_star",
+      "heroName": "Хулан Звезда",
+      "heroLine": "Начнём с вопроса, почему предмет сделки выглядел как монета"
+    },
+    {
+      "id": "E276.H15",
+      "sourceChoiceId": "E276.3",
+      "heroId": "hero.renzo_bridge",
+      "heroName": "Ренцо Мост",
+      "heroLine": "Если атакуем, это будет самая унизительная осада в моей жизни"
+    },
+    {
+      "id": "E277.H19",
+      "sourceChoiceId": "E277.3",
+      "heroId": "hero.briar_sister",
+      "heroName": "Сестра Терн",
+      "heroLine": "Он не знает мёртвых. Он знает нас"
+    },
+    {
+      "id": "E278.H27",
+      "sourceChoiceId": "E278.3",
+      "heroId": "hero.rath_banner",
+      "heroName": "Рат Знамя",
+      "heroLine": "Я могу закончить эту войну ведром воды. Но, кажется, это обидит обе армии"
+    },
+    {
+      "id": "E279.H16",
+      "sourceChoiceId": "E279.3",
+      "heroId": "hero.tessa_gull",
+      "heroName": "Тесса Чайка",
+      "heroLine": "Она смотрит не на дорогу. Она смотрит на солнце"
+    },
+    {
+      "id": "E280.H23",
+      "sourceChoiceId": "E280.1",
+      "heroId": "hero.lord_aylen",
+      "heroName": "Лорд Айлен",
+      "heroLine": "У некоторых корон срок жизни — один рассвет. Обязательства обычно держатся дольше"
+    },
+    {
+      "id": "E281.H35",
+      "sourceChoiceId": "E281.3",
+      "heroId": "hero.khulan_star",
+      "heroName": "Хулан Звезда",
+      "heroLine": "Он продаёт не место. Он продаёт чужое терпение"
+    },
+    {
+      "id": "E282.H24",
+      "sourceChoiceId": "E282.3",
+      "heroId": "hero.ysra_moss",
+      "heroName": "Исра Мох",
+      "heroLine": "Удивительно. Он предусмотрел невозможность исполнения и назвал её услугой"
+    },
+    {
+      "id": "E283.H10",
+      "sourceChoiceId": "E283.3",
+      "heroId": "hero.orion_step",
+      "heroName": "Орион Шаг",
+      "heroLine": "Поворот я восстановлю. А вот насколько опасно было после слова “опасно”, придётся выяснять на месте"
+    },
+    {
+      "id": "E284.H09",
+      "sourceChoiceId": "E284.3",
+      "heroId": "hero.nemea_quill",
+      "heroName": "Немея Перо",
+      "heroLine": "У меня таких было три. Теперь жалею, что тратил на еду"
+    },
+    {
+      "id": "E285.H21",
+      "sourceChoiceId": "E285.3",
+      "heroId": "hero.maeve_root",
+      "heroName": "Мейв Корень",
+      "heroLine": "Мы можем снять его без лестницы. Только Зику это не понравится"
+    },
+    {
+      "id": "E286.H13",
+      "sourceChoiceId": "E286.3",
+      "heroId": "hero.cassian_coin",
+      "heroName": "Кассиан Монета",
+      "heroLine": "Сундук безопасен. Для всех, кроме того, кто внутри"
+    },
+    {
+      "id": "E287.H11",
+      "sourceChoiceId": "E287.3",
+      "heroId": "hero.abbess_celene",
+      "heroName": "Аббатиса Селена",
+      "heroLine": "Он продал ангелу светящееся кольцо и всё ещё пытается увеличить чек. Смелость впечатляет"
+    },
+    {
+      "id": "E288.H21",
+      "sourceChoiceId": "E288.3",
+      "heroId": "hero.maeve_root",
+      "heroName": "Мейв Корень",
+      "heroLine": "Мне больно это признавать, но она действительно держит"
+    },
+    {
+      "id": "E289.H26",
+      "sourceChoiceId": "E289.3",
+      "heroId": "hero.velka_urn",
+      "heroName": "Велька Урна",
+      "heroLine": "Тогда сначала надо вспомнить не дорогу. Имя"
+    },
+    {
+      "id": "E290.H28",
+      "sourceChoiceId": "E290.3",
+      "heroId": "hero.suri_ash",
+      "heroName": "Сури Пепел",
+      "heroLine": "Если тянуть ангела вниз, сеть затянется. Сначала надо договориться с восьминогим владельцем"
+    },
+    {
+      "id": "E291.H23",
+      "sourceChoiceId": "E291.1",
+      "heroId": "hero.lord_aylen",
+      "heroName": "Лорд Айлен",
+      "heroLine": "Когда право на землю сводят к достоинству правителя, отказаться от проверки труднее, чем кажется"
+    },
+    {
+      "id": "E292.H30",
+      "sourceChoiceId": "E292.3",
+      "heroId": "hero.daro_last",
+      "heroName": "Даро Последний",
+      "heroLine": "Не знаю, что хуже: охрана или программа лояльности"
+    },
+    {
+      "id": "E293.H08",
+      "sourceChoiceId": "E293.3",
+      "heroId": "hero.ivar_lens",
+      "heroName": "Ивар Линза",
+      "heroLine": "Надпись старая. Имя нанесли тогда же. Значит, кто-то знал Эдрана раньше, чем он родился"
+    },
+    {
+      "id": "E294.H14",
+      "sourceChoiceId": "E294.3",
+      "heroId": "hero.viola_mask",
+      "heroName": "Виола Маска",
+      "heroLine": "Если организаторы хотели запретить нежить, стоило написать “нежить”, а не философское определение жизни"
+    },
+    {
+      "id": "E295.H19",
+      "sourceChoiceId": "E295.3",
+      "heroId": "hero.briar_sister",
+      "heroName": "Сестра Терн",
+      "heroLine": "Он говорит правду. Дерево уже умирает изнутри"
+    },
+    {
+      "id": "E296.H12",
+      "sourceChoiceId": "E296.1",
+      "heroId": "hero.deacon_mirel",
+      "heroName": "Диакон Мирель",
+      "heroLine": "Милосердие ничего не доказывает, пока защищать приходится того, кого защищать неприятно"
+    },
+    {
+      "id": "E297.H17",
+      "sourceChoiceId": "E297.3",
+      "heroId": "hero.old_marin",
+      "heroName": "Старый Марин",
+      "heroLine": "Они оба правы. Просто один говорит о рассвете, другая — о вечере"
+    },
+    {
+      "id": "E298.H22",
+      "sourceChoiceId": "E298.1",
+      "heroId": "hero.puck_ember",
+      "heroName": "Пак Уголёк",
+      "heroLine": "Удивительно. Впервые на поле есть командующий, который точно не понимает, что от него хотят"
+    },
+    {
+      "id": "E299.H34",
+      "sourceChoiceId": "E299.3",
+      "heroId": "hero.saran_dawn",
+      "heroName": "Саран Рассвет",
+      "heroLine": "Наконец-то рынок, к которому я готов"
+    },
+    {
+      "id": "E300.H11",
+      "sourceChoiceId": "E300.3",
+      "heroId": "hero.abbess_celene",
+      "heroName": "Аббатиса Селена",
+      "heroLine": "Они не спорят о том, что произошло. Они описывают четыре разных момента одной ночи"
+    },
+    {
+      "id": "E301.H05",
+      "sourceChoiceId": "E301.3",
+      "heroId": "hero.lady_sorn",
+      "heroName": "Леди Сорн",
+      "heroLine": "Вы хотите решить бухгалтерскую ошибку похоронами живого человека?"
+    },
+    {
+      "id": "E302.H01",
+      "sourceChoiceId": "E302.3",
+      "heroId": "hero.aldric_wall",
+      "heroName": "Альдрик Стена",
+      "heroLine": "Повозку можно поднять. А вот решить, кому верить, будет сложнее"
+    },
+    {
+      "id": "E303.H12",
+      "sourceChoiceId": "E303.3",
+      "heroId": "hero.deacon_mirel",
+      "heroName": "Диакон Мирель",
+      "heroLine": "Сначала пусть невеста скажет “да”. Потом уже можно спорить, перед каким алтарём это записывать"
+    },
+    {
+      "id": "E304.H02",
+      "sourceChoiceId": "E304.3",
+      "heroId": "hero.mara_chain",
+      "heroName": "Мара Цепь",
+      "heroLine": "Если люди начинают шептать ругательства в унисон, закон уже не работает"
+    },
+    {
+      "id": "E305.H05",
+      "sourceChoiceId": "E305.3",
+      "heroId": "hero.lady_sorn",
+      "heroName": "Леди Сорн",
+      "heroLine": "Если это подлинник, покойный король был гораздо интереснее, чем пишут хроники"
+    },
+    {
+      "id": "E306.H12",
+      "sourceChoiceId": "E306.3",
+      "heroId": "hero.deacon_mirel",
+      "heroName": "Диакон Мирель",
+      "heroLine": "Стены не прокляты. Кто-то заставил их говорить"
+    },
+    {
+      "id": "E307.H19",
+      "sourceChoiceId": "E307.3",
+      "heroId": "hero.briar_sister",
+      "heroName": "Сестра Терн",
+      "heroLine": "Он ещё не умер. Просто перестал стоять"
+    },
+    {
+      "id": "E308.H20",
+      "sourceChoiceId": "E308.3",
+      "heroId": "hero.roan_stag",
+      "heroName": "Роан Олень",
+      "heroLine": "Он не убегает от охотников. Он водит их туда, куда хочет"
+    },
+    {
+      "id": "E309.H32",
+      "sourceChoiceId": "E309.3",
+      "heroId": "hero.altana_bow",
+      "heroName": "Алтана Лук",
+      "heroLine": "Кто бы ни ответил, он ждёт именно следующего звука"
+    },
+    {
+      "id": "E310.H05",
+      "sourceChoiceId": "E310.3",
+      "heroId": "hero.lady_sorn",
+      "heroName": "Леди Сорн",
+      "heroLine": "У неё сильная линия защиты: полное отсутствие уважения к процессу"
+    },
+    {
+      "id": "E311.H01",
+      "sourceChoiceId": "E311.3",
+      "heroId": "hero.aldric_wall",
+      "heroName": "Альдрик Стена",
+      "heroLine": "Планировка меняется. Несущие стены — нет"
+    },
+    {
+      "id": "E312.H17",
+      "sourceChoiceId": "E312.3",
+      "heroId": "hero.old_marin",
+      "heroName": "Старый Марин",
+      "heroLine": "Они не пишут заново. Они пытаются закончить одно и то же предложение"
+    },
+    {
+      "id": "E313.H16",
+      "sourceChoiceId": "E313.3",
+      "heroId": "hero.tessa_gull",
+      "heroName": "Тесса Чайка",
+      "heroLine": "Проиграть убедительно иногда труднее, чем победить"
+    },
+    {
+      "id": "E314.H13",
+      "sourceChoiceId": "E314.3",
+      "heroId": "hero.cassian_coin",
+      "heroName": "Кассиан Монета",
+      "heroLine": "Если они начнут бой, первым погибнет ужин. Это может оказаться худшим исходом для всех"
+    },
+    {
+      "id": "E315.H12",
+      "sourceChoiceId": "E315.3",
+      "heroId": "hero.deacon_mirel",
+      "heroName": "Диакон Мирель",
+      "heroLine": "Проклятия здесь нет. Но тот, кто шил золотую кайму, действительно очень хотел, чтобы знаменосца было видно издалека"
+    },
+    {
+      "id": "E315.H27",
+      "sourceChoiceId": "E315.1",
+      "heroId": "hero.rath_banner",
+      "heroName": "Рат Знамя",
+      "heroLine": "Если спор идёт о кайме, значит, само знамя ещё признают все. Сохраним то, что осталось общим"
+    },
+    {
+      "id": "E316.H10",
+      "sourceChoiceId": "E316.3",
+      "heroId": "hero.orion_step",
+      "heroName": "Орион Шаг",
+      "heroLine": "Они идут по дороге и одновременно пытаются играть. Догнать будет несложно"
+    },
+    {
+      "id": "E317.H24",
+      "sourceChoiceId": "E317.3",
+      "heroId": "hero.ysra_moss",
+      "heroName": "Исра Мох",
+      "heroLine": "Любопытный случай: обе стороны требуют освободить друг друга от одного человека"
+    },
+    {
+      "id": "E317.H28",
+      "sourceChoiceId": "E317.2",
+      "heroId": "hero.suri_ash",
+      "heroName": "Сури Пепел",
+      "heroLine": "Иногда клетка становится привычнее дороги. Это не значит, что человеку больше некуда идти"
+    },
+    {
+      "id": "E318.H21",
+      "sourceChoiceId": "E318.3",
+      "heroId": "hero.maeve_root",
+      "heroName": "Мейв Корень",
+      "heroLine": "Дерево мягкое. Страж — нет"
+    },
+    {
+      "id": "E319.H26",
+      "sourceChoiceId": "E319.3",
+      "heroId": "hero.velka_urn",
+      "heroName": "Велька Урна",
+      "heroLine": "Имя убрали намеренно. Камень помнит резец"
+    },
+    {
+      "id": "E320.H26",
+      "sourceChoiceId": "E320.3",
+      "heroId": "hero.velka_urn",
+      "heroName": "Велька Урна",
+      "heroLine": "Они не прокляты играть. Они ждут окончания церемонии, которой никто не провёл"
+    },
+    {
+      "id": "E321.H35",
+      "sourceChoiceId": "E321.3",
+      "heroId": "hero.khulan_star",
+      "heroName": "Хулан Звезда",
+      "heroLine": "Редкий документ: автор присутствует и всё равно не может объяснить, что имел в виду"
+    },
+    {
+      "id": "E322.H33",
+      "sourceChoiceId": "E322.3",
+      "heroId": "hero.batu_cliff",
+      "heroName": "Бату Утёс",
+      "heroLine": "Внутри восемь этажей. Сто шагов набираются слишком легко"
+    },
+    {
+      "id": "E323.H05",
+      "sourceChoiceId": "E323.3",
+      "heroId": "hero.lady_sorn",
+      "heroName": "Леди Сорн",
+      "heroLine": "Право на символ можно признать и без необходимости проверять, на чём он будет держаться"
+    },
+    {
+      "id": "E324.H18",
+      "sourceChoiceId": "E324.3",
+      "heroId": "hero.elio_silk",
+      "heroName": "Элио Шёлк",
+      "heroLine": "Мне очень не нравится, что он уточнил направление"
+    },
+    {
+      "id": "E325.H35",
+      "sourceChoiceId": "E325.3",
+      "heroId": "hero.khulan_star",
+      "heroName": "Хулан Звезда",
+      "heroLine": "В документе всё безупречно. Кроме пункта, где дорога внезапно объявлена собственностью паука"
+    },
+    {
+      "id": "E326.H29",
+      "sourceChoiceId": "E326.3",
+      "heroId": "hero.empress_nahla",
+      "heroName": "Императрица Нахла",
+      "heroLine": "Самая опасная часть здесь не убийство. Пункт о толковании слова “свидетель”"
+    },
+    {
+      "id": "E327.H08",
+      "sourceChoiceId": "E327.3",
+      "heroId": "hero.ivar_lens",
+      "heroName": "Ивар Линза",
+      "heroLine": "Камень настоящий. Следов кладки нет. Кто-то очень аккуратно нарушает правила строительства"
+    },
+    {
+      "id": "E328.H05",
+      "sourceChoiceId": "E328.3",
+      "heroId": "hero.lady_sorn",
+      "heroName": "Леди Сорн",
+      "heroLine": "Удивительно. Здесь честность действительно ухудшает его положение"
+    },
+    {
+      "id": "E329.H07",
+      "sourceChoiceId": "E329.3",
+      "heroId": "hero.seraph_lyra",
+      "heroName": "Серафима Лира",
+      "heroLine": "Он больше не проверяет ложь. Он подсказывает её"
+    },
+    {
+      "id": "E330.H31",
+      "sourceChoiceId": "E330.3",
+      "heroId": "hero.temur_wind",
+      "heroName": "Темур Ветер",
+      "heroLine": "Они не враждуют. Оба боятся моста"
+    },
+    {
+      "id": "E331.H29",
+      "sourceChoiceId": "E331.3",
+      "heroId": "hero.empress_nahla",
+      "heroName": "Императрица Нахла",
+      "heroLine": "Он создал рынок из ожидания. К сожалению, весьма эффективный"
+    },
+    {
+      "id": "E332.H08",
+      "sourceChoiceId": "E332.3",
+      "heroId": "hero.ivar_lens",
+      "heroName": "Ивар Линза",
+      "heroLine": "Механизм тянет вверх. Что-то снизу тянет сильнее"
+    },
+    {
+      "id": "E333.H02",
+      "sourceChoiceId": "E333.3",
+      "heroId": "hero.mara_chain",
+      "heroName": "Мара Цепь",
+      "heroLine": "Совет уже высказался. Теперь спросите тех, кто варит это каждый день"
+    },
+    {
+      "id": "E334.H08",
+      "sourceChoiceId": "E334.3",
+      "heroId": "hero.ivar_lens",
+      "heroName": "Ивар Линза",
+      "heroLine": "Если он требует уважения, возможно, кто-то всё-таки дал ему достаточно мозгов, чтобы обижаться"
+    },
+    {
+      "id": "E335.H08",
+      "sourceChoiceId": "E335.3",
+      "heroId": "hero.ivar_lens",
+      "heroName": "Ивар Линза",
+      "heroLine": "Это уже не гвоздь. Но я не уверен, что им стоит об этом говорить"
+    },
+    {
+      "id": "E336.H10",
+      "sourceChoiceId": "E336.3",
+      "heroId": "hero.orion_step",
+      "heroName": "Орион Шаг",
+      "heroLine": "Он описал дорогу слишком подробно, чтобы придумать её. Значит, ошибка либо в карте, либо в мире"
+    },
+    {
+      "id": "E337.H14",
+      "sourceChoiceId": "E337.3",
+      "heroId": "hero.viola_mask",
+      "heroName": "Виола Маска",
+      "heroLine": "Честность не делает сделку хорошей. Но хотя бы сокращает чтение мелкого шрифта"
+    },
+    {
+      "id": "E338.H15",
+      "sourceChoiceId": "E338.3",
+      "heroId": "hero.renzo_bridge",
+      "heroName": "Ренцо Мост",
+      "heroLine": "Если дать им ещё сутки, они начнут войну не из-за ада, а из-за очереди"
+    },
+    {
+      "id": "E339.H12",
+      "sourceChoiceId": "E339.3",
+      "heroId": "hero.deacon_mirel",
+      "heroName": "Диакон Мирель",
+      "heroLine": "Оно не боится темноты. Оно боится того, что приходит вместе с ней"
+    },
+    {
+      "id": "E340.H14",
+      "sourceChoiceId": "E340.3",
+      "heroId": "hero.viola_mask",
+      "heroName": "Виола Маска",
+      "heroLine": "Хорошая новость: договор короткий. Плохая: ошибка занимает половину текста"
+    },
+    {
+      "id": "E341.H34",
+      "sourceChoiceId": "E341.3",
+      "heroId": "hero.saran_dawn",
+      "heroName": "Саран Рассвет",
+      "heroLine": "Удивительно мирный способ провести день для существа из ада"
+    },
+    {
+      "id": "E342.H08",
+      "sourceChoiceId": "E342.3",
+      "heroId": "hero.ivar_lens",
+      "heroName": "Ивар Линза",
+      "heroLine": "Портал стоит крепко. Жаль, что не там"
+    },
+    {
+      "id": "E343.H24",
+      "sourceChoiceId": "E343.3",
+      "heroId": "hero.ysra_moss",
+      "heroName": "Исра Мох",
+      "heroLine": "Иногда признать опоздание полезнее, чем пытаться исправить его ещё одним событием"
+    },
+    {
+      "id": "E344.H01",
+      "sourceChoiceId": "E344.3",
+      "heroId": "hero.aldric_wall",
+      "heroName": "Альдрик Стена",
+      "heroLine": "Он горячий, тонкий и светится. По крайней мере, проблема честная"
+    },
+    {
+      "id": "E345.H12",
+      "sourceChoiceId": "E345.3",
+      "heroId": "hero.deacon_mirel",
+      "heroName": "Диакон Мирель",
+      "heroLine": "Намерение может быть грехом. Но приговор за несовершённый поступок — уже грех суда"
+    },
+    {
+      "id": "E346.H32",
+      "sourceChoiceId": "E346.3",
+      "heroId": "hero.altana_bow",
+      "heroName": "Алтана Лук",
+      "heroLine": "Похоже, он пытался ответить на вопрос, который ему вообще не задавали"
+    },
+    {
+      "id": "E347.H20",
+      "sourceChoiceId": "E347.3",
+      "heroId": "hero.roan_stag",
+      "heroName": "Роан Олень",
+      "heroLine": "Они не ищут его. Они знают, где он, и идут без спешки"
+    },
+    {
+      "id": "E347.H28",
+      "sourceChoiceId": "E347.1",
+      "heroId": "hero.suri_ash",
+      "heroName": "Сури Пепел",
+      "heroLine": "Охотники уже идут сюда. Я знаю, как выглядит путь того, кому некуда возвращаться"
+    },
+    {
+      "id": "E348.H24",
+      "sourceChoiceId": "E348.3",
+      "heroId": "hero.ysra_moss",
+      "heroName": "Исра Мох",
+      "heroLine": "Поздравляю. Мы нашли спор о земле, где одна из сторон — воздух"
+    },
+    {
+      "id": "E348.H36",
+      "sourceChoiceId": "E348.1",
+      "heroId": "hero.ergen_cloud",
+      "heroName": "Эрген Облако",
+      "heroLine": "Дорога не перестаёт быть дорогой только потому, что кто-то временно решил поселиться над ней"
+    },
+    {
+      "id": "E349.H29",
+      "sourceChoiceId": "E349.3",
+      "heroId": "hero.empress_nahla",
+      "heroName": "Императрица Нахла",
+      "heroLine": "Редкий случай, когда богатство действительно мешает получить деньги"
+    },
+    {
+      "id": "E350.H07",
+      "sourceChoiceId": "E350.3",
+      "heroId": "hero.seraph_lyra",
+      "heroName": "Серафима Лира",
+      "heroLine": "Если он способен отказаться выходить, возможно, сначала стоит спросить почему"
+    },
+    {
+      "id": "E351.H14",
+      "sourceChoiceId": "E351.3",
+      "heroId": "hero.viola_mask",
+      "heroName": "Виола Маска",
+      "heroLine": "Слишком удобная улика. Настоящие враги редко работают так вежливо"
+    },
+    {
+      "id": "E352.H12",
+      "sourceChoiceId": "E352.3",
+      "heroId": "hero.deacon_mirel",
+      "heroName": "Диакон Мирель",
+      "heroLine": "Я обещаю только первое"
+    },
+    {
+      "id": "E353.H24",
+      "sourceChoiceId": "E353.3",
+      "heroId": "hero.ysra_moss",
+      "heroName": "Исра Мох",
+      "heroLine": "У них уже есть граница, торговый спор и вопрос воздушного пространства. Осталось учредить два государства"
+    },
+    {
+      "id": "E354.H31",
+      "sourceChoiceId": "E354.3",
+      "heroId": "hero.temur_wind",
+      "heroName": "Темур Ветер",
+      "heroLine": "Страх не мешает идти. Он просто требует больше времени на первый шаг"
+    },
+    {
+      "id": "E355.H24",
+      "sourceChoiceId": "E355.3",
+      "heroId": "hero.ysra_moss",
+      "heroName": "Исра Мох",
+      "heroLine": "Похоже, единственная сторона без документов и есть главная причина спора"
+    },
+    {
+      "id": "E356.H18",
+      "sourceChoiceId": "E356.3",
+      "heroId": "hero.elio_silk",
+      "heroName": "Элио Шёлк",
+      "heroLine": "Если там есть кухня, значит, продукты как-то попадают внутрь"
+    },
+    {
+      "id": "E357.H19",
+      "sourceChoiceId": "E357.3",
+      "heroId": "hero.briar_sister",
+      "heroName": "Сестра Терн",
+      "heroLine": "Можно взять не весь цветок. Для лекарства хватит части корня — если работать осторожно"
+    },
+    {
+      "id": "E358.H04",
+      "sourceChoiceId": "E358.3",
+      "heroId": "hero.vael_hammer",
+      "heroName": "Ваэль Молот",
+      "heroLine": "Если хотя бы половина истории правда, ему нужен не девятый шанс, а новая профессия"
+    },
+    {
+      "id": "E358.H30",
+      "sourceChoiceId": "E358.1",
+      "heroId": "hero.daro_last",
+      "heroName": "Даро Последний",
+      "heroLine": "После восьмой чудом пережитой смерти перестаёшь спорить со словом “последняя”. Сначала уведём его отсюда"
+    },
+    {
+      "id": "E359.H29",
+      "sourceChoiceId": "E359.3",
+      "heroId": "hero.empress_nahla",
+      "heroName": "Императрица Нахла",
+      "heroLine": "Память хороша. Нотариальное оформление — ещё лучше"
+    },
+    {
+      "id": "E360.H22",
+      "sourceChoiceId": "E360.3",
+      "heroId": "hero.puck_ember",
+      "heroName": "Пак Уголёк",
+      "heroLine": "Судя по голосу, выгонять его до развязки действительно опаснее"
+    },
+    {
+      "id": "E361.H27",
+      "sourceChoiceId": "E361.3",
+      "heroId": "hero.rath_banner",
+      "heroName": "Рат Знамя",
+      "heroLine": "Он исправен. Это делает спор значительно интереснее"
+    },
+    {
+      "id": "E362.H08",
+      "sourceChoiceId": "E362.3",
+      "heroId": "hero.ivar_lens",
+      "heroName": "Ивар Линза",
+      "heroLine": "Механика исправна. Значит, проблема именно во “внутреннем решении”"
+    },
+    {
+      "id": "E363.H05",
+      "sourceChoiceId": "E363.3",
+      "heroId": "hero.lady_sorn",
+      "heroName": "Леди Сорн",
+      "heroLine": "Он признаёт все доказательства и всё равно отказывает. Очень человеческая бюрократия для машины"
+    },
+    {
+      "id": "E364.H03",
+      "sourceChoiceId": "E364.3",
+      "heroId": "hero.brother_orell",
+      "heroName": "Брат Орелл",
+      "heroLine": "Механизм не теряет минуту. Он её избегает"
+    },
+    {
+      "id": "E365.H19",
+      "sourceChoiceId": "E365.3",
+      "heroId": "hero.briar_sister",
+      "heroName": "Сестра Терн",
+      "heroLine": "Вопрос уже не в том, откуда он это знает. Вопрос — почему именно теперь вспомнил"
+    },
+    {
+      "id": "E366.H08",
+      "sourceChoiceId": "E366.3",
+      "heroId": "hero.ivar_lens",
+      "heroName": "Ивар Линза",
+      "heroLine": "Прежде чем обсуждать право машины закончить службу, я хочу исключить сломанный узел, который говорит её голосом"
+    },
+    {
+      "id": "E367.H25",
+      "sourceChoiceId": "E367.3",
+      "heroId": "hero.kael_cinder",
+      "heroName": "Каэль Уголь",
+      "heroLine": "У меня впервые есть предмет, который дорожает от того, что бесполезен"
+    },
+    {
+      "id": "E368.H16",
+      "sourceChoiceId": "E368.3",
+      "heroId": "hero.tessa_gull",
+      "heroName": "Тесса Чайка",
+      "heroLine": "Он не держит мост. Он следит за рекой"
+    },
+    {
+      "id": "E369.H20",
+      "sourceChoiceId": "E369.3",
+      "heroId": "hero.roan_stag",
+      "heroName": "Роан Олень",
+      "heroLine": "Поймать его нетрудно. Поймать его без колокола в лоб — сложнее"
+    },
+    {
+      "id": "E370.H09",
+      "sourceChoiceId": "E370.3",
+      "heroId": "hero.nemea_quill",
+      "heroName": "Немея Перо",
+      "heroLine": "Дисциплина лучше, чем у половины ополчения, которое я видел"
+    },
+    {
+      "id": "E371.H26",
+      "sourceChoiceId": "E371.3",
+      "heroId": "hero.velka_urn",
+      "heroName": "Велька Урна",
+      "heroLine": "Он не охраняет тело от людей. Он лежит рядом с ним"
+    },
+    {
+      "id": "E372.H20",
+      "sourceChoiceId": "E372.3",
+      "heroId": "hero.roan_stag",
+      "heroName": "Роан Олень",
+      "heroLine": "Они не охраняют повозку. Они ждут возвращения именно сюда"
+    },
+    {
+      "id": "E373.H14",
+      "sourceChoiceId": "E373.3",
+      "heroId": "hero.viola_mask",
+      "heroName": "Виола Маска",
+      "heroLine": "Возврат средств я понимаю. Возврат вчера потребует более сильного отдела обслуживания"
+    },
+    {
+      "id": "E374.H19",
+      "sourceChoiceId": "E374.3",
+      "heroId": "hero.briar_sister",
+      "heroName": "Сестра Терн",
+      "heroLine": "Для них это уже не мусор. Пожалуй, именно так и начинаются святыни"
+    },
+    {
+      "id": "E375.H31",
+      "sourceChoiceId": "E375.3",
+      "heroId": "hero.temur_wind",
+      "heroName": "Темур Ветер",
+      "heroLine": "Наконец-то маршрут, где полезно демонстративно ошибаться"
+    },
+    {
+      "id": "E376.H24",
+      "sourceChoiceId": "E376.3",
+      "heroId": "hero.ysra_moss",
+      "heroName": "Исра Мох",
+      "heroLine": "Впервые вижу стража, которого нельзя подкупить и который при этом формально прав"
+    },
+    {
+      "id": "E377.H33",
+      "sourceChoiceId": "E377.3",
+      "heroId": "hero.batu_cliff",
+      "heroName": "Бату Утёс",
+      "heroLine": "Броня ещё пригодна. Как недвижимость — тоже, судя по всему"
+    },
+    {
+      "id": "E378.H30",
+      "sourceChoiceId": "E378.3",
+      "heroId": "hero.daro_last",
+      "heroName": "Даро Последний",
+      "heroLine": "Главное — не выбирать. За минуту выбор опаснее цены"
+    },
+    {
+      "id": "E379.H09",
+      "sourceChoiceId": "E379.3",
+      "heroId": "hero.nemea_quill",
+      "heroName": "Немея Перо",
+      "heroLine": "Как военный объект дом слабый. Как реклама — впечатляет"
+    },
+    {
+      "id": "E380.H05",
+      "sourceChoiceId": "E380.3",
+      "heroId": "hero.lady_sorn",
+      "heroName": "Леди Сорн",
+      "heroLine": "Очень редкий вид дракона. Судя по следу, сделан из сосны"
+    },
+    {
+      "id": "E381.H22",
+      "sourceChoiceId": "E381.3",
+      "heroId": "hero.puck_ember",
+      "heroName": "Пак Уголёк",
+      "heroLine": "Я уважаю ложь, в которую вложено двадцать три названия. Но сначала посмотрим, сколько там еды"
+    },
+    {
+      "id": "E382.H16",
+      "sourceChoiceId": "E382.3",
+      "heroId": "hero.tessa_gull",
+      "heroName": "Тесса Чайка",
+      "heroLine": "По крайней мере, парковаться она умеет"
+    },
+    {
+      "id": "E383.H35",
+      "sourceChoiceId": "E383.3",
+      "heroId": "hero.khulan_star",
+      "heroName": "Хулан Звезда",
+      "heroLine": "Если это действительно все его записи, банк удивительно легко помещается в детских руках"
+    },
+    {
+      "id": "E384.H21",
+      "sourceChoiceId": "E384.3",
+      "heroId": "hero.maeve_root",
+      "heroName": "Мейв Корень",
+      "heroLine": "Катапульта исправна. Сервис доставки — нет"
+    },
+    {
+      "id": "E385.H11",
+      "sourceChoiceId": "E385.3",
+      "heroId": "hero.abbess_celene",
+      "heroName": "Аббатиса Селена",
+      "heroLine": "Восхищает, что никто не спросил самих путников, куда они едут"
+    },
+    {
+      "id": "E386.H21",
+      "sourceChoiceId": "E386.3",
+      "heroId": "hero.maeve_root",
+      "heroName": "Мейв Корень",
+      "heroLine": "Я не уверен насчёт радуги. Но конструкцию он собрал отлично"
+    },
+    {
+      "id": "E387.H34",
+      "sourceChoiceId": "E387.3",
+      "heroId": "hero.saran_dawn",
+      "heroName": "Саран Рассвет",
+      "heroLine": "Похоже, он сменил пост, но не профессию"
+    },
+    {
+      "id": "E388.H17",
+      "sourceChoiceId": "E388.3",
+      "heroId": "hero.old_marin",
+      "heroName": "Старый Марин",
+      "heroLine": "Не думал, что спор о природе души закончится дробями"
+    },
+    {
+      "id": "E389.H14",
+      "sourceChoiceId": "E389.3",
+      "heroId": "hero.viola_mask",
+      "heroName": "Виола Маска",
+      "heroLine": "Юридически он подготовился. Практически — забыл, что клиент дышит огнём"
+    },
+    {
+      "id": "E390.H20",
+      "sourceChoiceId": "E390.3",
+      "heroId": "hero.roan_stag",
+      "heroName": "Роан Олень",
+      "heroLine": "Они оба правы. Купец ушёл сам, а преследователь выбрал другой путь"
+    },
+    {
+      "id": "E391.H34",
+      "sourceChoiceId": "E391.3",
+      "heroId": "hero.saran_dawn",
+      "heroName": "Саран Рассвет",
+      "heroLine": "Если продолжит, семьи объединятся хотя бы ради того, чтобы остановить его"
+    },
+    {
+      "id": "E392.H07",
+      "sourceChoiceId": "E392.3",
+      "heroId": "hero.seraph_lyra",
+      "heroName": "Серафима Лира",
+      "heroLine": "Он может не считать себя святым. Это никогда не мешало людям считать иначе"
+    },
+    {
+      "id": "E393.H33",
+      "sourceChoiceId": "E393.3",
+      "heroId": "hero.batu_cliff",
+      "heroName": "Бату Утёс",
+      "heroLine": "Можно спорить о длине. Главное, что она не меняется под ногами"
+    },
+    {
+      "id": "E394.H09",
+      "sourceChoiceId": "E394.3",
+      "heroId": "hero.nemea_quill",
+      "heroName": "Немея Перо",
+      "heroLine": "Он действительно самый спокойный участник этой сцены"
+    },
+    {
+      "id": "E395.H16",
+      "sourceChoiceId": "E395.3",
+      "heroId": "hero.tessa_gull",
+      "heroName": "Тесса Чайка",
+      "heroLine": "Я бы тоже не торопился"
+    },
+    {
+      "id": "E395.H16.2",
+      "sourceChoiceId": "E395.1",
+      "heroId": "hero.tessa_gull",
+      "heroName": "Тесса Чайка",
+      "heroLine": "Развести противников проще, если каждый уверен, что именно ему достался лучший берег"
+    },
+    {
+      "id": "E396.H17",
+      "sourceChoiceId": "E396.3",
+      "heroId": "hero.old_marin",
+      "heroName": "Старый Марин",
+      "heroLine": "Они спорят не о цветке. Они спорят о том, кто имеет право назвать его лишним"
+    },
+    {
+      "id": "E397.H07",
+      "sourceChoiceId": "E397.3",
+      "heroId": "hero.seraph_lyra",
+      "heroName": "Серафима Лира",
+      "heroLine": "Метод сомнительный. Забота — нет"
+    },
+    {
+      "id": "E398.H14",
+      "sourceChoiceId": "E398.3",
+      "heroId": "hero.viola_mask",
+      "heroName": "Виола Маска",
+      "heroLine": "Не исправляйте пьесу. Сначала расскажите, кто дал вам право на эту версию Короля"
+    },
+    {
+      "id": "E399.H26",
+      "sourceChoiceId": "E399.3",
+      "heroId": "hero.velka_urn",
+      "heroName": "Велька Урна",
+      "heroLine": "Они не нападают и не говорят. Просто выполняют последний маршрут — но, похоже, уже не тот"
+    },
+    {
+      "id": "E399.H30",
+      "sourceChoiceId": "E399.1",
+      "heroId": "hero.daro_last",
+      "heroName": "Даро Последний",
+      "heroLine": "Он уже пережил худшую часть этой дороги. Не заставляйте его доказывать это ещё раз"
+    },
+    {
+      "id": "E400.H05",
+      "sourceChoiceId": "E400.3",
+      "heroId": "hero.lady_sorn",
+      "heroName": "Леди Сорн",
+      "heroLine": "Предлагаю начать с тех, кто ещё не успел поставить кассу"
+    },
+    {
+      "id": "E400.H23",
+      "sourceChoiceId": "E400.1",
+      "heroId": "hero.lord_aylen",
+      "heroName": "Лорд Айлен",
+      "heroLine": "Если каждый владеет дорогой только потому, что когда-то по ней прошёл, она не принадлежит никому. Значит, пусть будет общей"
+    },
+    {
+      "id": "E401.H08",
+      "sourceChoiceId": "E401.3",
+      "heroId": "hero.ivar_lens",
+      "heroName": "Ивар Линза",
+      "heroLine": "Если механизм исправен, значит, кто-то очень старательно делает его неисправным каждый день"
+    },
+    {
+      "id": "E402.H05",
+      "sourceChoiceId": "E402.3",
+      "heroId": "hero.lady_sorn",
+      "heroName": "Леди Сорн",
+      "heroLine": "Он защищал город от армии. Не думаю, что хотел защищать его от торговли следующие восемнадцать лет"
+    },
+    {
+      "id": "E402.H06",
+      "sourceChoiceId": "E402.1",
+      "heroId": "hero.tomas_gate",
+      "heroName": "Томас Вратарь",
+      "heroLine": "Ворота должны помнить войну. Но не обязаны продолжать её после всех остальных"
+    },
+    {
+      "id": "E403.H07",
+      "sourceChoiceId": "E403.3",
+      "heroId": "hero.seraph_lyra",
+      "heroName": "Серафима Лира",
+      "heroLine": "Я вижу страх, усталость и очень плохую бухгалтерию. Болезни пока не вижу"
+    },
+    {
+      "id": "E404.H33",
+      "sourceChoiceId": "E404.3",
+      "heroId": "hero.batu_cliff",
+      "heroName": "Бату Утёс",
+      "heroLine": "Это первый раз, когда я вижу сооружение, которое нужно победить до того, как им воспользоваться"
+    },
+    {
+      "id": "E404.H15",
+      "sourceChoiceId": "E404.3",
+      "heroId": "hero.renzo_bridge",
+      "heroName": "Ренцо Мост",
+      "heroLine": "Я видел много плохих переправ. Эта хотя бы честно показывает, что строили её не ради путников"
+    },
+    {
+      "id": "E405.H04",
+      "sourceChoiceId": "E405.3",
+      "heroId": "hero.vael_hammer",
+      "heroName": "Ваэль Молот",
+      "heroLine": "Если догоню — сначала остановлю карету. Потом пусть продолжают правосудие сколько хотят"
+    },
+    {
+      "id": "E406.H25",
+      "sourceChoiceId": "E406.2",
+      "heroId": "hero.kael_cinder",
+      "heroName": "Каэль Уголь",
+      "heroLine": "Он учит их переживать поражение. Обычно эту часть военной науки начинают преподавать слишком поздно"
+    },
+    {
+      "id": "E407.H19",
+      "sourceChoiceId": "E407.3",
+      "heroId": "hero.briar_sister",
+      "heroName": "Сестра Терн",
+      "heroLine": "Оно не проклято. Оно действительно просто оскорблено. Честно говоря, это хуже"
+    },
+    {
+      "id": "E408.H14",
+      "sourceChoiceId": "E408.3",
+      "heroId": "hero.viola_mask",
+      "heroName": "Виола Маска",
+      "heroLine": "Ритм повторяется. Может, нам не нужен певец — нужен тот, кто умеет запоминать"
+    },
+    {
+      "id": "E409.H04",
+      "sourceChoiceId": "E409.3",
+      "heroId": "hero.vael_hammer",
+      "heroName": "Ваэль Молот",
+      "heroLine": "Я могу его перехватить. Но мне очень не нравится мысль о погоне за священным почтальоном"
+    },
+    {
+      "id": "E410.H07",
+      "sourceChoiceId": "E410.3",
+      "heroId": "hero.seraph_lyra",
+      "heroName": "Серафима Лира",
+      "heroLine": "Святость, возможно, переживёт рубахи. А вот хранитель — не уверен"
+    },
+    {
+      "id": "E411.H14",
+      "sourceChoiceId": "E411.3",
+      "heroId": "hero.viola_mask",
+      "heroName": "Виола Маска",
+      "heroLine": "Я понимаю традицию. Я не понимаю, почему мишени поставили рядом с людьми"
+    },
+    {
+      "id": "E412.H32",
+      "sourceChoiceId": "E412.3",
+      "heroId": "hero.altana_bow",
+      "heroName": "Алтана Лук",
+      "heroLine": "Возможно, последнего шага никогда не было одного. Две группы расходятся намеренно"
+    },
+    {
+      "id": "E413.H02",
+      "sourceChoiceId": "E413.3",
+      "heroId": "hero.mara_chain",
+      "heroName": "Мара Цепь",
+      "heroLine": "Если это действительно еда перед последней атакой, я хотел бы уточнить, почему все просят добавки"
+    },
+    {
+      "id": "E414.H21",
+      "sourceChoiceId": "E414.3",
+      "heroId": "hero.maeve_root",
+      "heroName": "Мейв Корень",
+      "heroLine": "Силу можно измерить камнем. Принадлежность к семье — вряд ли"
+    },
+    {
+      "id": "E415.H11",
+      "sourceChoiceId": "E415.3",
+      "heroId": "hero.abbess_celene",
+      "heroName": "Аббатиса Селена",
+      "heroLine": "К вечеру у них либо кончатся деньги, либо останется слишком много новых шрамов"
+    },
+    {
+      "id": "E416.H31",
+      "sourceChoiceId": "E416.3",
+      "heroId": "hero.temur_wind",
+      "heroName": "Темур Ветер",
+      "heroLine": "Не думаю, что его можно убедить копьём. Попробую договориться как с коллегой"
+    },
+    {
+      "id": "E417.H03",
+      "sourceChoiceId": "E417.3",
+      "heroId": "hero.brother_orell",
+      "heroName": "Брат Орелл",
+      "heroLine": "Ошибки тут нет. Здесь целая новая внешняя политика"
+    },
+    {
+      "id": "E418.H32",
+      "sourceChoiceId": "E418.3",
+      "heroId": "hero.altana_bow",
+      "heroName": "Алтана Лук",
+      "heroLine": "Полезное пророчество. Особенно если когда-нибудь узнаем, к какому вопросу оно относилось"
+    },
+    {
+      "id": "E419.H29",
+      "sourceChoiceId": "E419.3",
+      "heroId": "hero.empress_nahla",
+      "heroName": "Императрица Нахла",
+      "heroLine": "Кажется, один из избирателей всё-таки хочет пересчитать голоса"
+    },
+    {
+      "id": "E420.H26",
+      "sourceChoiceId": "E420.3",
+      "heroId": "hero.velka_urn",
+      "heroName": "Велька Урна",
+      "heroLine": "Он не проклят. Он просто пятьдесят лет ходит не по адресу"
+    },
+    {
+      "id": "E421.H29",
+      "sourceChoiceId": "E421.3",
+      "heroId": "hero.empress_nahla",
+      "heroName": "Императрица Нахла",
+      "heroLine": "Кто-то не просто вошёл без ключа. Он ещё и хотел, чтобы подозрение выглядело скучно"
+    },
+    {
+      "id": "E422.H26",
+      "sourceChoiceId": "E422.1",
+      "heroId": "hero.velka_urn",
+      "heroName": "Велька Урна",
+      "heroLine": "Бессмертие тоже держится на вещах, которые можно потерять. Откроем сундук осторожно"
+    },
+    {
+      "id": "E423.H25",
+      "sourceChoiceId": "E423.3",
+      "heroId": "hero.kael_cinder",
+      "heroName": "Каэль Уголь",
+      "heroLine": "Предлагаю сначала считать живых. Бумаги можно похоронить позже"
+    },
+    {
+      "id": "E424.H07",
+      "sourceChoiceId": "E424.3",
+      "heroId": "hero.seraph_lyra",
+      "heroName": "Серафима Лира",
+      "heroLine": "Голосов несколько. И они не поют для того, чтобы нас напугать"
+    },
+    {
+      "id": "E425.H20",
+      "sourceChoiceId": "E425.3",
+      "heroId": "hero.roan_stag",
+      "heroName": "Роан Олень",
+      "heroLine": "Я умею работать с упрямыми ездовыми животными. Но обычно они не ядовитые и не участвуют в бракоразводном процессе"
+    },
+    {
+      "id": "E426.H05",
+      "sourceChoiceId": "E426.3",
+      "heroId": "hero.lady_sorn",
+      "heroName": "Леди Сорн",
+      "heroLine": "Редкий случай, когда мне хочется, чтобы трудовой спор длился как можно дольше"
+    },
+    {
+      "id": "E427.H14",
+      "sourceChoiceId": "E427.3",
+      "heroId": "hero.viola_mask",
+      "heroName": "Виола Маска",
+      "heroLine": "Неприятная правда перестаёт быть услугой в тот момент, когда продавец скрывает, что именно продаёт"
+    },
+    {
+      "id": "E428.H24",
+      "sourceChoiceId": "E428.3",
+      "heroId": "hero.ysra_moss",
+      "heroName": "Исра Мох",
+      "heroLine": "Они спорят не о том, чья она дочь. Они спорят о том, какой договор признать первым"
+    },
+    {
+      "id": "E429.H18",
+      "sourceChoiceId": "E429.3",
+      "heroId": "hero.elio_silk",
+      "heroName": "Элио Шёлк",
+      "heroLine": "Хорошая новость: убийца ещё не напал. Плохая: мы уже минуту стоим на очень удобном месте"
+    },
+    {
+      "id": "E430.H11",
+      "sourceChoiceId": "E430.3",
+      "heroId": "hero.abbess_celene",
+      "heroName": "Аббатиса Селена",
+      "heroLine": "Кажется, я поняла грамматику"
+    },
+    {
+      "id": "E431.H21",
+      "sourceChoiceId": "E431.3",
+      "heroId": "hero.maeve_root",
+      "heroName": "Мейв Корень",
+      "heroLine": "Стена держится. Что находится за ней — совсем другой вопрос"
+    },
+    {
+      "id": "E432.H21",
+      "sourceChoiceId": "E432.3",
+      "heroId": "hero.maeve_root",
+      "heroName": "Мейв Корень",
+      "heroLine": "Если арка рухнет, подпись всё равно окажется на полу. Только вместе с кварталом"
+    },
+    {
+      "id": "E433.H08",
+      "sourceChoiceId": "E433.3",
+      "heroId": "hero.ivar_lens",
+      "heroName": "Ивар Линза",
+      "heroLine": "Победителя можно будет объявить после того, как мы перестанем тонуть"
+    },
+    {
+      "id": "E434.H10",
+      "sourceChoiceId": "E434.3",
+      "heroId": "hero.orion_step",
+      "heroName": "Орион Шаг",
+      "heroLine": "Статую не поворачивали. Но кто-то очень недавно был у её руки"
+    },
+    {
+      "id": "E435.H29",
+      "sourceChoiceId": "E435.3",
+      "heroId": "hero.empress_nahla",
+      "heroName": "Императрица Нахла",
+      "heroLine": "Я впервые вижу налоговую систему, которую можно обмануть ножницами"
+    },
+    {
+      "id": "E436.H01",
+      "sourceChoiceId": "E436.3",
+      "heroId": "hero.aldric_wall",
+      "heroName": "Альдрик Стена",
+      "heroLine": "Ещё один спор — и данные получат уже о второй стадии обрушения"
+    },
+    {
+      "id": "E437.H14",
+      "sourceChoiceId": "E437.3",
+      "heroId": "hero.viola_mask",
+      "heroName": "Виола Маска",
+      "heroLine": "Формулировка безупречна. Именно поэтому он так зол"
+    },
+    {
+      "id": "E438.H17",
+      "sourceChoiceId": "E438.3",
+      "heroId": "hero.old_marin",
+      "heroName": "Старый Марин",
+      "heroLine": "Первое правило сна — не относиться к нему как к осаде крепости"
+    },
+    {
+      "id": "E439.H04",
+      "sourceChoiceId": "E439.3",
+      "heroId": "hero.vael_hammer",
+      "heroName": "Ваэль Молот",
+      "heroLine": "Кажется, мать уже ищет. Я бы предпочёл, чтобы она нашла ребёнка раньше нас"
+    },
+    {
+      "id": "E440.H12",
+      "sourceChoiceId": "E440.1",
+      "heroId": "hero.deacon_mirel",
+      "heroName": "Диакон Мирель",
+      "heroLine": "Он уже выбрал, кому доверяет. Возможно, разумные существа тоже иногда могут это уважать"
+    },
+    {
+      "id": "E441.H24",
+      "sourceChoiceId": "E441.3",
+      "heroId": "hero.ysra_moss",
+      "heroName": "Исра Мох",
+      "heroLine": "Не думала, что спасение души может зависеть от хорошего почерка. Но спорить с результатом не стану"
+    },
+    {
+      "id": "E442.H12",
+      "sourceChoiceId": "E442.3",
+      "heroId": "hero.deacon_mirel",
+      "heroName": "Диакон Мирель",
+      "heroLine": "Обычно я беспокоюсь, когда отражение живёт своей жизнью. Здесь меня больше беспокоит оригинал"
+    },
+    {
+      "id": "E443.H11",
+      "sourceChoiceId": "E443.3",
+      "heroId": "hero.abbess_celene",
+      "heroName": "Аббатиса Селена",
+      "heroLine": "Если небеса действительно выбрали тебя, они только что подали официальную жалобу"
+    },
+    {
+      "id": "E444.H05",
+      "sourceChoiceId": "E444.3",
+      "heroId": "hero.lady_sorn",
+      "heroName": "Леди Сорн",
+      "heroLine": "Не обещаю вернуть каждому его чудо. Но хотя бы перестанем советовать детям ремонтировать крепости"
+    },
+    {
+      "id": "E445.H11",
+      "sourceChoiceId": "E445.3",
+      "heroId": "hero.abbess_celene",
+      "heroName": "Аббатиса Селена",
+      "heroLine": "Значит, нам нужна не ложь. Нам нужен вопрос, на который они забудут получить ответ"
+    },
+    {
+      "id": "E446.H09",
+      "sourceChoiceId": "E446.3",
+      "heroId": "hero.nemea_quill",
+      "heroName": "Немея Перо",
+      "heroLine": "Если памятник рассказывает другую биографию, право последней правки должно быть хотя бы у живого оригинала"
+    },
+    {
+      "id": "E447.H22",
+      "sourceChoiceId": "E447.3",
+      "heroId": "hero.puck_ember",
+      "heroName": "Пак Уголёк",
+      "heroLine": "Она не играет быстрее него. Она просто знает, что он сделает за два хода до того, как он сам решит"
+    },
+    {
+      "id": "E448.H12",
+      "sourceChoiceId": "E448.3",
+      "heroId": "hero.deacon_mirel",
+      "heroName": "Диакон Мирель",
+      "heroLine": "Прощение не обязано означать отсутствие последствий. Иначе оно слишком удобно только одной стороне"
+    },
+    {
+      "id": "E449.H08",
+      "sourceChoiceId": "E449.3",
+      "heroId": "hero.ivar_lens",
+      "heroName": "Ивар Линза",
+      "heroLine": "Проблема не в огне. Проблема в том, что воздух выходит не туда"
+    },
+    {
+      "id": "E450.H34",
+      "sourceChoiceId": "E450.3",
+      "heroId": "hero.saran_dawn",
+      "heroName": "Саран Рассвет",
+      "heroLine": "Если первое впечатление стало обрядом, давайте хотя бы закончим обряд правильно"
+    },
+    {
+      "id": "E451.H03",
+      "sourceChoiceId": "E451.3",
+      "heroId": "hero.brother_orell",
+      "heroName": "Брат Орелл",
+      "heroLine": "Традиция должна переносить народ через время. Не удерживать его под падающей горой"
+    },
+    {
+      "id": "E452.H32",
+      "sourceChoiceId": "E452.3",
+      "heroId": "hero.altana_bow",
+      "heroName": "Алтана Лук",
+      "heroLine": "Холод идёт снизу. Нагревать поверхность можно до следующей зимы"
+    },
+    {
+      "id": "E453.H35",
+      "sourceChoiceId": "E453.3",
+      "heroId": "hero.khulan_star",
+      "heroName": "Хулан Звезда",
+      "heroLine": "Третий либо победил, либо сейчас узнает цену художественной смелости"
+    },
+    {
+      "id": "E454.H18",
+      "sourceChoiceId": "E454.3",
+      "heroId": "hero.elio_silk",
+      "heroName": "Элио Шёлк",
+      "heroLine": "Там ещё не горит. Но кто-то только что побежал именно туда"
+    },
+    {
+      "id": "E455.H17",
+      "sourceChoiceId": "E455.3",
+      "heroId": "hero.old_marin",
+      "heroName": "Старый Марин",
+      "heroLine": "Если приговор будет суровым, хотелось бы услышать план его исполнения"
+    },
+    {
+      "id": "E456.H01",
+      "sourceChoiceId": "E456.3",
+      "heroId": "hero.aldric_wall",
+      "heroName": "Альдрик Стена",
+      "heroLine": "Десяти минут у нас нет. Зато есть очень мотивированный таран"
+    },
+    {
+      "id": "E457.H26",
+      "sourceChoiceId": "E457.3",
+      "heroId": "hero.velka_urn",
+      "heroName": "Велька Урна",
+      "heroLine": "Память не исчезла. В ней словно вырвали одну страницу — и только одну"
+    },
+    {
+      "id": "E458.H15",
+      "sourceChoiceId": "E458.3",
+      "heroId": "hero.renzo_bridge",
+      "heroName": "Ренцо Мост",
+      "heroLine": "По крайней мере, у неё честнее вывеска, чем у половины трактиров"
+    },
+    {
+      "id": "E459.H23",
+      "sourceChoiceId": "E459.1",
+      "heroId": "hero.lord_aylen",
+      "heroName": "Лорд Айлен",
+      "heroLine": "Победить претендентов и захотеть править — два разных испытания. Я бы не путал их"
+    },
+    {
+      "id": "E460.H03",
+      "sourceChoiceId": "E460.3",
+      "heroId": "hero.brother_orell",
+      "heroName": "Брат Орелл",
+      "heroLine": "Если вор добровольно возвращает золото, я бы сначала выяснил, почему оно стало хуже тюрьмы"
+    },
+    {
+      "id": "E461.H14",
+      "sourceChoiceId": "E461.3",
+      "heroId": "hero.viola_mask",
+      "heroName": "Виола Маска",
+      "heroLine": "Войны начинались из-за меньшего количества знаков препинания"
+    },
+    {
+      "id": "E462.H29",
+      "sourceChoiceId": "E462.3",
+      "heroId": "hero.empress_nahla",
+      "heroName": "Императрица Нахла",
+      "heroLine": "Самое тревожное не то, что он двадцать лет делает ненужную деталь. А то, что кто-то когда-то посчитал её нужной"
+    },
+    {
+      "id": "E463.H33",
+      "sourceChoiceId": "E463.3",
+      "heroId": "hero.batu_cliff",
+      "heroName": "Бату Утёс",
+      "heroLine": "Стены исчезли. Зато привычка объезжать ворота пережила их прекрасно"
+    },
+    {
+      "id": "E463.H06",
+      "sourceChoiceId": "E463.1",
+      "heroId": "hero.tomas_gate",
+      "heroName": "Томас Вратарь",
+      "heroLine": "Здесь осталась должность без ворот и приказ без города. Такие вещи опаснее разобрать, чем камень"
+    },
+    {
+      "id": "E464.H26",
+      "sourceChoiceId": "E464.3",
+      "heroId": "hero.velka_urn",
+      "heroName": "Велька Урна",
+      "heroLine": "Если ни один не хочет смерти другого, возможно, вопрос об оригинале важнее нам, чем им"
+    },
+    {
+      "id": "E465.H15",
+      "sourceChoiceId": "E465.3",
+      "heroId": "hero.renzo_bridge",
+      "heroName": "Ренцо Мост",
+      "heroLine": "Если я её не вижу, это считается половиной путешественника?"
+    },
+    {
+      "id": "E466.H08",
+      "sourceChoiceId": "E466.1",
+      "heroId": "hero.ivar_lens",
+      "heroName": "Ивар Линза",
+      "heroLine": "Если они научились бояться, приказ включиться уже не ремонт. Сначала придётся разговаривать"
+    },
+    {
+      "id": "E467.H31",
+      "sourceChoiceId": "E467.3",
+      "heroId": "hero.temur_wind",
+      "heroName": "Темур Ветер",
+      "heroLine": "Он явно понимает систему. Вопрос только в том, насколько твёрдо установлены тарифы"
+    },
+    {
+      "id": "E468.H25",
+      "sourceChoiceId": "E468.3",
+      "heroId": "hero.kael_cinder",
+      "heroName": "Каэль Уголь",
+      "heroLine": "Судя по запасам, это не святотатство. Это профессия"
+    },
+    {
+      "id": "E469.H31",
+      "sourceChoiceId": "E469.3",
+      "heroId": "hero.temur_wind",
+      "heroName": "Темур Ветер",
+      "heroLine": "Она не убежала от него. Она вернулась за помощью"
+    },
+    {
+      "id": "E470.H21",
+      "sourceChoiceId": "E470.3",
+      "heroId": "hero.maeve_root",
+      "heroName": "Мейв Корень",
+      "heroLine": "Признаю: работа хорошая. Это не делает её менее неудобной для владельца мельницы"
+    },
+    {
+      "id": "E471.H18",
+      "sourceChoiceId": "E471.3",
+      "heroId": "hero.elio_silk",
+      "heroName": "Элио Шёлк",
+      "heroLine": "Меня больше интересует не отправитель, а курьер. Сова наверняка знает обратный путь"
+    },
+    {
+      "id": "E471.H36",
+      "sourceChoiceId": "E471.2",
+      "heroId": "hero.ergen_cloud",
+      "heroName": "Эрген Облако",
+      "heroLine": "Маршрут, которого боится неизвестный отправитель, заслуживает хотя бы того, чтобы пройти его с открытыми глазами"
+    },
+    {
+      "id": "E472.H28",
+      "sourceChoiceId": "E472.3",
+      "heroId": "hero.suri_ash",
+      "heroName": "Сури Пепел",
+      "heroLine": "Я бы начал переговоры с признания его вклада в раскопки"
+    },
+    {
+      "id": "E473.H05",
+      "sourceChoiceId": "E473.3",
+      "heroId": "hero.lady_sorn",
+      "heroName": "Леди Сорн",
+      "heroLine": "Если это считается небольшим опозданием, я начинаю понимать, почему с феями нельзя договариваться о часе встречи"
+    },
+    {
+      "id": "E474.H14",
+      "sourceChoiceId": "E474.3",
+      "heroId": "hero.viola_mask",
+      "heroName": "Виола Маска",
+      "heroLine": "Даже если признать сон гостиницей, это худший договор заселения, который я видела"
+    },
+    {
+      "id": "E475.H33",
+      "sourceChoiceId": "E475.3",
+      "heroId": "hero.batu_cliff",
+      "heroName": "Бату Утёс",
+      "heroLine": "Мост через реку я строил. Туннель под рекой тоже. Но обычно сначала река выбирает землю"
+    },
+    {
+      "id": "E476.H19",
+      "sourceChoiceId": "E476.3",
+      "heroId": "hero.briar_sister",
+      "heroName": "Сестра Терн",
+      "heroLine": "Она не выглядит чужой. Но, возможно, вернулась не из того времени, из которого ушла"
+    },
+    {
+      "id": "E477.H29",
+      "sourceChoiceId": "E477.3",
+      "heroId": "hero.empress_nahla",
+      "heroName": "Императрица Нахла",
+      "heroLine": "Похоже, впервые долг нельзя уменьшить хорошими переговорами. Только плохим пением"
+    },
+    {
+      "id": "E478.H22",
+      "sourceChoiceId": "E478.1",
+      "heroId": "hero.puck_ember",
+      "heroName": "Пак Уголёк",
+      "heroLine": "Если маленькие фигуры играют без нас, самое невежливое — вмешаться до того, как поймём правила"
+    },
+    {
+      "id": "E479.H22",
+      "sourceChoiceId": "E479.3",
+      "heroId": "hero.puck_ember",
+      "heroName": "Пак Уголёк",
+      "heroLine": "Внутри кто-то ест бутерброд. Очень грозно"
+    },
+    {
+      "id": "E480.H29",
+      "sourceChoiceId": "E480.3",
+      "heroId": "hero.empress_nahla",
+      "heroName": "Императрица Нахла",
+      "heroLine": "Это либо самое плохо организованное ограбление, либо самый честный банковский отчёт"
+    },
+    {
+      "id": "E481.H02",
+      "sourceChoiceId": "E481.3",
+      "heroId": "hero.mara_chain",
+      "heroName": "Мара Цепь",
+      "heroLine": "Если верить этим цифрам, половина второго этажа должна платить за осадные работы"
+    },
+    {
+      "id": "E482.H01",
+      "sourceChoiceId": "E482.3",
+      "heroId": "hero.aldric_wall",
+      "heroName": "Альдрик Стена",
+      "heroLine": "Первое, что я бы посчитал, — сколько осталось зарядов до международного инцидента"
+    },
+    {
+      "id": "E483.H05",
+      "sourceChoiceId": "E483.3",
+      "heroId": "hero.lady_sorn",
+      "heroName": "Леди Сорн",
+      "heroLine": "Он уже подписывает бумаги осмысленнее некоторых чиновников, которых я встречала"
+    },
+    {
+      "id": "E484.H13",
+      "sourceChoiceId": "E484.2",
+      "heroId": "hero.cassian_coin",
+      "heroName": "Кассиан Монета",
+      "heroLine": "Прук нашёл рынок даже для собственной смерти. Я бы только проверил, что семья получит деньги раньше организатора"
+    },
+    {
+      "id": "E485.H01",
+      "sourceChoiceId": "E485.3",
+      "heroId": "hero.aldric_wall",
+      "heroName": "Альдрик Стена",
+      "heroLine": "Если они не могут решить, кто спасает его первым, давайте сделаем так, чтобы никто не отпускал последним"
+    },
+    {
+      "id": "E486.H17",
+      "sourceChoiceId": "E486.3",
+      "heroId": "hero.old_marin",
+      "heroName": "Старый Марин",
+      "heroLine": "Можете назвать это неисправностью. Но неисправность явно знает мелодию"
+    },
+    {
+      "id": "E487.H25",
+      "sourceChoiceId": "E487.1",
+      "heroId": "hero.kael_cinder",
+      "heroName": "Каэль Уголь",
+      "heroLine": "Двадцать лет они делили поле. Может, сегодня хватит разделить тряпку"
+    },
+    {
+      "id": "E488.H26",
+      "sourceChoiceId": "E488.3",
+      "heroId": "hero.velka_urn",
+      "heroName": "Велька Урна",
+      "heroLine": "Они не боятся нежити. Они будто не хотят, чтобы именно эти мёртвые куда-то ушли"
+    },
+    {
+      "id": "E489.H08",
+      "sourceChoiceId": "E489.3",
+      "heroId": "hero.ivar_lens",
+      "heroName": "Ивар Линза",
+      "heroLine": "Механизм исправен. Его представление о том, что является товаром, — нет"
+    },
+    {
+      "id": "E490.H20",
+      "sourceChoiceId": "E490.3",
+      "heroId": "hero.roan_stag",
+      "heroName": "Роан Олень",
+      "heroLine": "Он не забыл хозяйку. Только слово, которым она к нему обращалась. С животными бывает и хуже"
+    },
+    {
+      "id": "E491.H24",
+      "sourceChoiceId": "E491.3",
+      "heroId": "hero.ysra_moss",
+      "heroName": "Исра Мох",
+      "heroLine": "Спор легко решить: сначала посчитать, сколько каждый зарабатывает, когда второго рядом нет"
+    },
+    {
+      "id": "E492.H02",
+      "sourceChoiceId": "E492.3",
+      "heroId": "hero.mara_chain",
+      "heroName": "Мара Цепь",
+      "heroLine": "Публика пришла. Артисты здесь. Похоже, отсутствует только человек, который считал себя самым нужным"
+    },
+    {
+      "id": "E493.H07",
+      "sourceChoiceId": "E493.3",
+      "heroId": "hero.seraph_lyra",
+      "heroName": "Серафима Лира",
+      "heroLine": "Иногда уважение к врагу появляется слишком поздно. Но это всё ещё уважение"
+    },
+    {
+      "id": "E494.H24",
+      "sourceChoiceId": "E494.3",
+      "heroId": "hero.ysra_moss",
+      "heroName": "Исра Мох",
+      "heroLine": "Иногда цивилизация держится не на законах, а на наличии мелочи"
+    },
+    {
+      "id": "E495.H03",
+      "sourceChoiceId": "E495.3",
+      "heroId": "hero.brother_orell",
+      "heroName": "Брат Орелл",
+      "heroLine": "Обряд прост, пока цена символическая. Сегодня она вполне настоящая"
+    },
+    {
+      "id": "E496.H01",
+      "sourceChoiceId": "E496.3",
+      "heroId": "hero.aldric_wall",
+      "heroName": "Альдрик Стена",
+      "heroLine": "Я не уверен, что осадная машина — правильный инструмент для садоводства. Но признаю решимость"
+    },
+    {
+      "id": "E497.H11",
+      "sourceChoiceId": "E497.3",
+      "heroId": "hero.abbess_celene",
+      "heroName": "Аббатиса Селена",
+      "heroLine": "Если исполнитель и цель вместе ищут заказчика, работа уже пошла не по плану"
+    },
+    {
+      "id": "E498.H13",
+      "sourceChoiceId": "E498.2",
+      "heroId": "hero.cassian_coin",
+      "heroName": "Кассиан Монета",
+      "heroLine": "Вот редкий случай, когда четырнадцать народов уже согласились в главном: торговаться лучше, чем воевать"
+    },
+    {
+      "id": "E499.H05",
+      "sourceChoiceId": "E499.3",
+      "heroId": "hero.lady_sorn",
+      "heroName": "Леди Сорн",
+      "heroLine": "Юридически это кошмар. Политически — впервые избиратели могут сравнить одного кандидата с самим собой"
+    },
+    {
+      "id": "E499.H23",
+      "sourceChoiceId": "E499.1",
+      "heroId": "hero.lord_aylen",
+      "heroName": "Лорд Айлен",
+      "heroLine": "Если оба помнят одну присягу, начните с совместной ответственности. Легитимность проверим тем, кто выдержит её дольше"
+    },
+    {
+      "id": "E500.H18",
+      "sourceChoiceId": "E500.3",
+      "heroId": "hero.elio_silk",
+      "heroName": "Элио Шёлк",
+      "heroLine": "Я знаю каждого, кого вижу. Проблема в том, что счёт всё равно говорит, будто здесь есть ещё кто-то"
+    }
+  ]
+}
