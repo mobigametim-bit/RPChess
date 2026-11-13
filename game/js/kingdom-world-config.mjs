@@ -23,7 +23,6 @@ const VISUAL=Object.freeze({
   "stampOpacity": 1,
   "baseOpacity": 1,
   "baseSpacing": 6.5,
-  "paperContrast": 1.6,
   "roadSpacing": 5,
   "roadWidth": 1.65,
   "roadCurve": 3,
@@ -43,9 +42,7 @@ const VISUAL=Object.freeze({
   "fogOpacity": 0.98,
   "fogRadius": 1.1,
   "fogInner": 0.32,
-  "fogInkOpacity": 0.2,
-  "fogIrregularity": 0.3,
-  "revealRadius": 1.6
+  "fogInkOpacity": 0.2
 });
 // Atlas editor's approved view; runtime worlds retain their individual run seed.
 const ATLAS_VIEW=Object.freeze({seed:'rpchess-kingdom-2026',centerX:1.1397535385320217,
