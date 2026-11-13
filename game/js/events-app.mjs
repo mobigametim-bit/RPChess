@@ -286,7 +286,7 @@ function renderOutcome(event) {
   if(title) title.textContent = t(outcome.success ? 'events.success' : 'events.failure');
   if(roll) roll.textContent = outcome.chance < 100 ? t('events.roll',{roll:outcome.roll,chance:outcome.chance}) : t('events.guaranteedOutcome');
   if(literary){
-    const prose = literaryOutcomeForEvent(event, outcome, activeRun, currentLanguage());
+    const prose = literaryOutcomeForEvent(event, outcome, activeRun, currentLanguage(), localizeEventSource);
     literary.hidden = !prose;
     literary.textContent = prose ? presentEventText(prose) : '';
   }
