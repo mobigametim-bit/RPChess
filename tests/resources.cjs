@@ -103,6 +103,11 @@ class MemoryStorage {
   assert.equal(industry.industrySprite(site,1),'assets/kingdom-production/industry-atlas.png');
   assert.equal(industry.industrySpriteIndex(site,1),0,'the construction site uses first atlas tile');
   assert.equal(industry.industrySpriteIndex({kind:'oasis',builtWeek:1},2),8,'Oasis is last atlas tile');
+  const industryAtlasPath=path.join(game,industry.INDUSTRY_ATLAS);
+  const industryBytes=fs.readFileSync(industryAtlasPath);
+  assert.equal(industryBytes.subarray(0,8).toString('hex'),'89504e470d0a1a0a','production art must be a PNG');
+  assert.equal(industryBytes.readUInt32BE(16),576,'nine 64px sprites in the atlas');
+  assert.equal(industryBytes.readUInt32BE(20),64,'production art preserves original 64px height');
   const expected=industry.industryYield(site,map);
   assert([5,1].includes(industry.industryBase(expected.kind)));
   assert.deepStrictEqual(industry.TYPES_BY_BIOME.wasteland,['oasis'],
