@@ -1,4 +1,4 @@
-/* Atlas Lab v6 world config (4) + visual preset (5), 2026-11-09.
+/* Atlas Lab v7: current live visual defaults and versioned world simulation.
  * Visual settings are author-chosen. Simulation economy is not live yet.
  * Biome order: forest, mountain, hills, plains, marsh, wasteland.
  * All visible terrain stamps, road/river strokes and decorative assets are fully opaque.
@@ -23,7 +23,6 @@ const VISUAL=Object.freeze({
   "stampOpacity": 1,
   "baseOpacity": 1,
   "baseSpacing": 6.5,
-  "paperContrast": 1.6,
   "roadSpacing": 5,
   "roadWidth": 1.65,
   "roadCurve": 3,
@@ -43,8 +42,6 @@ const VISUAL=Object.freeze({
   "fogRadius": 1.1,
   "fogInner": 0.32,
   "fogInkOpacity": 0.2,
-  "fogIrregularity": 0.3,
-  "revealRadius": 1.6
 });
 // Atlas editor's approved view; runtime worlds retain their individual run seed.
 const ATLAS_VIEW=Object.freeze({seed:'rpchess-kingdom-2026',centerX:1.1397535385320217,
