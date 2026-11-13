@@ -191,6 +191,31 @@ class MemoryStorage {
   assert.deepStrictEqual(migrated.industry.buildings,[],'old save gains no backdated buildings');
   assert.equal(migrated.industry.accruedGold,0,'old save gains no retroactive Gold');
 
+  // Wet Atlas tiles can look like forest; a pier must sit by the visible river.
+  const locationCandidates=[];
+  for(let y=-7;y<=7;y++)for(let x=-7;x<=7;x++)
+    locationCandidates.push({id:x+','+y,river:industry.nearVisibleRiver(map.seed,x,y)});
+  const waterfront=locationCandidates.find(loc=>loc.river);
+  const inland=locationCandidates.find(loc=>!loc.river);
+  assert(waterfront&&inland,'the fixed visual world has riverbank and landlocked coordinates');
+  assert(industry.candidateCells(map).every(loc=>loc.biome!=='marsh'||
+    industry.nearVisibleRiver(map.seed,...loc.id.split(',').map(Number))),
+    'production marsh candidates must be beside a visibly drawn river');
+  const legacyPier={...site,id:inland.id,kind:'fishing_pier'};
+  const savedPayout={...map,industry:{...map.industry,
+    buildings:[legacyPier,...map.industry.buildings.slice(1)],
+    pending:{[inland.id]:7},accruedSupplies:Math.max(7,map.industry.accruedSupplies)}};
+  const adjusted=kingdom.migrateKingdomMap(savedPayout,industryRun);
+  assert.equal(adjusted.industry.buildings[0].kind,'hunting_lodge',
+    'legacy landlocked fishing pier becomes a forest hunting lodge');
+  assert.equal(adjusted.industry.buildings[0].id,inland.id,'site identity stays stable');
+  assert.equal(adjusted.industry.pending[inland.id],7,'unclaimed Supplies survive reclassification');
+  assert.equal(adjusted.industry.accruedSupplies,savedPayout.industry.accruedSupplies,
+    'migration cannot create or lose earned production');
+  assert.strictEqual(kingdom.migrateKingdomMap(adjusted,industryRun),adjusted,
+    'a corrected industry save is not changed again');
+
+
   const travelSource = fs.readFileSync(path.join(game, 'js/travel-choice-app.mjs'), 'utf8');
   const travelCoreSource = fs.readFileSync(path.join(game, 'js/travel-choice-core.mjs'), 'utf8');
   const appSource = fs.readFileSync(path.join(game, 'js/resources-app.mjs'), 'utf8');
