@@ -2,7 +2,7 @@
  * The existing nature SVGs, world rivers and fog remain separate layers.
  */
 import {PARCHMENT_TILE,randomAt,terrainAt,pickSprite,hash32} from './kingdom-parchment-core.mjs?v=20261111-parchment-png-only-v1';
-import {VISUAL} from './kingdom-world-config.mjs?v=20261112-fog98-v1';
+import {VISUAL} from './kingdom-world-config.mjs?v=20261113-opaque-terrain-v1';
 import {drawKingdomRoads} from './kingdom-map-overlay.mjs?v=20261112-province-colors-v1';
 
 const PAPER_TILE_SRC='assets/kingdom-parchment/parchment_tile_256.webp',PAPER_TILE_SIZE=256;
@@ -139,7 +139,7 @@ function drawOptionalNature(ctx,seed,left,top,width,height,map,repaint){
 function fallbackSymbol(ctx,kind,x,y,size,seed){
  ctx.save();ctx.translate(x,y);
  const scale=size/128;ctx.scale(scale,scale);
- ctx.lineWidth=1.7;ctx.strokeStyle='#564a35';ctx.globalAlpha=.85;
+ ctx.lineWidth=1.7;ctx.strokeStyle='#564a35';ctx.globalAlpha=1;
  if(kind==='forest_clusters'){
   for(let i=0;i<6;i++){
    const ox=(randomAt(seed,i,2,'tx')-.5)*80,oy=(randomAt(seed,i,8,'ty')-.5)*65;
