@@ -62,6 +62,7 @@ jobs:
         if: steps.scope.outputs.has_runtime_changes == 'true'
         env:
           RPCHESS_STOCKFISH_ASSET_DIR: /tmp/rpchess-stockfish-verified
+          RPCHESS_INCLUDE_ATLAS_LAB: ${{ contains(github.event.pull_request.title, 'Atlas Lab') && '1' || '0' }}
         run: npm run build
       - name: Run focused Node regression tests
         if: steps.scope.outputs.node_tests != ''
@@ -85,4 +86,5 @@ jobs:
         env:
           RPCHESS_BROWSER_TEST: ${{ steps.scope.outputs.browser_tests }}
           RPCHESS_GATE_PREFIX: /RPChess
+          RPCHESS_REQUIRE_ATLAS_LAB: ${{ contains(github.event.pull_request.title, 'Atlas Lab') && '1' || '0' }}
         run: npm run test:browser
