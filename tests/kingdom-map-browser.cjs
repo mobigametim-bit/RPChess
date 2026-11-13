@@ -211,7 +211,28 @@ async function assertTileImage(page,cellId){
   });
   assert(sandstone.painted&&sandstone.width===16&&sandstone.centerAlpha>0&&
     sandstone.outsideAlpha===0&&sandstone.stoneColors>=3,
-    'browser Canvas must draw pale sandstone with visible brick variation and approved 16px width');
+    'browser Canvas must draw 16px yellow-gold brick paving with visible variation');
+  const roadPalette=await page.evaluate(async()=>{
+    const {drawKingdomRoads}=await import('./js/kingdom-map-overlay.mjs');
+    const canvas=document.createElement('canvas');
+    canvas.width=710;canvas.height=426;
+    const map={seed:'owned-gray-contrast',castle:{x:0,y:0},
+      centralOwnedCells:['1,0'],outposts:[],completedRoads:[],
+      cells:{'0,0':{annexed:true},'1,0':{annexed:true}},
+      royalRoadsVersion:3,royalRoads:[
+       {from:'0,0',to:'1,0',id:'owned-test',bend:0},
+       {from:'1,0',to:'2,0',id:'border-test',bend:0}]};
+    const ctx=canvas.getContext('2d');
+    const count=drawKingdomRoads(ctx,{map,view:{x:1,y:0},columns:5,rows:3});
+    const pixel=x=>[...ctx.getImageData(x,213,1,1).data];
+    return {count,yellow:pixel(380),gray:pixel(478)};
+  });
+  assert.equal(roadPalette.count,2,'paved routes should be counted once, not once per color');
+  assert(roadPalette.yellow[3]>0&&roadPalette.gray[3]>0&&
+    roadPalette.yellow[0]-roadPalette.yellow[2]>35&&
+    Math.abs(roadPalette.gray[0]-roadPalette.gray[2])<45,
+    'brick road across border must be yellow inside and gray outside: '+
+    JSON.stringify(roadPalette));
 
   // Five independent NPC limits use floor(owned lands EXCLUDING castle / 5),
   // with no actors before their destinations/roads exist.
