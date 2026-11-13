@@ -54,11 +54,24 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
     'author WebP tiles remain the parchment ground, not procedural paper');
   assert(parchmentSource.includes('canvas.dataset.parchmentTexture=drawTiledPaper(ctx,left,top,columns,rows,repaint)'),
     'tiled paper remains the first painted layer');
-  assert(parchmentSource.indexOf('drawKingdomBoundary(ctx,{map,view,columns,rows})')>
-    parchmentSource.lastIndexOf('drawWaterRoads(ctx,seed,left,top,columns,rows)')&&
-    parchmentSource.indexOf('drawKingdomBoundary(ctx,{map,view,columns,rows})')<
-    parchmentSource.lastIndexOf('drawTerrainSymbols(ctx,seed,left,top,columns,rows,repaint)'),
-    'territory boundary must share the natural-road canvas below terrain landmarks and player-built roads');
+  const kingdomMapSource=fs.readFileSync(path.join(game,'js/kingdom-map-app.mjs'),'utf8');
+  const menuPreviewSourceForLayers=fs.readFileSync(path.join(game,'js/kingdom-menu-preview.mjs'),'utf8');
+  assert(!parchmentSource.includes('drawKingdomBoundary(ctx,{map,view,columns,rows})')&&
+    !parchmentSource.includes('drawEnemyBattleTerritories(ctx,{map,view,columns,rows})')&&
+    parchmentSource.includes('detailCanvas')&&parchmentSource.includes('drawWaterRoads(detailCtx,'),
+    'territory borders must leave the parchment painter while natural and paved roads remain above');
+  assert(kingdomMapSource.includes('detailCanvas:details')&&
+    kingdomMapSource.includes('drawBorder:true,drawRoads:!parchment')&&
+    menuPreviewSourceForLayers.includes('detailCanvas:details')&&
+    menuPreviewSourceForLayers.includes('drawBorder:true,drawRoads:false'),
+    'both live map and main-menu projection must share the three-surface political layering');
+  for(const icon of ['build_outpost_128.png','build_settlement_128.png']){
+    const file=path.join(game,'assets/ui',icon);
+    assert(fs.existsSync(file)&&fs.readFileSync(file).subarray(0,8).toString('hex')==='89504e470d0a1a0a',
+      'uploaded compact build icon is a real production PNG: '+icon);
+    assert(buildSource.includes("'assets/ui/"+icon+"'"),
+      'production build must ship compact build art: '+icon);
+  }
   assert(buildSource.includes("'js/kingdom-map-overlay.mjs'"),
     'production build must include the organic border/road module or Journey cannot load');
   assert(travelAppSource.includes('data-travel-run-portrait')&&travelAppSource.includes('function renderPortrait()'),'Travel owner must render and refresh the run king portrait itself');
