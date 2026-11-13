@@ -363,6 +363,8 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
     'v5 generated worlds retain their prior path rules');
   assert.equal(fs.existsSync(path.join(game,'atlas-lab.html')),true,
     'Atlas Lab v6 HTML must be shipped alongside its map preview');
+  assert(atlasHtml.includes('Atlas Lab v7')||atlasHtml.includes('kingdom-map-geometry-atlas-v7'),
+    'Atlas Lab should expose the corrected v7 authoring model');
   assert(fs.readFileSync(path.join(game,'atlas-lab.html'),'utf8').includes('Симулировать'),
     'balance panel includes the requested simulation action');
   const atlasHtml=fs.readFileSync(path.join(game,'atlas-lab.html'),'utf8');
