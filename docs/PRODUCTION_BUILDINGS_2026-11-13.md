@@ -12,10 +12,10 @@ Status: **approved for feature development**. No merge to `main` until manual QA
   - forest → Hunting Lodge (Supplies) / Sawmill (Gold)
   - mountain → Gold Mine / Stone Quarry (Gold)
   - marsh → Fishing Pier (Supplies)
-  - wasteland → no building from the supplied asset pack
+  - wasteland → **Oasis (Supplies)**, confirmed later by owner from newly supplied graphic
 - Foundation candidates are **currently player-owned** (castle annexations, completed conquests, outpost annexations), not already occupied by Castle/Outpost/settlement/encounter/production structure. Skip cells of generated travel events or existing royal/route/natural roads. Never place sites in fog outside owned land. No candidate → skip that week; never queue missed buildings.
 - Original weekly production by completed road events (settlements/events/caravans/puzzles/skirmishes/battles) remains untouched.
-- New 64×64 transparent PNGs are taken **unchanged** from user-supplied `постройки.zip`, stored as eight individual files under `game/assets/kingdom-production/`, shipped with the runtime build.
+- Eight original 64×64 transparent PNGs come from user-supplied `постройки.zip`, plus the additional Oasis icon for wastelands. Ship all production art in the runtime build without changing the gameplay geometry; do not silently use unrelated placeholder art for Oasis.
 
 ## Implementation steps
 1. Add pure `kingdom-industry-core.mjs`: frozen biome-to-type catalog, deterministic eligible-cell scanning, weekly scheduler, structural validator, stable yield ledgers and build-stage introspection. Use existing `worldAt` and roads. No DOM, clock or RNG.
