@@ -177,7 +177,7 @@ function choiceButton(eventChoice) {
   const role = heroState ? '' : hero ? `${PIECE_GLYPHS[hero.pieceType] || ''} ${hero.name}` : choice.role ? `${PIECE_GLYPHS[choice.role] || ''} ${t(`piece.${choice.role}`)}` : '';
   const chance = choice.chance < 100 ? t('events.choice.successChance',{chance:choice.chance}) : t('events.choice.guaranteed');
   const cost = costLabel(choice), risk = riskLabel(choice);
-  const unavailable=availability.enabled?'':availability.reason==='skirmish-needs-companion'?
+  const unavailable=availability.enabled?'':['skirmish-needs-companion','wound-needs-companion'].includes(availability.reason)?
     (currentLanguage()==='en'?'At least one healthy fighter besides the King is required':
       'Нужен хотя бы один здоровый боец помимо короля'):
     localizeEventSource(availability.reason);
