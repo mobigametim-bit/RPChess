@@ -78,12 +78,21 @@ async function seedEvent(page,eventId=null,runId='events-browser'){await page.ev
   const enLiterary=enPage.locator('[data-events-literary]');
   await enLiterary.waitFor({state:'visible'});
   const englishAfterChoice=await enLiterary.innerText();
+  const notesHeading=enPage.locator('[data-events-outcome-notes]');
+  assert.strictEqual(await notesHeading.getAttribute('data-label'),'CONSEQUENCES',
+    'EN Event results must translate the Consequences heading');
+  assert.strictEqual(await notesHeading.evaluate(el=>getComputedStyle(el,'::before').content),'"CONSEQUENCES"',
+    'the visible CSS pseudo-heading must use the localized copy');
   assert(englishAfterChoice.length>=20&&!cyrillic.test(englishAfterChoice)&&!englishAfterChoice.includes('{{'),
     'New Event outcome must display English prose with resolved hero names');
   await enPage.evaluate(()=>globalThis.RPChessI18n.setLanguage('ru'));
   await enPage.waitForFunction(()=>/[А-Яа-яЁё]/u.test(document.querySelector('[data-events-literary]')?.textContent||''));
+  assert.strictEqual(await notesHeading.getAttribute('data-label'),'ПОСЛЕДСТВИЯ',
+    'RU results retain the Russian Consequences heading after switching languages');
   await enPage.evaluate(()=>globalThis.RPChessI18n.setLanguage('en'));
   await enPage.waitForFunction(()=>!/[А-Яа-яЁё]/u.test(document.querySelector('[data-events-literary]')?.textContent||''));
   assert.strictEqual(await enLiterary.innerText(),englishAfterChoice,'EN literary result must be identical after language round trip');
+  assert.strictEqual(await notesHeading.getAttribute('data-label'),'CONSEQUENCES',
+    'language round trip must update the label without reopening the modal');
   assert.deepStrictEqual(errors,[]);assert.deepStrictEqual(combatErrors,[]);assert.deepStrictEqual(mobileErrors,[]);assert.deepStrictEqual(enErrors,[]);console.log('Events identity flow, canonical literary copy, complete EN Event rendering, persistence, Event→Skirmish→board and landscape-mobile one-screen Chromium acceptance: PASS');
 }finally{await browser.close();}})().catch(e=>{console.error(e.stack||e);process.exitCode=1});
