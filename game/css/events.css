@@ -145,7 +145,7 @@ body.events-active .resource-chip strong{color:#f0d99e}
   border-top:1px solid rgba(216,177,93,.24);
 }
 .events-outcome-notes::before{
-  content:'ПОСЛЕДСТВИЯ';
+  content:attr(data-label);
   position:absolute;
   top:18px;
   left:0;
