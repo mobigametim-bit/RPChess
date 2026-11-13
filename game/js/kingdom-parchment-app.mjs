@@ -3,7 +3,7 @@
  */
 import {PARCHMENT_TILE,randomAt,terrainAt,pickSprite,hash32} from './kingdom-parchment-core.mjs?v=20261111-parchment-png-only-v1';
 import {VISUAL} from './kingdom-world-config.mjs?v=20261112-fog98-v1';
-import {drawKingdomBoundary,drawEnemyBattleTerritories,drawKingdomRoads} from './kingdom-map-overlay.mjs?v=20261112-province-colors-v1';
+import {drawKingdomRoads} from './kingdom-map-overlay.mjs?v=20261112-province-colors-v1';
 
 const PAPER_TILE_SRC='assets/kingdom-parchment/parchment_tile_256.webp',PAPER_TILE_SIZE=256;
 const spriteCache=new Map();
@@ -275,7 +275,7 @@ function drawFog(ctx,map,left,top,width,height,resolution=1){
  f.globalCompositeOperation='source-over';
  ctx.drawImage(fog,0,0,width*PARCHMENT_TILE,height*PARCHMENT_TILE);
 }
-function renderParchment(canvas,{seed,view,columns,rows,map,resolution=1}){
+function renderParchment(canvas,{seed,view,columns,rows,map,resolution=1,detailCanvas=null}){
  if(!canvas)return;
  probeArt();
  requestExtraManifest();
@@ -289,25 +289,32 @@ function renderParchment(canvas,{seed,view,columns,rows,map,resolution=1}){
  const ctx=canvas.getContext('2d');if(!ctx)return;
  ctx.setTransform(resolution,0,0,resolution,0,0);
  const left=view.x-Math.floor(columns/2),top=view.y-Math.floor(rows/2);
- latest=()=>{if(canvas.isConnected)renderParchment(canvas,{seed,view,columns,rows,map,resolution});};
+ latest=()=>{if(canvas.isConnected)renderParchment(canvas,{seed,view,columns,rows,map,resolution,detailCanvas});};
  ctx.clearRect(0,0,width,height);
  const repaint=()=>{if(canvas.isConnected)latest?.();};
  canvas.dataset.parchmentTexture=drawTiledPaper(ctx,left,top,columns,rows,repaint)?'loaded':'loading';
  drawBasePatches(ctx,seed,left,top,columns,rows,repaint);
- drawWaterRoads(ctx,seed,left,top,columns,rows);
- // Every paved road (royal, inside the kingdom and completed travel roads)
- // is on this exact terrain canvas, using the same 0.56 opacity as naturally
- // generated highways. Decorations may overlap both road kinds equally.
- canvas.dataset.playerRoadSegments=String(drawKingdomRoads(ctx,{map,view,columns,rows}));
- canvas.dataset.roadLayer='terrain';
- canvas.dataset.enemyBorderSegments=String(drawEnemyBattleTerritories(ctx,{map,view,columns,rows}));
- canvas.dataset.enemyProvinceCount=String((map?.battleTerritories||[]).filter(p=>map.cells?.[p.id]?.explored===true).length);
- canvas.dataset.borderSegments=String(drawKingdomBoundary(ctx,{map,view,columns,rows}));
- drawTerrainSymbols(ctx,seed,left,top,columns,rows,repaint);
- drawOptionalNature(ctx,seed,left,top,columns,rows,map,repaint);
- drawFogInk(ctx,seed,left,top,columns,rows,map,repaint);
- // Gameplay fog is rendered separately above hidden site SVGs.
- // Sovereignty and both sorts of roads are drawn here before vegetation.
+ // Territory paint lives on an independent canvas above parchment, while ALL
+ // road/water/nature strokes are kept on a separate foreground terrain canvas.
+ // No political ink can wash out roads, vegetation or map objects.
+ const features=detailCanvas||canvas;
+ if(detailCanvas){
+  if(features.width!==Math.round(width*resolution))features.width=Math.round(width*resolution);
+  if(features.height!==Math.round(height*resolution))features.height=Math.round(height*resolution);
+ }
+ const detailCtx=detailCanvas?features.getContext('2d'):ctx;
+ if(!detailCtx)return;
+ if(detailCanvas){
+  detailCtx.setTransform(resolution,0,0,resolution,0,0);
+  detailCtx.clearRect(0,0,width,height);
+ }
+ drawWaterRoads(detailCtx,seed,left,top,columns,rows);
+ canvas.dataset.playerRoadSegments=String(drawKingdomRoads(detailCtx,{map,view,columns,rows}));
+ canvas.dataset.roadLayer=detailCanvas?'terrain-details':'terrain';
+ drawTerrainSymbols(detailCtx,seed,left,top,columns,rows,repaint);
+ drawOptionalNature(detailCtx,seed,left,top,columns,rows,map,repaint);
+ drawFogInk(detailCtx,seed,left,top,columns,rows,map,repaint);
+ // Opaque fog still lives in its own upper canvas, above concealed site sprites.
 
 }
 function renderParchmentFog(canvas,{view,columns,rows,map,resolution=1}){
