@@ -44,6 +44,8 @@ function literaryOutcomeForEvent(event, outcome, run, language = 'ru') {
   const affectedReceipt = receipts.find((receipt) =>
     (receipt?.type === 'wound' || receipt?.type === 'death') && receipt.targetId && receipt.targetName);
   const affectedHeroName = affectedReceipt?.targetName || '';
+  if ((prose.includes('{{heroName}}') && !heroName) ||
+      (prose.includes('{{affectedHeroName}}') && !affectedHeroName)) return '';
   const values = { heroName, affectedHeroName };
   const text = prose.replace(/\{\{(heroName|affectedHeroName)\}\}/g, (_match, key) => values[key]);
 
