@@ -3,6 +3,8 @@
  */
 import {PARCHMENT_TILE,randomAt,terrainAt,pickSprite,hash32} from './kingdom-parchment-core.mjs?v=20261111-parchment-png-only-v1';
 import {VISUAL} from './kingdom-world-config.mjs?v=20261113-opaque-terrain-v1';
+import {roadDrift,riverDrift,roadY,riverX} from './kingdom-geography.mjs';
+import {biomeAt,landmarkAt} from './kingdom-world-core.mjs';
 import {drawKingdomRoads} from './kingdom-map-overlay.mjs?v=20261112-province-colors-v1';
 
 const PAPER_TILE_SRC='assets/kingdom-parchment/parchment_tile_256.webp',PAPER_TILE_SIZE=256;
@@ -10,7 +12,7 @@ const spriteCache=new Map();
 const MAX_SPRITES=128; // 112 PNG atlas assets can coexist without reload churn.
 let assetProbe=null,assetsReady=null,latest=null,redrawQueued=false;
 let extraManifestRequested=false,extraManifestSettled=false;
-const extraGroups={marsh:[],landmarks:[]};
+const extraGroups={marsh:[],marshAll:[],wasteland:[],landmarks:[]};
 function requestExtraManifest(){
  if(extraManifestRequested)return;
  extraManifestRequested=true;
@@ -28,6 +30,9 @@ function requestExtraManifest(){
     extraGroups[kind]=names.filter(file=>/\.png$/i.test(file))
       .map(file=>'assets/kingdom-parchment/'+folder+'/'+file);
    }
+   extraGroups.marshAll=[...extraGroups.marsh];
+   extraGroups.marsh=extraGroups.marshAll.filter(path=>/\/(?:0[1-6]|1[34])_/.test(path));
+   extraGroups.wasteland=extraGroups.marshAll.filter(path=>/\/(?:0[7-9]|1[01256])_/.test(path));
    queueRedraw();
   })
   .catch(()=>{}) // Old builds without optional groups remain playable.
@@ -35,7 +40,7 @@ function requestExtraManifest(){
 }
 function extraSprite(seed,group,x,y,salt='sprite'){
  const names=extraGroups[group]||[];
- const kind=group==='marsh'?'marsh_wasteland_optional':'decor_minor_landmarks';
+ const kind=['marsh','marshAll','wasteland'].includes(group)?'marsh_wasteland_optional':'decor_minor_landmarks';
  return names.length?names[hash32(seed+':'+kind+':'+x+':'+y+':'+salt)%names.length]:null;
 }
 function queueRedraw(){
@@ -108,33 +113,39 @@ function drawFogInk(ctx,seed,left,top,width,height,map,repaint){
   }
 }
 function drawOptionalNature(ctx,seed,left,top,width,height,map,repaint){
- // Exact Atlas Lab v6 distribution: 3.6-world-unit cells; independently
- // scattered marsh and decorative landmark SVGs. No scouting '?' markers.
- const step=3.6;
+ const modern=(map?.worldGeneratorVersion||0)>=6,step=3.6;
  for(let yi=Math.floor(top/step)-1;yi<=Math.ceil((top+height)/step);yi++)
-  for(let xi=Math.floor(left/step)-1;xi<=Math.ceil((left+width)/step);xi++){
-   const x=xi*step+randomAt(seed,xi,yi,'extra-x')*step;
-   const y=yi*step+randomAt(seed,xi,yi,'extra-y')*step;
-   const t=terrainAt(seed,x,y);
-   if(t.wet>VISUAL.marshWetThreshold&&t.elevation<.59){
-    const count=Math.min(3,Math.ceil(VISUAL.marshDensity));
-    for(let i=0;i<count;i++){
-     if(randomAt(seed,xi,yi,'marsh'+i)>=Math.min(1,VISUAL.marshDensity-i))continue;
-     const dx=(randomAt(seed,xi,yi,'mx'+i)-.5)*step*.7;
-     const dy=(randomAt(seed,xi,yi,'my'+i)-.5)*step*.7;
-     const size=PARCHMENT_TILE*VISUAL.marshSize;
-     const src=extraSprite(seed,'marsh',xi,yi,'marsh'+i);
-     drawVector(ctx,src,(x+dx-left)*PARCHMENT_TILE-size/2,
+ for(let xi=Math.floor(left/step)-1;xi<=Math.ceil((left+width)/step);xi++){
+  const x=xi*step+randomAt(seed,xi,yi,'extra-x')*step;
+  const y=yi*step+randomAt(seed,xi,yi,'extra-y')*step;
+  const t=terrainAt(seed,x,y);
+  const biome=modern?biomeAt(seed,Math.floor(x),Math.floor(y)):null;
+  const group=modern?(biome==='marsh'?'marsh':biome==='wasteland'?'wasteland':null):
+   t.wet>VISUAL.marshWetThreshold&&t.elevation<.59?'marshAll':null;
+  if(group){
+   const density=group==='wasteland'?(VISUAL.wastelandDensity??VISUAL.marshDensity):VISUAL.marshDensity;
+   for(let i=0;i<Math.min(3,Math.ceil(density));i++){
+    if(randomAt(seed,xi,yi,'marsh'+i)>=Math.min(1,density-i))continue;
+    const dx=(randomAt(seed,xi,yi,'mx'+i)-.5)*step*.7,dy=(randomAt(seed,xi,yi,'my'+i)-.5)*step*.7;
+    const size=PARCHMENT_TILE*VISUAL.marshSize,src=extraSprite(seed,group,xi,yi,'marsh'+i);
+    if(src)drawVector(ctx,src,(x+dx-left)*PARCHMENT_TILE-size/2,
       (y+dy-top)*PARCHMENT_TILE-size/2,size,size,VISUAL.marshOpacity,repaint);
-    }
-   }
-   if(randomAt(seed,xi,yi,'landmark')<VISUAL.landmarkDensity){
-    const size=PARCHMENT_TILE*VISUAL.landmarkSize;
-    const src=extraSprite(seed,'landmarks',xi,yi);
-    drawVector(ctx,src,(x-left)*PARCHMENT_TILE-size/2,
-     (y-top)*PARCHMENT_TILE-size/2,size,size,VISUAL.landmarkOpacity,repaint);
    }
   }
+  if(!modern&&randomAt(seed,xi,yi,'landmark')<VISUAL.landmarkDensity){
+   const size=PARCHMENT_TILE*VISUAL.landmarkSize,src=extraSprite(seed,'landmarks',xi,yi);
+   if(src)drawVector(ctx,src,(x-left)*PARCHMENT_TILE-size/2,
+     (y-top)*PARCHMENT_TILE-size/2,size,size,VISUAL.landmarkOpacity,repaint);
+  }
+ }
+ if(modern)for(let y=Math.floor(top)-1;y<=Math.ceil(top+height);y++)
+ for(let x=Math.floor(left)-1;x<=Math.ceil(left+width);x++){
+  const id=landmarkAt(seed,x,y,{generatorVersion:6});if(!id)continue;
+  const src='assets/kingdom-parchment/decor_minor_landmarks/'+id+'.png';
+  const size=PARCHMENT_TILE*VISUAL.landmarkSize;
+  drawVector(ctx,src,(x+.26-left)*PARCHMENT_TILE-size/2,
+    (y+.28-top)*PARCHMENT_TILE-size/2,size,size,VISUAL.landmarkOpacity,repaint);
+ }
 }
 function fallbackSymbol(ctx,kind,x,y,size,seed){
  ctx.save();ctx.translate(x,y);
@@ -166,15 +177,15 @@ function fallbackSymbol(ctx,kind,x,y,size,seed){
 function drawWaterRoads(ctx,seed,left,top,width,height){
  const toLocalX=x=>(x-left)*PARCHMENT_TILE;
  const toLocalY=y=>(y-top)*PARCHMENT_TILE;
- const riverDrift=randomAt(seed,1,1,'river')*Math.max(1,VISUAL.riverSpacing)*(12/17);
- const lower=Math.floor((left-riverDrift-12)/VISUAL.riverSpacing)-1;
- const upper=Math.ceil((left+width-riverDrift+12)/VISUAL.riverSpacing)+1;
+ const riverShift=riverDrift(seed);
+ const lower=Math.floor((left-riverShift-12)/VISUAL.riverSpacing)-1;
+ const upper=Math.ceil((left+width-riverShift+12)/VISUAL.riverSpacing)+1;
  ctx.save();ctx.globalAlpha=VISUAL.riverOpacity;
  for(let river=lower;river<=upper;river++){
-  const center=river*VISUAL.riverSpacing+riverDrift;
+  const center=river*VISUAL.riverSpacing+riverShift;
   ctx.beginPath();
   for(let y=top-1,first=true;y<=top+height+1;y+=.16){
-   const x=center+Math.sin(y*.21+river*1.7)*2.15*VISUAL.riverCurve+Math.sin(y*.79+river*.3)*.55;
+   const x=riverX(seed,river,y);
    const px=toLocalX(x),py=toLocalY(y);
    if(first){ctx.moveTo(px,py);first=false;}else ctx.lineTo(px,py);
   }
@@ -183,15 +194,15 @@ function drawWaterRoads(ctx,seed,left,top,width,height){
   ctx.lineWidth=2*VISUAL.riverWidth;ctx.strokeStyle='#c8d0ba';ctx.stroke();
  }
  ctx.restore();
- const roadDrift=randomAt(seed,1,1,'road')*Math.max(1,VISUAL.roadSpacing)*(8/12);
- const first=Math.floor((top-roadDrift-8)/VISUAL.roadSpacing)-1;
- const last=Math.ceil((top+height-roadDrift+8)/VISUAL.roadSpacing)+1;
+ const roadShift=roadDrift(seed);
+ const first=Math.floor((top-roadShift-8)/VISUAL.roadSpacing)-1;
+ const last=Math.ceil((top+height-roadShift+8)/VISUAL.roadSpacing)+1;
  ctx.save();ctx.globalAlpha=VISUAL.roadOpacity;
  for(let road=first;road<=last;road++){
-  const center=road*VISUAL.roadSpacing+roadDrift;
+  const center=road*VISUAL.roadSpacing+roadShift;
   ctx.beginPath();
   for(let x=left-1,firstPoint=true;x<=left+width+1;x+=.16){
-   const y=center+Math.sin(x*.37+road*2.1)*1.25*VISUAL.roadCurve+Math.sin(x*.83+road)*.18;
+   const y=roadY(seed,road,x);
    const px=toLocalX(x),py=toLocalY(y);
    if(firstPoint){ctx.moveTo(px,py);firstPoint=false;}else ctx.lineTo(px,py);
   }
@@ -200,7 +211,7 @@ function drawWaterRoads(ctx,seed,left,top,width,height){
  }
  ctx.restore();
 }
-function drawTerrainSymbols(ctx,seed,left,top,width,height,repaint){
+function drawTerrainSymbols(ctx,seed,left,top,width,height,repaint,map){
  // Mirror Atlas Lab v6 drawNature(), including multiple stamps per node,
  // independent shifts, sprite salts, scale variation and biome mapping.
  const step=VISUAL.stampSpacing;
@@ -210,6 +221,8 @@ function drawTerrainSymbols(ctx,seed,left,top,width,height,repaint){
   const gx=xi*step+step*.38+randomAt(seed,xi,yi,'sx')*step*.24;
   const gy=yi*step+step*.38+randomAt(seed,xi,yi,'sy')*step*.24;
   const t=terrainAt(seed,gx,gy);
+  const biome=(map?.worldGeneratorVersion||0)>=6?biomeAt(seed,Math.floor(gx),Math.floor(gy)):null;
+  if(biome==='marsh'||biome==='wasteland')continue;
   const kind=t.kind==='forest'?'forest_clusters':
    t.kind==='mountain'?'mountain_clusters':'hills_rocks';
   const density=t.kind==='forest'?VISUAL.forestDensity:
@@ -311,7 +324,7 @@ function renderParchment(canvas,{seed,view,columns,rows,map,resolution=1,detailC
  drawWaterRoads(detailCtx,seed,left,top,columns,rows);
  canvas.dataset.playerRoadSegments=String(drawKingdomRoads(detailCtx,{map,view,columns,rows}));
  canvas.dataset.roadLayer=detailCanvas?'terrain-details':'terrain';
- drawTerrainSymbols(detailCtx,seed,left,top,columns,rows,repaint);
+ drawTerrainSymbols(detailCtx,seed,left,top,columns,rows,repaint,map);
  drawOptionalNature(detailCtx,seed,left,top,columns,rows,map,repaint);
  drawFogInk(detailCtx,seed,left,top,columns,rows,map,repaint);
  // Opaque fog still lives in its own upper canvas, above concealed site sprites.
