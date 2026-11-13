@@ -1,0 +1,105 @@
+name: Kingdom Industry — isolated QA preview
+
+on:
+  push:
+    branches:
+      - feature/kingdom-weekly-production-buildings-20261113
+    paths:
+      - 'game/**'
+      - 'scripts/**'
+      - 'tests/**'
+      - 'kingdom-industry-preview/**'
+      - '.github/workflows/kingdom-industry-preview.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rpchess-kingdom-industry-preview-qa
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    if: github.repository == 'mobigametim-bit/RPChess' && github.ref == 'refs/heads/feature/kingdom-weekly-production-buildings-20261113'
+    name: Build and deploy isolated production QA
+    runs-on: ubuntu-24.04
+    timeout-minutes: 65
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm/rpchess-runtime-assets-v1
+          key: rpchess-runtime-assets-v1-${{ runner.os }}-${{ hashFiles('game/assets/**/*.png', 'game/generated_assets/*.png', 'scripts/*asset*.cjs', 'scripts/runtime-assets-build.cjs') }}
+          restore-keys: rpchess-runtime-assets-v1-${{ runner.os }}-
+      - name: Install project dependencies and verified Stockfish
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund
+          npm pack stockfish@18.0.0 --silent --pack-destination /tmp
+          mkdir -p /tmp/rpchess-stockfish-package /tmp/rpchess-stockfish-verified
+          tar -xzf /tmp/stockfish-18.0.0.tgz -C /tmp/rpchess-stockfish-package
+          package=/tmp/rpchess-stockfish-package/package
+          for name in stockfish-18-lite-single.js stockfish-18-lite-single.wasm; do
+            source=$(find "$package" -type f -name "$name" -print -quit)
+            test -n "$source"
+            cp "$source" "/tmp/rpchess-stockfish-verified/$name"
+          done
+          license=$(find "$package" -type f -iname 'Copying.txt' -print -quit)
+          test -n "$license"
+          cp "$license" /tmp/rpchess-stockfish-verified/COPYING.txt
+      - name: Canonical source, Node regressions and production bundle
+        env:
+          RPCHESS_STOCKFISH_ASSET_DIR: /tmp/rpchess-stockfish-verified
+        run: npm run gate:local
+      - name: Verify exact producer sprite atlas and engine module
+        run: |
+          node -e "const fs=require('fs'),assert=require('assert');const png=fs.readFileSync('dist/assets/kingdom-production/industry-atlas.png');assert.equal(png.readUInt32BE(16),576);assert.equal(png.readUInt32BE(20),64);assert(fs.readFileSync('dist/js/kingdom-industry-core.mjs','utf8').includes('oasis'));console.log('Nine industry sprites and Oasis gameplay code: PASS')"
+      - name: Deploy to isolated Cloudflare Worker (never production)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          npx wrangler deploy --config kingdom-industry-preview/wrangler.toml
+      - name: Smoke-test actual QA preview modules and PNG
+        run: |
+          node <<'NODE'
+          const assert=require('node:assert/strict');
+          const root='https://rpchess-industry-preview.mobigametim.workers.dev';
+          (async()=>{
+            for(let attempt=0;attempt<12;attempt++){
+              try{
+                const cases=[
+                  ['/', 'data-reboot-foundation'],
+                  ['/js/run-persistence.mjs', 'applyIndustryCredits'],
+                  ['/js/kingdom-industry-core.mjs', 'oasis'],
+                  ['/js/kingdom-map-app.mjs', 'industrySpriteIndex'],
+                  ['/css/kingdom-map.css', 'km-object--industry']
+                ];
+                for(const [path,token] of cases){
+                  const response=await fetch(root+path,{cache:'no-store'});
+                  assert.equal(response.status,200,path);
+                  assert((await response.text()).includes(token),path+' missing updated production code');
+                }
+                const image=await fetch(root+'/assets/kingdom-production/industry-atlas.png',{cache:'no-store'});
+                assert.equal(image.status,200,'production image');
+                const bytes=new Uint8Array(await image.arrayBuffer());
+                assert.equal(bytes[0],137);assert.equal(bytes[1],80);assert.equal(bytes[2],78);assert.equal(bytes[3],71);
+                assert.equal((bytes[16]<<24)|(bytes[17]<<16)|(bytes[18]<<8)|bytes[19],576);
+                console.log('Isolated Kingdom Industry QA preview: PASS '+root);
+                return;
+              }catch(error){
+                if(attempt===11)throw error;
+                await new Promise(resolve=>setTimeout(resolve,3000));
+              }
+            }
+          })().catch(error=>{console.error(error);process.exitCode=1;});
+          NODE
