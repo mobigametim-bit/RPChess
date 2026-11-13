@@ -116,6 +116,9 @@ function choiceMayStartSkirmish(choice){
 }
 function choiceAvailability(run, choice) {
   const normalized = normalizeChoice(choice);
+  // E037.3 trades a guaranteed non-King wound for Gold; never pay out without an eligible healthy hero.
+  if (normalized.id === 'E037.3' && !(run?.roster || []).some((hero) => !hero?.isRunKing && hero?.status === 'healthy'))
+    return { enabled: false, reason: 'wound-needs-companion', hero: null, choice: normalized };
   if(choiceMayStartSkirmish(normalized)&&!hasEventSkirmishCompanion(run))
     return {enabled:false,reason:'skirmish-needs-companion',hero:null,choice:normalized};
   let requiredHero = null;
