@@ -1,6 +1,8 @@
 /* Atlas Lab v6 world config (4) + visual preset (5), 2026-11-09.
  * Visual settings are author-chosen. Simulation economy is not live yet.
  * Biome order: forest, mountain, hills, plains, marsh, wasteland.
+ * All visible terrain stamps, road/river strokes and decorative assets are fully opaque.
+ * Fog and political tint remain intentionally translucent for gameplay readability.
  * Race order matches race-assets.mjs RACE_TAGS exactly.
  */
 const VISUAL=Object.freeze({
@@ -18,25 +20,25 @@ const VISUAL=Object.freeze({
   "plainDensity": 0.35,
   "stampSize": 2.2,
   "sizeVariation": 1.05,
-  "stampOpacity": 0.8,
-  "baseOpacity": 0.26,
+  "stampOpacity": 1,
+  "baseOpacity": 1,
   "baseSpacing": 6.5,
   "paperContrast": 1.6,
   "roadSpacing": 5,
   "roadWidth": 1.65,
   "roadCurve": 3,
-  "roadOpacity": 0.56,
+  "roadOpacity": 1,
   "riverSpacing": 6,
   "riverWidth": 1.2,
   "riverCurve": 1.1,
-  "riverOpacity": 0.56,
+  "riverOpacity": 1,
   "marshDensity": 2.05,
   "marshWetThreshold": 0.42,
   "marshSize": 1.85,
-  "marshOpacity": 0.84,
+  "marshOpacity": 1,
   "landmarkDensity": 0.62,
   "landmarkSize": 0.75,
-  "landmarkOpacity": 0.92,
+  "landmarkOpacity": 1,
   "fogOpacity": 0.98,
   "fogRadius": 1.1,
   "fogInner": 0.32,
