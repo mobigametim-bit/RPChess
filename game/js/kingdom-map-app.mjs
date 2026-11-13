@@ -75,7 +75,7 @@ const TERRAIN_NAMES=Object.freeze({
 });
 function terrainName(biome){return TERRAIN_NAMES[lang()==='en'?'en':'ru'][biome]||tr('empty');}
 // Atlas view scales the original 142px logical tiles to an interactive 87px default.
-const MAP_LAYOUT=Object.freeze({cellPx:142,eventScalePercent:73,kingPx:92,inspectorWidthPercent:25});
+const MAP_LAYOUT=Object.freeze({cellPx:142,kingPx:92});
 const MIN_COLUMNS=9,MIN_ROWS=7;
 // Adopt the new authored default once, while continuing to persist manual zoom.
 const ZOOM_KEY='rpchess.kingdom.zoom.v2',ZOOM_MIN=55,ZOOM_MAX=220;
@@ -508,7 +508,7 @@ function ensureMap(run){
  const race=commanderById(run.commanderId).raceTag;
  if(validateKingdomMap(run.kingdomMap)&&
      (run.kingdomMap.seed===run.id||run.kingdomMap.seed.startsWith(run.id+':castle-biome:'))&&
-     [4,5].includes(run.kingdomMap.worldGeneratorVersion)){
+     [4,5,6].includes(run.kingdomMap.worldGeneratorVersion)){
   const peaked=updatePeak(migrateKingdomMap(run.kingdomMap,run),power);
   const map=peaked.castle.raceTag===race?peaked:
    {...peaked,castle:{...peaked.castle,raceTag:race}};
