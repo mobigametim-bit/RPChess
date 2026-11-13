@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>RPChess · Atlas Lab v6 — расширенная балансировка Королевства</title>
+<title>RPChess · Atlas Lab v7 — текущий генератор Королевства</title>
 <style>
 :root{--bg:#0b1110;--panel:#131b1a;--panel2:#1c2622;--edge:#3b443a;--gold:#d5b477;--gold2:#f2dda6;--cream:#ebdfbd;--muted:#8d9d91;--green:#8ea889;--danger:#bf8c69;--border:#485443}
 *{box-sizing:border-box}html,body{margin:0;height:100%;font-family:Inter,"Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--cream)}body{overflow:hidden}button,input,select{font:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--gold2);outline-offset:2px}button:disabled{opacity:.45;cursor:default}
@@ -76,7 +76,7 @@
  </header>
  <aside class="side" id="sidebar">
   <div class="side-title">Настройка генератора</div>
-  <p class="hint">Настраивай рельеф, настоящие болотные SVG, малые ориентиры, а также алгоритмические дороги и реки. Удалённые рамки не используются. В JSON сохраняются все параметры для переноса в игровую ветку.</p>
+  <p class="hint">Настраивай рельеф, настоящие болотные SVG, малые ориентиры, а также алгоритмические дороги и реки. Удалённые рамки не используются. Экспорт разделяет действующие настройки генератора, настройки просмотра и экспериментальную экономику; устаревшие параметры исключены.</p>
   <div class="section-kicker">Быстрые пресеты</div>
   <div class="preset-list" id="presets"></div>
   <div id="controls"></div>
@@ -108,7 +108,7 @@
  </main>
 <aside class="sim-side" id="simSidebar">
  <div class="side-title">Симулятор Королевства</div>
- <p class="sim-help">Параметры встреч и экономики — <b>предлагаемый баланс</b>, не действующие правила игры. Рельеф и 112 авторских превью общие с редактором слева.</p>
+ <p class="sim-help">География и распределение встреч используют действующий генератор v6. Экономические показатели ниже — эксперимент симулятора. Рельеф и 112 авторских превью общие с редактором слева.</p>
  <div class="sim-section">
   <h3>01 · Исследование и календарь</h3>
   <div id="simControls"></div>
@@ -165,27 +165,17 @@ const IMAGE_DATA = {"mountain_clusters/16_fading_edge.svg":"data:image/png;base6
 const IMG={};let pendingFrame=false, toastTimer=0;
 function renderSoon(){if(pendingFrame)return;pendingFrame=true;requestAnimationFrame(()=>{pendingFrame=false;paint()});}
 for(const [key,source] of Object.entries(IMAGE_DATA)){const image=new Image();image.onload=renderSoon;image.src=source;IMG[key]=image;}
-const BASE={
- seed:'rpchess-kingdom-2026',centerX:0,centerY:0,zoom:92,
- landScale:8.8,detailScale:3.1,wetScale:13.5,largeWeight:.72,
- mountainThreshold:.67,hillThreshold:.56,forestThreshold:.58,
- stampSpacing:3,forestDensity:1,mountainDensity:1,hillDensity:1,plainDensity:.34,
- stampSize:2.1,sizeVariation:.45,stampOpacity:.72,baseOpacity:.34,baseSpacing:6, paperContrast:1,
- roadSpacing:12,roadWidth:1,roadCurve:1,roadOpacity:1,
- riverSpacing:17,riverWidth:1,riverCurve:1,riverOpacity:1,
- marshDensity:.8,marshWetThreshold:.59,marshSize:1.9,marshOpacity:.72,
- landmarkDensity:.16,landmarkSize:1.15,landmarkOpacity:.86,
- fogOpacity:.83,fogRadius:1.34,fogInner:.43,fogInkOpacity:.19,fogIrregularity:0,revealRadius:2.6,
- showFog:true,showObjects:true,showGrid:false,showBiomes:false,showBorders:true,showPatches:true,showNature:true,
- showMarsh:true,showLandmarks:true,showRoads:true,showRivers:true
-};
+const BASE={"seed":"rpchess-kingdom-2026","centerX":1.1397535385320217,"centerY":0.8734816261574075,"zoom":117,"landScale":9.4,"detailScale":4.2,"wetScale":7.5,"largeWeight":0.29,"mountainThreshold":0.63,"hillThreshold":0.56,"forestThreshold":0.44,"stampSpacing":1.55,"forestDensity":2.4,"mountainDensity":1.4,"hillDensity":0.9,"plainDensity":0.35,"stampSize":2.2,"sizeVariation":1.05,"stampOpacity":1,"baseOpacity":1,"baseSpacing":6.5,"roadSpacing":5,"roadWidth":1.65,"roadCurve":3,"roadOpacity":1,"riverSpacing":6,"riverWidth":1.2,"riverCurve":1.1,"riverOpacity":1,"marshDensity":2.05,"marshWetThreshold":0.42,"marshSize":1.85,"marshOpacity":1,"landmarkDensity":0.62,"landmarkSize":0.75,"landmarkOpacity":1,"fogOpacity":0.98,"fogRadius":1.1,"fogInner":0.32,"fogInkOpacity":0.2,"showFog":true,"showObjects":true,"showGrid":false,"showBiomes":false,"showBorders":true,"showPatches":true,"showNature":true,"showMarsh":true,"showLandmarks":true,"showRoads":true,"showRivers":true};
+const GAME_VISUAL_KEYS=["landScale","detailScale","wetScale","largeWeight","mountainThreshold","hillThreshold","forestThreshold","stampSpacing","forestDensity","mountainDensity","hillDensity","plainDensity","stampSize","sizeVariation","stampOpacity","baseOpacity","baseSpacing","roadSpacing","roadWidth","roadCurve","roadOpacity","riverSpacing","riverWidth","riverCurve","riverOpacity","marshDensity","marshWetThreshold","marshSize","marshOpacity","landmarkDensity","landmarkSize","landmarkOpacity","fogOpacity","fogRadius","fogInner","fogInkOpacity"];
+const SCOUT_RADIUS=2;
+const PAPER_IMAGE=new Image();PAPER_IMAGE.onload=renderSoon;PAPER_IMAGE.src='data:image/webp;base64,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';
 const PRESETS=[
  {id:'current',name:'Как сейчас',desc:'Текущий генератор',values:{...BASE}},
  {id:'atlas',name:'Живой атлас',desc:'Больше деталей',values:{stampSpacing:1.85,forestDensity:1.5,mountainDensity:1.4,hillDensity:1.1,forestThreshold:.53,mountainThreshold:.62,hillThreshold:.53,stampSize:1.75,stampOpacity:.85,baseOpacity:.24,showFog:false,fogOpacity:.6, fogRadius:1.7,fogIrregularity:.6}},
  {id:'forest',name:'Древние леса',desc:'Зелёный мир',values:{stampSpacing:1.55,forestDensity:2.1,forestThreshold:.46,wetScale:11,largeWeight:.76,hillThreshold:.62,mountainThreshold:.71,plainDensity:.19,stampSize:1.9,showFog:false}},
  {id:'highland',name:'Горные земли',desc:'Хребты и холмы',values:{stampSpacing:1.8,mountainThreshold:.56,hillThreshold:.47,mountainDensity:2.1,hillDensity:1.7,forestThreshold:.64,forestDensity:.7,stampSize:1.75,showFog:false}},
  {id:'wild',name:'Дикие земли',desc:'Контраст биомов',values:{stampSpacing:1.65,mountainThreshold:.6,hillThreshold:.52,forestThreshold:.54,forestDensity:1.75,mountainDensity:1.6,hillDensity:1.45,wetScale:9,landScale:12,stampOpacity:.9,baseOpacity:.4,showFog:false,roadSpacing:15,riverSpacing:22,roadOpacity:.8,riverOpacity:.65}},
- {id:'fog',name:'Туманный поход',desc:'Мягкое исследование',values:{stampSpacing:1.8,forestThreshold:.54,showFog:true,fogOpacity:.65,fogRadius:1.9,fogInner:.53,fogIrregularity:.75,revealRadius:4.1,forestDensity:1.6,mountainThreshold:.62}}
+ {id:'fog',name:'Туманный поход',desc:'Мягкое исследование',values:{stampSpacing:1.8,forestThreshold:.54,showFog:true,fogOpacity:.65,fogRadius:1.9,fogInner:.53,forestDensity:1.6,mountainThreshold:.62}}
 ];
 const SECTIONS=[
  {title:'01 · Структура рельефа',items:[
@@ -229,15 +219,12 @@ const SECTIONS=[
  {title:'05 · Бумага и атмосфера',items:[
   ['baseOpacity','Пятна пергамента',0,1,.02,'','Непрозрачность базовых художественных пятен.'],
   ['baseSpacing','Расстояние пятен',3,12,.25,' клетки','Дистанция между большими цветовыми облаками.'],
-  ['paperContrast','Фактура бумаги',0,2.6,.05,'×','Насколько заметна процедурная бумажная фактура.']
  ]},
  {title:'06 · Туман войны',items:[
   ['fogOpacity','Плотность тумана',0,1,.02,'','Сейчас 0,83 — карта кажется очень тёмной.'],
   ['fogRadius','Радиус открытия',.65,3,.05,' клетки','Сейчас 1,34: большое круглое пятно вокруг открытых клеток.'],
   ['fogInner','Ядро ясности',.2,.9,.02,' клетки','Насколько далеко от клетки сохраняется полностью открытая область.'],
-  ['fogIrregularity','Неровность краёв',0,1,.02,'','Новый эксперимент: размывает идеальную окружность.'],
   ['fogInkOpacity','Чернильные SVG тумана',0,.7,.02,'','Насыщенность декоративных облаков.'],
-  ['revealRadius','Стартовая разведка',0,7,.2,' клетки','Открытая территория вокруг замка в этом стенде.']
  ]},
  {title:'07 · Параметры просмотра',items:[
   ['zoom','Масштаб клетки',45,160,1,' px','В игре логическая клетка равна 142 px; масштаб здесь только визуальный.']
@@ -255,7 +242,7 @@ const SECTIONS=[
   ['showBorders','Границы владений','Показывать контуры присоединённых земель']
  ]}
 ];
-const USER_SELECTED={"seed":"rpchess-kingdom-2026","centerX":1.1397535385320217,"centerY":0.8734816261574075,"zoom":117,"landScale":9.4,"detailScale":4.2,"wetScale":7.5,"largeWeight":0.29,"mountainThreshold":0.63,"hillThreshold":0.56,"forestThreshold":0.44,"stampSpacing":1.55,"forestDensity":2.4,"mountainDensity":1.4,"hillDensity":0.9,"plainDensity":0.35,"stampSize":2.2,"sizeVariation":1.05,"stampOpacity":0.8,"baseOpacity":0.26,"baseSpacing":6.5,"paperContrast":1.6,"roadSpacing":5,"roadWidth":1.65,"roadCurve":3,"roadOpacity":0.56,"riverSpacing":6,"riverWidth":1.2,"riverCurve":1.1,"riverOpacity":0.56,"marshDensity":2.05,"marshWetThreshold":0.42,"marshSize":1.85,"marshOpacity":0.84,"landmarkDensity":0.62,"landmarkSize":0.75,"landmarkOpacity":0.92,"fogOpacity":0.88,"fogRadius":1.1,"fogInner":0.32,"fogInkOpacity":0.2,"fogIrregularity":0.3,"revealRadius":1.6,"showFog":true,"showObjects":true,"showGrid":false,"showBiomes":false,"showBorders":true,"showPatches":true,"showNature":true,"showMarsh":true,"showLandmarks":true,"showRoads":true,"showRivers":true};
+const USER_SELECTED={}; // BASE matches the real current runtime values
 let S={...BASE,...USER_SELECTED};let currentPreset='custom';let explored=new Set();let paintCycles=0;
 const $=id=>document.getElementById(id);
 function format(v,suffix){let n=Math.abs(v-Math.round(v))<.0001?String(Math.round(v)):Number(v).toFixed(2).replace(/0+$/,'').replace(/\.$/,'');return n+(suffix||'');}
@@ -301,12 +288,10 @@ function drawOptionalNature(ctx){
 }
 function rand(x,y,salt=''){return randomAt(S.seed,x,y,salt)}
 function drawAsset(ctx,key,x,y,size,opacity=1){const im=IMG[key];if(!im||!im.complete||!im.naturalWidth)return false;ctx.save();ctx.globalAlpha=Math.max(0,Math.min(1,opacity));ctx.drawImage(im,x-size/2,y-size/2,size,size);ctx.restore();return true}
-const chunkCache=new Map(),MAX_CHUNKS=110;
-function invalidate(){chunkCache.clear()}
-function makeChunk(cx,cy,P){const key=[S.seed,cx,cy,S.landScale,S.detailScale,S.wetScale,S.largeWeight,S.mountainThreshold,S.hillThreshold,S.forestThreshold,S.paperContrast].join(':');if(chunkCache.has(key)){const im=chunkCache.get(key);chunkCache.delete(key);chunkCache.set(key,im);return im}const dim=64;const c=document.createElement('canvas');c.width=dim;c.height=dim;const cx2=c.getContext('2d',{alpha:false});const dat=cx2.createImageData(dim,dim);for(let y=0;y<dim;y++)for(let x=0;x<dim;x++){const wx=cx*4+(x+.5)*4/dim,wy=cy*4+(y+.5)*4/dim;const t=terrainAt(wx,wy);const grain=(noise2D(S.seed,wx*2.9,wy*2.9,'paper')-.5)*23*S.paperContrast+(rand(Math.floor(wx*20),Math.floor(wy*20),'flecks')-.5)*9*S.paperContrast;const tint=t.kind==='forest'?[-13,1,-16]:t.kind==='mountain'?[-16,-17,-21]:t.kind==='hill'?[-6,-8,-12]:[0,0,0];const offset=Math.round(grain);const i=(y*dim+x)*4;dat.data[i]=Math.max(0,Math.min(255,215+offset+tint[0]));dat.data[i+1]=Math.max(0,Math.min(255,196+offset+tint[1]));dat.data[i+2]=Math.max(0,Math.min(255,154+offset+tint[2]));dat.data[i+3]=255}cx2.putImageData(dat,0,0);if(chunkCache.size>=MAX_CHUNKS)chunkCache.delete(chunkCache.keys().next().value);chunkCache.set(key,c);return c}
+function invalidate(){}
+function drawBackdrop(ctx){ctx.fillStyle='#d9b77a';ctx.fillRect(0,0,VW,VH);if(!PAPER_IMAGE.complete||!PAPER_IMAGE.naturalWidth)return 0;const side=P*256/142;const startX=Math.floor(LEFT*142/256)*side-LEFT*P;const startY=Math.floor(TOP*142/256)*side-TOP*P;let count=0;for(let y=startY;y<VH;y+=side)for(let x=startX;x<VW;x+=side){ctx.drawImage(PAPER_IMAGE,x,y,side,side);count++;}return count;}
 let VW=0,VH=0,P=92,LEFT=0,TOP=0,CTX=null,DPR=1;
 function toPxX(x){return(x-LEFT)*P}function toPxY(y){return(y-TOP)*P}
-function drawBackdrop(ctx){ctx.fillStyle='#c8b48d';ctx.fillRect(0,0,VW,VH);const minX=Math.floor(LEFT/4),maxX=Math.floor((LEFT+VW/P)/4),minY=Math.floor(TOP/4),maxY=Math.floor((TOP+VH/P)/4);let chunks=0;for(let y=minY;y<=maxY;y++)for(let x=minX;x<=maxX;x++){const chunk=makeChunk(x,y,P);ctx.drawImage(chunk,toPxX(x*4)-.5,toPxY(y*4)-.5,4*P+1,4*P+1);chunks++}return chunks}
 function drawParchmentPatches(ctx){if(!S.showPatches||S.baseOpacity<=0)return;const step=S.baseSpacing;for(let y=Math.floor(TOP/step)-1;y<=Math.ceil((TOP+VH/P)/step);y++)for(let x=Math.floor(LEFT/step)-1;x<=Math.ceil((LEFT+VW/P)/step);x++){const wx=x*step+.32,wy=y*step+.15;const size=P*(2.4+rand(x,y,'baseSize')*1.2);drawAsset(ctx,sprite('parchment_base_variations',x,y),toPxX(wx),toPxY(wy),size,S.baseOpacity)}}
 let stampsDrawn=0;
 function drawWaterRoads(ctx){
