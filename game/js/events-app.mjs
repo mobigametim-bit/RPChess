@@ -87,7 +87,7 @@ function ensureScreen() {
         <h2 id="events-outcome-title" data-events-outcome-title></h2>
         <div class="events-roll" data-events-roll></div>
         <p class="events-outcome-literary" data-events-literary hidden></p>
-        <div class="events-outcome-notes" data-events-outcome-notes></div>
+        <div class="events-outcome-notes" data-events-outcome-notes data-label="${t('events.consequences')}"></div>
         <button class="reboot-button reboot-button--primary events-continue" type="button" data-events-continue>${t('events.continue')}</button>
       </section>
     </div>`;
@@ -104,6 +104,8 @@ function renderStaticCopy() {
   const outcomeKicker=screen.querySelector('[data-events-outcome-eyebrow]');
   if(kicker)kicker.textContent=t('events.kicker');
   if(outcomeKicker)outcomeKicker.textContent=t('events.outcomeKicker');
+  const consequences=screen.querySelector('[data-events-outcome-notes]');
+  if(consequences)consequences.dataset.label=t('events.consequences');
 }
 
 function hideAllScenes() {
