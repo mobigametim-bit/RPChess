@@ -10,7 +10,8 @@ const BUILDING_TYPES=Object.freeze({
  hunting_lodge:Object.freeze({biomes:['forest'],kind:'supplies'}),
  gold_mine:Object.freeze({biomes:['mountain'],kind:'gold'}),
  stone_quarry:Object.freeze({biomes:['mountain','hills'],kind:'gold'}),
- sawmill:Object.freeze({biomes:['forest'],kind:'gold'})
+ sawmill:Object.freeze({biomes:['forest'],kind:'gold'}),
+ oasis:Object.freeze({biomes:['wasteland'],kind:'supplies'})
 });
 const TYPES_BY_BIOME=Object.freeze(Object.fromEntries(
  ['plains','hills','forest','mountain','marsh','wasteland'].map(biome=>[
