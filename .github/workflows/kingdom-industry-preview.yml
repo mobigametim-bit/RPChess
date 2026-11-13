@@ -79,7 +79,7 @@ jobs:
               try{
                 const cases=[
                   ['/', 'data-reboot-foundation'],
-                  ['/js/run-persistence.mjs', 'applyIndustryCredits'],
+                  ['/js/run-persistence.mjs', 'writeRun'],
                   ['/js/kingdom-industry-core.mjs', 'oasis'],
                   ['/js/kingdom-map-app.mjs', 'industrySpriteIndex'],
                   ['/css/kingdom-map.css', 'km-object--industry']
