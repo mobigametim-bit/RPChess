@@ -444,6 +444,21 @@ body.kingdom-map-active .resource-hud{display:none!important}
  width:calc(var(--km-event-size-px,103px)*.8);
  height:calc(var(--km-event-size-px,103px)*.8);top:48%;left:45%;z-index:8
 }
+/* Single map tile production building. Rendering stays below the king and
+ * above painted roads. The temporary construction sprite is a full-week stage. */
+.kingdom-map-screen .km-object--industry{
+ width:calc(var(--km-event-size-px,103px)*.67);
+ height:calc(var(--km-event-size-px,103px)*.67);
+ top:48%;left:50%;z-index:8;object-fit:contain;
+ filter:drop-shadow(0 3px 3px #122016ad);pointer-events:none
+}
+.kingdom-map-screen .km-object--building-site{filter:drop-shadow(0 3px 3px #604018bb)}
+.kingdom-map-screen .km-industry-level{
+ position:absolute;z-index:10;right:5px;bottom:4px;
+ font:800 clamp(9px,1.15vw,14px)/1.2 Georgia,serif;
+ color:#ffeab2;background:#16251cc9;border:1px solid #b99d5b8c;
+ padding:2px 4px;border-radius:3px;pointer-events:none
+}
 .kingdom-map-screen [data-kingdom-outpost]{
  padding:9px 12px;border:1px solid #dcb16d;border-radius:5px;
  background:linear-gradient(#5a4124,#281c11);color:#ffe7b8;
