@@ -22,8 +22,9 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   const overlaySource=fs.readFileSync(path.join(game,'js/kingdom-map-overlay.mjs'),'utf8');
   assert(overlaySource.includes('ctx.globalAlpha*=VISUAL.roadOpacity'),
     'Royal-road paving opacity must match naturally generated roads');
-  assert(overlaySource.includes("tone:road.kind==='travel'||road.surface==='gray'?'gray':'sandstone'"),
-    'completed Journey roads and foreign network links must use gray stone');
+  assert(overlaySource.includes("clipRoadSurface(inside)")&&
+     overlaySource.includes("for(const [inside,tone] of [[false,'gray'],[true,'sandstone']]"),
+    'paved roads switch from yellow to gray exactly at owned-cell boundaries');
   assert(overlaySource.includes('visibleTravelRoads(map)'),
     'historic roads remain an independent visible layer');
   const rendererSource=fs.readFileSync(path.join(game,'js/kingdom-traveler-renderer.mjs'),'utf8');
@@ -31,8 +32,8 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
     'NPCs hide during stops and appear again only when a new leg begins');
   const pavingSource=fs.readFileSync(path.join(game,'js/kingdom-road-paving.mjs'),'utf8');
   assert(pavingSource.includes('const SANDSTONE_WIDTH=16')&&
-    pavingSource.includes("base:'#bda27a'")&&pavingSource.includes('const BRICK_LENGTH=22,BRICK_STEP=24,ROWS=3'),
-    'author-approved 16px pale sandstone uses three staggered running-bond brick courses');
+    pavingSource.includes("base:'#e4bd54'")&&pavingSource.includes('const BRICK_LENGTH=22,BRICK_STEP=24,ROWS=3'),
+    'author-approved 16px yellow brick paving uses three staggered running-bond courses');
   assert(overlaySource.includes('drawSandstoneRoad(ctx,{x1,y1,x2,y2,bend:offset,id:road.id||identity,'),
     'only player-built royal road overlay must use sandstone while natural dirt trails stay unchanged');
   assert(buildSource.includes("'js/kingdom-road-paving.mjs'"),
