@@ -452,10 +452,10 @@ body.kingdom-map-active .resource-hud{display:none!important}
 /* Single map tile production building. Rendering stays below the king and
  * above painted roads. The temporary construction sprite is a full-week stage. */
 .kingdom-map-screen .km-object--industry{
- /* 30% smaller than the first preview; share forest stamp translucency. */
- width:calc(var(--km-event-size-px,103px)*.469);
- height:calc(var(--km-event-size-px,103px)*.469);
- top:48%;left:50%;z-index:8;opacity:.8;
+ /* 90% of the original producer sprite size (up from 70%), fully opaque like the castle. */
+ width:calc(var(--km-event-size-px,103px)*.603);
+ height:calc(var(--km-event-size-px,103px)*.603);
+ top:48%;left:50%;z-index:8;opacity:1;
  background-size:900% 100%;background-repeat:no-repeat;
  filter:drop-shadow(0 3px 3px #122016ad);pointer-events:none
 }
