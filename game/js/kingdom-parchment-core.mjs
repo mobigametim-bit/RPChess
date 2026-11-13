@@ -11,7 +11,6 @@ const GROUPS=Object.freeze({
 });
 const PARCHMENT_TILE=142,PARCHMENT_CHUNK_CELLS=4;
 // Additional uploaded artwork is discovered at build time, not guessed by filename.
-const PARCHMENT_MODE_KEY='rpchess.kingdom.visual.v1';
 function hash32(value){
  let hash=2166136261;
  for(const char of String(value)){hash^=char.charCodeAt(0);hash=Math.imul(hash,16777619);}
@@ -47,5 +46,5 @@ function pickSprite(seed,kind,x,y,salt='sprite'){
  return group?spritePath(kind,hash32(seed+':'+kind+':'+x+':'+y+':'+salt)%group.length):null;
 }
 function chunkCoordinate(cell){return Math.floor(cell/PARCHMENT_CHUNK_CELLS);}
-export {GROUPS,PARCHMENT_TILE,PARCHMENT_CHUNK_CELLS,PARCHMENT_MODE_KEY,
+export {GROUPS,PARCHMENT_TILE,PARCHMENT_CHUNK_CELLS,
  hash32,randomAt,noise2D,terrainAt,spritePath,pickSprite,chunkCoordinate};
