@@ -184,7 +184,7 @@ function encounterPresent(seed,x,y,{spacing=ENCOUNTER_MIN_SPACING,
  };
  return accepted(x,y);
 }
-function worldAt(seed,x,y,{allowSkirmish=true,spacing=ENCOUNTER_MIN_SPACING,
+function worldAt(seed,x,y,{spacing=ENCOUNTER_MIN_SPACING,
  eventNearbyMax=EVENT_NEARBY_MAX,densityMultiplier=DENSITY_MULTIPLIER,biomeDensity=DENSITY,
  typeWeights=TYPE_WEIGHTS,raceWeights=RACE_WEIGHTS,
  settlementProbabilityMultiplier=SETTLEMENT_PROBABILITY_MULTIPLIER,
