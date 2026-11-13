@@ -167,18 +167,58 @@ const PAPER=new Image();PAPER.onload=()=>renderSoon();PAPER.src='assets/kingdom-
 function renderSoon(){if(pendingFrame)return;pendingFrame=true;requestAnimationFrame(()=>{pendingFrame=false;paint()});}
 for(const [key,source] of Object.entries(IMAGE_DATA)){const image=new Image();image.onload=renderSoon;image.src=source;IMG[key]=image;}
 const BASE={
- seed:'rpchess-kingdom-2026',centerX:0,centerY:0,zoom:92,
- landScale:8.8,detailScale:3.1,wetScale:13.5,largeWeight:.72,
- mountainThreshold:.67,hillThreshold:.56,forestThreshold:.58,
- stampSpacing:3,forestDensity:1,mountainDensity:1,hillDensity:1,plainDensity:.34,
- stampSize:2.1,sizeVariation:.45,stampOpacity:.72,baseOpacity:.34,baseSpacing:6, paperContrast:1,
- roadSpacing:12,roadWidth:1,roadCurve:1,roadOpacity:1,
- riverSpacing:17,riverWidth:1,riverCurve:1,riverOpacity:1,
- marshDensity:.8,wastelandDensity:1.8,marshWetThreshold:.59,marshSize:1.9,marshOpacity:.72,
- landmarkDensity:.16,landmarkSize:1.15,landmarkOpacity:.86,
- fogOpacity:.83,fogRadius:1.34,fogInner:.43,fogInkOpacity:.19,fogIrregularity:0,revealRadius:2.6,
- showFog:true,showObjects:true,showGrid:false,showBiomes:false,showBorders:true,showPatches:true,showNature:true,
- showMarsh:true,showLandmarks:true,showRoads:true,showRivers:true
+ "landScale": 9.4,
+ "detailScale": 4.2,
+ "wetScale": 7.5,
+ "largeWeight": 0.29,
+ "mountainThreshold": 0.63,
+ "hillThreshold": 0.56,
+ "forestThreshold": 0.44,
+ "stampSpacing": 1.55,
+ "forestDensity": 2.4,
+ "mountainDensity": 1.4,
+ "hillDensity": 0.9,
+ "plainDensity": 0.35,
+ "stampSize": 2.2,
+ "sizeVariation": 1.05,
+ "stampOpacity": 1,
+ "baseOpacity": 1,
+ "baseSpacing": 6.5,
+ "roadSpacing": 5,
+ "roadWidth": 1.65,
+ "roadCurve": 3,
+ "roadOpacity": 1,
+ "riverSpacing": 6,
+ "riverWidth": 1.2,
+ "riverCurve": 1.1,
+ "riverOpacity": 1,
+ "marshDensity": 2.05,
+ "wastelandDensity": 1.8,
+ "marshWetThreshold": 0.42,
+ "marshSize": 1.85,
+ "marshOpacity": 1,
+ "landmarkDensity": 0.62,
+ "landmarkSize": 0.75,
+ "landmarkOpacity": 1,
+ "fogOpacity": 0.98,
+ "fogRadius": 1.1,
+ "fogInner": 0.32,
+ "fogInkOpacity": 0.2,
+ "seed": "rpchess-kingdom-2026",
+ "centerX": 1.1397535385320217,
+ "centerY": 0.8734816261574075,
+ "zoom": 117,
+ "showFog": true,
+ "showObjects": true,
+ "showGrid": false,
+ "showBiomes": false,
+ "showBorders": true,
+ "showPatches": true,
+ "showNature": true,
+ "showMarsh": true,
+ "showLandmarks": true,
+ "showRoads": true,
+ "showRivers": true
 };
 const PRESETS=[
  {id:'current',name:'Как сейчас',desc:'Текущий генератор',values:{...BASE}},
@@ -257,7 +297,7 @@ const SECTIONS=[
   ['showBorders','Границы владений','Показывать контуры присоединённых земель']
  ]}
 ];
-const USER_SELECTED={"landScale":9.4,"detailScale":4.2,"wetScale":7.5,"largeWeight":0.29,"mountainThreshold":0.63,"hillThreshold":0.56,"forestThreshold":0.44,"stampSpacing":1.55,"forestDensity":2.4,"mountainDensity":1.4,"hillDensity":0.9,"plainDensity":0.35,"stampSize":2.2,"sizeVariation":1.05,"stampOpacity":1,"baseOpacity":1,"baseSpacing":6.5,"paperContrast":1.6,"roadSpacing":5,"roadWidth":1.65,"roadCurve":3,"roadOpacity":1,"riverSpacing":6,"riverWidth":1.2,"riverCurve":1.1,"riverOpacity":1,"marshDensity":2.05,"wastelandDensity":1.8,"marshWetThreshold":0.42,"marshSize":1.85,"marshOpacity":1,"landmarkDensity":0.62,"landmarkSize":0.75,"landmarkOpacity":1,"fogOpacity":0.98,"fogRadius":1.1,"fogInner":0.32,"fogInkOpacity":0.2,"fogIrregularity":0.3,"revealRadius":1.6,"seed":"rpchess-kingdom-2026","centerX":1.1397535385320217,"centerY":0.8734816261574075,"zoom":117,"showFog":true,"showObjects":true,"showGrid":false,"showBiomes":false,"showBorders":true,"showPatches":true,"showNature":true,"showMarsh":true,"showLandmarks":true,"showRoads":true,"showRivers":true};
+const USER_SELECTED={"landScale":9.4,"detailScale":4.2,"wetScale":7.5,"largeWeight":0.29,"mountainThreshold":0.63,"hillThreshold":0.56,"forestThreshold":0.44,"stampSpacing":1.55,"forestDensity":2.4,"mountainDensity":1.4,"hillDensity":0.9,"plainDensity":0.35,"stampSize":2.2,"sizeVariation":1.05,"stampOpacity":1,"baseOpacity":1,"baseSpacing":6.5,"roadSpacing":5,"roadWidth":1.65,"roadCurve":3,"roadOpacity":1,"riverSpacing":6,"riverWidth":1.2,"riverCurve":1.1,"riverOpacity":1,"marshDensity":2.05,"wastelandDensity":1.8,"marshWetThreshold":0.42,"marshSize":1.85,"marshOpacity":1,"landmarkDensity":0.62,"landmarkSize":0.75,"landmarkOpacity":1,"fogOpacity":0.98,"fogRadius":1.1,"fogInner":0.32,"fogInkOpacity":0.2,"seed":"rpchess-kingdom-2026","centerX":1.1397535385320217,"centerY":0.8734816261574075,"zoom":117,"showFog":true,"showObjects":true,"showGrid":false,"showBiomes":false,"showBorders":true,"showPatches":true,"showNature":true,"showMarsh":true,"showLandmarks":true,"showRoads":true,"showRivers":true};
 let S={...BASE,...USER_SELECTED};let currentPreset='custom';let explored=new Set();let paintCycles=0;
 const $=id=>document.getElementById(id);
 function format(v,suffix){let n=Math.abs(v-Math.round(v))<.0001?String(Math.round(v)):Number(v).toFixed(2).replace(/0+$/,'').replace(/\.$/,'');return n+(suffix||'');}
@@ -366,10 +406,30 @@ function rand(x,y,salt=''){return randomAt(S.seed,x,y,salt)}
 function drawAsset(ctx,key,x,y,size,opacity=1){const im=IMG[key];if(!im||!im.complete||!im.naturalWidth)return false;ctx.save();ctx.globalAlpha=Math.max(0,Math.min(1,opacity));ctx.drawImage(im,x-size/2,y-size/2,size,size);ctx.restore();return true}
 const chunkCache=new Map(),MAX_CHUNKS=110;
 function invalidate(){chunkCache.clear()}
-function makeChunk(cx,cy,P){const key=[S.seed,cx,cy,S.landScale,S.detailScale,S.wetScale,S.largeWeight,S.mountainThreshold,S.hillThreshold,S.forestThreshold,S.paperContrast].join(':');if(chunkCache.has(key)){const im=chunkCache.get(key);chunkCache.delete(key);chunkCache.set(key,im);return im}const dim=64;const c=document.createElement('canvas');c.width=dim;c.height=dim;const cx2=c.getContext('2d',{alpha:false});const dat=cx2.createImageData(dim,dim);for(let y=0;y<dim;y++)for(let x=0;x<dim;x++){const wx=cx*4+(x+.5)*4/dim,wy=cy*4+(y+.5)*4/dim;const t=terrainAt(wx,wy);const grain=(noise2D(S.seed,wx*2.9,wy*2.9,'paper')-.5)*23*S.paperContrast+(rand(Math.floor(wx*20),Math.floor(wy*20),'flecks')-.5)*9*S.paperContrast;const tint=t.kind==='forest'?[-13,1,-16]:t.kind==='mountain'?[-16,-17,-21]:t.kind==='hill'?[-6,-8,-12]:[0,0,0];const offset=Math.round(grain);const i=(y*dim+x)*4;dat.data[i]=Math.max(0,Math.min(255,215+offset+tint[0]));dat.data[i+1]=Math.max(0,Math.min(255,196+offset+tint[1]));dat.data[i+2]=Math.max(0,Math.min(255,154+offset+tint[2]));dat.data[i+3]=255}cx2.putImageData(dat,0,0);if(chunkCache.size>=MAX_CHUNKS)chunkCache.delete(chunkCache.keys().next().value);chunkCache.set(key,c);return c}
+function makeChunk(cx,cy,P){const key=[S.seed,cx,cy,S.landScale,S.detailScale,S.wetScale,S.largeWeight,S.mountainThreshold,S.hillThreshold,S.forestThreshold,1.6].join(':');if(chunkCache.has(key)){const im=chunkCache.get(key);chunkCache.delete(key);chunkCache.set(key,im);return im}const dim=64;const c=document.createElement('canvas');c.width=dim;c.height=dim;const cx2=c.getContext('2d',{alpha:false});const dat=cx2.createImageData(dim,dim);for(let y=0;y<dim;y++)for(let x=0;x<dim;x++){const wx=cx*4+(x+.5)*4/dim,wy=cy*4+(y+.5)*4/dim;const t=terrainAt(wx,wy);const grain=(noise2D(S.seed,wx*2.9,wy*2.9,'paper')-.5)*23*S.paperContrast+(rand(Math.floor(wx*20),Math.floor(wy*20),'flecks')-.5)*9*S.paperContrast;const tint=t.kind==='forest'?[-13,1,-16]:t.kind==='mountain'?[-16,-17,-21]:t.kind==='hill'?[-6,-8,-12]:[0,0,0];const offset=Math.round(grain);const i=(y*dim+x)*4;dat.data[i]=Math.max(0,Math.min(255,215+offset+tint[0]));dat.data[i+1]=Math.max(0,Math.min(255,196+offset+tint[1]));dat.data[i+2]=Math.max(0,Math.min(255,154+offset+tint[2]));dat.data[i+3]=255}cx2.putImageData(dat,0,0);if(chunkCache.size>=MAX_CHUNKS)chunkCache.delete(chunkCache.keys().next().value);chunkCache.set(key,c);return c}
 let VW=0,VH=0,P=92,LEFT=0,TOP=0,CTX=null,DPR=1;
 function toPxX(x){return(x-LEFT)*P}function toPxY(y){return(y-TOP)*P}
-function drawBackdrop(ctx){ctx.fillStyle='#c8b48d';ctx.fillRect(0,0,VW,VH);const minX=Math.floor(LEFT/4),maxX=Math.floor((LEFT+VW/P)/4),minY=Math.floor(TOP/4),maxY=Math.floor((TOP+VH/P)/4);let chunks=0;for(let y=minY;y<=maxY;y++)for(let x=minX;x<=maxX;x++){const chunk=makeChunk(x,y,P);ctx.drawImage(chunk,toPxX(x*4)-.5,toPxY(y*4)-.5,4*P+1,4*P+1);chunks++}return chunks}
+function drawBackdrop(ctx){
+ if(PAPER.complete&&PAPER.naturalWidth===256){
+  ctx.fillStyle='#d9b77a';ctx.fillRect(0,0,VW,VH);
+  // Match production's world-anchored 256px tile at 142px per world unit.
+  const unit=256/142,startX=Math.floor(LEFT/unit)-1,endX=Math.ceil((LEFT+VW/P)/unit)+1,
+   startY=Math.floor(TOP/unit)-1,endY=Math.ceil((TOP+VH/P)/unit)+1;
+  for(let y=startY;y<=endY;y++)for(let x=startX;x<=endX;x++)
+   ctx.drawImage(PAPER,toPxX(x*unit),toPxY(y*unit),unit*P,unit*P);
+  return (endX-startX+1)*(endY-startY+1);
+ }
+ // Standalone/offline fallback when the hosted parchment file is unavailable.
+ ctx.fillStyle='#c8b48d';ctx.fillRect(0,0,VW,VH);
+ const a=Math.floor(LEFT/4),b=Math.floor((LEFT+VW/P)/4),
+  c=Math.floor(TOP/4),d=Math.floor((TOP+VH/P)/4);
+ let chunks=0;
+ for(let y=c;y<=d;y++)for(let x=a;x<=b;x++){
+  const tile=makeChunk(x,y,P);
+  ctx.drawImage(tile,toPxX(x*4)-.5,toPxY(y*4)-.5,4*P+1,4*P+1);chunks++;
+ }
+ return chunks;
+}
 function drawParchmentPatches(ctx){if(!S.showPatches||S.baseOpacity<=0)return;const step=S.baseSpacing;for(let y=Math.floor(TOP/step)-1;y<=Math.ceil((TOP+VH/P)/step);y++)for(let x=Math.floor(LEFT/step)-1;x<=Math.ceil((LEFT+VW/P)/step);x++){const wx=x*step+.32,wy=y*step+.15;const size=P*(2.4+rand(x,y,'baseSize')*1.2);drawAsset(ctx,sprite('parchment_base_variations',x,y),toPxX(wx),toPxY(wy),size,S.baseOpacity)}}
 let stampsDrawn=0;
 function drawWaterRoads(ctx){
@@ -417,7 +477,7 @@ function drawWaterRoads(ctx){
  ctx.restore();
 }
 function drawNature(ctx){if(!S.showNature||S.stampOpacity===0)return;const step=S.stampSpacing,minX=Math.floor((LEFT-3)/step),maxX=Math.ceil((LEFT+VW/P+3)/step),minY=Math.floor((TOP-3)/step),maxY=Math.ceil((TOP+VH/P+3)/step);for(let yi=minY;yi<=maxY;yi++)for(let xi=minX;xi<=maxX;xi++){const gx=xi*step+step*.38+rand(xi,yi,'sx')*step*.24,gy=yi*step+step*.38+rand(xi,yi,'sy')*step*.24;const t=terrainAt(gx,gy);const biome=visualBiome(Math.floor(gx),Math.floor(gy));if(biome==='marsh'||biome==='wasteland')continue;const kind=t.kind==='forest'?'forest_clusters':t.kind==='mountain'?'mountain_clusters':'hills_rocks';const dens=t.kind==='forest'?S.forestDensity:t.kind==='mountain'?S.mountainDensity:t.kind==='hill'?S.hillDensity:S.plainDensity;const repeats=Math.min(4,Math.ceil(dens));for(let i=0;i<repeats;i++){if(rand(xi,yi,'density'+i)>Math.min(1,dens-i))continue;const jx=i===0?0:(rand(xi,yi,'jx'+i)-.5)*step*.8,jy=i===0?0:(rand(xi,yi,'jy'+i)-.5)*step*.8;const size=P*(S.stampSize+(rand(xi,yi,'scale'+i)-.5)*S.sizeVariation*2);if(drawAsset(ctx,sprite(kind,xi,yi,'art'+i),toPxX(gx+jx),toPxY(gy+jy),size,S.stampOpacity))stampsDrawn++}}}
-function exploredAt(x,y){if(explored.has(x+','+y))return true;const dist=Math.hypot(x,y);return dist<=S.revealRadius+(rand(x,y,'reveal')-.5)*.25}
+function exploredAt(x,y){return explored.has(x+','+y)||Math.max(Math.abs(x),Math.abs(y))<=2}
 function fogCoords(){const coords=[];const lx=Math.floor(LEFT)-4,rx=Math.ceil(LEFT+VW/P)+4,ty=Math.floor(TOP)-4,by=Math.ceil(TOP+VH/P)+4;for(let y=ty;y<=by;y++)for(let x=lx;x<=rx;x++){if(exploredAt(x,y))coords.push([x,y])}return coords}
 function drawFog(ctx){if(!S.showFog||S.fogOpacity<=0)return;const off=document.createElement('canvas');off.width=Math.round(VW*DPR);off.height=Math.round(VH*DPR);const fc=off.getContext('2d');fc.scale(DPR,DPR);fc.fillStyle='rgba(41,40,37,'+S.fogOpacity+')';fc.fillRect(0,0,VW,VH);fc.globalCompositeOperation='destination-out';for(const [x,y] of fogCoords()){const cx=toPxX(x+.5),cy=toPxY(y+.5),outer=S.fogRadius*P,inner=Math.min(outer*.9,S.fogInner*P);const gradient=fc.createRadialGradient(cx,cy,inner,cx,cy,outer);gradient.addColorStop(0,'rgba(0,0,0,1)');gradient.addColorStop(.7,'rgba(0,0,0,.98)');gradient.addColorStop(1,'rgba(0,0,0,0)');fc.fillStyle=gradient;fc.fillRect(cx-outer,cy-outer,outer*2,outer*2);if(S.fogIrregularity>.05){const lobes=5;for(let i=0;i<lobes;i++){const angle=i*Math.PI*2/lobes+rand(x,y,'angle')*2,rx=(rand(x,y,'lobeX'+i)-.5)*S.fogIrregularity*P*.75,ry=(rand(x,y,'lobeY'+i)-.5)*S.fogIrregularity*P*.75,r=S.fogIrregularity*P*.47;const c2x=cx+Math.cos(angle)*P*.49+rx,c2y=cy+Math.sin(angle)*P*.49+ry;const g=fc.createRadialGradient(c2x,c2y,0,c2x,c2y,r);g.addColorStop(0,'rgba(0,0,0,.6)');g.addColorStop(1,'rgba(0,0,0,0)');fc.fillStyle=g;fc.fillRect(c2x-r,c2y-r,r*2,r*2)}}}fc.globalCompositeOperation='source-over';ctx.drawImage(off,0,0,VW,VH);if(S.fogInkOpacity>.01){const step=6;for(let yi=Math.floor(TOP/step);yi<=Math.ceil((TOP+VH/P)/step);yi++)for(let xi=Math.floor(LEFT/step);xi<=Math.ceil((LEFT+VW/P)/step);xi++){const x=xi*step+3,y=yi*step+3;if(exploredAt(Math.round(x),Math.round(y)))continue;drawAsset(ctx,sprite('fog_of_war_shapes',xi,yi),toPxX(x),toPxY(y),P*2.7,S.fogInkOpacity)}}}
 function drawBorders(ctx){if(!S.showBorders)return;const cells=[];for(let y=-2;y<=2;y++)for(let x=-2;x<=2;x++)if(Math.hypot(x,y)<1.8)cells.push([x,y]);const set=new Set(cells.map(p=>p.join(',')));ctx.save();ctx.lineWidth=2.5*P/142;ctx.setLineDash([10*P/142,6*P/142]);ctx.strokeStyle='#947041';for(const [x,y] of cells){const xx=toPxX(x),yy=toPxY(y);for(const [side,dx,dy] of [['n',0,-1],['e',1,0],['s',0,1],['w',-1,0]]){if(set.has((x+dx)+','+(y+dy)))continue;ctx.beginPath();if(side==='n'){ctx.moveTo(xx,yy);ctx.quadraticCurveTo(xx+P*.43,yy-P*.032,xx+P,yy)}else if(side==='e'){ctx.moveTo(xx+P,yy);ctx.quadraticCurveTo(xx+P+P*.032,yy+P*.55,xx+P,yy+P)}else if(side==='s'){ctx.moveTo(xx,yy+P);ctx.quadraticCurveTo(xx+P*.5,yy+P+P*.032,xx+P,yy+P)}else{ctx.moveTo(xx,yy);ctx.quadraticCurveTo(xx-P*.032,yy+P*.5,xx,yy+P)}ctx.stroke()}}ctx.restore()}
@@ -446,11 +506,11 @@ function updateStats(){
 let lastW=0,lastH=0;
 function paint(){const canvas=$('map');const rect=$('viewport').getBoundingClientRect();VW=Math.max(400,Math.floor(rect.width));VH=Math.max(320,Math.floor(rect.height));DPR=Math.min(1.5,window.devicePixelRatio||1);if(canvas.width!==Math.round(VW*DPR)||canvas.height!==Math.round(VH*DPR)){canvas.width=Math.round(VW*DPR);canvas.height=Math.round(VH*DPR)}const ctx=canvas.getContext('2d',{alpha:false});ctx.setTransform(DPR,0,0,DPR,0,0);CTX=ctx;P=S.zoom;LEFT=S.centerX-VW/(2*P);TOP=S.centerY-VH/(2*P);const start=performance.now();stampsDrawn=0;const chunks=drawBackdrop(ctx);drawParchmentPatches(ctx);drawWaterRoads(ctx);drawNature(ctx);drawOptionalNature(ctx);drawBiomes(ctx);drawFog(ctx);drawBorders(ctx);drawGrid(ctx);drawObjects(ctx);paintCycles++;const elapsed=performance.now()-start;$('coords').textContent='X '+format(S.centerX)+' · Y '+format(S.centerY);$('mapScale').textContent='1 клетка = 142 ед. · '+Math.round(P)+' px на экране';$('drawStats').textContent=stampsDrawn+' объектов природы · '+chunks+' чанков · '+Math.round(elapsed)+' мс';$('mapSubtitle').textContent=PRESETS.find(p=>p.id===currentPreset)?.name||'Пользовательский набор параметров';$('modeName').textContent=PRESETS.find(p=>p.id===currentPreset)?.name||'Своя конфигурация';updateStats()}
 function download(name,blob){const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),6000)}
-function dump(){return JSON.stringify({format:'rpchess.atlas-lab.v5',generator:'RPChess kingdom-parchment-core.mjs + continuous procedural roads/rivers + 112 vector sprites',note:'Это настройки эксперимента; не менять main без переноса параметров в игровой генератор.',savedAt:new Date().toISOString(),assetGroups:Object.fromEntries(Object.entries(GROUPS).filter(([g])=>!RESERVED_GROUPS.has(g)).map(([g,names])=>[g,names.map(k=>k.split("/").at(-1))])),...S},null,2)}
+function dump(){return JSON.stringify({format:'rpchess.atlas-lab.v7',generator:'RPChess Kingdom world v6 — 6 biomes, shared geography',savedAt:new Date().toISOString(),visual:Object.fromEntries(Object.entries(S).filter(([k])=>k in BASE && !k.startsWith('show'))),simulation:globalThis.RPChessAtlasSimulation?.getConfig?.()||null},null,2)}
 $('saveJson').onclick=()=>{download('RPChess_Atlas_Parameters_'+S.seed.replace(/[^a-zA-Z0-9_-]/g,'_').slice(0,24)+'.json',new Blob([dump()],{type:'application/json;charset=utf-8'}));toast('Настройки сохранены в JSON')};
 $('copyJson').onclick=async()=>{try{await navigator.clipboard.writeText(dump());toast('Настройки скопированы')}catch{const a=document.createElement('textarea');a.value=dump();document.body.append(a);a.select();document.execCommand('copy');a.remove();toast('Настройки скопированы')}};
 $('savePng').onclick=()=>{const canvas=$('map');canvas.toBlob(blob=>{if(blob){download('RPChess_Atlas_Preview.png',blob);toast('PNG карты сохранён')}else toast('Не удалось сформировать PNG')},'image/png')};
-$('importJson').onclick=()=>$('configFile').click();$('configFile').onchange=async e=>{const file=e.target.files?.[0];if(!file)return;try{const data=JSON.parse(await file.text());if(typeof data!=='object'||!data||Array.isArray(data))throw Error('Ожидается объект JSON');const next={...BASE};for(const [key,value] of Object.entries(data)){if(!(key in next))continue;if(typeof next[key]==='number'){if(typeof value==='number'&&Number.isFinite(value))next[key]=value}else if(typeof next[key]==='boolean'){if(typeof value==='boolean')next[key]=value}else if(key==='seed'&&typeof value==='string')next[key]=value.slice(0,128)}S=next;explored.clear();currentPreset='custom';invalidate();syncUI();renderSoon();toast('Настройки импортированы')}catch(ex){toast('Ошибка импорта: '+ex.message)}finally{e.target.value=''}};
+$('importJson').onclick=()=>$('configFile').click();$('configFile').onchange=async e=>{const file=e.target.files?.[0];if(!file)return;try{const data=JSON.parse(await file.text());if(typeof data!=='object'||!data||Array.isArray(data))throw Error('Ожидается объект JSON');const next={...BASE};for(const [key,value] of Object.entries(data.visual||data)){if(!(key in next))continue;if(typeof next[key]==='number'){if(typeof value==='number'&&Number.isFinite(value))next[key]=value}else if(typeof next[key]==='boolean'){if(typeof value==='boolean')next[key]=value}else if(key==='seed'&&typeof value==='string')next[key]=value.slice(0,128)}S=next;explored.clear();currentPreset='custom';invalidate();syncUI();renderSoon();toast('Настройки импортированы')}catch(ex){toast('Ошибка импорта: '+ex.message)}finally{e.target.value=''}};
 function updateExtraInfo(){
  const coreCount=Object.keys(GROUPS).filter(g=>CORE_GROUPS.has(g)).reduce((n,g)=>n+GROUPS[g].length,0);
  const groups=Object.entries(GROUPS).filter(([g])=>!RESERVED_GROUPS.has(g));
@@ -515,7 +575,7 @@ const TYPE_KEYS=['battle','skirmish','caravan','settlement','event','puzzle'];
 const TYPE_NAMES=['Битва','Стычка','Караван','Поселение','Событие','Задача'];
 const RACE_KEYS=['humans','elves','orcs','undead','dark_elves','dwarves','demons','angels','dragonborn','beastfolk','constructs','animals','fae','goblins'];
 const RACE_NAMES=['Люди','Эльфы','Орки','Нежить','Тёмные эльфы','Гномы','Демоны','Ангелы','Дракониды','Зверолюди','Конструкты','Животные','Феи','Гоблины'];
-const DEFAULT_DENSITY=[34,40,36,30,37,41];
+const DEFAULT_DENSITY=[27,25,36,25,29,18];
 const DEFAULT_TYPES=[
  [12,22,11,10,28,17],[27,23,7,6,17,20],[19,24,13,11,16,17],
  [14,17,24,22,14,9],[20,23,5,5,32,15],[29,27,6,4,19,15]
@@ -582,8 +642,8 @@ function normalized(row){const s=row.reduce((a,v)=>a+Math.max(0,Number(v)||0),0)
    return weights.map((weight,i)=>i===idx?target:weight*otherScale);
  }
  function weighted(arr,v){let acc=0;for(let i=0;i<arr.length;i++){acc+=arr[i];if(v<acc)return i}return arr.length-1}
-const SC_BASE={settlementProbabilityMultiplier:SETTLEMENT_PROBABILITY_MULTIPLIER,densityMultiplier:1,scout:2,biomeInfluence:1,landmarkInfluence:1,roadInfluence:1,initialPower:500,powerGain:30,outpostCost:30,weeklyGold:20,weeklySupplies:5,weeklyShards:5,landmarks:true,roads:true,
-   density:DEFAULT_DENSITY,types:DEFAULT_TYPES,races:DEFAULT_RACES,eventRadius:1,eventNearbyMax:2};
+const SC_BASE={settlementProbabilityMultiplier:SETTLEMENT_PROBABILITY_MULTIPLIER,densityMultiplier:1.2,scout:2,biomeInfluence:1,landmarkInfluence:1,roadInfluence:1,initialPower:500,powerGain:30,outpostCost:30,weeklyGold:20,weeklySupplies:5,weeklyShards:5,landmarks:true,roads:true,
+   density:DEFAULT_DENSITY,types:DEFAULT_TYPES,races:DEFAULT_RACES,eventRadius:1,eventNearbyMax:3};
 let C=clone({...SC_BASE,...{"densityMultiplier":1.2,"scout":2,"biomeInfluence":1,"landmarkInfluence":1,"roadInfluence":1,"initialPower":500,"powerGain":30,"outpostCost":30,"weeklyGold":20,"weeklySupplies":5,"weeklyShards":5,"landmarks":true,"roads":true,"density":[27,25,36,25,29,18],"types":[[12,22,11,10,28,17],[27,23,7,6,17,20],[19,24,13,11,16,17],[14,17,24,22,14,9],[20,23,5,5,32,15],[29,27,6,4,19,15]],"races":[[6,22,4,2,4,2,1,1,1,14,2,14,19,8],[5,2,9,3,5,17,6,16,20,5,4,3,1,4],[16,4,12,4,5,17,4,4,7,9,5,5,2,6],[25,6,8,4,3,6,3,5,3,9,6,11,5,6],[4,3,5,24,13,1,8,1,3,8,3,8,7,12],[4,1,13,16,6,3,22,1,9,6,9,2,1,7]],"eventRadius":1,"eventNearbyMax":3}}),run=null,selectedBiome=0,selectedKind='types',simVisible=false,showFog=true,previewMode=false;
 let simSummary=null,simSummaryKey='',simHover=null,simDrawQueued=false,simCenter={x:0,y:0},stampCount=0;
 const movement=[[0,-1],[1,-1],[1,0],[1,1],[0,1],[-1,1],[-1,0],[-1,-1]];
@@ -919,7 +979,7 @@ function handleMapClick(e){if(previewMode)return;const p=fromPointer(e),k=key(p.
  $s('simTooltip').textContent='Чтобы пойти, нажми одну из восьми подсвеченных соседних клеток. '+explainHover(p.x,p.y);
 }
 function handleConfigChange(){invalidateSample();updateSimulator();}
-function exportConfig(){return {economy:globalThis.RPChessAtlasEconomy?.getConfig?.()||null,format:'rpchess.atlas-lab.kingdom-simulator.v1',generator:'Atlas Lab v6 / current RPChess world parameters; economy balance is provisional',savedAt:new Date().toISOString(),visual:Object.fromEntries(Object.entries(S).filter(([key])=>key in BASE)),simulation:clone(C),reference:'docs/KINGDOM_EXPLORATION_ECONOMY_BIOME_DESIGN.md',notes:'Текущие параметры мира и плотности совпадают с игровым конфигом; экономический баланс предварительный, редактируется отдельно.'};}
+function exportConfig(){return {economy:globalThis.RPChessAtlasEconomy?.getConfig?.()||null,format:'rpchess.atlas-lab.kingdom-simulator.v1',generator:'Atlas Lab v7 / shared curves, six biomes, semantic landmarks; simulator-only economy',savedAt:new Date().toISOString(),visual:Object.fromEntries(Object.entries(S).filter(([key])=>key in BASE&&!key.startsWith('show'))),simulation:clone(C),reference:'docs/KINGDOM_EXPLORATION_ECONOMY_BIOME_DESIGN.md',notes:'Текущие параметры мира и плотности совпадают с игровым конфигом; экономический баланс предварительный, редактируется отдельно.'};}
 function download(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),5000);}
 function bind(){
   const tabA=document.getElementById('labVisualTab'),tabB=document.getElementById('labSimTab');
@@ -941,7 +1001,7 @@ function bind(){
    $s('simReturn').onclick=()=>{previewMode=false;queueDraw();$s('simReturn').hidden=true;$s('simPreview').textContent='◉ Симулировать распределение';$s('simCaption').textContent='Нажатие на соседнюю клетку — перемещение. Нажатие на плавающую иконку — сбор. Автопрогон использует тестовые победы и автосбор, не настоящее шахматное сражение.';};
   $s('simCenter').onclick=()=>{simCenter={x:run.x,y:run.y};queueDraw()};
   $s('simToggleFog').onclick=()=>{showFog=!showFog;$s('simToggleFog').textContent=showFog?'◉ Туман':'◌ Без тумана';queueDraw()};
-  $s('simExport').onclick=()=>download(new Blob([JSON.stringify(exportConfig(),null,2)],{type:'application/json'}),'RPChess_Kingdom_Simulation_Config.json');
+  $s('simExport').onclick=()=>download(new Blob([JSON.stringify(exportConfig(),null,2)],{type:'application/json'}),'RPChess_Kingdom_Atlas_v7_Config.json');
   $s('simImport').onclick=()=>$s('simFile').click();
   $s('simFile').onchange=async e=>{const file=e.target.files?.[0];if(!file)return;try{const data=JSON.parse(await file.text());const a=data.visual||data,b=data.simulation;
     if(typeof a!=='object'||!a)throw Error('Ожидаются визуальные настройки');
