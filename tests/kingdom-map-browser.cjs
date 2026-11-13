@@ -1757,15 +1757,19 @@ async function assertTileImage(page,cellId){
     const industry=await import('./js/kingdom-industry-core.mjs');
     const persistence=await import('./js/run-persistence.mjs');
     const run=persistence.readRun(localStorage);
-    const extra=Array.from({length:9},(_,n)=>1+(n%3)+','+(1+Math.floor(n/3)));
-    let map={...run.kingdomMap,centralOwnedCells:[...(run.kingdomMap.centralOwnedCells||[]),...extra],
-      peakKingPower:600};
-    for(let n=0;n<32;n++){
-      map.seed=run.id+':production-visual-qa:'+n;
-      if(industry.candidateCells(map).length>=2)break;
-    }
-    if(industry.candidateCells(map).length<2)throw Error('Production QA needs two valid local owned cells');
+    // The real save loader rejects tampered world seeds and regenerates a
+    // kingdom. Keep the original valid seed and only add QA-owned visible land.
+    const extra=[];
+    for(let y=-2;y<=2;y++)for(let x=-3;x<=3;x++)extra.push(x+','+y);
+    const mapStart={...run.kingdomMap,peakKingPower:600,
+      centralOwnedCells:[...new Set([...(run.kingdomMap.centralOwnedCells||[]),...extra])]};
+    let map=mapStart;
+    const available=industry.candidateCells(map);
+    if(available.length<2)throw Error('Production QA needs two eligible visible cells: '+JSON.stringify({
+      seed:map.seed,candidates:available.length}));
+    const originalSeed=map.seed;
     for(let day=map.day+1;day<=14;day++)map=core.advanceDay(map,'industry-qa-day:'+day);
+    if(map.seed!==originalSeed)throw Error('Production may not change the saved world seed');
     if(map.industry.buildings.length!==2)throw Error('Day 14 must have exactly two industries');
     const ready=map.industry.buildings[0];
     const saved=persistence.writeRun({...run,kingdomMap:map},localStorage,Date.now());
