@@ -97,17 +97,6 @@ function normalized(row){
  const total=row.reduce((sum,v)=>sum+Math.max(0,Number(v)||0),0);
  return row.map(v=>total>0?Math.max(0,Number(v)||0)/total:1/row.length);
 }
-function pickWeighted(weights,labels,rnd){
- let sum=0;
- for(const weight of weights)sum+=Math.max(0,weight);
- if(sum<=0)return null;
- let remaining=rnd*sum;
- for(let i=0;i<weights.length;i++){
-  remaining-=Math.max(0,weights[i]);
-  if(remaining<0)return labels[i];
- }
- return labels[labels.length-1];
-}
 function weightedIndex(weights,rnd){let total=0;for(let i=0;i<weights.length;i++){total+=weights[i];if(rnd<total)return i;}return weights.length-1;}
 function scaledWeights(mod,amount){
  if(!mod)return null;
@@ -221,4 +210,4 @@ function worldAt(seed,x,y,{allowSkirmish=true,spacing=ENCOUNTER_MIN_SPACING,
   raceTag:RACE_TAGS_ORDER[weightedIndex(races,atlasRandom(seed,x,y,'race'))]};
 }
 export {LANDMARKS,MODIFIERS,biomeAt,landmarkAt,naturalPathAt,
- pickWeighted,boostSettlementProbability,atlasRandom,encounterCandidate,encounterPresent,worldAt};
+ boostSettlementProbability,atlasRandom,encounterCandidate,encounterPresent,worldAt};
