@@ -362,14 +362,14 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   assert(typeof legacyPath.road==='boolean'&&typeof legacyPath.river==='boolean',
     'v5 generated worlds retain their prior path rules');
   assert.equal(fs.existsSync(path.join(game,'atlas-lab.html')),true,
-    'Atlas Lab v6 HTML must be shipped alongside its map preview');
-  assert(atlasHtml.includes('Atlas Lab v7')||atlasHtml.includes('kingdom-map-geometry-atlas-v7'),
-    'Atlas Lab should expose the corrected v7 authoring model');
+    'Atlas Lab v7 HTML must be shipped alongside its map preview');
   assert(fs.readFileSync(path.join(game,'atlas-lab.html'),'utf8').includes('Симулировать'),
     'balance panel includes the requested simulation action');
   const atlasHtml=fs.readFileSync(path.join(game,'atlas-lab.html'),'utf8');
+  assert(atlasHtml.includes('Atlas Lab v7')||atlasHtml.includes('kingdom-map-geometry-atlas-v7'),
+    'Atlas Lab should expose the corrected v7 authoring model');
   assert(atlasHtml.includes('RPChessAtlasSimulation')&&atlasHtml.includes('simSpacingRules'),
-    'author Atlas Lab v6 must preserve its original simulator and new radius/neighbor settings');
+    'author Atlas Lab v7 must preserve simulator and radius/neighbor settings');
 
   const route=mapCore.shortestKingRoute(startMap,{x:7,y:-4});
   assert.strictEqual(route.length,7,'diagonal king path has Chebyshev minimum length');
