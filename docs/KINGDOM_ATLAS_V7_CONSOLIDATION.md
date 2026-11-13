@@ -1,6 +1,6 @@
 # Kingdom Atlas v7 — consolidated review and human acceptance
 
-Status: **DRAFT / READY FOR OWNER PLAYTEST AFTER CI**. This document belongs to PR #203; do not merge `main` before the owner explicitly approves the preview.
+Status: **DRAFT / READY FOR OWNER PLAYTEST**. Latest isolated-preview workflow, including full local gate, real-Chromium browser checks, Cloudflare deploy and published-file verification: **PASS** ([run #43518031032](https://github.com/mobigametim-bit/RPChess/actions/runs/43518031032)). This document belongs to PR #203; do not merge `main` before the owner explicitly approves the preview.
 
 ## Source comparison
 
@@ -22,7 +22,7 @@ Status: **DRAFT / READY FOR OWNER PLAYTEST AFTER CI**. This document belongs to 
 
 - Focused Node and real-Chromium checks: PR #203 [successful prior run](https://github.com/mobigametim-bit/RPChess/actions/runs/43516148583).
 - Isolated Cloudflare browser/build/deploy verification: [previous successful run](https://github.com/mobigametim-bit/RPChess/actions/runs/43515727171).
-- The v5 geometry and deferred Skirmish assertions from PR #201 were incorporated as **two focused regression contracts** in `tests/travel-choice.cjs`. The latest commit must complete its fresh isolated preview workflow before owner acceptance.
+- The v5 geometry and deferred Skirmish assertions from PR #201 were incorporated as **two focused regression contracts** in `tests/travel-choice.cjs`. Their code/test commit `484e9cbaaafba21a7c9b80faae55fae23defbdc5` passed the [fresh isolated preview workflow](https://github.com/mobigametim-bit/RPChess/actions/runs/43518031032). Subsequent commits to this branch are documentation-only.
 - **Release Gate** on PRs is intentionally protected by an explicit owner-acceptance control; failure at this gate before approval does **not** indicate failed gameplay tests.
 
 ## Manual acceptance checklist
@@ -40,6 +40,6 @@ Status: **DRAFT / READY FOR OWNER PLAYTEST AFTER CI**. This document belongs to 
 2. Owner plays the isolated preview and approves it explicitly (or supplies feedback).
 3. After approval, execute the full owner-authorized Release Gate. Do not bypass the guard.
 4. Finalize GitHub documentation; merge **only PR #203** into `main`.
-5. Close #201 and #202 as superseded by #203 after the consolidation is accepted. Preserve their history.
+5. PRs #201 and #202 were **closed unmerged** as superseded by #203 after the consolidated preview passed CI; their code/reviews remain in GitHub history.
 
 **Workflow rule:** GitHub code, PRs, checks and GitHub documentation only. **Notion synchronization is not required.**
