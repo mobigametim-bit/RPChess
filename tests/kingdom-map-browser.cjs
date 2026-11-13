@@ -1241,7 +1241,7 @@ async function assertTileImage(page,cellId){
   },key);
   // The 25% floating inspector overlaps edge cells; dispatch selection directly,
   // since pointer access to off-screen locations requires normal map panning.
-  // A real king drag intentionally suppresses subsequent cell clicks for 500ms.
+  // A real king drag intentionally suppresses subsequent clicks for 650ms.
   // Wait out that input safety window rather than asserting a suppressed click.
   const outpostEligibility=await walking.evaluate(async({storage,id})=>{
     const {canBuildOutpost,isOwned}=await import('./js/kingdom-map-core.mjs');
@@ -1253,7 +1253,7 @@ async function assertTileImage(page,cellId){
   assert(outpostEligibility.canBuild,
     'outpost fixture must be safe and eligible before UI interaction: '+
     JSON.stringify(outpostEligibility));
-  await walking.waitForTimeout(550);
+  await walking.waitForTimeout(690);
   await walking.locator('[data-kingdom-cell="'+firstOutpost+'"]').dispatchEvent('click');
   assert.equal(await walking.locator('[data-kingdom-cell="'+firstOutpost+'"].km-cell--selected').count(),1,
     'safe outpost cell must be selected by an accepted post-drag click');
