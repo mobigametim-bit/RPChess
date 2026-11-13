@@ -26,7 +26,7 @@ function label(e,key){
  const gold=e.filter(x=>x.type==="gold").reduce((n,x)=>n+x.delta,0);
  const supplies=e.filter(x=>x.type==="supplies").reduce((n,x)=>n+x.delta,0);
  const rec=e.find(x=>x.type==="recruit");
- if(combat)return (gold>0?"В казну поступает золотая плата, но ":"")+(supplies>0?"Припасы пополняются, однако ":"")+(combat.combatType==="battle"?"впереди большая битва.":"впереди стычка.");
+ if(combat){let tail=combat.combatType==="battle"?"впереди большая битва.":"впереди стычка.";if(gold>0||supplies>0)return(gold>0&&supplies>0?"Казна и припасы пополняются, но ":gold>0?"В казну поступает золото, но ":"Вы получаете припасы, однако ")+tail;return tail.charAt(0).toUpperCase()+tail.slice(1);}
  if(rec)return supplies>0?"В отряд вступает новый спутник, а в дорожные мешки добавляют припасы.":"К вашему отряду присоединяется новый спутник.";
  if(gold>0&&supplies>0)return "В походной казне прибавляется золото, а в обозе — припасы.";
  if(gold>0)return "Отряд пополняет золотую казну.";
