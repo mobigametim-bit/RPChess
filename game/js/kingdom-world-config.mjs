@@ -1,5 +1,5 @@
 /* Atlas Lab v7: current live visual defaults and versioned world simulation.
- * Visual settings are author-chosen. Simulation economy is not live yet.
+ * Visual settings are author-chosen; production economy is configured separately.
  * Biome order: forest, mountain, hills, plains, marsh, wasteland.
  * All visible terrain stamps, road/river strokes and decorative assets are fully opaque.
  * Fog and political tint remain intentionally translucent for gameplay readability.
