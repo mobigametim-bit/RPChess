@@ -1213,6 +1213,13 @@ async function assertTileImage(page,cellId){
     const core=await import('./js/kingdom-map-core.mjs');
     const run=JSON.parse(localStorage.getItem(storage));
     if(!core.validateKingdomMap(run.kingdomMap))throw Error('Outpost QA map unexpectedly invalid');
+    const {readPlayerRating}=await import('./js/player-rating.mjs');
+    const power=readPlayerRating().power;
+    // Open() migrates territory, updates power and scouts missing encounters,
+    // which can reserve additional enemy Battle provinces. Choose a cell
+    // against THAT canonical state, not a partially staged fixture map.
+    const normalized=core.revealAround(
+      core.updatePeak(core.migrateKingdomMap(run.kingdomMap,run),power),run,power);
     // The enemy-province layout varies with each new game's seed. Keep the
     // genuine no-building-on-enemy-land rule, not a fixed sometimes-hostile cell.
     const candidates=[];
@@ -1222,11 +1229,12 @@ async function assertTileImage(page,cellId){
       Math.abs(a.y)-Math.abs(b.y)||a.x-b.x||a.y-b.y);
     let id=null;
     for(const {x,y} of candidates){
-      const candidate=x+','+y,original=run.kingdomMap.cells[candidate];
-      run.kingdomMap.cells[candidate]={status:'completed',type:'empty',explored:true};
-      if(core.canBuildOutpost(run.kingdomMap,{x,y})){id=candidate;break;}
-      if(original)run.kingdomMap.cells[candidate]=original;
-      else delete run.kingdomMap.cells[candidate];
+      const candidate=x+','+y;
+      const candidateMap={...normalized,cells:{...normalized.cells,
+        [candidate]:{status:'completed',type:'empty',explored:true}}};
+      const stable=core.revealAround(core.migrateKingdomMap(candidateMap,run),run,power);
+      if(!core.canBuildOutpost(stable,{x,y}))continue;
+      run.kingdomMap=stable;id=candidate;break;
     }
     if(!id)throw Error('No safe outpost cell within the map viewport');
     localStorage.setItem(storage,JSON.stringify(run));
@@ -1298,6 +1306,10 @@ async function assertTileImage(page,cellId){
   const secondOutpost=await walking.evaluate(async storage=>{
     const core=await import('./js/kingdom-map-core.mjs');
     const run=JSON.parse(localStorage.getItem(storage));
+    const {readPlayerRating}=await import('./js/player-rating.mjs');
+    const power=readPlayerRating().power;
+    const normalized=core.revealAround(
+      core.updatePeak(core.migrateKingdomMap(run.kingdomMap,run),power),run,power);
     const candidates=[];
     for(let x=-4;x<=4;x++)for(let y=-3;y<=3;y++)
       if(Math.abs(x)+Math.abs(y)>=3)candidates.push({x,y});
@@ -1305,11 +1317,12 @@ async function assertTileImage(page,cellId){
       Math.abs(a.y)-Math.abs(b.y)||a.x-b.x||a.y-b.y);
     let id=null;
     for(const {x,y} of candidates){
-      const candidate=x+','+y,old=run.kingdomMap.cells[candidate];
-      run.kingdomMap.cells[candidate]={status:'completed',type:'empty',explored:true};
-      if(core.canBuildOutpost(run.kingdomMap,{x,y})){id=candidate;break;}
-      if(old)run.kingdomMap.cells[candidate]=old;
-      else delete run.kingdomMap.cells[candidate];
+      const candidate=x+','+y;
+      const candidateMap={...normalized,cells:{...normalized.cells,
+        [candidate]:{status:'completed',type:'empty',explored:true}}};
+      const stable=core.revealAround(core.migrateKingdomMap(candidateMap,run),run,power);
+      if(!core.canBuildOutpost(stable,{x,y}))continue;
+      run.kingdomMap=stable;id=candidate;break;
     }
     if(!id)throw Error('No independent second outpost cell for Arena redirect QA');
     localStorage.setItem(storage,JSON.stringify(run));
