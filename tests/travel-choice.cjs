@@ -288,10 +288,13 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
     assert.strictEqual(worldConfig.VISUAL[name],1, name+' must paint map scenery fully opaque');
   assert.strictEqual(worldConfig.VISUAL.fogOpacity,0.98,'fog remains translucent on purpose');
   assert.strictEqual(worldConfig.VISUAL.fogRadius,1.1);
-  assert.strictEqual(worldConfig.VISUAL.revealRadius,1.6);
   assert.strictEqual(worldConfig.VISUAL.fogInner,0.32);
   assert.strictEqual(worldConfig.VISUAL.fogInkOpacity,0.2);
-  assert.strictEqual(worldConfig.VISUAL.fogIrregularity,0.3);
+  assert.strictEqual(worldConfig.VISUAL.wastelandDensity,1.75,
+    'separate v6 wasteland decoration density must be configurable');
+  for(const retired of ['paperContrast','fogIrregularity','revealRadius'])
+    assert.equal(Object.hasOwn(worldConfig.VISUAL,retired),false,
+      retired+' was an obsolete preview-only control and must not leak into live config');
   assert.strictEqual(worldConfig.ATLAS_VIEW.seed,'rpchess-kingdom-2026');
   assert.strictEqual(worldConfig.ATLAS_VIEW.zoom,117);
   assert.strictEqual(worldConfig.SETTLEMENT_PROBABILITY_MULTIPLIER,1.2);
@@ -325,6 +328,7 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   const startMap=mapCore.createKingdomMap(mapRun,500);
   assert(mapCore.validateKingdomMap(startMap));
   assert.strictEqual(startMap.day,1,'the independent calendar begins on Day 1');
+   assert.equal(startMap.worldGeneratorVersion,6,'new Kingdom worlds must use shared v6 geography');
   // Atlas v6 config (4): radius=1, at most 3 OTHER sites in the 8 neighbors.
   const worldGen=await import(pathToFileURL(path.join(game,'js/kingdom-world-core.mjs')).href);
   const worldSettings=await import(pathToFileURL(path.join(game,'js/kingdom-world-config.mjs')).href);
