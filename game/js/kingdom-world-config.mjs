@@ -33,6 +33,7 @@ const VISUAL=Object.freeze({
   "riverCurve": 1.1,
   "riverOpacity": 1,
   "marshDensity": 2.05,
+  "wastelandDensity": 1.8,
   "marshWetThreshold": 0.42,
   "marshSize": 1.85,
   "marshOpacity": 1,
