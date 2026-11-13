@@ -54,3 +54,11 @@ A site becomes active once `builtWeek < processedWeek`. The inspector derives `l
 - Each matured building displays the **existing floating resource icon** with the amount awaiting manual collection; accumulation survives missed weeks and reloads, payout is one-time per claim.
 - Empty inspected tile: display the actual biome name (Лес/Горы/Холмы/Равнина/Болото/Пустоши; EN counterparts), no no-event explanatory text.
 - Paved roads: yellow brick strictly inside owned tile bounds, gray brick outside. Crossing borders changes color at tile boundary, not per route ID.
+
+
+## QA fix — fishing pier on forest-looking tiles (13 November 2026)
+
+- Wetness-based marsh biome cells can be rendered as forest by the parchment art layer. The old scheduler permitted a Fishing Pier on them without requiring a river.
+- For future sites, the river check uses exactly the parchment renderer's visible river position and seed, not the differently hashed encounter path. Marsh cells without visible water select forest production buildings instead, while encounter biomes remain unchanged.
+- Existing landlocked Fishing Piers become Hunting Lodges on ordinary save migration. Both produce Supplies: location, founding week, pending claims and accrued/credited totals all remain unchanged. Water-adjacent piers are retained.
+- The existing resources regression test covers waterfront placement and non-destructive save migration. Changes are in PR #200, not main.
