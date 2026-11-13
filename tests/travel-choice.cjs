@@ -348,6 +348,31 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
     assert(count<=3,'each event has at most three other encounters within one king move');
   }
   assert(!worldGen.encounterPresent(seed,0,0),'starting castle stays reserved');
+  // The new world version uses the actual drawn geometry; v5 remains untouched.
+  const geo=await import(pathToFileURL(path.join(game,'js/kingdom-geography.mjs')).href);
+  const decor=await import(pathToFileURL(path.join(game,'js/kingdom-biome-render.mjs')).href);
+  let different=0;
+  for(let y=-12;y<=12;y++)for(let x=-12;x<=12;x++){
+    const visible=geo.naturalPathAt(seed,x+.5,y+.5);
+    const current=worldGen.naturalPathAt(seed,x+.5,y+.5,{generatorVersion:6});
+    const legacy=worldGen.naturalPathAt(seed,x+.5,y+.5,{generatorVersion:5});
+    assert.deepStrictEqual(current,visible,'new encounter paths match drawn rivers and roads');
+    if(legacy.road!==current.road||legacy.river!==current.river)different++;
+    const lm=worldGen.landmarkAt(seed,x,y,{generatorVersion:6});
+    if(lm==='06_wood_bridge'||lm==='07_stone_bridge')
+      assert(geo.nearestNaturalRiver(seed,x+.5,y+.5).distance<=.7,
+        'bridge landmarks sit beside the actual visible river');
+  }
+  assert(different>0,'historical v5 geometry remains available for saved runs');
+  assert(decor.MARSH.every(prefix=>!decor.WASTELAND.includes(prefix)),
+    'marsh and wasteland art may never share the same source sprite');
+  const noCompanion={...mapRun,roster:mapRun.roster.filter(c=>c.isRunKing),army:[],kingdomMap:startMap};
+  assert(!travel.hasHealthySkirmishCompanion(noCompanion));
+  const retainedSkirmish=mapCore.randomEncounter(noCompanion,{x:9,y:9},500,
+    {type:'skirmish',biome:'plains',landmark:null,raceTag:'orcs'});
+  assert.strictEqual(retainedSkirmish.type,'skirmish',
+    'without an available companion the map keeps Skirmish instead of rerolling it');
+
   assert.equal(fs.existsSync(path.join(game,'atlas-lab.html')),true,
     'Atlas Lab v6 HTML must be shipped alongside its map preview');
   assert(fs.readFileSync(path.join(game,'atlas-lab.html'),'utf8').includes('Симулировать'),
