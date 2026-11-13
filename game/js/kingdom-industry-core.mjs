@@ -102,8 +102,10 @@ function candidateCells(map,industry=map?.industry){
   const terrain=worldAt(map.seed,x,y);
   if(!TYPES_BY_BIOME[terrain.biome]?.length||terrain.type||
      terrain.paths?.road||terrain.landmark)continue;
-  if(terrain.biome==='marsh'&&!nearVisibleRiver(map.seed,x,y))continue;
-  available.push({id,biome:terrain.biome});
+  // A wet cell with no drawn water is forest in the player's view.
+  // Give it normal forest buildings instead of losing its weekly site.
+  const industryBiome=terrain.biome==='marsh'&&!nearVisibleRiver(map.seed,x,y)?'forest':terrain.biome;
+  available.push({id,biome:industryBiome});
  }
  return available.sort((a,b)=>a.id.localeCompare(b.id,'en'));
 }
