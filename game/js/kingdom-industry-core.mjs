@@ -1,5 +1,7 @@
 /* Weekly automatic economic buildings. Pure, replay-safe, map-seed driven. */
 import {worldAt} from './kingdom-world-core.mjs';
+import {randomAt} from './kingdom-parchment-core.mjs';
+import {VISUAL} from './kingdom-world-config.mjs';
 import {hashString} from './travel-choice-core.mjs';
 import {DEFAULT_KINGDOM_ECONOMY} from './kingdom-economy-config.mjs';
 
@@ -21,6 +23,23 @@ const INDUSTRY_ATLAS=BUILDING_DIR+'industry-atlas.png';
 const INDUSTRY_ATLAS_ORDER=Object.freeze(['construction_site','farm','fishing_pier','gold_mine',
  'hunting_lodge','pasture','sawmill','stone_quarry','oasis']);
 const KEY=/^-?\d+,-?\d+$/;
+// The category 'marsh' is based on wetness, while the actual parchment art
+// still stamps forest there. Fishing piers need a *visible* river beside them.
+// Keep this aligned with drawWaterRoads() in kingdom-parchment-app.mjs,
+// which uses the visual randomAt hash (not atlasRandom used for encounters).
+function nearVisibleRiver(seed,x,y){
+ const spacing=Math.max(1,VISUAL.riverSpacing);
+ const drift=randomAt(seed,1,1,'river')*spacing*(12/17);
+ const centerX=x+.5,centerY=y+.5;
+ const nearest=Math.round((centerX-drift)/spacing);
+ for(let i=nearest-2;i<=nearest+2;i++){
+  const riverX=i*spacing+drift+
+   Math.sin(centerY*.21+i*1.7)*2.15*VISUAL.riverCurve+
+   Math.sin(centerY*.79+i*.3)*.55;
+  if(Math.abs(riverX-centerX)<=.48)return true;
+ }
+ return false;
+}
 const integer=n=>Number.isSafeInteger(n)&&n>=0;
 const key=(x,y)=>x+','+y;
 function industryLevel(map){
@@ -83,6 +102,7 @@ function candidateCells(map,industry=map?.industry){
   const terrain=worldAt(map.seed,x,y);
   if(!TYPES_BY_BIOME[terrain.biome]?.length||terrain.type||
      terrain.paths?.road||terrain.landmark)continue;
+  if(terrain.biome==='marsh'&&!nearVisibleRiver(map.seed,x,y))continue;
   available.push({id,biome:terrain.biome});
  }
  return available.sort((a,b)=>a.id.localeCompare(b.id,'en'));
@@ -91,9 +111,26 @@ function selectConstruction(map,industry,week){
  const options=candidateCells(map,industry);
  if(!options.length)return null;
  const id=options[hashString(map.seed+':industry:cell:'+week)%options.length];
- const types=TYPES_BY_BIOME[id.biome];
+ const types=TYPES_BY_BIOME[id.biome].filter(type=>
+  type!=='fishing_pier'||nearVisibleRiver(map.seed,...id.id.split(',').map(Number)));
+ if(!types.length)return null;
  const kind=types[hashString(map.seed+':industry:type:'+week+':'+id.id)%types.length];
  return {id:id.id,kind,builtWeek:week};
+}
+// Reclassify legacy piers founded on wet forest tiles far from drawn water.
+// Hunting lodges yield the same resource, so accrued/pending/credited amounts,
+// site identity, construction date and collection receipts stay untouched.
+function realignLandlockedPiers(map){
+ if(!map?.industry?.buildings?.some(b=>b.kind==='fishing_pier'))return map;
+ let changed=false;
+ const buildings=map.industry.buildings.map(site=>{
+  if(site.kind!=='fishing_pier')return site;
+  const [x,y]=site.id.split(',').map(Number);
+  if(nearVisibleRiver(map.seed,x,y))return site;
+  changed=true;
+  return {...site,kind:'hunting_lodge'};
+ });
+ return changed?{...map,industry:{...map.industry,buildings}}:map;
 }
 function settleIndustryWeek(map,week){
  const old=map.industry||initialIndustry(Math.max(0,week-1));
@@ -144,5 +181,5 @@ function industrySpriteIndex(site,week){
  return INDUSTRY_ATLAS_ORDER.indexOf(site.builtWeek>=week?'construction_site':site.kind);
 }
 export {BUILDING_TYPES,TYPES_BY_BIOME,BUILDING_DIR,INDUSTRY_ATLAS,INDUSTRY_ATLAS_ORDER,initialIndustry,validIndustry,
- occupiedRoadCells,candidateCells,selectConstruction,settleIndustryWeek,
+ occupiedRoadCells,candidateCells,selectConstruction,realignLandlockedPiers,nearVisibleRiver,settleIndustryWeek,
  industryLevel,industryBase,industryYield,industryPending,collectIndustry,industrySprite,industrySpriteIndex};
