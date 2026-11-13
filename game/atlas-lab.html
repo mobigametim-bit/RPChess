@@ -256,6 +256,37 @@ function randomAt(seed,x,y,salt=''){return hash32(seed+':'+salt+':'+x+':'+y)/429
 function smooth(t){return t*t*(3-2*t)}
 function noise2D(seed,x,y,salt=''){const ix=Math.floor(x),iy=Math.floor(y),dx=smooth(x-ix),dy=smooth(y-iy);const a=randomAt(seed,ix,iy,salt),b=randomAt(seed,ix+1,iy,salt),c=randomAt(seed,ix,iy+1,salt),d=randomAt(seed,ix+1,iy+1,salt);return(a*(1-dx)+b*dx)*(1-dy)+(c*(1-dx)+d*dx)*dy}
 function terrainAt(x,y){const large=noise2D(S.seed,x/S.landScale,y/S.landScale,'land');const small=noise2D(S.seed,x/S.detailScale,y/S.detailScale,'detail');const wet=noise2D(S.seed,x/S.wetScale,y/S.wetScale,'wet');const elevation=large*S.largeWeight+small*(1-S.largeWeight);const kind=elevation>S.mountainThreshold?'mountain':elevation>S.hillThreshold?'hill':wet>S.forestThreshold?'forest':'plain';return {kind,elevation,wet}}
+// Standalone visual editor functions: the independent simulator owns its own state.
+function visualAtlasRandom(seed,x,y,salt=''){
+ let h=hash32(String(seed)+':'+salt+':'+x+':'+y);
+ h^=h>>>16;h=Math.imul(h,0x7feb352d);h^=h>>>15;
+ h=Math.imul(h,0x846ca68b);h^=h>>>16;
+ return (h>>>0)/4294967296;
+}
+function visualSemanticBiome(x,y){
+ const t=terrainAt(x+.5,y+.5);
+ if(t.kind==='mountain')return 1;
+ if(t.kind==='hill')return 2;
+ if(t.wet>Math.max(.60,S.marshWetThreshold+.07)&&t.elevation<.58&&visualAtlasRandom(S.seed,x,y,'marsh-category')<.68)return 4;
+ if(t.wet<.36&&t.elevation<.51)return 5;
+ return t.kind==='forest'?0:3;
+}
+function visualRiverDistance(x,y){
+ const step=Math.max(1,S.riverSpacing),drift=randomAt(S.seed,1,1,'river')*step*(12/17);
+ const mid=Math.round((x-drift)/step),radius=Math.max(3,Math.ceil((2.15*Math.abs(S.riverCurve)+.55+1)/step)+2);
+ let distance=Infinity;
+ for(let i=mid-radius;i<=mid+radius;i++){
+  const px=i*step+drift+Math.sin(y*.21+i*1.7)*2.15*S.riverCurve+Math.sin(y*.79+i*.3)*.55;
+  distance=Math.min(distance,Math.abs(px-x));
+ }
+ return distance;
+}
+function visualPickedLandmark(x,y){
+ if(visualAtlasRandom(S.seed,x,y,'encounter-landmark-prob')>=Math.min(.22,Math.max(0,S.landmarkDensity*.18)))return -1;
+ let index=Math.floor(visualAtlasRandom(S.seed,x,y,'encounter-landmark-id')*16);
+ if((index===5||index===6)&&visualRiverDistance(x+.5,y+.5)>.7)index=(index+2)%16;
+ return index;
+}
 const GROUPS={};for(const key of Object.keys(IMAGE_DATA)){const idx=key.lastIndexOf('/');if(idx>0){const group=key.slice(0,idx);(GROUPS[group]||=[]).push(key)}}for(const a of Object.values(GROUPS))a.sort();
 function sprite(kind,x,y,salt='sprite'){const a=GROUPS[kind]||[];return a.length?a[hash32(S.seed+':'+kind+':'+x+':'+y+':'+salt)%a.length]:null}
 // New folder names are discovered from selected SVG files; no guessed filenames.
@@ -275,7 +306,7 @@ function drawOptionalNature(ctx){
  for(let yi=Math.floor(TOP/step)-1;yi<=Math.ceil((TOP+VH/P)/step);yi++)
  for(let xi=Math.floor(LEFT/step)-1;xi<=Math.ceil((LEFT+VW/P)/step);xi++){
   const x=xi*step+rand(xi,yi,'extra-x')*step,y=yi*step+rand(xi,yi,'extra-y')*step;
-  const biome=semanticBiome(Math.floor(x),Math.floor(y));if(biome!==4&&biome!==5)continue;
+  const biome=visualSemanticBiome(Math.floor(x),Math.floor(y));if(biome!==4&&biome!==5)continue;
   const prefixes=biome===4?MARSH_PREFIXES:WASTELAND_PREFIXES;
   const names=(GROUPS.marsh_wasteland_optional||[]).filter(path=>prefixes.some(prefix=>path.split('/').at(-1).startsWith(prefix)));
   for(let i=0;i<Math.min(3,Math.ceil(S.marshDensity));i++){
@@ -287,7 +318,7 @@ function drawOptionalNature(ctx){
  }}
  if(S.showLandmarks){for(let y=Math.floor(TOP)-1;y<=Math.ceil(TOP+VH/P);y++)
  for(let x=Math.floor(LEFT)-1;x<=Math.ceil(LEFT+VW/P);x++){
-  const id=pickedLandmark(x,y);if(id<0)continue;
+  const id=visualPickedLandmark(x,y);if(id<0)continue;
   const src=(GROUPS.decor_minor_landmarks||[])[id];
   if(drawAsset(ctx,src,toPxX(x+.5),toPxY(y+.5),P*S.landmarkSize,S.landmarkOpacity))stampsDrawn++;
  }}
@@ -344,7 +375,7 @@ function drawWaterRoads(ctx){
  }
  ctx.restore();
 }
-function drawNature(ctx){if(!S.showNature||S.stampOpacity===0)return;const step=S.stampSpacing,minX=Math.floor((LEFT-3)/step),maxX=Math.ceil((LEFT+VW/P+3)/step),minY=Math.floor((TOP-3)/step),maxY=Math.ceil((TOP+VH/P+3)/step);for(let yi=minY;yi<=maxY;yi++)for(let xi=minX;xi<=maxX;xi++){const gx=xi*step+step*.38+rand(xi,yi,'sx')*step*.24,gy=yi*step+step*.38+rand(xi,yi,'sy')*step*.24;const t=terrainAt(gx,gy);const semantic=semanticBiome(Math.floor(gx),Math.floor(gy));if(semantic===4||semantic===5)continue;const kind=t.kind==='forest'?'forest_clusters':t.kind==='mountain'?'mountain_clusters':'hills_rocks';const dens=t.kind==='forest'?S.forestDensity:t.kind==='mountain'?S.mountainDensity:t.kind==='hill'?S.hillDensity:S.plainDensity;const repeats=Math.min(4,Math.ceil(dens));for(let i=0;i<repeats;i++){if(rand(xi,yi,'density'+i)>Math.min(1,dens-i))continue;const jx=i===0?0:(rand(xi,yi,'jx'+i)-.5)*step*.8,jy=i===0?0:(rand(xi,yi,'jy'+i)-.5)*step*.8;const size=P*(S.stampSize+(rand(xi,yi,'scale'+i)-.5)*S.sizeVariation*2);if(drawAsset(ctx,sprite(kind,xi,yi,'art'+i),toPxX(gx+jx),toPxY(gy+jy),size,S.stampOpacity))stampsDrawn++}}}
+function drawNature(ctx){if(!S.showNature||S.stampOpacity===0)return;const step=S.stampSpacing,minX=Math.floor((LEFT-3)/step),maxX=Math.ceil((LEFT+VW/P+3)/step),minY=Math.floor((TOP-3)/step),maxY=Math.ceil((TOP+VH/P+3)/step);for(let yi=minY;yi<=maxY;yi++)for(let xi=minX;xi<=maxX;xi++){const gx=xi*step+step*.38+rand(xi,yi,'sx')*step*.24,gy=yi*step+step*.38+rand(xi,yi,'sy')*step*.24;const t=terrainAt(gx,gy);const semantic=visualSemanticBiome(Math.floor(gx),Math.floor(gy));if(semantic===4||semantic===5)continue;const kind=t.kind==='forest'?'forest_clusters':t.kind==='mountain'?'mountain_clusters':'hills_rocks';const dens=t.kind==='forest'?S.forestDensity:t.kind==='mountain'?S.mountainDensity:t.kind==='hill'?S.hillDensity:S.plainDensity;const repeats=Math.min(4,Math.ceil(dens));for(let i=0;i<repeats;i++){if(rand(xi,yi,'density'+i)>Math.min(1,dens-i))continue;const jx=i===0?0:(rand(xi,yi,'jx'+i)-.5)*step*.8,jy=i===0?0:(rand(xi,yi,'jy'+i)-.5)*step*.8;const size=P*(S.stampSize+(rand(xi,yi,'scale'+i)-.5)*S.sizeVariation*2);if(drawAsset(ctx,sprite(kind,xi,yi,'art'+i),toPxX(gx+jx),toPxY(gy+jy),size,S.stampOpacity))stampsDrawn++}}}
 function exploredAt(x,y){return explored.has(x+','+y)||Math.max(Math.abs(x),Math.abs(y))<=SCOUT_RADIUS;}
 function fogCoords(){const coords=[];const lx=Math.floor(LEFT)-4,rx=Math.ceil(LEFT+VW/P)+4,ty=Math.floor(TOP)-4,by=Math.ceil(TOP+VH/P)+4;for(let y=ty;y<=by;y++)for(let x=lx;x<=rx;x++){if(exploredAt(x,y))coords.push([x,y])}return coords}
 function drawFog(ctx){if(!S.showFog||S.fogOpacity<=0)return;
@@ -363,13 +394,13 @@ function drawBorders(ctx){if(!S.showBorders)return;const cells=[];for(let y=-2;y
 function drawGrid(ctx){if(!S.showGrid)return;ctx.save();ctx.strokeStyle='rgba(64,64,51,.26)';ctx.lineWidth=1;const firstX=Math.floor(LEFT),lastX=Math.ceil(LEFT+VW/P),firstY=Math.floor(TOP),lastY=Math.ceil(TOP+VH/P);for(let x=firstX;x<=lastX;x++){const px=Math.round(toPxX(x))+.5;ctx.beginPath();ctx.moveTo(px,0);ctx.lineTo(px,VH);ctx.stroke()}for(let y=firstY;y<=lastY;y++){const py=Math.round(toPxY(y))+.5;ctx.beginPath();ctx.moveTo(0,py);ctx.lineTo(VW,py);ctx.stroke()}ctx.restore()}
 function drawBiomes(ctx){if(!S.showBiomes)return;ctx.save();const colors=['#668865','#837e70','#baa77e','#e9d7ad','#607d6c','#a58763'];ctx.globalAlpha=.38;
  for(let y=Math.floor(TOP);y<TOP+VH/P+1;y++)for(let x=Math.floor(LEFT);x<LEFT+VW/P+1;x++){
-  ctx.fillStyle=colors[semanticBiome(x,y)];ctx.fillRect(toPxX(x),toPxY(y),P,P);
+  ctx.fillStyle=colors[visualSemanticBiome(x,y)];ctx.fillRect(toPxX(x),toPxY(y),P,P);
  }ctx.restore();}
 const OBJECTS=[{x:0,y:0,art:'castle',label:'Замок'},{x:-2,y:0,art:'battle',guard:'pawn',label:'Битва'},{x:2,y:-1,art:'caravan',guard:'king',label:'Караван'},{x:0,y:2,art:'settlement',label:'Поселение'},{x:-3,y:2,art:'event',label:'Событие'},{x:3,y:2,art:'skirmish',guard:'knight',label:'Стычка'},{x:1,y:-3,art:'puzzle',label:'Задача'}];
 function drawObjects(ctx){if(!S.showObjects)return;for(const site of OBJECTS){if(S.showFog&&!exploredAt(site.x,site.y))continue;const x=toPxX(site.x+.5),y=toPxY(site.y+.5);if(x<-2*P||x>VW+2*P||y<-2*P||y>VH+2*P)continue;const size=P*.88;ctx.save();ctx.shadowColor='#0007';ctx.shadowBlur=8;ctx.shadowOffsetY=4;drawAsset(ctx,'object/'+site.art,x,y,size,1);ctx.restore();if(site.guard){ctx.save();ctx.shadowColor='#000c';ctx.shadowBlur=5;drawAsset(ctx,'object/'+site.guard,x+P*.19,y+P*.17,P*.56,1);ctx.restore()}}}
 function updateStats(){const counts=[0,0,0,0,0,0];let sum=0;
  for(let y=-12;y<=12;y++)for(let x=-17;x<=17;x++){
-  counts[semanticBiome(Math.floor(S.centerX+x/2),Math.floor(S.centerY+y/2))]++;sum++;
+  counts[visualSemanticBiome(Math.floor(S.centerX+x/2),Math.floor(S.centerY+y/2))]++;sum++;
  }
  const names=['Леса','Горы','Холмы','Равнины','Болота','Пустоши'];
  $('stats').innerHTML=names.map((name,i)=>'<span class="stat">'+name+' <b>'+Math.round(100*counts[i]/sum)+'%</b></span>').join('');}
