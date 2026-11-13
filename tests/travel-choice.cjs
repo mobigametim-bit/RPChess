@@ -379,7 +379,7 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
     'balance panel includes the requested simulation action');
   const atlasHtml=fs.readFileSync(path.join(game,'atlas-lab.html'),'utf8');
   const {Script}=require('node:vm');
-  for(const [,source] of atlasHtml.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/g))
+  for(const [,source] of atlasHtml.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g))
     if(source.trim())new Script(source,{filename:'atlas-lab.html'});
   for(const retired of ['paperContrast','fogIrregularity','revealRadius'])
     assert(!atlasHtml.includes(retired),'Atlas Lab must not show or export obsolete '+retired+' setting');
