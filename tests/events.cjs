@@ -110,6 +110,7 @@ const path=require('path'),assert=require('assert'),fs=require('fs'),{pathToFile
     'shared resource iconizer must recognize both Supply and Supplies and expose explicit Event rendering');
   assert(appSource.includes('RPChessResourceIcons?.iconize?.(choices)'),
     'Event choices must iconize resource labels immediately after each render');
+  assert(appSource.includes("'wound-needs-companion'")&&appSource.includes("'skirmish-needs-companion'"),'blocked E037.3 choice must show the existing localized healthy-fighter requirement');
   assert(appSource.includes("RPChessResourceIcons?.iconize?.(screen.querySelector('[data-events-outcome-notes]'))"),
     'Event outcome resource notes must use the same icon treatment');
   const landscapeCss=fs.readFileSync(path.join(game,'css/landscape-ui-redesign.css'),'utf8');
