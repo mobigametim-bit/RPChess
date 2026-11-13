@@ -100,7 +100,9 @@ class MemoryStorage {
   assert.equal(map.industry.buildings.length,1,'week 1 should found one site');
   const site=map.industry.buildings[0];
   assert.equal(site.builtWeek,1);
-  assert.equal(industry.industrySprite(site,1),'assets/kingdom-production/construction_site.png');
+  assert.equal(industry.industrySprite(site,1),'assets/kingdom-production/industry-atlas.png');
+  assert.equal(industry.industrySpriteIndex(site,1),0,'the construction site uses first atlas tile');
+  assert.equal(industry.industrySpriteIndex({kind:'oasis',builtWeek:1},2),8,'Oasis is last atlas tile');
   const expected=industry.industryYield(site,map);
   assert([5,1].includes(industry.industryBase(expected.kind)));
   assert.deepStrictEqual(industry.TYPES_BY_BIOME.wasteland,['oasis'],
