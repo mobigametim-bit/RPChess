@@ -43,3 +43,7 @@ Status: **DRAFT / READY FOR OWNER PLAYTEST**. Latest isolated-preview workflow, 
 5. PRs #201 and #202 were **closed unmerged** as superseded by #203 after the consolidated preview passed CI; their code/reviews remain in GitHub history.
 
 **Workflow rule:** GitHub code, PRs, checks and GitHub documentation only. **Notion synchronization is not required.**
+
+## Owner approval and imported Atlas preset (6) — 2026-11-14
+
+Owner approved PR #203 and supplied `RPChess_Atlas_Parameters_rpchess-kingdom-2026 (6).json` (exported 2026-11-13T22:34:29.139Z). Approved changes: forestDensity 3, stampSize 2, sizeVariation 0.5, baseOpacity 0.18 and fogRadius 2. Approved editor view: centerX 3.5379944557118823, centerY 0.736819093752616, zoom 57. All other map appearance and generation settings remain unchanged. The map zoom persistence key was incremented to v3 so previously saved zoom defaults cannot hide the newly accepted 57px default; subsequent user zoom choices remain persistent. The simulation economic fields already matched this export; live economy was deliberately not retuned. The complete accepted values are in `docs/KINGDOM_ATLAS_V7_REVIEW_CONFIG.json`. Explicitly approved: Release Gate, merge after it passes, and production deploy. GitHub only, no Notion.
