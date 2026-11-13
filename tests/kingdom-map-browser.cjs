@@ -1745,6 +1745,52 @@ async function assertTileImage(page,cellId){
       'battle-red-territory.png'),fullPage:false});
   }
   await enemy.close();
+  // Reuse Kingdom Chromium coverage: this exercises actual saved weekly
+  // production and the nine-icon sprite atlas, including its public asset URL.
+  const productionPage=await browser.newPage({viewport:{width:1280,height:720},reducedMotion:'reduce'});
+  await productionPage.goto(url,{waitUntil:'domcontentloaded'});
+  await startNewRun(productionPage,{playerName:'Industry QA',legacyTravel:false});
+  await productionPage.locator('[data-roster-travel]').click();
+  await productionPage.locator('[data-kingdom-map-screen]:not([hidden])').waitFor({timeout:16000});
+  const industryResult=await productionPage.evaluate(async()=>{
+    const core=await import('./js/kingdom-map-core.mjs');
+    const industry=await import('./js/kingdom-industry-core.mjs');
+    const persistence=await import('./js/run-persistence.mjs');
+    const run=persistence.readRun(localStorage);
+    const extra=Array.from({length:9},(_,n)=>1+(n%3)+','+(1+Math.floor(n/3)));
+    let map={...run.kingdomMap,centralOwnedCells:[...(run.kingdomMap.centralOwnedCells||[]),...extra],
+      peakKingPower:600};
+    for(let n=0;n<32;n++){
+      map.seed=run.id+':production-visual-qa:'+n;
+      if(industry.candidateCells(map).length>=2)break;
+    }
+    if(industry.candidateCells(map).length<2)throw Error('Production QA needs two valid local owned cells');
+    for(let day=map.day+1;day<=14;day++)map=core.advanceDay(map,'industry-qa-day:'+day);
+    if(map.industry.buildings.length!==2)throw Error('Day 14 must have exactly two industries');
+    const ready=map.industry.buildings[0];
+    const saved=persistence.writeRun({...run,kingdomMap:map},localStorage,Date.now());
+    globalThis.RPChessKingdomMap.open();
+    return {id:ready.id,kind:ready.kind,amount:industry.industryYield(ready,map).amount,
+      gold:saved.kingdomMap.industry.creditedGold,
+      supplies:saved.kingdomMap.industry.creditedSupplies};
+  });
+  const tile=productionPage.locator('[data-kingdom-cell="'+industryResult.id+'"]');
+  await tile.locator('.km-object--industry').waitFor({state:'attached',timeout:10000});
+  const visual=await tile.evaluate(el=>({
+    kind:el.dataset.kingdomIndustry,stage:el.dataset.kingdomIndustryStage,
+    background:getComputedStyle(el.querySelector('.km-object--industry')).backgroundImage,
+    badge:el.querySelector('.km-industry-level')?.textContent
+  }));
+  assert.equal(visual.kind,industryResult.kind,'biome-specific production art must match site kind');
+  assert.equal(visual.stage,'complete','week two completes first production site');
+  assert(visual.background.includes('industry-atlas.png'),'production icon must load real atlas file');
+  assert.equal(visual.badge,'II','production level follows Castle II');
+  const atlasResponse=await productionPage.request.get(new URL('assets/kingdom-production/industry-atlas.png',url).href);
+  assert.equal(atlasResponse.status(),200,'production atlas is included in the deployed game');
+  assert.equal((await atlasResponse.body()).subarray(0,8).toString('hex'),'89504e470d0a1a0a',
+    'production atlas must be a genuine PNG');
+  await productionPage.close();
+  console.log('KINGDOM PRODUCTION PASS — two-week cycle, income receipt, atlas and Castle II icon');
   console.log('KINGDOM MAP PASS — click-inspect, king drag, shortest routes, event stop, map pan, step supplies, red provinces');
  }finally{await browser.close()}
 })().catch(e=>{console.error(e.stack||e);process.exitCode=1});
