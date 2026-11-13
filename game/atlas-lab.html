@@ -268,23 +268,29 @@ function optionalCategory(kind){
  return null;
 }
 function extraSprite(kind,x,y,salt='sprite'){const group=optionalCategory(kind);return group?sprite(group,x,y,salt):null}
+const MARSH_PREFIXES=['01_','02_','03_','04_','05_','06_','13_','14_','16_'];
+const WASTELAND_PREFIXES=['07_','08_','09_','10_','11_','12_','15_'];
 function drawOptionalNature(ctx){
- const step=3.6;
+ if(S.showMarsh){const step=3.6;
  for(let yi=Math.floor(TOP/step)-1;yi<=Math.ceil((TOP+VH/P)/step);yi++)
-  for(let xi=Math.floor(LEFT/step)-1;xi<=Math.ceil((LEFT+VW/P)/step);xi++){
-   const x=xi*step+rand(xi,yi,'extra-x')*step, y=yi*step+rand(xi,yi,'extra-y')*step;
-   const t=terrainAt(x,y), wet=t.wet>S.marshWetThreshold&&t.elevation<.59;
-   if(wet&&S.showMarsh){
-    const n=Math.min(3,Math.ceil(S.marshDensity));
-    for(let i=0;i<n;i++)if(rand(xi,yi,'marsh'+i)<Math.min(1,S.marshDensity-i)){
-      const dx=(rand(xi,yi,'mx'+i)-.5)*step*.7,dy=(rand(xi,yi,'my'+i)-.5)*step*.7;
-      if(drawAsset(ctx,extraSprite('marsh',xi,yi,'marsh'+i),toPxX(x+dx),toPxY(y+dy),P*S.marshSize,S.marshOpacity))stampsDrawn++;
-    }
-   }
-   if(S.showLandmarks&&rand(xi,yi,'landmark')<S.landmarkDensity){
-    if(drawAsset(ctx,extraSprite('landmark',xi,yi),toPxX(x),toPxY(y),P*S.landmarkSize,S.landmarkOpacity))stampsDrawn++;
-   }
+ for(let xi=Math.floor(LEFT/step)-1;xi<=Math.ceil((LEFT+VW/P)/step);xi++){
+  const x=xi*step+rand(xi,yi,'extra-x')*step,y=yi*step+rand(xi,yi,'extra-y')*step;
+  const biome=semanticBiome(Math.floor(x),Math.floor(y));if(biome!==4&&biome!==5)continue;
+  const prefixes=biome===4?MARSH_PREFIXES:WASTELAND_PREFIXES;
+  const names=(GROUPS.marsh_wasteland_optional||[]).filter(path=>prefixes.some(prefix=>path.split('/').at(-1).startsWith(prefix)));
+  for(let i=0;i<Math.min(3,Math.ceil(S.marshDensity));i++){
+   if(rand(xi,yi,'marsh'+i)>=Math.min(1,S.marshDensity-i)||!names.length)continue;
+   const dx=(rand(xi,yi,'mx'+i)-.5)*step*.7,dy=(rand(xi,yi,'my'+i)-.5)*step*.7;
+   const src=names[hash32(S.seed+':biome-art:'+(biome===4?'marsh':'wasteland')+':'+xi+':'+yi+':marsh'+i)%names.length];
+   if(drawAsset(ctx,src,toPxX(x+dx),toPxY(y+dy),P*S.marshSize,S.marshOpacity))stampsDrawn++;
   }
+ }}
+ if(S.showLandmarks){for(let y=Math.floor(TOP)-1;y<=Math.ceil(TOP+VH/P);y++)
+ for(let x=Math.floor(LEFT)-1;x<=Math.ceil(LEFT+VW/P);x++){
+  const id=pickedLandmark(x,y);if(id<0)continue;
+  const src=(GROUPS.decor_minor_landmarks||[])[id];
+  if(drawAsset(ctx,src,toPxX(x+.5),toPxY(y+.5),P*S.landmarkSize,S.landmarkOpacity))stampsDrawn++;
+ }}
 }
 function rand(x,y,salt=''){return randomAt(S.seed,x,y,salt)}
 function drawAsset(ctx,key,x,y,size,opacity=1){const im=IMG[key];if(!im||!im.complete||!im.naturalWidth)return false;ctx.save();ctx.globalAlpha=Math.max(0,Math.min(1,opacity));ctx.drawImage(im,x-size/2,y-size/2,size,size);ctx.restore();return true}
@@ -308,7 +314,7 @@ function drawWaterRoads(ctx){
    const center=river*spacing+riverDrift;
    ctx.beginPath();let first=true;
    for(let y=minY;y<=maxY;y+=.16){
-    const x=center+S.riverCurve*(Math.sin(y*.21+river*1.7)*2.15+Math.sin(y*.79+river*.3)*.55);
+    const x=center+Math.sin(y*.21+river*1.7)*2.15*S.riverCurve+Math.sin(y*.79+river*.3)*.55;
     if(first){ctx.moveTo(toPxX(x),toPxY(y));first=false;}
     else ctx.lineTo(toPxX(x),toPxY(y));
    }
@@ -327,7 +333,7 @@ function drawWaterRoads(ctx){
    const center=road*spacing+roadDrift;
    ctx.beginPath();let firstPoint=true;
    for(let x=minX;x<=maxX;x+=.16){
-    const y=center+S.roadCurve*(Math.sin(x*.37+road*2.1)*1.25+Math.sin(x*.83+road)*.18);
+    const y=center+Math.sin(x*.37+road*2.1)*1.25*S.roadCurve+Math.sin(x*.83+road)*.18;
     if(firstPoint){ctx.moveTo(toPxX(x),toPxY(y));firstPoint=false;}
     else ctx.lineTo(toPxX(x),toPxY(y));
    }
@@ -338,16 +344,35 @@ function drawWaterRoads(ctx){
  }
  ctx.restore();
 }
-function drawNature(ctx){if(!S.showNature||S.stampOpacity===0)return;const step=S.stampSpacing,minX=Math.floor((LEFT-3)/step),maxX=Math.ceil((LEFT+VW/P+3)/step),minY=Math.floor((TOP-3)/step),maxY=Math.ceil((TOP+VH/P+3)/step);for(let yi=minY;yi<=maxY;yi++)for(let xi=minX;xi<=maxX;xi++){const gx=xi*step+step*.38+rand(xi,yi,'sx')*step*.24,gy=yi*step+step*.38+rand(xi,yi,'sy')*step*.24;const t=terrainAt(gx,gy);const kind=t.kind==='forest'?'forest_clusters':t.kind==='mountain'?'mountain_clusters':'hills_rocks';const dens=t.kind==='forest'?S.forestDensity:t.kind==='mountain'?S.mountainDensity:t.kind==='hill'?S.hillDensity:S.plainDensity;const repeats=Math.min(4,Math.ceil(dens));for(let i=0;i<repeats;i++){if(rand(xi,yi,'density'+i)>Math.min(1,dens-i))continue;const jx=i===0?0:(rand(xi,yi,'jx'+i)-.5)*step*.8,jy=i===0?0:(rand(xi,yi,'jy'+i)-.5)*step*.8;const size=P*(S.stampSize+(rand(xi,yi,'scale'+i)-.5)*S.sizeVariation*2);if(drawAsset(ctx,sprite(kind,xi,yi,'art'+i),toPxX(gx+jx),toPxY(gy+jy),size,S.stampOpacity))stampsDrawn++}}}
-function exploredAt(x,y){if(explored.has(x+','+y))return true;const dist=Math.hypot(x,y);return dist<=S.revealRadius+(rand(x,y,'reveal')-.5)*.25}
+function drawNature(ctx){if(!S.showNature||S.stampOpacity===0)return;const step=S.stampSpacing,minX=Math.floor((LEFT-3)/step),maxX=Math.ceil((LEFT+VW/P+3)/step),minY=Math.floor((TOP-3)/step),maxY=Math.ceil((TOP+VH/P+3)/step);for(let yi=minY;yi<=maxY;yi++)for(let xi=minX;xi<=maxX;xi++){const gx=xi*step+step*.38+rand(xi,yi,'sx')*step*.24,gy=yi*step+step*.38+rand(xi,yi,'sy')*step*.24;const t=terrainAt(gx,gy);const semantic=semanticBiome(Math.floor(gx),Math.floor(gy));if(semantic===4||semantic===5)continue;const kind=t.kind==='forest'?'forest_clusters':t.kind==='mountain'?'mountain_clusters':'hills_rocks';const dens=t.kind==='forest'?S.forestDensity:t.kind==='mountain'?S.mountainDensity:t.kind==='hill'?S.hillDensity:S.plainDensity;const repeats=Math.min(4,Math.ceil(dens));for(let i=0;i<repeats;i++){if(rand(xi,yi,'density'+i)>Math.min(1,dens-i))continue;const jx=i===0?0:(rand(xi,yi,'jx'+i)-.5)*step*.8,jy=i===0?0:(rand(xi,yi,'jy'+i)-.5)*step*.8;const size=P*(S.stampSize+(rand(xi,yi,'scale'+i)-.5)*S.sizeVariation*2);if(drawAsset(ctx,sprite(kind,xi,yi,'art'+i),toPxX(gx+jx),toPxY(gy+jy),size,S.stampOpacity))stampsDrawn++}}}
+function exploredAt(x,y){return explored.has(x+','+y)||Math.max(Math.abs(x),Math.abs(y))<=SCOUT_RADIUS;}
 function fogCoords(){const coords=[];const lx=Math.floor(LEFT)-4,rx=Math.ceil(LEFT+VW/P)+4,ty=Math.floor(TOP)-4,by=Math.ceil(TOP+VH/P)+4;for(let y=ty;y<=by;y++)for(let x=lx;x<=rx;x++){if(exploredAt(x,y))coords.push([x,y])}return coords}
-function drawFog(ctx){if(!S.showFog||S.fogOpacity<=0)return;const off=document.createElement('canvas');off.width=Math.round(VW*DPR);off.height=Math.round(VH*DPR);const fc=off.getContext('2d');fc.scale(DPR,DPR);fc.fillStyle='rgba(41,40,37,'+S.fogOpacity+')';fc.fillRect(0,0,VW,VH);fc.globalCompositeOperation='destination-out';for(const [x,y] of fogCoords()){const cx=toPxX(x+.5),cy=toPxY(y+.5),outer=S.fogRadius*P,inner=Math.min(outer*.9,S.fogInner*P);const gradient=fc.createRadialGradient(cx,cy,inner,cx,cy,outer);gradient.addColorStop(0,'rgba(0,0,0,1)');gradient.addColorStop(.7,'rgba(0,0,0,.98)');gradient.addColorStop(1,'rgba(0,0,0,0)');fc.fillStyle=gradient;fc.fillRect(cx-outer,cy-outer,outer*2,outer*2);if(S.fogIrregularity>.05){const lobes=5;for(let i=0;i<lobes;i++){const angle=i*Math.PI*2/lobes+rand(x,y,'angle')*2,rx=(rand(x,y,'lobeX'+i)-.5)*S.fogIrregularity*P*.75,ry=(rand(x,y,'lobeY'+i)-.5)*S.fogIrregularity*P*.75,r=S.fogIrregularity*P*.47;const c2x=cx+Math.cos(angle)*P*.49+rx,c2y=cy+Math.sin(angle)*P*.49+ry;const g=fc.createRadialGradient(c2x,c2y,0,c2x,c2y,r);g.addColorStop(0,'rgba(0,0,0,.6)');g.addColorStop(1,'rgba(0,0,0,0)');fc.fillStyle=g;fc.fillRect(c2x-r,c2y-r,r*2,r*2)}}}fc.globalCompositeOperation='source-over';ctx.drawImage(off,0,0,VW,VH);if(S.fogInkOpacity>.01){const step=6;for(let yi=Math.floor(TOP/step);yi<=Math.ceil((TOP+VH/P)/step);yi++)for(let xi=Math.floor(LEFT/step);xi<=Math.ceil((LEFT+VW/P)/step);xi++){const x=xi*step+3,y=yi*step+3;if(exploredAt(Math.round(x),Math.round(y)))continue;drawAsset(ctx,sprite('fog_of_war_shapes',xi,yi),toPxX(x),toPxY(y),P*2.7,S.fogInkOpacity)}}}
+function drawFog(ctx){if(!S.showFog||S.fogOpacity<=0)return;
+ const off=document.createElement('canvas');off.width=Math.round(VW*DPR);off.height=Math.round(VH*DPR);
+ const fc=off.getContext('2d');fc.scale(DPR,DPR);fc.fillStyle='rgba(41,40,37,'+S.fogOpacity+')';fc.fillRect(0,0,VW,VH);
+ fc.globalCompositeOperation='destination-out';for(const [x,y] of fogCoords()){
+  const cx=toPxX(x+.5),cy=toPxY(y+.5),outer=S.fogRadius*P,inner=Math.min(outer*.9,S.fogInner*P);
+  const g=fc.createRadialGradient(cx,cy,inner,cx,cy,outer);g.addColorStop(0,'rgba(0,0,0,1)');g.addColorStop(.68,'rgba(0,0,0,.98)');g.addColorStop(1,'rgba(0,0,0,0)');fc.fillStyle=g;fc.fillRect(cx-outer,cy-outer,outer*2,outer*2);
+ }fc.globalCompositeOperation='source-over';ctx.drawImage(off,0,0,VW,VH);
+ if(S.fogInkOpacity>.01){const step=6;for(let yi=Math.floor(TOP/step);yi<=Math.ceil((TOP+VH/P)/step);yi++)for(let xi=Math.floor(LEFT/step);xi<=Math.ceil((LEFT+VW/P)/step);xi++){
+  const x=xi*step+3,y=yi*step+3;if(exploredAt(Math.round(x),Math.round(y)))continue;
+  drawAsset(ctx,sprite('fog_of_war_shapes',xi,yi),toPxX(x),toPxY(y),P*2.7,S.fogInkOpacity);
+ }}
+}
 function drawBorders(ctx){if(!S.showBorders)return;const cells=[];for(let y=-2;y<=2;y++)for(let x=-2;x<=2;x++)if(Math.hypot(x,y)<1.8)cells.push([x,y]);const set=new Set(cells.map(p=>p.join(',')));ctx.save();ctx.lineWidth=2.5*P/142;ctx.setLineDash([10*P/142,6*P/142]);ctx.strokeStyle='#947041';for(const [x,y] of cells){const xx=toPxX(x),yy=toPxY(y);for(const [side,dx,dy] of [['n',0,-1],['e',1,0],['s',0,1],['w',-1,0]]){if(set.has((x+dx)+','+(y+dy)))continue;ctx.beginPath();if(side==='n'){ctx.moveTo(xx,yy);ctx.quadraticCurveTo(xx+P*.43,yy-P*.032,xx+P,yy)}else if(side==='e'){ctx.moveTo(xx+P,yy);ctx.quadraticCurveTo(xx+P+P*.032,yy+P*.55,xx+P,yy+P)}else if(side==='s'){ctx.moveTo(xx,yy+P);ctx.quadraticCurveTo(xx+P*.5,yy+P+P*.032,xx+P,yy+P)}else{ctx.moveTo(xx,yy);ctx.quadraticCurveTo(xx-P*.032,yy+P*.5,xx,yy+P)}ctx.stroke()}}ctx.restore()}
 function drawGrid(ctx){if(!S.showGrid)return;ctx.save();ctx.strokeStyle='rgba(64,64,51,.26)';ctx.lineWidth=1;const firstX=Math.floor(LEFT),lastX=Math.ceil(LEFT+VW/P),firstY=Math.floor(TOP),lastY=Math.ceil(TOP+VH/P);for(let x=firstX;x<=lastX;x++){const px=Math.round(toPxX(x))+.5;ctx.beginPath();ctx.moveTo(px,0);ctx.lineTo(px,VH);ctx.stroke()}for(let y=firstY;y<=lastY;y++){const py=Math.round(toPxY(y))+.5;ctx.beginPath();ctx.moveTo(0,py);ctx.lineTo(VW,py);ctx.stroke()}ctx.restore()}
-function drawBiomes(ctx){if(!S.showBiomes)return;ctx.save();const color={plain:'#e9d7ad',forest:'#668865',hill:'#baa77e',mountain:'#837e70'};ctx.globalAlpha=.38;for(let y=Math.floor(TOP);y<TOP+VH/P+1;y++)for(let x=Math.floor(LEFT);x<LEFT+VW/P+1;x++){const kind=terrainAt(x+.5,y+.5).kind;ctx.fillStyle=color[kind];ctx.fillRect(toPxX(x),toPxY(y),P,P)}ctx.restore()}
+function drawBiomes(ctx){if(!S.showBiomes)return;ctx.save();const colors=['#668865','#837e70','#baa77e','#e9d7ad','#607d6c','#a58763'];ctx.globalAlpha=.38;
+ for(let y=Math.floor(TOP);y<TOP+VH/P+1;y++)for(let x=Math.floor(LEFT);x<LEFT+VW/P+1;x++){
+  ctx.fillStyle=colors[semanticBiome(x,y)];ctx.fillRect(toPxX(x),toPxY(y),P,P);
+ }ctx.restore();}
 const OBJECTS=[{x:0,y:0,art:'castle',label:'Замок'},{x:-2,y:0,art:'battle',guard:'pawn',label:'Битва'},{x:2,y:-1,art:'caravan',guard:'king',label:'Караван'},{x:0,y:2,art:'settlement',label:'Поселение'},{x:-3,y:2,art:'event',label:'Событие'},{x:3,y:2,art:'skirmish',guard:'knight',label:'Стычка'},{x:1,y:-3,art:'puzzle',label:'Задача'}];
 function drawObjects(ctx){if(!S.showObjects)return;for(const site of OBJECTS){if(S.showFog&&!exploredAt(site.x,site.y))continue;const x=toPxX(site.x+.5),y=toPxY(site.y+.5);if(x<-2*P||x>VW+2*P||y<-2*P||y>VH+2*P)continue;const size=P*.88;ctx.save();ctx.shadowColor='#0007';ctx.shadowBlur=8;ctx.shadowOffsetY=4;drawAsset(ctx,'object/'+site.art,x,y,size,1);ctx.restore();if(site.guard){ctx.save();ctx.shadowColor='#000c';ctx.shadowBlur=5;drawAsset(ctx,'object/'+site.guard,x+P*.19,y+P*.17,P*.56,1);ctx.restore()}}}
-function updateStats(){const counts={plain:0,forest:0,hill:0,mountain:0};let sum=0;for(let y=-12;y<=12;y++)for(let x=-17;x<=17;x++){counts[terrainAt(S.centerX+x/2,S.centerY+y/2).kind]++;sum++}const types=[['forest','Леса'],['hill','Холмы'],['mountain','Горы'],['plain','Равнины']];$('stats').innerHTML=types.map(([k,name])=>'<span class="stat"><span class="dot '+k+'"></span>'+name+' <b>'+Math.round(100*counts[k]/sum)+'%</b></span>').join('')}
+function updateStats(){const counts=[0,0,0,0,0,0];let sum=0;
+ for(let y=-12;y<=12;y++)for(let x=-17;x<=17;x++){
+  counts[semanticBiome(Math.floor(S.centerX+x/2),Math.floor(S.centerY+y/2))]++;sum++;
+ }
+ const names=['Леса','Горы','Холмы','Равнины','Болота','Пустоши'];
+ $('stats').innerHTML=names.map((name,i)=>'<span class="stat">'+name+' <b>'+Math.round(100*counts[i]/sum)+'%</b></span>').join('');}
 let lastW=0,lastH=0;
 function paint(){const canvas=$('map');const rect=$('viewport').getBoundingClientRect();VW=Math.max(400,Math.floor(rect.width));VH=Math.max(320,Math.floor(rect.height));DPR=Math.min(1.5,window.devicePixelRatio||1);if(canvas.width!==Math.round(VW*DPR)||canvas.height!==Math.round(VH*DPR)){canvas.width=Math.round(VW*DPR);canvas.height=Math.round(VH*DPR)}const ctx=canvas.getContext('2d',{alpha:false});ctx.setTransform(DPR,0,0,DPR,0,0);CTX=ctx;P=S.zoom;LEFT=S.centerX-VW/(2*P);TOP=S.centerY-VH/(2*P);const start=performance.now();stampsDrawn=0;const chunks=drawBackdrop(ctx);drawParchmentPatches(ctx);drawWaterRoads(ctx);drawNature(ctx);drawOptionalNature(ctx);drawBiomes(ctx);drawFog(ctx);drawBorders(ctx);drawGrid(ctx);drawObjects(ctx);paintCycles++;const elapsed=performance.now()-start;$('coords').textContent='X '+format(S.centerX)+' · Y '+format(S.centerY);$('mapScale').textContent='1 клетка = 142 ед. · '+Math.round(P)+' px на экране';$('drawStats').textContent=stampsDrawn+' объектов природы · '+chunks+' чанков · '+Math.round(elapsed)+' мс';$('mapSubtitle').textContent=PRESETS.find(p=>p.id===currentPreset)?.name||'Пользовательский набор параметров';$('modeName').textContent=PRESETS.find(p=>p.id===currentPreset)?.name||'Своя конфигурация';updateStats()}
 function download(name,blob){const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),6000)}
