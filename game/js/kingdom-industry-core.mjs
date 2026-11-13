@@ -2,6 +2,7 @@
 import {worldAt} from './kingdom-world-core.mjs';
 import {randomAt} from './kingdom-parchment-core.mjs';
 import {VISUAL} from './kingdom-world-config.mjs';
+import {riverbankAt,constructionPathAt,pavedRoadCells} from './kingdom-geography.mjs';
 import {hashString} from './travel-choice-core.mjs';
 import {DEFAULT_KINGDOM_ECONOMY} from './kingdom-economy-config.mjs';
 
@@ -27,19 +28,7 @@ const KEY=/^-?\d+,-?\d+$/;
 // still stamps forest there. Fishing piers need a *visible* river beside them.
 // Keep this aligned with drawWaterRoads() in kingdom-parchment-app.mjs,
 // which uses the visual randomAt hash (not atlasRandom used for encounters).
-function nearVisibleRiver(seed,x,y){
- const spacing=Math.max(1,VISUAL.riverSpacing);
- const drift=randomAt(seed,1,1,'river')*spacing*(12/17);
- const centerX=x+.5,centerY=y+.5;
- const nearest=Math.round((centerX-drift)/spacing);
- for(let i=nearest-2;i<=nearest+2;i++){
-  const riverX=i*spacing+drift+
-   Math.sin(centerY*.21+i*1.7)*2.15*VISUAL.riverCurve+
-   Math.sin(centerY*.79+i*.3)*.55;
-  if(Math.abs(riverX-centerX)<=.48)return true;
- }
- return false;
-}
+function nearVisibleRiver(seed,x,y){return riverbankAt(seed,x,y);}
 const integer=n=>Number.isSafeInteger(n)&&n>=0;
 const key=(x,y)=>x+','+y;
 function industryLevel(map){
@@ -78,9 +67,25 @@ function validIndustry(value){
 function occupiedRoadCells(map){
  const occupied=new Set();
  for(const field of ['royalRoads','completedRoads','outpostRoads'])
-  for(const road of map[field]||[])
+  for(const road of map[field]||[]){
    for(const id of [road.from,road.to])if(KEY.test(id||''))occupied.add(id);
+   for(const id of pavedRoadCells(road))occupied.add(id);
+  }
  return occupied;
+}
+// Shared physical placement contract for both manual and automatic construction.
+// An outpost may occupy a conquered encounter but never a building or road.
+function constructionClear(map,x,y,{allowRiver=false}={}){
+ if(!map?.seed||!Number.isSafeInteger(x)||!Number.isSafeInteger(y))return false;
+ const id=key(x,y),paths=constructionPathAt(map.seed,x,y);
+ if(paths.road||(paths.river&&!allowRiver))return false;
+ if(occupiedRoadCells(map).has(id))return false;
+ if((map.outposts||[]).some(p=>p.id===id||p.cells?.includes(id))||
+    (map.builtSettlements||[]).some(p=>p.id===id)||
+    (map.industry?.buildings||[]).some(p=>p.id===id))return false;
+ const terrain=worldAt(map.seed,x,y,{generatorVersion:map.worldGeneratorVersion||5});
+ if(terrain.landmark)return false;
+ return true;
 }
 function candidateCells(map,industry=map?.industry){
  if(!map||!map.castle||!map.seed)return [];
@@ -99,9 +104,9 @@ function candidateCells(map,industry=map?.industry){
   if(!KEY.test(id)||occupied.has(id))continue;
   const [x,y]=id.split(',').map(Number);
   if(!Number.isSafeInteger(x)||!Number.isSafeInteger(y))continue;
-  const terrain=worldAt(map.seed,x,y);
+  const terrain=worldAt(map.seed,x,y,{generatorVersion:map.worldGeneratorVersion||5});
   if(!TYPES_BY_BIOME[terrain.biome]?.length||terrain.type||
-     terrain.paths?.road||terrain.landmark)continue;
+     terrain.paths?.road||terrain.landmark||!constructionClear(map,x,y,{allowRiver:terrain.biome==='marsh'&&nearVisibleRiver(map.seed,x,y)}))continue;
   // A wet cell with no drawn water is forest in the player's view.
   // Give it normal forest buildings instead of losing its weekly site.
   const industryBiome=terrain.biome==='marsh'&&!nearVisibleRiver(map.seed,x,y)?'forest':terrain.biome;
@@ -183,5 +188,5 @@ function industrySpriteIndex(site,week){
  return INDUSTRY_ATLAS_ORDER.indexOf(site.builtWeek>=week?'construction_site':site.kind);
 }
 export {BUILDING_TYPES,TYPES_BY_BIOME,BUILDING_DIR,INDUSTRY_ATLAS,INDUSTRY_ATLAS_ORDER,initialIndustry,validIndustry,
- occupiedRoadCells,candidateCells,selectConstruction,realignLandlockedPiers,nearVisibleRiver,settleIndustryWeek,
+ occupiedRoadCells,constructionClear,candidateCells,selectConstruction,realignLandlockedPiers,nearVisibleRiver,settleIndustryWeek,
  industryLevel,industryBase,industryYield,industryPending,collectIndustry,industrySprite,industrySpriteIndex};
