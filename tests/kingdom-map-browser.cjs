@@ -1774,27 +1774,76 @@ async function assertTileImage(page,cellId){
     const ready=map.industry.buildings[0];
     const saved=persistence.writeRun({...run,kingdomMap:map},localStorage,Date.now());
     globalThis.RPChessKingdomMap.open();
-    return {id:ready.id,kind:ready.kind,amount:industry.industryYield(ready,map).amount,
-      gold:saved.kingdomMap.industry.creditedGold,
-      supplies:saved.kingdomMap.industry.creditedSupplies};
+    const pending=industry.industryPending(map,ready.id);
+    if(!pending)throw Error('A completed building must be collectible on week 2');
+    return {id:ready.id,kind:ready.kind,amount:pending.amount,
+      resource:pending.kind,initialGold:saved.gold,initialSupplies:saved.supplies,
+      creditedGold:saved.kingdomMap.industry.creditedGold,
+      creditedSupplies:saved.kingdomMap.industry.creditedSupplies,
+      empty:industry.candidateCells(map).find(c=>Math.abs(Number(c.id.split(',')[0]))<=3 &&
+        Math.abs(Number(c.id.split(',')[1]))<=2)?.id};
   });
   const tile=productionPage.locator('[data-kingdom-cell="'+industryResult.id+'"]');
   await tile.locator('.km-object--industry').waitFor({state:'attached',timeout:10000});
-  const industryVisual=await tile.evaluate(el=>({
-    kind:el.dataset.kingdomIndustry,stage:el.dataset.kingdomIndustryStage,
-    background:getComputedStyle(el.querySelector('.km-object--industry')).backgroundImage,
-    badge:el.querySelector('.km-industry-level')?.textContent
-  }));
+  const industryVisual=await tile.evaluate(el=>{
+    const sprite=el.querySelector('.km-object--industry'),css=getComputedStyle(sprite);
+    const eventSprite=el.querySelector('.km-object--site');
+    return {kind:el.dataset.kingdomIndustry,stage:el.dataset.kingdomIndustryStage,
+      background:css.backgroundImage,badge:el.querySelector('.km-industry-level')?.textContent,
+      opacity:Number(css.opacity),width:sprite.getBoundingClientRect().width,
+      expectedWidth:Number.parseFloat(getComputedStyle(document.querySelector('.kingdom-map-screen'))
+        .getPropertyValue('--km-event-size-px'))*.469,
+      eventSprite:!!eventSprite};
+  });
   assert.equal(industryVisual.kind,industryResult.kind,'biome-specific production art must match site kind');
   assert.equal(industryVisual.stage,'complete','week two completes first production site');
   assert(industryVisual.background.includes('industry-atlas.png'),'production icon must load real atlas file');
   assert.equal(industryVisual.badge,'II','production level follows Castle II');
+  assert.equal(industryVisual.opacity,.8,'industry and forest decorations share opacity');
+  assert(Math.abs(industryVisual.width-industryVisual.expectedWidth)<1,
+    'all producer icons are 30% smaller than prior preview');
+  const icon=productionPage.locator('[data-kingdom-industry-collect="'+industryResult.id+'"]');
+  await icon.waitFor({state:'visible',timeout:12000});
+  assert.equal(await icon.locator('strong').textContent(),String(industryResult.amount),
+    'floating icon displays the collectible weekly amount');
+  // Reload before collecting: pending rewards must survive persistence.
+  await productionPage.reload({waitUntil:'domcontentloaded'});
+  await productionPage.locator('[data-reboot-foundation]:not([hidden])').waitFor();
+  await productionPage.locator('[data-new-game]').click();
+  await productionPage.locator('[data-journey-continue]').click();
+  await productionPage.locator('[data-roster-screen]:not([hidden])').waitFor();
+  await productionPage.locator('[data-roster-travel]').click();
+  await productionPage.locator('[data-kingdom-map-screen]:not([hidden])').waitFor();
+  const restored=productionPage.locator('[data-kingdom-industry-collect="'+industryResult.id+'"]');
+  await restored.waitFor({state:'visible'});
+  const beforePickup=await read(productionPage);
+  assert.equal(beforePickup.gold,industryResult.initialGold,'reload does not auto-credit Gold');
+  assert.equal(beforePickup.supplies,industryResult.initialSupplies,'reload does not auto-credit Supplies');
+  await restored.click();
+  await restored.waitFor({state:'detached'});
+  const claimed=await read(productionPage);
+  assert.equal(claimed.gold,beforePickup.gold+
+    (industryResult.resource==='gold'?industryResult.amount:0),'click credits Gold exactly once');
+  assert.equal(claimed.supplies,beforePickup.supplies+
+    (industryResult.resource==='supplies'?industryResult.amount:0),'click credits Supplies exactly once');
+  assert.equal(claimed.kingdomMap.industry.pending[industryResult.id],undefined,
+    'collected industry receipt survives save');
+  assert.equal(await productionPage.locator('[data-kingdom-industry-collect="'+industryResult.id+'"]').count(),0,
+    'resource icon disappears after manual collection');
+  if(industryResult.empty){
+    await productionPage.locator('[data-kingdom-cell="'+industryResult.empty+'"]').dispatchEvent('click');
+    const card=await productionPage.locator('[data-kingdom-inspector-title]').textContent();
+    assert(['Лес','Горы','Холмы','Равнина','Болото','Пустоши'].includes(card),
+      'empty terrain inspector should use its actual biome name, got '+card);
+    assert.equal((await productionPage.locator('[data-kingdom-inspector-text]').textContent()).trim(),'',
+      'no-event terrain has no redundant explanatory text');
+  }
   const atlasResponse=await productionPage.request.get(new URL('assets/kingdom-production/industry-atlas.png',url).href);
   assert.equal(atlasResponse.status(),200,'production atlas is included in the deployed game');
   assert.equal((await atlasResponse.body()).subarray(0,8).toString('hex'),'89504e470d0a1a0a',
     'production atlas must be a genuine PNG');
   await productionPage.close();
-  console.log('KINGDOM PRODUCTION PASS — two-week cycle, income receipt, atlas and Castle II icon');
+  console.log('KINGDOM PRODUCTION PASS — manual icon collection, reload persistence, atlas, scale, biome and Castle II');
   console.log('KINGDOM MAP PASS — click-inspect, king drag, shortest routes, event stop, map pan, step supplies, red provinces');
  }finally{await browser.close()}
 })().catch(e=>{console.error(e.stack||e);process.exitCode=1});
