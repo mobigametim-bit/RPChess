@@ -11,7 +11,7 @@ import { normalizeCommanderId,commanderById,commanderPieceArt } from './commande
 import { isArtifactInventory, isCombatArtifactChoice, normalizeArtifacts } from './artifact-core.mjs';
 import { isCombatCheckpoint } from './combat-checkpoint.mjs';
 import { validateKingdomMap } from './kingdom-map-core.mjs';
-import { applyIndustryCredits } from './kingdom-industry-core.mjs';
+
 import { hydrateArmy, normalizeArmy } from './kingdom-army-core.mjs';
 
 const RUN_STORAGE_KEY = 'rpchess.reboot.v1.run';
@@ -90,10 +90,9 @@ function previousStoredRun(target) { if(!target)return null;try{const parsed=JSO
 function writeRun(run, storage = null, now = Date.now()) {
   const target=resolveStorage(storage),previous=previousStoredRun(target);
   const normalized={...hydrateArmy(hydrateResources(run)),playerName:normalizePlayerName(run?.playerName,'Воин'),commanderId:normalizeCommanderId(run?.commanderId),runStats:hydrateRunStats(run),puzzleHistory:hydratePuzzleHistory(run),kingdomMap:validateKingdomMap(run?.kingdomMap)?run.kingdomMap:null,currentSettlement:isSettlementState(run?.currentSettlement)?run.currentSettlement:null,currentPuzzle:isPuzzleState(run?.currentPuzzle)?run.currentPuzzle:null,currentCombat:isCombatCheckpoint(run?.currentCombat)?run.currentCombat:null,artifacts:normalizeArtifacts(run?.artifacts),combatArtifactChoice:isCombatArtifactChoice(run?.combatArtifactChoice)?run.combatArtifactChoice:null};
-  // Auto-paid industry production is accrued by the existing Kingdom calendar.
-  // Persist the resource addition and credited receipts in the SAME run write.
-  // Rewrites/reloads cannot pay the same week twice.
-  const next={...accrueRunStats(applyIndustryCredits(normalized),previous),updatedAt:Number(now)};
+  // Production remains pending until a player clicks the floating resource
+  // marker. The explicit collection writes currency + pending receipt together.
+  const next={...accrueRunStats(normalized,previous),updatedAt:Number(now)};
   if(!isValidRun(next))throw new Error('Cannot persist invalid RPChess run state');
   if(target)target.setItem(RUN_STORAGE_KEY,JSON.stringify(next));
   // Combat moves only change the run record; the cloud uploader must see these writes.
