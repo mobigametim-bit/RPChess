@@ -117,6 +117,14 @@ async function assertTileImage(page,cellId){
     'atlas 117px zoom selects an odd full-bleed grid for the viewport');
   const before=await read(page);
   assert(before.kingdomMap&&before.kingdomMap.cells['0,0'].annexed);
+  assert.equal(before.kingdomMap.worldGeneratorVersion,6,
+    'new Kingdom run uses the v6 deterministic world generator');
+  await page.evaluate(()=>globalThis.RPChessKingdomMap.open());
+  const reopened=await read(page);
+  assert.equal(reopened.kingdomMap.worldGeneratorVersion,6,
+    'reopening a v6 save must never downgrade or regenerate its world');
+  assert.equal(reopened.kingdomMap.seed,before.kingdomMap.seed,
+    'world seed and scouted events remain stable across reopen');
   // The castle hire list uses shipped race chess-piece art and the real Gold icon.
   const recruitArt=await page.locator('.km-castle-recruit').evaluateAll(async rows=>Promise.all(rows.map(async row=>{
     const piece=row.querySelector('.km-castle-recruit__piece'),coin=row.querySelector('.km-castle-recruit__gold');
