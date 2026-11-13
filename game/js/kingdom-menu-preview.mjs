@@ -147,10 +147,11 @@ function render(){
   const view=b.center;
   const resolution=Math.min(1,MAX_CANVAS/Math.max(b.columns*PARCHMENT_TILE,b.rows*PARCHMENT_TILE));
   const parchment=canvas('mm-kingdom-parchment'),overlay=canvas('mm-kingdom-overlay');
+  const details=canvas('mm-kingdom-details');
   const actors=canvas('mm-kingdom-actors'),fog=canvas('mm-kingdom-fog');
-  world.append(parchment,overlay,actors);
-  renderParchment(parchment,{seed:map.seed,view,columns:b.columns,rows:b.rows,map,resolution});
-  drawKingdomOverlay(overlay,{map,view,columns:b.columns,rows:b.rows,drawBorder:false,drawRoads:false,resolution});
+  world.append(parchment,overlay,details,actors);
+  renderParchment(parchment,{seed:map.seed,view,columns:b.columns,rows:b.rows,map,resolution,detailCanvas:details});
+  drawKingdomOverlay(overlay,{map,view,columns:b.columns,rows:b.rows,drawBorder:true,drawRoads:false,resolution});
   animateTravelers(actors,{map,view,columns:b.columns,rows:b.rows,parchment:true,resolution});
   const items=document.createElement('div');items.className='mm-kingdom-items';
   const add=(src,point,klass,size)=>{
