@@ -1,12 +1,12 @@
 {
   "format": "rpchess.atlas-lab.v7",
-  "generator": "RPChess Kingdom World v6; canonical geography and biome landmarks",
+  "generator": "RPChess Kingdom World v6; unified rivers, roads and semantic biomes",
   "worldGeneratorVersion": 6,
   "visual": {
     "seed": "rpchess-kingdom-2026",
-    "centerX": 1.1397535385320217,
-    "centerY": 0.8734816261574075,
-    "zoom": 117,
+    "centerX": 3.5379944557118823,
+    "centerY": 0.736819093752616,
+    "zoom": 57,
     "landScale": 9.4,
     "detailScale": 4.2,
     "wetScale": 7.5,
@@ -15,14 +15,14 @@
     "hillThreshold": 0.56,
     "forestThreshold": 0.44,
     "stampSpacing": 1.55,
-    "forestDensity": 2.4,
+    "forestDensity": 3,
     "mountainDensity": 1.4,
     "hillDensity": 0.9,
     "plainDensity": 0.35,
-    "stampSize": 2.2,
-    "sizeVariation": 1.05,
+    "stampSize": 2,
+    "sizeVariation": 0.5,
     "stampOpacity": 1,
-    "baseOpacity": 1,
+    "baseOpacity": 0.18,
     "baseSpacing": 6.5,
     "roadSpacing": 5,
     "roadWidth": 1.65,
@@ -41,7 +41,7 @@
     "landmarkSize": 0.75,
     "landmarkOpacity": 1,
     "fogOpacity": 0.98,
-    "fogRadius": 1.1,
+    "fogRadius": 2,
     "fogInner": 0.32,
     "fogInkOpacity": 0.2
   },
@@ -211,7 +211,14 @@
     ],
     "eventRadius": 1,
     "eventNearbyMax": 3,
-    "settlementProbabilityMultiplier": 1.2
+    "settlementProbabilityMultiplier": 1.2,
+    "initialPower": 600,
+    "powerGain": 30,
+    "outpostCost": 30,
+    "weeklyGold": 10,
+    "weeklySupplies": 2,
+    "weeklyShards": 1
   },
-  "notes": "Review preset only. v5 legacy worlds keep their prior coordinate mapping; do not alter saved worlds in place. Economic simulation knobs are provisional and not applied to the production economy."
+  "notes": "Owner-approved Atlas Lab v7 preset (6). Economic simulation controls remain sandbox-only; no change to production economy. Existing v4/v5 saved world coordinates remain untouched.",
+  "savedAt": "2026-11-13T22:34:29.139Z"
 }
