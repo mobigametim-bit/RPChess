@@ -74,6 +74,32 @@ const path=require('path'),assert=require('assert'),fs=require('fs'),{pathToFile
 
   const v4Sample=data.eventById('E101');assert(v4Sample);let v4Run=persistence.createRun({id:'events-v4-sample',now:4});v4Run={...v4Run,gold:100,activeTravelChoice:{...route,seed:'events-v4-sample-seed'},currentTravelChoices:null,journeyStep:1,currentEvent:{routeId:route.id,eventId:'E101',choiceId:null,roll:null,success:null,resolved:false,outcome:null,combat:null}};const v4Choice=core.resolveEventChoice(v4Run,'E101.1');assert.strictEqual(v4Choice.success,true);assert(v4Choice.run.gold<=86,'E101.1 must charge its authored 14 Gold cost');assert.strictEqual(v4Choice.run.supplies>=10,true);
 
+  // Legacy events: guaranteed blood-price wound, refundable bond, and goblin Gold reward.
+  const legacyRun=(eventId,tag)=>{const seedRun=persistence.createRun({id:`legacy-${tag}`,now:5});return {...seedRun,gold:100,journeyStep:1,activeTravelChoice:{...route,seed:`legacy-${tag}-seed`},currentEvent:{routeId:route.id,eventId,choiceId:null,roll:null,success:null,resolved:false,outcome:null,combat:null}};};
+  const bloodChoice=core.normalizedEvent('E037').choices.find(c=>c.id==='E037.3');
+  assert.deepStrictEqual(bloodChoice.successEffects,[{type:'wound',target:'randomNonKing'},{type:'gold',delta:50}],'E037.3 must wound a non-King before paying 50 Gold');
+  const bloodRun=legacyRun('E037','blood'),soloBlood={...bloodRun,roster:bloodRun.roster.filter(hero=>hero.isRunKing)},woundedBlood={...bloodRun,roster:bloodRun.roster.map(hero=>hero.isRunKing?hero:{...hero,status:'wounded'})};
+  for(const blocked of [soloBlood,woundedBlood]){assert.strictEqual(core.choiceAvailability(blocked,bloodChoice).enabled,false,'E037.3 must require a healthy non-King');assert.strictEqual(core.resolveEventChoice(blocked,'E037.3').reason,'wound-needs-companion','blocked blood-price may not award Gold');}
+  const bloodResult=core.resolveEventChoice(bloodRun,'E037.3');
+  assert.strictEqual(bloodResult.run.gold,bloodRun.gold+50);
+  assert.strictEqual(bloodResult.run.roster.filter(hero=>!hero.isRunKing&&hero.status==='wounded').length,bloodRun.roster.filter(hero=>!hero.isRunKing&&hero.status==='wounded').length+1,'exactly one companion must be wounded');
+  assert.strictEqual(bloodResult.run.roster.find(hero=>hero.isRunKing).status,bloodRun.roster.find(hero=>hero.isRunKing).status,'King is immune to blood price');
+  assert.strictEqual(core.resolveEventChoice(bloodResult.run,'E037.3').reason,'already-resolved','replay must not pay or wound twice');
+
+  const bond=core.resolveEventChoice(legacyRun('E044','bond'),'E044.1');
+  assert.strictEqual(bond.run.gold,100,'E044.1 must refund the entire 12 Gold bond');
+  assert.strictEqual(bond.outcome.combat,null,'E044.1 must remain a safe passage');
+
+  const goblinChoice=core.normalizedEvent('E084').choices.find(c=>c.id==='E084.2');
+  assert.deepStrictEqual(goblinChoice.successEffects,[{type:'gold',delta:20}],'E084.2 success must award 20 Gold, map is narrative-only');
+  const goblinSample=(success)=>{for(let index=0;index<300;index++){const candidate=legacyRun('E084',`goblin-${index}`),roll=core.deterministicRoll(candidate,candidate.currentEvent,goblinChoice);if((roll<=goblinChoice.chance)===success)return candidate;}throw Error('Cannot find both deterministic goblin outcomes');};
+  const goblinWin=goblinSample(true),goblinLose=goblinSample(false);
+  const goblinReward=core.resolveEventChoice(goblinWin,'E084.2'),goblinFight=core.resolveEventChoice(goblinLose,'E084.2');
+  assert.strictEqual(goblinReward.run.gold,120,'E084.2 success must actually add 20 Gold');
+  assert.strictEqual(goblinReward.outcome.combat,null);
+  assert.strictEqual(goblinFight.run.gold,100,'E084.2 failure must not grant Gold');
+  assert.strictEqual(goblinFight.outcome.combat?.type,'skirmish','E084.2 failure must still trigger Skirmish');
+
   const kingRisks=[];for(const e of data.EVENT_CATALOG)for(const raw of e.choices){const c=core.normalizeChoice(raw),all=[...c.successEffects,...c.failureEffects,...c.alwaysEffects],kingDeath=all.some(x=>x.type==='death'&&x.target==='king');if(kingDeath){kingRisks.push(c.id);assert.strictEqual(c.kingRisk,true);assert(c.warnings.some(w=>w.includes('КОРОЛЬ')));}for(const effect of all)if(effect.type==='death'&&effect.target==='randomNonKing')assert.notStrictEqual(effect.target,'king');}assert.strictEqual(kingRisks.length,4);
 
   const base=persistence.createRun({id:'wounded-king',now:3}),woundedKing={...base,roster:base.roster.map(c=>c.isRunKing?{...c,status:'wounded'}:c)};const skirmish=await import(pathToFileURL(path.join(game,'js/skirmish-core.mjs')).href);const battle=await import(pathToFileURL(path.join(game,'js/battle-core.mjs')).href);assert(skirmish.defaultCombatSelection(woundedKing.roster).includes(woundedKing.roster.find(c=>c.isRunKing).id));assert(battle.defaultBattleSelection(woundedKing.roster).includes(woundedKing.roster.find(c=>c.isRunKing).id));
