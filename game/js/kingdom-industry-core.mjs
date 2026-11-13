@@ -2,6 +2,8 @@
 import {worldAt} from './kingdom-world-core.mjs';
 import {randomAt} from './kingdom-parchment-core.mjs';
 import {VISUAL} from './kingdom-world-config.mjs';
+import {closestRiver,naturalTileOccupancy} from './kingdom-geography.mjs';
+import {bezierPoint} from './kingdom-road-travelers.mjs';
 import {hashString} from './travel-choice-core.mjs';
 import {DEFAULT_KINGDOM_ECONOMY} from './kingdom-economy-config.mjs';
 
@@ -28,18 +30,9 @@ const KEY=/^-?\d+,-?\d+$/;
 // Keep this aligned with drawWaterRoads() in kingdom-parchment-app.mjs,
 // which uses the visual randomAt hash (not atlasRandom used for encounters).
 function nearVisibleRiver(seed,x,y){
- const spacing=Math.max(1,VISUAL.riverSpacing);
- const drift=randomAt(seed,1,1,'river')*spacing*(12/17);
- const centerX=x+.5,centerY=y+.5;
- const nearest=Math.round((centerX-drift)/spacing);
- for(let i=nearest-2;i<=nearest+2;i++){
-  const riverX=i*spacing+drift+
-   Math.sin(centerY*.21+i*1.7)*2.15*VISUAL.riverCurve+
-   Math.sin(centerY*.79+i*.3)*.55;
-  if(Math.abs(riverX-centerX)<=.48)return true;
- }
- return false;
+ return closestRiver(seed,x+.5,y+.5).distance<=.48;
 }
+
 const integer=n=>Number.isSafeInteger(n)&&n>=0;
 const key=(x,y)=>x+','+y;
 function industryLevel(map){
@@ -82,6 +75,28 @@ function occupiedRoadCells(map){
    for(const id of [road.from,road.to])if(KEY.test(id||''))occupied.add(id);
  return occupied;
 }
+// Shared construction occupancy for production, manual Settlements and Outposts.
+function builtRoadCrossesTile(map,x,y){
+ const roadLists=['royalRoads','completedRoads','outpostRoads'];
+ for(const list of roadLists)for(const edge of map?.[list]||[]){
+  const a=edge?.from?.split(',').map(Number),b=edge?.to?.split(',').map(Number);
+  if(a?.length!==2||b?.length!==2||![...a,...b].every(Number.isFinite))continue;
+  const spread=Math.abs(Number(edge.bend)||0)+1.1;
+  if(x>Math.max(a[0],b[0])+spread||x+1<Math.min(a[0],b[0])-spread||
+     y>Math.max(a[1],b[1])+spread||y+1<Math.min(a[1],b[1])-spread)continue;
+  const length=Math.hypot(a[0]-b[0],a[1]-b[1])+Math.abs(edge.bend||0)*2;
+  const samples=Math.max(24,Math.min(2400,Math.ceil(length*20)));
+  for(let i=0;i<=samples;i++){
+   const p=bezierPoint(edge,i/samples);
+   if(p&&p.x>=x-.09&&p.x<=x+1.09&&p.y>=y-.09&&p.y<=y+1.09)return true;
+  }
+ }
+ return false;
+}
+function siteHasGeographyConflict(map,x,y){
+ const natural=naturalTileOccupancy(map.seed,x,y);
+ return natural.road||natural.river||builtRoadCrossesTile(map,x,y);
+}
 function candidateCells(map,industry=map?.industry){
  if(!map||!map.castle||!map.seed)return [];
  const owned=new Set([key(map.castle.x,map.castle.y),...(map.centralOwnedCells||[]),
@@ -99,9 +114,9 @@ function candidateCells(map,industry=map?.industry){
   if(!KEY.test(id)||occupied.has(id))continue;
   const [x,y]=id.split(',').map(Number);
   if(!Number.isSafeInteger(x)||!Number.isSafeInteger(y))continue;
-  const terrain=worldAt(map.seed,x,y);
+  const terrain=worldAt(map.seed,x,y,{worldGeneratorVersion:map.worldGeneratorVersion||5});
   if(!TYPES_BY_BIOME[terrain.biome]?.length||terrain.type||
-     terrain.paths?.road||terrain.landmark)continue;
+     terrain.paths?.road||terrain.landmark||siteHasGeographyConflict(map,x,y))continue;
   // A wet cell with no drawn water is forest in the player's view.
   // Give it normal forest buildings instead of losing its weekly site.
   const industryBiome=terrain.biome==='marsh'&&!nearVisibleRiver(map.seed,x,y)?'forest':terrain.biome;
@@ -183,5 +198,5 @@ function industrySpriteIndex(site,week){
  return INDUSTRY_ATLAS_ORDER.indexOf(site.builtWeek>=week?'construction_site':site.kind);
 }
 export {BUILDING_TYPES,TYPES_BY_BIOME,BUILDING_DIR,INDUSTRY_ATLAS,INDUSTRY_ATLAS_ORDER,initialIndustry,validIndustry,
- occupiedRoadCells,candidateCells,selectConstruction,realignLandlockedPiers,nearVisibleRiver,settleIndustryWeek,
+ occupiedRoadCells,builtRoadCrossesTile,siteHasGeographyConflict,candidateCells,selectConstruction,realignLandlockedPiers,nearVisibleRiver,settleIndustryWeek,
  industryLevel,industryBase,industryYield,industryPending,collectIndustry,industrySprite,industrySpriteIndex};
