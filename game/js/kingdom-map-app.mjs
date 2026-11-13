@@ -20,7 +20,8 @@ import {kingdomMapSprite,kingdomEncounterSprite} from './kingdom-map-assets.mjs'
 import {renderParchment,renderParchmentFog} from './kingdom-parchment-app.mjs?v=20261112-fog98-v1';
 import {drawKingdomOverlay} from './kingdom-map-overlay.mjs?v=20261112-province-colors-v1';
 import {animateTravelers,stopTravelers} from './kingdom-traveler-renderer.mjs?v=20261111-npc-floor-v1';
-import {industrySprite,industrySpriteIndex,industryYield,industryLevel,BUILDING_TYPES} from './kingdom-industry-core.mjs';
+import {industrySprite,industrySpriteIndex,industryYield,industryLevel,industryPending,collectIndustry,BUILDING_TYPES} from './kingdom-industry-core.mjs';
+import {worldAt} from './kingdom-world-core.mjs';
 import {ATLAS_VIEW} from './kingdom-world-config.mjs?v=20261109-atlas-visual5';
 import {subscribe,currentLanguage,t} from './i18n.mjs';
 import {runtimeT} from '../localization/runtime-ui.mjs';
@@ -31,7 +32,7 @@ import {createKingdomMap,validateKingdomMap,updatePeak,randomEncounter,enterCell
 
 const COPY={
  ru:{day:'День',shards:'Осколки чести',castle:'Замок',supply:'Припасы',power:'Мощь',points:'Очки присоединения',
-   hidden:'Неизведанная территория',empty:'Спокойная местность',safeTerrain:'Здесь нет дорожного события.',annex:'Присоединить · 1 очко',annexed:'В составе королевства',
+   hidden:'Неизведанная территория',empty:'Местность',safeTerrain:'',annex:'Присоединить · 1 очко',annexed:'В составе королевства',
    complete:'Пройдена',failed:'Неудача — повторная попытка',inProgress:'Встреча продолжается',
    return:'К отряду',reveal:'Открыта встреча',entry:'Начинается',services:'Услуги поселения',
    pending:'Открываю путь…',level:'Уровень',unavailable:'Недоступно для присоединения',lands:'Владения',
@@ -44,7 +45,7 @@ const COPY={
    productionSite:'Строится',productionWeekly:'за неделю',productionSupplies:'припасов',productionGold:'золота',
  zoomGroup:'Масштаб карты',zoomIn:'Увеличить масштаб',zoomOut:'Уменьшить масштаб',zoomReset:'Сбросить масштаб карты'},
  en:{day:'Day',shards:'Honor shards',castle:'Castle',supply:'Supplies',power:'Power',points:'Annexation points',
-   hidden:'Unexplored territory',empty:'Quiet terrain',safeTerrain:'No encounter at this location.',annex:'Annex · 1 point',annexed:'Part of your kingdom',
+   hidden:'Unexplored territory',empty:'Terrain',safeTerrain:'',annex:'Annex · 1 point',annexed:'Part of your kingdom',
    complete:'Cleared',failed:'Failed — retry encounter',inProgress:'Encounter in progress',
    return:'Squad',reveal:'Encounter discovered',entry:'Entering',services:'Settlement services',
    pending:'Exploring…',level:'Level',unavailable:'Cannot annex yet',lands:'Territory',
@@ -66,6 +67,13 @@ const INDUSTRY_NAMES=Object.freeze({
   stone_quarry:'Stone quarry',sawmill:'Sawmill',oasis:'Oasis'}
 });
 function industryName(kind){return INDUSTRY_NAMES[lang()==='en'?'en':'ru'][kind]||kind;}
+const TERRAIN_NAMES=Object.freeze({
+ ru:{forest:'Лес',mountain:'Горы',hills:'Холмы',plains:'Равнина',
+  marsh:'Болото',wasteland:'Пустоши'},
+ en:{forest:'Forest',mountain:'Mountains',hills:'Hills',plains:'Plains',
+  marsh:'Marsh',wasteland:'Wasteland'}
+});
+function terrainName(biome){return TERRAIN_NAMES[lang()==='en'?'en':'ru'][biome]||tr('empty');}
 // Atlas view scales the original 142px logical tiles to an interactive 87px default.
 const MAP_LAYOUT=Object.freeze({cellPx:142,eventScalePercent:73,kingPx:92,inspectorWidthPercent:25});
 const MIN_COLUMNS=9,MIN_ROWS=7;
@@ -697,7 +705,7 @@ function render(){
     btn.style.backgroundImage='url("'+tileUrl+'")';
    }
    btn.setAttribute('aria-label',isCastle?tr('castle'):visible&&cell?.selectedEncounter?
-    t('travel.type.'+cell.selectedEncounter.type):cell?.type==='empty'?tr('empty'):tr('hidden'));
+    t('travel.type.'+cell.selectedEncounter.type):cell?.type==='empty'?terrainName(cell.biome||worldAt(map.seed,point.x,point.y).biome):tr('hidden'));
    // Outside scouting range: fog only, with no mystery punctuation or encounter placeholder.
    // Once scouted, the stored encounter SVG is drawn immediately on its revealed cell.
    if(isCastle&&cell){
@@ -759,6 +767,26 @@ function render(){
       ['','I','II','III','IV','V'][industryLevel(map)];
     btn.append(marker);
     btn.setAttribute('aria-label',industryName(industrySite.kind));
+    // Share existing floating collection UX with travel-event production.
+    // New sites become ready after their first completed weekly cycle.
+    const ready=industryPending(map,id);
+    if(ready&&owned){
+     const pickup=document.createElement('button');
+     pickup.type='button';pickup.className='km-production-marker';
+     pickup.dataset.kingdomCollect=id;
+     pickup.dataset.kingdomIndustryCollect=id;
+     pickup.dataset.productionKind=ready.kind;
+     pickup.style.left=((col+CENTER_X+.62)*100/WIDTH)+'%';
+     pickup.style.top=((row+CENTER_Y+.13)*100/HEIGHT)+'%';
+     const resourceIcon=document.createElement('img');
+     resourceIcon.src=ready.kind==='gold'?GOLD_ICON:SUPPLIES_ICON;
+     resourceIcon.alt='';
+     const amount=document.createElement('strong');amount.textContent=String(ready.amount);
+     pickup.append(resourceIcon,amount);
+     pickup.setAttribute('aria-label',tr('collect')+': '+
+      (ready.kind==='gold'?tr('productionGold'):tr('productionSupplies'))+' '+ready.amount);
+     productions.append(pickup);
+    }
    }
    if(visible&&cell?.production&&owned&&cell.status==='completed'){
     const item=cell.production,marker=document.createElement('button');
@@ -871,13 +899,13 @@ function render(){
     tr(weeklyYield.kind==='gold'?'productionGold':'productionSupplies')+' '+tr('productionWeekly'):
    tr('productionSite')):null;
   const header=(map.outposts||[]).some(p=>p.id===(selected||keyOf(map.king.x,map.king.y)))?tr('outpost'):info?.type==='castle'?tr('castle'):
-   info?.type==='empty'?tr('empty'):info?.selectedEncounter?t('travel.type.'+info.selectedEncounter.type):tr('hidden');
+   info?.type==='empty'?terrainName(info.biome||worldAt(map.seed,...selectedId.split(',').map(Number)).biome):info?.selectedEncounter?t('travel.type.'+info.selectedEncounter.type):tr('hidden');
   const description=(map.outposts||[]).some(p=>p.id===(selected||keyOf(map.king.x,map.king.y)))?tr('outpostDetail'):info?.type==='castle'?tr('level')+' '+['','I','II','III','IV','V'][castleLevel(map.peakKingPower)]:
-   info?.type==='empty'?tr('safeTerrain'):
+   info?.type==='empty'?'':
    info?.status==='completed'?tr('complete'):tr('discover');
   screen.querySelector('[data-kingdom-inspector-title]').textContent=
    industrySite?industryName(industrySite.kind):header;
-  screen.querySelector('[data-kingdom-inspector-text]').textContent=industryDetail||description;
+  screen.querySelector('[data-kingdom-inspector-text]').textContent=industryDetail??description;
  }
  const ann=screen.querySelector('[data-kingdom-annex]'),outpost=screen.querySelector('[data-kingdom-outpost]'),earn=screen.querySelector('[data-kingdom-earn-shards]'),settlementBuild=screen.querySelector('[data-kingdom-build-settlement]');
  const id=selectedId;
@@ -926,8 +954,21 @@ function showEconomyBurst(id,kind,amount){
   if(screen&&!screen.hidden)render();},RESOURCE_FX_MS);
 }
 function claimWeekly(id){
- const run=readRun(),item=run?.kingdomMap?.cells?.[id]?.production;
- if(!run||run.ended||run.activeTravelChoice||run.kingdomMap?.pendingCell||!item)return;
+ const run=readRun();
+ if(!run||run.ended||run.activeTravelChoice||run.kingdomMap?.pendingCell)return;
+ const industry=collectIndustry(run.kingdomMap,id);
+ if(industry.ok){
+  const next={...run,kingdomMap:industry.map,
+   ...(industry.kind==='gold'?{gold:run.gold+industry.amount}:{}),
+   ...(industry.kind==='supplies'?{supplies:run.supplies+industry.amount}:{})};
+  writeRun(next);showEconomyBurst(id,industry.kind,industry.amount);
+  selected=id;render();
+  globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated',{detail:{source:'kingdom-industry-collected'}}));
+  globalThis.dispatchEvent(new CustomEvent('rpchess:kingdom-production-collected'));
+  return;
+ }
+ const item=run.kingdomMap?.cells?.[id]?.production;
+ if(!item)return;
  if(item.kind==='battle'){
   const acknowledged=acknowledgeReturn(run.kingdomMap,id);
   if(!acknowledged.ok)return;
