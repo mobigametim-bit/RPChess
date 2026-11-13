@@ -164,6 +164,16 @@ async function assertTileImage(page,cellId){
   assert.equal(await settlementButton.isVisible(),true,'an eligible explored empty cell can host a Settlement');
   assert.equal(await settlementButton.isDisabled(),true,'insufficient Gold must block construction');
   assert.equal(await settlementButton.getAttribute('aria-disabled'),'true');
+  const settlementIcon=await settlementButton.locator('.km-action-illustration').getAttribute('src');
+  assert.equal(settlementIcon,'assets/ui/build_settlement_128.png',
+    'compact settlement action uses the owner-supplied construction PNG');
+  assert.deepEqual(await settlementButton.locator('.km-action-price strong').allTextContents(),
+    ['160','30'],'two numeric settlement costs have no text or plus sign');
+  assert.deepEqual(await settlementButton.locator('.km-action-price img').evaluateAll(images=>images.map(i=>i.getAttribute('src'))),
+    ['generated_assets/reward_gold.png','assets/arena/mirror_shard.png']);
+  const settlementSize=await settlementButton.boundingBox();
+  assert(Math.abs(settlementSize.width-settlementSize.height)<2&&settlementSize.width<=102,
+    'settlement purchase action must be square and compact');
   await page.evaluate(storage=>{
     const run=JSON.parse(localStorage.getItem(storage));run.gold=1000;
     localStorage.setItem(storage,JSON.stringify(run));
@@ -361,13 +371,19 @@ async function assertTileImage(page,cellId){
       'NPC walking atlas must decode with its real 256x320 sprite sheet: '+JSON.stringify(atlasStatus));
   }
   const boundaryLayer=await page.evaluate(()=>{
-    const terrain=document.querySelector('.km-parchment-canvas');
-    const completedRoads=document.querySelector('.km-kingdom-overlay');
-    return {count:Number(terrain?.dataset.borderSegments),terrainZ:Number(getComputedStyle(terrain).zIndex),
-      playerRoadZ:Number(getComputedStyle(completedRoads).zIndex)};
+    const paper=document.querySelector('.km-parchment-canvas');
+    const politics=document.querySelector('.km-kingdom-overlay');
+    const details=document.querySelector('.km-parchment-details');
+    const z=element=>element?Number(getComputedStyle(element).zIndex):NaN;
+    return {count:Number(politics?.dataset.borderSegments),
+      enemy:Number(politics?.dataset.enemyProvinceCount),
+      paperZ:z(paper),politicsZ:z(politics),detailsZ:z(details),
+      paperAbovePolitics:z(paper)>z(politics)};
   });
-  assert(boundaryLayer.count>0&&boundaryLayer.terrainZ<boundaryLayer.playerRoadZ,
-    'territory boundary is on the original natural-road terrain layer, below later event roads');
+  assert(boundaryLayer.count>0&&boundaryLayer.paperZ<boundaryLayer.politicsZ&&
+    boundaryLayer.politicsZ<boundaryLayer.detailsZ,
+    'political boundaries must paint above paper and below all roads and natural details: '+
+    JSON.stringify(boundaryLayer));
   // Exercise actual uploaded sprites in the bundled dist, not just the
   // procedural Canvas fallback that worked before the artist supplied art.
   const parchmentFormat='png'; // PNG-only runtime without SVG fallback.
@@ -1023,12 +1039,13 @@ async function assertTileImage(page,cellId){
       'royal roads connect the Castle and all eligible scouted owned events, not only completed events');
    const pavedLayer=await page.locator('[data-kingdom-parchment]').evaluate(canvas=>({
      layer:canvas.dataset.roadLayer,segments:Number(canvas.dataset.playerRoadSegments),
-     z:Number(getComputedStyle(canvas).zIndex),
-     overlayZ:Number(getComputedStyle(document.querySelector('.km-kingdom-overlay')).zIndex)
+     baseZ:Number(getComputedStyle(canvas).zIndex),
+     overlayZ:Number(getComputedStyle(document.querySelector('.km-kingdom-overlay')).zIndex),
+     detailsZ:Number(getComputedStyle(document.querySelector('.km-parchment-details')).zIndex)
    }));
-   assert(pavedLayer.layer==='terrain'&&pavedLayer.segments>=1&&
-     pavedLayer.z<pavedLayer.overlayZ,
-     'player roads and organic roads must share the terrain canvas and alpha');
+   assert(pavedLayer.layer==='terrain-details'&&pavedLayer.segments>=1&&
+     pavedLayer.baseZ<pavedLayer.overlayZ&&pavedLayer.overlayZ<pavedLayer.detailsZ,
+     'natural and player-built roads must share the foreground terrain, above political ink');
    const composition=await page.evaluate(()=>{
      const overlay=document.querySelector('.km-kingdom-overlay');
      const site=document.querySelector('[data-kingdom-cell="0,1"] .km-object--site');
@@ -1270,6 +1287,12 @@ async function assertTileImage(page,cellId){
   assert(await buildButton.isVisible(),'safe explored unowned land enables the outpost button');
   assert.equal(await buildButton.locator('img.km-shard-inline').getAttribute('src'),
     'assets/arena/mirror_shard.png','outpost button uses Arena shard art');
+  assert.equal(await buildButton.locator('.km-action-illustration').getAttribute('src'),
+    'assets/ui/build_outpost_128.png','outpost button uses owner-supplied PNG');
+  assert.deepEqual(await buildButton.locator('.km-action-price strong').allTextContents(),['30']);
+  const outpostSize=await buildButton.boundingBox();
+  assert(Math.abs(outpostSize.width-outpostSize.height)<2&&outpostSize.width<=102,
+    'outpost purchase action must remain a compact square');
   assert(!(await buildButton.textContent()).includes('Осколки чести'),
     'outpost price never spells out the currency name');
   assert.equal(await buildButton.isDisabled(),false,'shared shards are enough for construction');
@@ -1343,6 +1366,12 @@ async function assertTileImage(page,cellId){
   assert(await earnButton.isVisible(),'insufficient shards offer the Earn in Arena button');
   assert.equal(await earnButton.locator('img.km-shard-inline').getAttribute('src'),
     'assets/arena/mirror_shard.png');
+  assert.equal(await earnButton.locator('.km-action-illustration').getAttribute('src'),
+    'assets/ui/main-menu-arena.png','Arena redirect uses the existing main-menu shield');
+  assert.equal(await earnButton.locator('.km-arena-shard').count(),1,
+    'Honor Shard must be visibly overlaid on Arena shield');
+  const earnSize=await earnButton.boundingBox();
+  assert(Math.abs(earnSize.width-earnSize.height)<2&&earnSize.width<=102);
   assert(await walking.locator('[data-kingdom-outpost]').isDisabled());
   const beforeArena=await read(walking);
   await earnButton.click();
@@ -1797,8 +1826,8 @@ async function assertTileImage(page,cellId){
     return {red:province.cells.length,owned:core.playerTerritoryCount(real),
       colors:[real.battleTerritories.find(p=>p.id===id)?.colorIndex,
         real.battleTerritories.find(p=>p.id===secondId)?.colorIndex],
-      provinces:document.querySelector('[data-kingdom-parchment]')?.dataset.enemyProvinceCount,
-      redBorders:document.querySelector('[data-kingdom-parchment]')?.dataset.enemyBorderSegments,
+      provinces:document.querySelector('[data-kingdom-overlay]')?.dataset.enemyProvinceCount,
+      redBorders:document.querySelector('[data-kingdom-overlay]')?.dataset.enemyBorderSegments,
       counter:document.querySelector('[data-kingdom-points]')?.textContent,
       blueOverlap:province.cells.filter(tile=>core.isOwned(real,tile))};
   },key);
@@ -1809,7 +1838,7 @@ async function assertTileImage(page,cellId){
   assert.equal(redStats.counter,String(redStats.owned),
     'territory HUD counts the actual unique owned area, excluding enemy provinces');
   assert.deepEqual(redStats.blueOverlap,[],'blue and red provinces must not overlap');
-  assert(Number(redStats.redBorders)>0,'colored Battle borders must draw on parchment');
+  assert(Number(redStats.redBorders)>0,'colored Battle borders must draw on the political overlay');
   if(process.env.RPCHESS_UI_SCREENSHOT_DIR){
     fs.mkdirSync(process.env.RPCHESS_UI_SCREENSHOT_DIR,{recursive:true});
     await enemy.screenshot({path:path.join(process.env.RPCHESS_UI_SCREENSHOT_DIR,
