@@ -152,14 +152,24 @@ async function assertTileImage(page,cellId){
     globalThis.RPChessKingdomMap.open();
   },key);
   // Resource affordability must be both semantic and visual, without a full map redraw.
-  await page.evaluate(storage=>{
+  const settlementCellId=await page.evaluate(async storage=>{
+    const {canBuildSettlement}=await import('./js/kingdom-map-core.mjs');
     const arenaKey='rpchess.reboot.v1.arena';
     globalThis.__castleEconomyFixture={run:localStorage.getItem(storage),arena:localStorage.getItem(arenaKey)};
     const run=JSON.parse(localStorage.getItem(storage));run.gold=0;
-    run.kingdomMap.cells['1,1']={type:'empty',status:'completed',explored:true,annexed:false,selectedEncounter:null};
+    let chosen=null;
+    for(let y=-2;y<=2&&!chosen;y++)for(let x=-3;x<=3&&!chosen;x++){
+      const id=x+','+y,previous=run.kingdomMap.cells[id];
+      run.kingdomMap.cells[id]={type:'empty',status:'completed',explored:true,annexed:false,selectedEncounter:null};
+      if(canBuildSettlement(run.kingdomMap,{x,y}))chosen=id;
+      else if(previous)run.kingdomMap.cells[id]=previous;
+      else delete run.kingdomMap.cells[id];
+    }
+    if(!chosen)throw Error('No truly unoccupied visible cell for Settlement purchase fixture');
     localStorage.setItem(storage,JSON.stringify(run));globalThis.RPChessKingdomMap.open();
+    return chosen;
   },key);
-  await page.locator('[data-kingdom-cell="1,1"]').evaluate(cell=>cell.click());
+  await page.locator('[data-kingdom-cell="'+settlementCellId+'"]').evaluate(cell=>cell.click());
   const settlementButton=page.locator('[data-kingdom-build-settlement]');
   assert.equal(await settlementButton.isVisible(),true,'an eligible explored empty cell can host a Settlement');
   assert.equal(await settlementButton.isDisabled(),true,'insufficient Gold must block construction');
