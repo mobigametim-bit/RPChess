@@ -89,7 +89,8 @@ class MemoryStorage {
   const kingdom=await import(pathToFileURL(path.join(game,'js/kingdom-map-core.mjs')).href);
   const industry=await import(pathToFileURL(path.join(game,'js/kingdom-industry-core.mjs')).href);
   const industryRun=persistence.createRun({now:3000,id:'production-weekly-fixture'});
-  let map=kingdom.createKingdomMap(industryRun,6500,'humans');
+  // Seed a wide owned QA area while keeping the initial Castle at level II.
+  let map={...kingdom.createKingdomMap(industryRun,6500,'humans'),peakKingPower:600};
   assert(industry.candidateCells(map).length>0,
     'large owned early-game territory must have at least one empty biome-compatible tile');
   assert.equal(map.industry.buildings.length,0,'new map has no industry before first weekly boundary');
