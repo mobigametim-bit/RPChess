@@ -23,7 +23,7 @@ const APPLY_EDITORIAL = (() => {
   if(c.chance<100 && (typeof o.failure!=="string"||o.failure.length<15))throw Error("Missing failure "+c.id);
   if(c.chance===100&&o.failure!=null)throw Error("Unexpected failure "+c.id);
   for(const [key,v]of Object.entries(o)){if(/\{\{(?:heroName|affectedHeroName)\}\}/.test(v)===false && v.includes("{{"))throw Error("Unknown token "+c.id);}
-  c.success=o.success;c.failure=c.chance<100?o.failure:null;c.editorial="bespoke";edited++;branches+=c.chance<100?2:1;done.add(c.id);
+  c.success=o.success;c.failure=c.chance<100?o.failure:null; if(o.recruitUnavailable){if(!c.variants?.success?.recruitUnavailable)throw Error("Unexpected recruit fallback "+c.id);c.variants.success.recruitUnavailable=o.recruitUnavailable;} if(o.noEligibleTarget){if(!c.variants?.failure?.noEligibleTarget)throw Error("Unexpected target fallback "+c.id);c.variants.failure.noEligibleTarget=o.noEligibleTarget;} c.editorial="bespoke";edited++;branches+=c.chance<100?2:1;done.add(c.id);
  }
  const missing=[...expected].filter(x=>!done.has(x));
  doc.meta={...doc.meta,bespokeEditorialChoices:doc.events.reduce((n,e)=>n+e.choices.filter(c=>c.editorial==="bespoke").length,0)};
