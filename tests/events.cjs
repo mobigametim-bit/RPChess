@@ -3,6 +3,7 @@ const path=require('path'),assert=require('assert'),fs=require('fs'),{pathToFile
   const game=path.resolve(__dirname,'..','game');
   const data=await import(pathToFileURL(path.join(game,'js/events-data.mjs')).href);
   const core=await import(pathToFileURL(path.join(game,'js/events-core.mjs')).href);
+  const editorial=await import(pathToFileURL(path.join(game,'js/event-literary-outcome.mjs')).href);
   const narrative=await import(pathToFileURL(path.join(game,'js/event-narrative.mjs')).href);
   const raceAssets=await import(pathToFileURL(path.join(game,'js/race-assets.mjs')).href);
   const persistence=await import(pathToFileURL(path.join(game,'js/run-persistence.mjs')).href);
@@ -100,11 +101,60 @@ const path=require('path'),assert=require('assert'),fs=require('fs'),{pathToFile
   assert.strictEqual(goblinFight.run.gold,100,'E084.2 failure must not grant Gold');
   assert.strictEqual(goblinFight.outcome.combat?.type,'skirmish','E084.2 failure must still trigger Skirmish');
 
+  // Editorial catalog is runtime-only prose: every base choice and every authored
+  // branch/fallback must exist without changing Event mechanics.
+  assert.strictEqual(Object.keys(editorial.LITERARY_OUTCOMES).length,2114);
+  const editedStrings=[];
+  let basicBranches=0, fallbackBranches=0;
+  for(const event of data.EVENT_CATALOG)for(const choice of event.choices){
+    const row=editorial.LITERARY_OUTCOMES[choice.id];
+    assert(row&&typeof row.s==='string'&&row.s.trim(),`Missing literary success ${choice.id}`);
+    editedStrings.push(row.s);basicBranches++;
+    if(choice.chance<100){assert(typeof row.f==='string'&&row.f.trim(),`Missing literary failure ${choice.id}`);editedStrings.push(row.f);basicBranches++;}
+    else assert(!row.f,`Guaranteed choice must not invent a failure text: ${choice.id}`);
+    for(const prose of Object.values(row.v||{})){assert(typeof prose==='string'&&prose.trim());editedStrings.push(prose);fallbackBranches++;}
+  }
+  assert.strictEqual(basicBranches,3388);
+  assert.strictEqual(fallbackBranches,376);
+  assert.strictEqual(new Set(editedStrings).size,3764,'All 3764 authored outcome texts must remain unique');
+
+  const bloodNarrative=editorial.literaryOutcomeForEvent(core.normalizedEvent('E037'),bloodResult.outcome,bloodResult.run,'ru');
+  const actualVictim=bloodResult.outcome.effectReceipts.find(receipt=>receipt.type==='wound');
+  assert(actualVictim?.targetId&&actualVictim?.targetName,'Event outcome must preserve real victim receipt');
+  assert(bloodNarrative.includes(actualVictim.targetName),'Literary text must name the actually wounded fighter');
+  assert.strictEqual(editorial.literaryOutcomeForEvent(core.normalizedEvent('E037'),bloodResult.outcome,bloodResult.run,'en'),'','Never mix RU literary prose with English UI');
+  assert.strictEqual(editorial.literaryOutcomeForEvent(core.normalizedEvent('E037'),{...bloodResult.outcome,effectReceipts:undefined},bloodResult.run,'ru'),'','Legacy save without receipts must show notes only');
+  const goblinNarrative=editorial.literaryOutcomeForEvent(core.normalizedEvent('E084'),goblinReward.outcome,goblinReward.run,'ru');
+  assert(goblinNarrative.includes('золото')||goblinNarrative.includes('монеты'),'E084.2 must narrate its real Gold reward');
+  assert(goblinReward.outcome.effectReceipts.some(receipt=>receipt.type==='gold'&&receipt.delta===20));
+  const noTargetRow=editorial.LITERARY_OUTCOMES['E037.1'];
+  assert.strictEqual(editorial.literaryOutcomeForEvent(core.normalizedEvent('E037'),
+    {choiceId:'E037.1',success:false,effectReceipts:[{type:'death',skipped:true}],heroId:null},
+    bloodRun,'ru'),noTargetRow.v.nf,'Missing target must use the authored fallback, not falsely claim a death');
+  const recruitFallbackId=Object.keys(editorial.LITERARY_OUTCOMES).find(id=>editorial.LITERARY_OUTCOMES[id].v?.rs);
+  assert(recruitFallbackId);
+  const recruitEvent=core.normalizedEvent(recruitFallbackId.split('.')[0]);
+  const recruitChoice=recruitEvent.choices.find(choice=>choice.id===recruitFallbackId||choice.sourceChoiceId===recruitFallbackId);
+  assert(recruitChoice,'A v5 replacement must still resolve its base literary choice');
+  const recruitFallback=editorial.literaryOutcomeForEvent(recruitEvent,
+    {choiceId:recruitChoice.id,success:true,effectReceipts:[{type:'recruit',unavailable:true,delta:18}],heroId:null},
+    bloodRun,'ru');
+  assert.strictEqual(recruitFallback,editorial.LITERARY_OUTCOMES[recruitFallbackId].v.rs,
+    'No eligible recruit must use the 18 Gold fallback instead of claiming a hero joined');
+  let personalCount=0;
+  for(const eventId of data.EVENT_IDS)for(const choice of core.normalizedEvent(eventId).choices){
+    if(!choice.requiredHeroId)continue;
+    personalCount++;
+    assert(editorial.LITERARY_OUTCOMES[choice.sourceChoiceId],`Personal event ${choice.id} must reuse its sourceChoiceId prose`);
+  }
+  assert.strictEqual(personalCount,537,'All Events v5 personal choices must map to literary source data');
+
   const kingRisks=[];for(const e of data.EVENT_CATALOG)for(const raw of e.choices){const c=core.normalizeChoice(raw),all=[...c.successEffects,...c.failureEffects,...c.alwaysEffects],kingDeath=all.some(x=>x.type==='death'&&x.target==='king');if(kingDeath){kingRisks.push(c.id);assert.strictEqual(c.kingRisk,true);assert(c.warnings.some(w=>w.includes('КОРОЛЬ')));}for(const effect of all)if(effect.type==='death'&&effect.target==='randomNonKing')assert.notStrictEqual(effect.target,'king');}assert.strictEqual(kingRisks.length,4);
 
   const base=persistence.createRun({id:'wounded-king',now:3}),woundedKing={...base,roster:base.roster.map(c=>c.isRunKing?{...c,status:'wounded'}:c)};const skirmish=await import(pathToFileURL(path.join(game,'js/skirmish-core.mjs')).href);const battle=await import(pathToFileURL(path.join(game,'js/battle-core.mjs')).href);assert(skirmish.defaultCombatSelection(woundedKing.roster).includes(woundedKing.roster.find(c=>c.isRunKing).id));assert(battle.defaultBattleSelection(woundedKing.roster).includes(woundedKing.roster.find(c=>c.isRunKing).id));
 
   const appSource=fs.readFileSync(path.join(game,'js/events-app.mjs'),'utf8');
+  assert(appSource.includes('data-events-literary')&&appSource.includes('literaryOutcomeForEvent(event, outcome, activeRun, currentLanguage())'),'Centered Event modal must render persisted literary outcome and preserve EN fallback');
   const resourcesSource=fs.readFileSync(path.join(game,'js/ux-consistency.mjs'),'utf8');
   assert(resourcesSource.includes('suppl(?:y|ies)')&&resourcesSource.includes('iconize:iconizeText'),
     'shared resource iconizer must recognize both Supply and Supplies and expose explicit Event rendering');
