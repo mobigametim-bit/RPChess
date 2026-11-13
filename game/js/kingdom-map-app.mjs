@@ -60,10 +60,10 @@ const COPY={
 const INDUSTRY_NAMES=Object.freeze({
  ru:{farm:'Ферма',pasture:'Пастбище',fishing_pier:'Рыбацкий причал',
   hunting_lodge:'Охотничий домик',gold_mine:'Золотая шахта',
-  stone_quarry:'Каменоломня',sawmill:'Лесопилка'},
+  stone_quarry:'Каменоломня',sawmill:'Лесопилка',oasis:'Оазис'},
  en:{farm:'Farm',pasture:'Pasture',fishing_pier:'Fishing pier',
   hunting_lodge:'Hunting lodge',gold_mine:'Gold mine',
-  stone_quarry:'Stone quarry',sawmill:'Sawmill'}
+  stone_quarry:'Stone quarry',sawmill:'Sawmill',oasis:'Oasis'}
 });
 function industryName(kind){return INDUSTRY_NAMES[lang()==='en'?'en':'ru'][kind]||kind;}
 // Atlas view scales the original 142px logical tiles to an interactive 87px default.
