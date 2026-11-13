@@ -1772,16 +1772,20 @@ async function assertTileImage(page,cellId){
     if(map.seed!==originalSeed)throw Error('Production may not change the saved world seed');
     if(map.industry.buildings.length!==2)throw Error('Day 14 must have exactly two industries');
     const ready=map.industry.buildings[0];
-    const saved=persistence.writeRun({...run,kingdomMap:map},localStorage,Date.now());
-    globalThis.RPChessKingdomMap.open();
     const pending=industry.industryPending(map,ready.id);
     if(!pending)throw Error('A completed building must be collectible on week 2');
+    const terrain=industry.candidateCells(map).find(c=>
+      Math.abs(Number(c.id.split(',')[0]))<=3&&Math.abs(Number(c.id.split(',')[1]))<=2);
+    if(!terrain)throw Error('Expected a nearby empty and owned terrain tile');
+    map={...map,cells:{...map.cells,[terrain.id]:{
+      status:'completed',type:'empty',explored:true,annexed:true,biome:terrain.biome}}};
+    const persisted=persistence.writeRun({...run,kingdomMap:map},localStorage,Date.now());
+    globalThis.RPChessKingdomMap.open();
     return {id:ready.id,kind:ready.kind,amount:pending.amount,
-      resource:pending.kind,initialGold:saved.gold,initialSupplies:saved.supplies,
-      creditedGold:saved.kingdomMap.industry.creditedGold,
-      creditedSupplies:saved.kingdomMap.industry.creditedSupplies,
-      empty:industry.candidateCells(map).find(c=>Math.abs(Number(c.id.split(',')[0]))<=3 &&
-        Math.abs(Number(c.id.split(',')[1]))<=2)?.id};
+      resource:pending.kind,initialGold:persisted.gold,initialSupplies:persisted.supplies,
+      creditedGold:persisted.kingdomMap.industry.creditedGold,
+      creditedSupplies:persisted.kingdomMap.industry.creditedSupplies,
+      empty:terrain.id};
   });
   const tile=productionPage.locator('[data-kingdom-cell="'+industryResult.id+'"]');
   await tile.locator('.km-object--industry').waitFor({state:'attached',timeout:10000});
@@ -1790,7 +1794,7 @@ async function assertTileImage(page,cellId){
     const eventSprite=el.querySelector('.km-object--site');
     return {kind:el.dataset.kingdomIndustry,stage:el.dataset.kingdomIndustryStage,
       background:css.backgroundImage,badge:el.querySelector('.km-industry-level')?.textContent,
-      opacity:Number(css.opacity),width:sprite.getBoundingClientRect().width,
+      opacity:Number(css.opacity),width:Number.parseFloat(css.width),
       expectedWidth:Number.parseFloat(getComputedStyle(document.querySelector('.kingdom-map-screen'))
         .getPropertyValue('--km-event-size-px'))*.469,
       eventSprite:!!eventSprite};
