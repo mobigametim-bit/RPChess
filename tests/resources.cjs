@@ -103,6 +103,11 @@ class MemoryStorage {
   assert.equal(industry.industrySprite(site,1),'assets/kingdom-production/construction_site.png');
   const expected=industry.industryYield(site,map);
   assert([5,1].includes(industry.industryBase(expected.kind)));
+  assert.deepStrictEqual(industry.TYPES_BY_BIOME.wasteland,['oasis'],
+    'owner-added Oasis is the only wasteland production building');
+  assert.deepStrictEqual(industry.industryYield({kind:'oasis'},map),
+    {kind:'supplies',amount:industry.industryLevel(map)},
+    'Oasis produces one Supply per Castle level weekly');
   assert(!industry.candidateCells(map).some(candidate=>candidate.id===site.id),
     'industry cannot occupy an already occupied or existing road tile');
   assert.deepStrictEqual(kingdom.advanceDay(map,'industry-week:day7'),map,
