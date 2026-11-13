@@ -1,0 +1,5999 @@
+{
+  "schema": "event-outcomes-ru-v1",
+  "status": "editorial first-pass draft",
+  "events": [
+    {
+      "id": "E051",
+      "title": "Яйцо в пепле",
+      "race": "Дракониды",
+      "tone": "не задан",
+      "actors": "",
+      "story": "В старом кострище лежит огромное покрытое трещинами яйцо. Драконидская охотница требует оставить его в покое. На камнях видны следы когтей и старого огня, а голоса драконидов звучат тяжело и размеренно. Они уважают прямоту и силу решения, поэтому ждать бесконечно никто не станет.",
+      "choices": [
+        {
+          "id": "E051.1",
+          "action": "Отдать яйцо охотнице",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Несколько напряжённых мгновений спустя становится ясно: удалось отдать яйцо охотнице. Вскоре путь снова свободен.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E051.2",
+          "action": "Попытаться продать ей яйцо дороже",
+          "chance": 55,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ СТЫЧКА"
+          ],
+          "success": "Решительный шаг приносит плоды: удаётся продать ей яйцо дороже. Окружающие ещё долго обсуждают случившееся.",
+          "failure": "Замысел рассыпается на полпути: продать ей яйцо дороже не выходит. Возвращаться к этому разговору никто не предлагает.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E051.3",
+          "action": "Договориться о сопровождении",
+          "chance": 85,
+          "role": "queen",
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "{{heroName}} справляется с поручением, хотя поначалу почти никто не верил в успех. Отряд собирается и снова выходит на дорогу.",
+          "failure": "Расчёт {{heroName}} не выдерживает проверки. Все замолкают, понимая, что дело не сложилось.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E051.4",
+          "action": "Забрать яйцо",
+          "chance": 40,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ БИТВА"
+          ],
+          "success": "Вам удаётся забрать яйцо. Теперь можно оставить это место позади.",
+          "failure": "Как ни старается отряд, забрать яйцо не получается. Приходится продолжить путь, оставив неудачу позади.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "E052",
+      "title": "Клятва чешуи",
+      "race": "Дракониды",
+      "tone": "не задан",
+      "actors": "",
+      "story": "Молодой драконид ищет отряд, которому сможет присягнуть после изгнания из своего клана. Они уважают прямоту и силу решения, поэтому ждать бесконечно никто не станет. На камнях видны следы когтей и старого огня, а голоса драконидов звучат тяжело и размеренно.",
+      "choices": [
+        {
+          "id": "E052.1",
+          "action": "Принять его без условий",
+          "chance": 70,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Решительный шаг приносит плоды: удаётся принять его без условий. Окружающие ещё долго обсуждают случившееся.",
+          "failure": "Как ни старается отряд, принять его без условий не получается. Возвращаться к этому разговору никто не предлагает.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E052.2",
+          "action": "Проверить его в поединке",
+          "chance": 55,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "РИСК РАНЕНИЯ"
+          ],
+          "success": "После короткой заминки всё-таки удаётся проверить его в поединке. Отряд собирается и снова выходит на дорогу.",
+          "failure": "Попытка проверить его в поединке оборачивается неудачей. Все замолкают, понимая, что дело не сложилось.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E052.3",
+          "action": "Провести честный поединок",
+          "chance": 85,
+          "role": "knight",
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "РИСК РАНЕНИЯ"
+          ],
+          "success": "{{heroName}} берётся за поручение и находит решение. Теперь можно оставить это место позади.",
+          "failure": "{{heroName}} останавливается: продолжать становится опасно. Приходится продолжить путь, оставив неудачу позади.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E052.4",
+          "action": "Отказать",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Поначалу никто не верит в затею, но вы сумели отказать. Вскоре путь снова свободен.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "E053",
+      "title": "Пепельная дань",
+      "race": "Дракониды",
+      "tone": "не задан",
+      "actors": "",
+      "story": "Драконидские сборщики требуют дань за проход по дороге, которую они очистили от чудовищ. Они уважают прямоту и силу решения, поэтому ждать бесконечно никто не станет. На камнях видны следы когтей и старого огня, а голоса драконидов звучат тяжело и размеренно.",
+      "choices": [
+        {
+          "id": "E053.1",
+          "action": "Заплатить 16 Gold",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 16,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "После короткой заминки всё-таки удаётся заплатить 16 Gold. Отряд собирается и снова выходит на дорогу.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E053.2",
+          "action": "Заплатить 1 Supply",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 1
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Вам удаётся заплатить 1 Supply. Теперь можно оставить это место позади.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E053.3",
+          "action": "Оспорить право на дань",
+          "chance": 55,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ СТЫЧКА"
+          ],
+          "success": "Поначалу никто не верит в затею, но вы сумели оспорить право на дань. Вскоре путь снова свободен.",
+          "failure": "Замысел рассыпается на полпути: оспорить право на дань не выходит. Отряд уходит без желаемого результата.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E053.4",
+          "action": "Пересчитать долю отряда",
+          "chance": 85,
+          "role": "queen",
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Пока остальные спорят, {{heroName}} доводит дело до конца. Окружающие ещё долго обсуждают случившееся.",
+          "failure": "Даже {{heroName}} не удаётся справиться с поручением. Возвращаться к этому разговору никто не предлагает.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "E054",
+      "title": "Спящий дракон",
+      "race": "Дракониды",
+      "tone": "не задан",
+      "actors": "",
+      "story": "Дракониды сторожат вход в пещеру, где спит древний дракон. За молчание они предлагают плату. Они уважают прямоту и силу решения, поэтому ждать бесконечно никто не станет. На камнях видны следы когтей и старого огня, а голоса драконидов звучат тяжело и размеренно.",
+      "choices": [
+        {
+          "id": "E054.1",
+          "action": "Взять плату и уйти",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Вам удаётся взять плату и уйти. Теперь можно оставить это место позади.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E054.2",
+          "action": "Потребовать больше",
+          "chance": 55,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ СТЫЧКА"
+          ],
+          "success": "Поначалу никто не верит в затею, но вы сумели потребовать больше. Вскоре путь снова свободен.",
+          "failure": "Как ни старается отряд, потребовать больше не получается. Отряд уходит без желаемого результата.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E054.3",
+          "action": "Пробраться в пещеру",
+          "chance": 25,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ БИТВА"
+          ],
+          "success": "К удивлению свидетелей, вам удаётся пробраться в пещеру. Окружающие ещё долго обсуждают случившееся.",
+          "failure": "Замысел рассыпается на полпути: пробраться в пещеру не выходит. Возвращаться к этому разговору никто не предлагает.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E054.4",
+          "action": "Прочесть защитные знаки",
+          "chance": 85,
+          "role": "bishop",
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "РИСК РАНЕНИЯ"
+          ],
+          "success": "{{heroName}} справляется с поручением, хотя поначалу почти никто не верил в успех. Отряд собирается и снова выходит на дорогу.",
+          "failure": "Расчёт {{heroName}} не выдерживает проверки. Все замолкают, понимая, что дело не сложилось.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "E055",
+      "title": "Следы у водопоя",
+      "race": "Зверолюди",
+      "tone": "не задан",
+      "actors": "",
+      "story": "Зверолюди спорят за единственный безопасный водопой. Одни предлагают обмен, другие готовятся драться. Ветер приносит запах шерсти, кожи и костров, а вокруг то и дело мелькают быстрые силуэты. Зверолюди держатся настороженно, но любопытство пока сильнее желания прогнать чужаков.",
+      "choices": [
+        {
+          "id": "E055.1",
+          "action": "Купить 2 Supplies за 18 Gold",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 18,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Поначалу никто не верит в затею, но вы сумели купить 2 Supplies за 18 Gold. Вскоре путь снова свободен.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E055.2",
+          "action": "Предложить совместную охоту",
+          "chance": 70,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ СТЫЧКА"
+          ],
+          "success": "К удивлению свидетелей, вам удаётся предложить совместную охоту. Окружающие ещё долго обсуждают случившееся.",
+          "failure": "Как ни старается отряд, предложить совместную охоту не получается. Возвращаться к этому разговору никто не предлагает.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E055.3",
+          "action": "Разделить водопой по времени",
+          "chance": 85,
+          "role": "queen",
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "{{heroName}} справляется с поручением, хотя поначалу почти никто не верил в успех. Отряд собирается и снова выходит на дорогу.",
+          "failure": "Расчёт {{heroName}} не выдерживает проверки. Все замолкают, понимая, что дело не сложилось.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E055.4",
+          "action": "Прогнать их",
+          "chance": 40,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ БИТВА"
+          ],
+          "success": "Решительный шаг приносит плоды: удаётся прогнать их. Теперь можно оставить это место позади.",
+          "failure": "Попытка прогнать их приводит совсем не к тому результату, на который вы рассчитывали. Приходится продолжить путь, оставив неудачу позади.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "E056",
+      "title": "Рога на дереве",
+      "race": "Зверолюди",
+      "tone": "не задан",
+      "actors": "",
+      "story": "На дереве развешаны трофейные рога. Зверолюди считают место испытанием охотника. Зверолюди держатся настороженно, но любопытство пока сильнее желания прогнать чужаков. Ветер приносит запах шерсти, кожи и костров, а вокруг то и дело мелькают быстрые силуэты.",
+      "choices": [
+        {
+          "id": "E056.1",
+          "action": "Пройти испытание",
+          "chance": 70,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "РИСК РАНЕНИЯ"
+          ],
+          "success": "К удивлению свидетелей, вам удаётся пройти испытание. Окружающие ещё долго обсуждают случившееся.",
+          "failure": "Попытка пройти испытание приводит совсем не к тому результату, на который вы рассчитывали. Возвращаться к этому разговору никто не предлагает.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E056.2",
+          "action": "Преследовать самую опасную добычу",
+          "chance": 85,
+          "role": "knight",
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ СТЫЧКА"
+          ],
+          "success": "{{heroName}} справляется с поручением, хотя поначалу почти никто не верил в успех. Отряд собирается и снова выходит на дорогу.",
+          "failure": "Расчёт {{heroName}} не выдерживает проверки. Все замолкают, понимая, что дело не сложилось.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E056.3",
+          "action": "Срезать трофеи и уйти",
+          "chance": 55,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ СТЫЧКА"
+          ],
+          "success": "Решительный шаг приносит плоды: удаётся срезать трофеи и уйти. Теперь можно оставить это место позади.",
+          "failure": "Попытка срезать трофеи и уйти оборачивается неудачей. Приходится продолжить путь, оставив неудачу позади.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E056.4",
+          "action": "Не трогать место",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Никто не преграждает путь, когда вы оставляете это место позади. Вскоре путь снова свободен.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "E057",
+      "title": "Волчий наёмник",
+      "race": "Зверолюди",
+      "tone": "не задан",
+      "actors": "",
+      "story": "Одинокий зверолюд-наёмник предлагает меч за золото, но требует доказать, что отряд не трусы. Ветер приносит запах шерсти, кожи и костров, а вокруг то и дело мелькают быстрые силуэты. Зверолюди держатся настороженно, но любопытство пока сильнее желания прогнать чужаков.",
+      "choices": [
+        {
+          "id": "E057.1",
+          "action": "Заплатить 28 Gold",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 28,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Несколько напряжённых мгновений спустя становится ясно: удалось заплатить 28 Gold. Отряд собирается и снова выходит на дорогу.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E057.2",
+          "action": "Сбить цену",
+          "chance": 55,
+          "role": null,
+          "cost": {
+            "gold": 16,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Решительный шаг приносит плоды: удаётся сбить цену. Теперь можно оставить это место позади.",
+          "failure": "В самый неподходящий момент план срывается: сбить цену не удаётся. Приходится продолжить путь, оставив неудачу позади.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E057.3",
+          "action": "Принять проверочный поединок",
+          "chance": 85,
+          "role": "knight",
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "РИСК РАНЕНИЯ"
+          ],
+          "success": "{{heroName}} действует без лишнего шума; план срабатывает. Вскоре путь снова свободен.",
+          "failure": "{{heroName}} вынужден отступить: попытка не удалась. Отряд уходит без желаемого результата.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E057.4",
+          "action": "Отказаться",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Отряд уходит, предоставив другим решать свои проблемы. Окружающие ещё долго обсуждают случившееся.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "E058",
+      "title": "Ночной вой",
+      "race": "Зверолюди",
+      "tone": "не задан",
+      "actors": "",
+      "story": "Ночью лагерь окружает стая зверолюдей. Их вожак предлагает оставить еду и избежать боя. Ветер приносит запах шерсти, кожи и костров, а вокруг то и дело мелькают быстрые силуэты. Зверолюди держатся настороженно, но любопытство пока сильнее желания прогнать чужаков.",
+      "choices": [
+        {
+          "id": "E058.1",
+          "action": "Отдать 2 Supplies",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 2
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Решительный шаг приносит плоды: удаётся отдать 2 Supplies. Теперь можно оставить это место позади.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E058.2",
+          "action": "Отдать 16 Gold",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 16,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "После короткой заминки всё-таки удаётся отдать 16 Gold. Вскоре путь снова свободен.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E058.3",
+          "action": "Пугать ответным шумом",
+          "chance": 55,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ СТЫЧКА"
+          ],
+          "success": "Вам удаётся пугать ответным шумом. Окружающие ещё долго обсуждают случившееся.",
+          "failure": "Как ни старается отряд, пугать ответным шумом не получается. Возвращаться к этому разговору никто не предлагает.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E058.4",
+          "action": "Укрепить лагерь",
+          "chance": 85,
+          "role": "rook",
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ СТЫЧКА"
+          ],
+          "success": "{{heroName}} справляется с поручением, хотя поначалу почти никто не верил в успех. Отряд собирается и снова выходит на дорогу.",
+          "failure": "Расчёт {{heroName}} не выдерживает проверки. Все замолкают, понимая, что дело не сложилось.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E058.5",
+          "action": "Атаковать первым",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ БИТВА"
+          ],
+          "success": "К удивлению свидетелей, вам удаётся атаковать первым. Теперь можно оставить это место позади.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "E059",
+      "title": "Травница с кошачьими глазами",
+      "race": "Зверолюди",
+      "tone": "не задан",
+      "actors": "",
+      "story": "Зверолюд-травница продаёт сушёное мясо и травы. Она ищет редкую кость для своих настоев. Ветер приносит запах шерсти, кожи и костров, а вокруг то и дело мелькают быстрые силуэты. Зверолюди держатся настороженно, но любопытство пока сильнее желания прогнать чужаков.",
+      "choices": [
+        {
+          "id": "E059.1",
+          "action": "Купить 2 Supplies за 20 Gold",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 20,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "После короткой заминки всё-таки удаётся купить 2 Supplies за 20 Gold. Вскоре путь снова свободен.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E059.2",
+          "action": "Помочь найти кость",
+          "chance": 70,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Вам удаётся помочь найти кость. Окружающие ещё долго обсуждают случившееся.",
+          "failure": "Попытка помочь найти кость приводит совсем не к тому результату, на который вы рассчитывали. Возвращаться к этому разговору никто не предлагает.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E059.3",
+          "action": "Определить нужное место",
+          "chance": 90,
+          "role": "bishop",
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "{{heroName}} справляется с поручением, хотя поначалу почти никто не верил в успех. Отряд собирается и снова выходит на дорогу.",
+          "failure": "Расчёт {{heroName}} не выдерживает проверки. Все замолкают, понимая, что дело не сложилось.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E059.4",
+          "action": "Попытаться украсть сумку",
+          "chance": 40,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ СТЫЧКА"
+          ],
+          "success": "К удивлению свидетелей, вам удаётся украсть сумку. Теперь можно оставить это место позади.",
+          "failure": "Попытка украсть сумку оборачивается неудачей. Приходится продолжить путь, оставив неудачу позади.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "E060",
+      "title": "Долина следов",
+      "race": "Зверолюди",
+      "tone": "не задан",
+      "actors": "",
+      "story": "На земле сотни следов разных зверолюдских кланов. Один путь ведёт к лагерю, другой — к обозу. Зверолюди держатся настороженно, но любопытство пока сильнее желания прогнать чужаков. Ветер приносит запах шерсти, кожи и костров, а вокруг то и дело мелькают быстрые силуэты.",
+      "choices": [
+        {
+          "id": "E060.1",
+          "action": "Идти к лагерю",
+          "chance": 70,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ СТЫЧКА"
+          ],
+          "success": "Поначалу никто не верит в затею, но вы сумели идти к лагерю. Вскоре путь снова свободен.",
+          "failure": "Как ни старается отряд, идти к лагерю не получается. Отряд уходит без желаемого результата.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E060.2",
+          "action": "Идти к обозу",
+          "chance": 55,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ БИТВА"
+          ],
+          "success": "Вам удаётся идти к обозу. Окружающие ещё долго обсуждают случившееся.",
+          "failure": "Попытка идти к обозу оборачивается неудачей. Возвращаться к этому разговору никто не предлагает.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E060.3",
+          "action": "Разобрать следы",
+          "chance": 90,
+          "role": "knight",
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "{{heroName}} справляется с поручением, хотя поначалу почти никто не верил в успех. Отряд собирается и снова выходит на дорогу.",
+          "failure": "Расчёт {{heroName}} не выдерживает проверки. Все замолкают, понимая, что дело не сложилось.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E060.4",
+          "action": "Не рисковать",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Вы решаете не вмешиваться и ведёте отряд дальше. Теперь можно оставить это место позади.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "E061",
+      "title": "Спящий страж",
+      "race": "Конструкты",
+      "tone": "не задан",
+      "actors": "",
+      "story": "На перекрёстке стоит древний каменно-металлический конструкт. Его ядро едва светится, а у ног лежит закрытый сундук. Конструкты не проявляют эмоций, однако их неподвижное внимание ясно даёт понять: решение будет зафиксировано. Механический гул повторяется через равные промежутки, и даже тишина здесь кажется частью какого-то алгоритма.",
+      "choices": [
+        {
+          "id": "E061.1",
+          "action": "Открыть сундук",
+          "chance": 55,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ СТЫЧКА"
+          ],
+          "success": "Вам удаётся открыть сундук. Окружающие ещё долго обсуждают случившееся.",
+          "failure": "В самый неподходящий момент план срывается: открыть сундук не удаётся. Возвращаться к этому разговору никто не предлагает.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E061.2",
+          "action": "Запитать ядро за 1 Supply",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 1
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Несколько напряжённых мгновений спустя становится ясно: удалось запитать ядро за 1 Supply. Отряд собирается и снова выходит на дорогу.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E061.3",
+          "action": "Перенастроить механизм",
+          "chance": 85,
+          "role": "rook",
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "РИСК РАНЕНИЯ"
+          ],
+          "success": "{{heroName}} берётся за поручение и находит решение. Теперь можно оставить это место позади.",
+          "failure": "{{heroName}} останавливается: продолжать становится опасно. Приходится продолжить путь, оставив неудачу позади.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E061.4",
+          "action": "Обойти стража",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Никто не преграждает путь, когда вы оставляете это место позади. Вскоре путь снова свободен.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "E062",
+      "title": "Марш без приказа",
+      "race": "Конструкты",
+      "tone": "не задан",
+      "actors": "",
+      "story": "Колонна конструктов идёт по древней дороге и повторяет приказ, чей адресат давно исчез. Механический гул повторяется через равные промежутки, и даже тишина здесь кажется частью какого-то алгоритма. Конструкты не проявляют эмоций, однако их неподвижное внимание ясно даёт понять: решение будет зафиксировано.",
+      "choices": [
+        {
+          "id": "E062.1",
+          "action": "Попытаться остановить колонну",
+          "chance": 55,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ СТЫЧКА"
+          ],
+          "success": "Несколько напряжённых мгновений спустя становится ясно: удалось остановить колонну. Отряд собирается и снова выходит на дорогу.",
+          "failure": "В самый неподходящий момент план срывается: остановить колонну не удаётся. Все замолкают, понимая, что дело не сложилось.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E062.2",
+          "action": "Идти за ними к складу",
+          "chance": 70,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "К удивлению свидетелей, вам удаётся идти за ними к складу. Теперь можно оставить это место позади.",
+          "failure": "Как ни старается отряд, идти за ними к складу не получается. Приходится продолжить путь, оставив неудачу позади.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E062.3",
+          "action": "Расшифровать командную руну",
+          "chance": 90,
+          "role": "bishop",
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "{{heroName}} действует без лишнего шума; план срабатывает. Вскоре путь снова свободен.",
+          "failure": "{{heroName}} вынужден отступить: попытка не удалась. Отряд уходит без желаемого результата.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E062.4",
+          "action": "Не вмешиваться",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Отряд уходит, предоставив другим решать свои проблемы. Окружающие ещё долго обсуждают случившееся.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "E063",
+      "title": "Разбитый голем",
+      "race": "Конструкты",
+      "tone": "не задан",
+      "actors": "",
+      "story": "На обочине лежит расколотый боевой конструкт. Изнутри видны дорогие кристаллы и целое магическое ядро. Механический гул повторяется через равные промежутки, и даже тишина здесь кажется частью какого-то алгоритма. Конструкты не проявляют эмоций, однако их неподвижное внимание ясно даёт понять: решение будет зафиксировано.",
+      "choices": [
+        {
+          "id": "E063.1",
+          "action": "Снять кристаллы",
+          "chance": 70,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "РИСК РАНЕНИЯ"
+          ],
+          "success": "К удивлению свидетелей, вам удаётся снять кристаллы. Теперь можно оставить это место позади.",
+          "failure": "Попытка снять кристаллы приводит совсем не к тому результату, на который вы рассчитывали. Приходится продолжить путь, оставив неудачу позади.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E063.2",
+          "action": "Извлечь ядро",
+          "chance": 40,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ СТЫЧКА"
+          ],
+          "success": "После короткой заминки всё-таки удаётся извлечь ядро. Вскоре путь снова свободен.",
+          "failure": "Как ни старается отряд, извлечь ядро не получается. Отряд уходит без желаемого результата.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E063.3",
+          "action": "Разобрать безопасно",
+          "chance": 90,
+          "role": "rook",
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Пока остальные спорят, {{heroName}} доводит дело до конца. Окружающие ещё долго обсуждают случившееся.",
+          "failure": "Даже {{heroName}} не удаётся справиться с поручением. Возвращаться к этому разговору никто не предлагает.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E063.4",
+          "action": "Попробовать восстановить конструкта",
+          "chance": 55,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ СТЫЧКА"
+          ],
+          "success": "Поначалу никто не верит в затею, но вы сумели попробовать восстановить конструкта. Отряд собирается и снова выходит на дорогу.",
+          "failure": "Попытка попробовать восстановить конструкта приводит совсем не к тому результату, на который вы рассчитывали. Все замолкают, понимая, что дело не сложилось.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "E064",
+      "title": "Рунный мост",
+      "race": "Конструкты",
+      "tone": "не задан",
+      "actors": "",
+      "story": "Каменный мост поднимается только после правильной последовательности магических символов. Механический гул повторяется через равные промежутки, и даже тишина здесь кажется частью какого-то алгоритма. Конструкты не проявляют эмоций, однако их неподвижное внимание ясно даёт понять: решение будет зафиксировано.",
+      "choices": [
+        {
+          "id": "E064.1",
+          "action": "Подбирать последовательность",
+          "chance": 55,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "После короткой заминки всё-таки удаётся подбирать последовательность. Вскоре путь снова свободен.",
+          "failure": "Попытка подбирать последовательность приводит совсем не к тому результату, на который вы рассчитывали. Отряд уходит без желаемого результата.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E064.2",
+          "action": "Прочесть руны",
+          "chance": 90,
+          "role": "bishop",
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Пока остальные спорят, {{heroName}} доводит дело до конца. Окружающие ещё долго обсуждают случившееся.",
+          "failure": "Даже {{heroName}} не удаётся справиться с поручением. Возвращаться к этому разговору никто не предлагает.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E064.3",
+          "action": "Поднять мост вручную",
+          "chance": 70,
+          "role": "rook",
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "РИСК РАНЕНИЯ"
+          ],
+          "success": "{{heroName}} справляется с поручением, хотя поначалу почти никто не верил в успех. Отряд собирается и снова выходит на дорогу.",
+          "failure": "Расчёт {{heroName}} не выдерживает проверки. Все замолкают, понимая, что дело не сложилось.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E064.4",
+          "action": "Разрушить механизм",
+          "chance": 40,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ СТЫЧКА"
+          ],
+          "success": "Вам удаётся разрушить механизм. Теперь можно оставить это место позади.",
+          "failure": "Замысел рассыпается на полпути: разрушить механизм не выходит. Приходится продолжить путь, оставив неудачу позади.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "E065",
+      "title": "Мастерская без мастера",
+      "race": "Конструкты",
+      "tone": "не задан",
+      "actors": "",
+      "story": "Автоматическая мастерская продолжает работать в пустых руинах. На ленте появляются инструменты, монеты и запасные детали. Конструкты не проявляют эмоций, однако их неподвижное внимание ясно даёт понять: решение будет зафиксировано. Механический гул повторяется через равные промежутки, и даже тишина здесь кажется частью какого-то алгоритма.",
+      "choices": [
+        {
+          "id": "E065.1",
+          "action": "Забрать готовое",
+          "chance": 70,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ СТЫЧКА"
+          ],
+          "success": "Вам удаётся забрать готовое. Окружающие ещё долго обсуждают случившееся.",
+          "failure": "Замысел рассыпается на полпути: забрать готовое не выходит. Возвращаться к этому разговору никто не предлагает.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E065.2",
+          "action": "Переключить производство на провиант",
+          "chance": 55,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Поначалу никто не верит в затею, но вы сумели переключить производство на провиант. Отряд собирается и снова выходит на дорогу.",
+          "failure": "В самый неподходящий момент план срывается: переключить производство на провиант не удаётся. Все замолкают, понимая, что дело не сложилось.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E065.3",
+          "action": "Перенастроить станки",
+          "chance": 90,
+          "role": "rook",
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "{{heroName}} берётся за поручение и находит решение. Теперь можно оставить это место позади.",
+          "failure": "{{heroName}} останавливается: продолжать становится опасно. Приходится продолжить путь, оставив неудачу позади.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E065.4",
+          "action": "Отключить всё и уйти",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Несколько напряжённых мгновений спустя становится ясно: удалось отключить всё и уйти. Вскоре путь снова свободен.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "E066",
+      "title": "Свободное ядро",
+      "race": "Конструкты",
+      "tone": "не задан",
+      "actors": "",
+      "story": "Маленький разумный конструкт просит вынести его ядро из разрушенного корпуса и дать новый смысл существованию. Механический гул повторяется через равные промежутки, и даже тишина здесь кажется частью какого-то алгоритма. Конструкты не проявляют эмоций, однако их неподвижное внимание ясно даёт понять: решение будет зафиксировано.",
+      "choices": [
+        {
+          "id": "E066.1",
+          "action": "Помочь и принять в отряд",
+          "chance": 70,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Поначалу никто не верит в затею, но вы сумели помочь и принять в отряд. Отряд собирается и снова выходит на дорогу.",
+          "failure": "Замысел рассыпается на полпути: помочь и принять в отряд не выходит. Все замолкают, понимая, что дело не сложилось.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E066.2",
+          "action": "Продать ядро",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Вам удаётся продать ядро. Теперь можно оставить это место позади.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E066.3",
+          "action": "Стабилизировать память",
+          "chance": 90,
+          "role": "bishop",
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "{{heroName}} действует без лишнего шума; план срабатывает. Вскоре путь снова свободен.",
+          "failure": "{{heroName}} вынужден отступить: попытка не удалась. Отряд уходит без желаемого результата.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E066.4",
+          "action": "Оставить ядро",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Отряд уходит, предоставив другим решать свои проблемы. Окружающие ещё долго обсуждают случившееся.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "E067",
+      "title": "Белый олень",
+      "race": "Животные",
+      "tone": "не задан",
+      "actors": "",
+      "story": "Огромный белый олень стоит посреди дороги и не боится отряда. На его рогах висят золотые цепочки. Лес и дорога будто на мгновение замирают, пока звери оценивают незнакомый отряд. Здесь нельзя договориться привычными словами — придётся судить по поведению, следам и инстинктам.",
+      "choices": [
+        {
+          "id": "E067.1",
+          "action": "Следовать за оленем",
+          "chance": 70,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "К удивлению свидетелей, вам удаётся следовать за оленем. Теперь можно оставить это место позади.",
+          "failure": "Попытка следовать за оленем оборачивается неудачей. Приходится продолжить путь, оставив неудачу позади.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E067.2",
+          "action": "Попытаться снять цепочки",
+          "chance": 40,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "РИСК РАНЕНИЯ"
+          ],
+          "success": "Несколько напряжённых мгновений спустя становится ясно: удалось снять цепочки. Вскоре путь снова свободен.",
+          "failure": "Попытка снять цепочки приводит совсем не к тому результату, на который вы рассчитывали. Отряд уходит без желаемого результата.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E067.3",
+          "action": "Идти по следу, не приближаясь",
+          "chance": 90,
+          "role": "knight",
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Пока остальные спорят, {{heroName}} доводит дело до конца. Окружающие ещё долго обсуждают случившееся.",
+          "failure": "Даже {{heroName}} не удаётся справиться с поручением. Возвращаться к этому разговору никто не предлагает.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E067.4",
+          "action": "Оставить животное в покое",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Вы проходите мимо и сохраняете силы для дальнейшего пути. Отряд собирается и снова выходит на дорогу.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "E068",
+      "title": "Медвежья берлога",
+      "race": "Животные",
+      "tone": "не задан",
+      "actors": "",
+      "story": "У входа в пещеру лежат остатки разграбленного обоза. Внутри слышится тяжёлое дыхание. Лес и дорога будто на мгновение замирают, пока звери оценивают незнакомый отряд. Здесь нельзя договориться привычными словами — придётся судить по поведению, следам и инстинктам.",
+      "choices": [
+        {
+          "id": "E068.1",
+          "action": "Забрать ближайшие мешки",
+          "chance": 70,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ СТЫЧКА"
+          ],
+          "success": "Несколько напряжённых мгновений спустя становится ясно: удалось забрать ближайшие мешки. Вскоре путь снова свободен.",
+          "failure": "Попытка забрать ближайшие мешки оборачивается неудачей. Отряд уходит без желаемого результата.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E068.2",
+          "action": "Зайти глубже",
+          "chance": 40,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ БИТВА"
+          ],
+          "success": "Решительный шаг приносит плоды: удаётся зайти глубже. Окружающие ещё долго обсуждают случившееся.",
+          "failure": "Замысел рассыпается на полпути: зайти глубже не выходит. Возвращаться к этому разговору никто не предлагает.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E068.3",
+          "action": "Оттеснить зверя щитом",
+          "chance": 85,
+          "role": "rook",
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "РИСК РАНЕНИЯ"
+          ],
+          "success": "{{heroName}} справляется с поручением, хотя поначалу почти никто не верил в успех. Отряд собирается и снова выходит на дорогу.",
+          "failure": "Расчёт {{heroName}} не выдерживает проверки. Все замолкают, понимая, что дело не сложилось.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E068.4",
+          "action": "Уйти",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Вы решаете не вмешиваться и ведёте отряд дальше. Теперь можно оставить это место позади.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "E069",
+      "title": "Ворон с кольцом",
+      "race": "Животные",
+      "tone": "не задан",
+      "actors": "",
+      "story": "Ворон роняет перед отрядом кольцо и перелетает на следующий камень, будто зовёт следовать за собой. Лес и дорога будто на мгновение замирают, пока звери оценивают незнакомый отряд. Здесь нельзя договориться привычными словами — придётся судить по поведению, следам и инстинктам.",
+      "choices": [
+        {
+          "id": "E069.1",
+          "action": "Следовать за вороном",
+          "chance": 70,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Решительный шаг приносит плоды: удаётся следовать за вороном. Окружающие ещё долго обсуждают случившееся.",
+          "failure": "Попытка следовать за вороном оборачивается неудачей. Возвращаться к этому разговору никто не предлагает.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E069.2",
+          "action": "Забрать кольцо и уйти",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "После короткой заминки всё-таки удаётся забрать кольцо и уйти. Отряд собирается и снова выходит на дорогу.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E069.3",
+          "action": "Распознать знак",
+          "chance": 85,
+          "role": "bishop",
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "{{heroName}} берётся за поручение и находит решение. Теперь можно оставить это место позади.",
+          "failure": "{{heroName}} останавливается: продолжать становится опасно. Приходится продолжить путь, оставив неудачу позади.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E069.4",
+          "action": "Спугнуть птицу",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Поначалу никто не верит в затею, но вы сумели спугнуть птицу. Вскоре путь снова свободен.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "E070",
+      "title": "Стая на дороге",
+      "race": "Животные",
+      "tone": "не задан",
+      "actors": "",
+      "story": "Волчья стая идёт параллельно отряду уже несколько часов. Вожак явно ждёт момента для нападения. Здесь нельзя договориться привычными словами — придётся судить по поведению, следам и инстинктам. Лес и дорога будто на мгновение замирают, пока звери оценивают незнакомый отряд.",
+      "choices": [
+        {
+          "id": "E070.1",
+          "action": "Отдать 1 Supply",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 1
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Решительный шаг приносит плоды: удаётся отдать 1 Supply. Окружающие ещё долго обсуждают случившееся.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E070.2",
+          "action": "Продолжать идти",
+          "chance": 55,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ СТЫЧКА"
+          ],
+          "success": "Поначалу никто не верит в затею, но вы сумели продолжать идти. Отряд собирается и снова выходит на дорогу.",
+          "failure": "Как ни старается отряд, продолжать идти не получается. Все замолкают, понимая, что дело не сложилось.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E070.3",
+          "action": "Отвести стаю в сторону",
+          "chance": 85,
+          "role": "knight",
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "РИСК РАНЕНИЯ"
+          ],
+          "success": "{{heroName}} берётся за поручение и находит решение. Теперь можно оставить это место позади.",
+          "failure": "{{heroName}} останавливается: продолжать становится опасно. Приходится продолжить путь, оставив неудачу позади.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E070.4",
+          "action": "Атаковать первыми",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ СТЫЧКА"
+          ],
+          "success": "Поначалу никто не верит в затею, но вы сумели атаковать первыми. Вскоре путь снова свободен.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "E071",
+      "title": "Гнездо гигантских птиц",
+      "race": "Животные",
+      "tone": "не задан",
+      "actors": "",
+      "story": "На скале видно гнездо с блестящими предметами. Взрослые птицы пока не вернулись. Лес и дорога будто на мгновение замирают, пока звери оценивают незнакомый отряд. Здесь нельзя договориться привычными словами — придётся судить по поведению, следам и инстинктам.",
+      "choices": [
+        {
+          "id": "E071.1",
+          "action": "Подняться к гнезду",
+          "chance": 55,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "РИСК ГИБЕЛИ"
+          ],
+          "success": "Поначалу никто не верит в затею, но вы сумели подняться к гнезду. Отряд собирается и снова выходит на дорогу.",
+          "failure": "В самый неподходящий момент план срывается: подняться к гнезду не удаётся. Все замолкают, понимая, что дело не сложилось.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E071.2",
+          "action": "Забрать только один предмет",
+          "chance": 70,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ СТЫЧКА"
+          ],
+          "success": "Вам удаётся забрать только один предмет. Теперь можно оставить это место позади.",
+          "failure": "Как ни старается отряд, забрать только один предмет не получается. Приходится продолжить путь, оставив неудачу позади.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E071.3",
+          "action": "Быстрый подъём и отход",
+          "chance": 85,
+          "role": "knight",
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "РИСК РАНЕНИЯ"
+          ],
+          "success": "{{heroName}} действует без лишнего шума; план срабатывает. Вскоре путь снова свободен.",
+          "failure": "{{heroName}} вынужден отступить: попытка не удалась. Отряд уходит без желаемого результата.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E071.4",
+          "action": "Не трогать гнездо",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Отряд уходит, предоставив другим решать свои проблемы. Окружающие ещё долго обсуждают случившееся.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "E072",
+      "title": "Лисий тайник",
+      "race": "Животные",
+      "tone": "не задан",
+      "actors": "",
+      "story": "Лиса несколько раз появляется у дороги и исчезает в одном и том же кустарнике. Под корнями виден угол старого сундука. Лес и дорога будто на мгновение замирают, пока звери оценивают незнакомый отряд. Здесь нельзя договориться привычными словами — придётся судить по поведению, следам и инстинктам.",
+      "choices": [
+        {
+          "id": "E072.1",
+          "action": "Раскопать сундук",
+          "chance": 70,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Вам удаётся раскопать сундук. Теперь можно оставить это место позади.",
+          "failure": "Попытка раскопать сундук приводит совсем не к тому результату, на который вы рассчитывали. Приходится продолжить путь, оставив неудачу позади.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E072.2",
+          "action": "Копать глубже",
+          "chance": 55,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "РИСК РАНЕНИЯ"
+          ],
+          "success": "Несколько напряжённых мгновений спустя становится ясно: удалось копать глубже. Вскоре путь снова свободен.",
+          "failure": "Как ни старается отряд, копать глубже не получается. Отряд уходит без желаемого результата.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E072.3",
+          "action": "Пролезть под корнями",
+          "chance": 90,
+          "role": "pawn",
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Пока остальные спорят, {{heroName}} доводит дело до конца. Окружающие ещё долго обсуждают случившееся.",
+          "failure": "Даже {{heroName}} не удаётся справиться с поручением. Возвращаться к этому разговору никто не предлагает.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E072.4",
+          "action": "Уйти",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Вы проходите мимо и сохраняете силы для дальнейшего пути. Отряд собирается и снова выходит на дорогу.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "E073",
+      "title": "Круг светящихся грибов",
+      "race": "Феи",
+      "tone": "не задан",
+      "actors": "",
+      "story": "На поляне феи кружатся вокруг светящихся грибов. В центре лежит мешочек с монетами, будто оставленный специально. Свет дробится на мелкие искры, а знакомая дорога на несколько мгновений кажется совсем чужой. Феи улыбаются так, будто всё происходящее — игра, но правила этой игры путникам ещё никто не объяснил.",
+      "choices": [
+        {
+          "id": "E073.1",
+          "action": "Войти в круг",
+          "chance": 55,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Несколько напряжённых мгновений спустя становится ясно: удалось войти в круг. Вскоре путь снова свободен.",
+          "failure": "Попытка войти в круг приводит совсем не к тому результату, на который вы рассчитывали. Отряд уходит без желаемого результата.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E073.2",
+          "action": "Танцевать с феями",
+          "chance": 70,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "РИСК РАНЕНИЯ"
+          ],
+          "success": "К удивлению свидетелей, вам удаётся танцевать с феями. Окружающие ещё долго обсуждают случившееся.",
+          "failure": "В самый неподходящий момент план срывается: танцевать с феями не удаётся. Возвращаться к этому разговору никто не предлагает.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E073.3",
+          "action": "Повторить старый ритуал приветствия",
+          "chance": 90,
+          "role": "bishop",
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "{{heroName}} справляется с поручением, хотя поначалу почти никто не верил в успех. Отряд собирается и снова выходит на дорогу.",
+          "failure": "Расчёт {{heroName}} не выдерживает проверки. Все замолкают, понимая, что дело не сложилось.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E073.4",
+          "action": "Не входить",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Вы решаете не вмешиваться и ведёте отряд дальше. Теперь можно оставить это место позади.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "E074",
+      "title": "Божья коровка-страж",
+      "race": "Феи",
+      "tone": "не задан",
+      "actors": "",
+      "story": "Огромная бронированная божья коровка перекрывает тропу, а маленькие феи требуют доказать мирные намерения. Феи улыбаются так, будто всё происходящее — игра, но правила этой игры путникам ещё никто не объяснил. Свет дробится на мелкие искры, а знакомая дорога на несколько мгновений кажется совсем чужой.",
+      "choices": [
+        {
+          "id": "E074.1",
+          "action": "Отдать 1 Supply",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 1
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "К удивлению свидетелей, вам удаётся отдать 1 Supply. Окружающие ещё долго обсуждают случившееся.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E074.2",
+          "action": "Попробовать пройти мимо",
+          "chance": 55,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ СТЫЧКА"
+          ],
+          "success": "После короткой заминки всё-таки удаётся попробовать пройти мимо. Отряд собирается и снова выходит на дорогу.",
+          "failure": "В самый неподходящий момент план срывается: попробовать пройти мимо не удаётся. Все замолкают, понимая, что дело не сложилось.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E074.3",
+          "action": "Спокойно выдержать натиск стража",
+          "chance": 85,
+          "role": "rook",
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "РИСК РАНЕНИЯ"
+          ],
+          "success": "{{heroName}} берётся за поручение и находит решение. Теперь можно оставить это место позади.",
+          "failure": "{{heroName}} останавливается: продолжать становится опасно. Приходится продолжить путь, оставив неудачу позади.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E074.4",
+          "action": "Атаковать стража",
+          "chance": 40,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ БИТВА"
+          ],
+          "success": "Поначалу никто не верит в затею, но вы сумели атаковать стража. Вскоре путь снова свободен.",
+          "failure": "Попытка атаковать стража оборачивается неудачей. Отряд уходит без желаемого результата.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "E075",
+      "title": "Бабочка-проводник",
+      "race": "Феи",
+      "tone": "не задан",
+      "actors": "",
+      "story": "Фея на огромной бабочке предлагает показать короткую дорогу к складу старых путешественников. Свет дробится на мелкие искры, а знакомая дорога на несколько мгновений кажется совсем чужой. Феи улыбаются так, будто всё происходящее — игра, но правила этой игры путникам ещё никто не объяснил.",
+      "choices": [
+        {
+          "id": "E075.1",
+          "action": "Следовать за ней",
+          "chance": 70,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "После короткой заминки всё-таки удаётся следовать за ней. Отряд собирается и снова выходит на дорогу.",
+          "failure": "Замысел рассыпается на полпути: следовать за ней не выходит. Все замолкают, понимая, что дело не сложилось.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E075.2",
+          "action": "Заплатить 10 Gold за точные указания",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 10,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Решительный шаг приносит плоды: удаётся заплатить 10 Gold за точные указания. Теперь можно оставить это место позади.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E075.3",
+          "action": "Лететь по маршруту параллельно",
+          "chance": 90,
+          "role": "knight",
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "{{heroName}} действует без лишнего шума; план срабатывает. Вскоре путь снова свободен.",
+          "failure": "{{heroName}} вынужден отступить: попытка не удалась. Отряд уходит без желаемого результата.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E075.4",
+          "action": "Отказаться",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Отряд уходит, предоставив другим решать свои проблемы. Окружающие ещё долго обсуждают случившееся.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "E076",
+      "title": "Муравьиный оракул",
+      "race": "Феи",
+      "tone": "не задан",
+      "actors": "",
+      "story": "Фея-оракул с муравьиными мотивами выкладывает дорожки из семян и обещает предсказать, где лежит удача. Свет дробится на мелкие искры, а знакомая дорога на несколько мгновений кажется совсем чужой. Феи улыбаются так, будто всё происходящее — игра, но правила этой игры путникам ещё никто не объяснил.",
+      "choices": [
+        {
+          "id": "E076.1",
+          "action": "Заплатить 8 Gold",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 8,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Решительный шаг приносит плоды: удаётся заплатить 8 Gold. Теперь можно оставить это место позади.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E076.2",
+          "action": "Поставить 10 Gold на её предсказание",
+          "chance": 55,
+          "role": null,
+          "cost": {
+            "gold": 10,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Поначалу никто не верит в затею, но вы сумели поставить 10 Gold на её предсказание. Вскоре путь снова свободен.",
+          "failure": "Попытка поставить 10 Gold на её предсказание приводит совсем не к тому результату, на который вы рассчитывали. Отряд уходит без желаемого результата.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E076.3",
+          "action": "Прочесть рисунок вместе с ней",
+          "chance": 85,
+          "role": "bishop",
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Пока остальные спорят, {{heroName}} доводит дело до конца. Окружающие ещё долго обсуждают случившееся.",
+          "failure": "Даже {{heroName}} не удаётся справиться с поручением. Возвращаться к этому разговору никто не предлагает.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E076.4",
+          "action": "Уйти",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Вы проходите мимо и сохраняете силы для дальнейшего пути. Отряд собирается и снова выходит на дорогу.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "E077",
+      "title": "Сад за одну ночь",
+      "race": "Феи",
+      "tone": "не задан",
+      "actors": "",
+      "story": "Феи предлагают посадить волшебные семена. К рассвету они могут дать съедобные плоды — или хищные лозы. Феи улыбаются так, будто всё происходящее — игра, но правила этой игры путникам ещё никто не объяснил. Свет дробится на мелкие искры, а знакомая дорога на несколько мгновений кажется совсем чужой.",
+      "choices": [
+        {
+          "id": "E077.1",
+          "action": "Посадить семена",
+          "chance": 70,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ СТЫЧКА"
+          ],
+          "success": "Поначалу никто не верит в затею, но вы сумели посадить семена. Вскоре путь снова свободен.",
+          "failure": "Попытка посадить семена оборачивается неудачей. Отряд уходит без желаемого результата.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E077.2",
+          "action": "Посадить всё сразу",
+          "chance": 40,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ БИТВА"
+          ],
+          "success": "Вам удаётся посадить всё сразу. Окружающие ещё долго обсуждают случившееся.",
+          "failure": "Замысел рассыпается на полпути: посадить всё сразу не выходит. Возвращаться к этому разговору никто не предлагает.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E077.3",
+          "action": "Выбрать безопасные семена",
+          "chance": 90,
+          "role": "bishop",
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "{{heroName}} справляется с поручением, хотя поначалу почти никто не верил в успех. Отряд собирается и снова выходит на дорогу.",
+          "failure": "Расчёт {{heroName}} не выдерживает проверки. Все замолкают, понимая, что дело не сложилось.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E077.4",
+          "action": "Продать семена торговцу",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "К удивлению свидетелей, вам удаётся продать семена торговцу. Теперь можно оставить это место позади.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "E078",
+      "title": "Корона из цветов",
+      "race": "Феи",
+      "tone": "не задан",
+      "actors": "",
+      "story": "Фейская королева предлагает King надеть венок и войти в круг древней клятвы. Свет дробится на мелкие искры, а знакомая дорога на несколько мгновений кажется совсем чужой. Феи улыбаются так, будто всё происходящее — игра, но правила этой игры путникам ещё никто не объяснил.",
+      "choices": [
+        {
+          "id": "E078.1",
+          "action": "King принимает клятву",
+          "chance": 70,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "РИСК РАНЕНИЯ"
+          ],
+          "success": "Вам удаётся king принимает клятву. Окружающие ещё долго обсуждают случившееся.",
+          "failure": "Как ни старается отряд, king принимает клятву не получается. Возвращаться к этому разговору никто не предлагает.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E078.2",
+          "action": "Потребовать более ясные условия",
+          "chance": 55,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ СТЫЧКА"
+          ],
+          "success": "Несколько напряжённых мгновений спустя становится ясно: удалось потребовать более ясные условия. Отряд собирается и снова выходит на дорогу.",
+          "failure": "Замысел рассыпается на полпути: потребовать более ясные условия не выходит. Все замолкают, понимая, что дело не сложилось.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E078.3",
+          "action": "Ответить собственной клятвой",
+          "chance": 90,
+          "role": "queen",
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "{{heroName}} берётся за поручение и находит решение. Теперь можно оставить это место позади.",
+          "failure": "{{heroName}} останавливается: продолжать становится опасно. Приходится продолжить путь, оставив неудачу позади.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E078.4",
+          "action": "Отказаться",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Никто не преграждает путь, когда вы оставляете это место позади. Вскоре путь снова свободен.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "E079",
+      "title": "Лавка на колёсах",
+      "race": "Гоблины",
+      "tone": "не задан",
+      "actors": "",
+      "story": "Гоблинская тележка-магазин выкатывается из кустов. На ней есть припасы, монеты, странные механизмы и явно краденые вещи. Гоблины уже спорят о выгоде встречи, поэтому любое решение немедленно станет частью нового торга или новой проблемы. Вокруг слышны торопливые шёпоты, звон мелочи и подозрительный треск самодельных механизмов.",
+      "choices": [
+        {
+          "id": "E079.1",
+          "action": "Купить 2 Supplies за 16 Gold",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 16,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Несколько напряжённых мгновений спустя становится ясно: удалось купить 2 Supplies за 16 Gold. Отряд собирается и снова выходит на дорогу.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E079.2",
+          "action": "Купить закрытый ящик за 12 Gold",
+          "chance": 55,
+          "role": null,
+          "cost": {
+            "gold": 12,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "К удивлению свидетелей, вам удаётся купить закрытый ящик за 12 Gold. Теперь можно оставить это место позади.",
+          "failure": "Попытка купить закрытый ящик за 12 Gold оборачивается неудачей. Приходится продолжить путь, оставив неудачу позади.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E079.3",
+          "action": "Попробовать украсть припасы",
+          "chance": 40,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ СТЫЧКА"
+          ],
+          "success": "После короткой заминки всё-таки удаётся попробовать украсть припасы. Вскоре путь снова свободен.",
+          "failure": "Попытка попробовать украсть припасы приводит совсем не к тому результату, на который вы рассчитывали. Отряд уходит без желаемого результата.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E079.4",
+          "action": "Сторговаться",
+          "chance": 85,
+          "role": "queen",
+          "cost": {
+            "gold": 10,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Пока остальные спорят, {{heroName}} доводит дело до конца. Окружающие ещё долго обсуждают случившееся.",
+          "failure": "Даже {{heroName}} не удаётся справиться с поручением. Возвращаться к этому разговору никто не предлагает.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E079.5",
+          "action": "Уйти",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Вы проходите мимо и сохраняете силы для дальнейшего пути. Отряд собирается и снова выходит на дорогу.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "E080",
+      "title": "Мост из хлама",
+      "race": "Гоблины",
+      "tone": "не задан",
+      "actors": "",
+      "story": "Гоблины построили мост из досок, цепей и старых щитов. Они уверяют, что он выдержит «почти всех». Вокруг слышны торопливые шёпоты, звон мелочи и подозрительный треск самодельных механизмов. Гоблины уже спорят о выгоде встречи, поэтому любое решение немедленно станет частью нового торга или новой проблемы.",
+      "choices": [
+        {
+          "id": "E080.1",
+          "action": "Заплатить 8 Gold и перейти",
+          "chance": 70,
+          "role": null,
+          "cost": {
+            "gold": 8,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "РИСК РАНЕНИЯ"
+          ],
+          "success": "Несколько напряжённых мгновений спустя становится ясно: удалось заплатить 8 Gold и перейти. Отряд собирается и снова выходит на дорогу.",
+          "failure": "Попытка заплатить 8 Gold и перейти приводит совсем не к тому результату, на который вы рассчитывали. Все замолкают, понимая, что дело не сложилось.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E080.2",
+          "action": "Укрепить мост",
+          "chance": 90,
+          "role": "rook",
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "{{heroName}} берётся за поручение и находит решение. Теперь можно оставить это место позади.",
+          "failure": "{{heroName}} останавливается: продолжать становится опасно. Приходится продолжить путь, оставив неудачу позади.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E080.3",
+          "action": "Перепрыгивать опасные места",
+          "chance": 55,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "После короткой заминки всё-таки удаётся перепрыгивать опасные места. Вскоре путь снова свободен.",
+          "failure": "Попытка перепрыгивать опасные места оборачивается неудачей. Отряд уходит без желаемого результата.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E080.4",
+          "action": "Обойти",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Отряд уходит, предоставив другим решать свои проблемы. Окружающие ещё долго обсуждают случившееся.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "E081",
+      "title": "Бочка с надписью «НЕ ТРОГАТЬ»",
+      "race": "Гоблины",
+      "tone": "не задан",
+      "actors": "",
+      "story": "Посреди дороги стоит гоблинская бочка с огромной надписью «НЕ ТРОГАТЬ». Изнутри доносится звон. Вокруг слышны торопливые шёпоты, звон мелочи и подозрительный треск самодельных механизмов. Гоблины уже спорят о выгоде встречи, поэтому любое решение немедленно станет частью нового торга или новой проблемы.",
+      "choices": [
+        {
+          "id": "E081.1",
+          "action": "Открыть",
+          "chance": 55,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "РИСК РАНЕНИЯ"
+          ],
+          "success": "Решительный шаг приносит плоды: удаётся открыть. Теперь можно оставить это место позади.",
+          "failure": "Попытка открыть приводит совсем не к тому результату, на который вы рассчитывали. Приходится продолжить путь, оставив неудачу позади.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E081.2",
+          "action": "Катить бочку подальше и открыть там",
+          "chance": 70,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "После короткой заминки всё-таки удаётся катить бочку подальше и открыть там. Вскоре путь снова свободен.",
+          "failure": "В самый неподходящий момент план срывается: катить бочку подальше и открыть там не удаётся. Отряд уходит без желаемого результата.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E081.3",
+          "action": "Проверить ловушку",
+          "chance": 90,
+          "role": "bishop",
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Пока остальные спорят, {{heroName}} доводит дело до конца. Окружающие ещё долго обсуждают случившееся.",
+          "failure": "Даже {{heroName}} не удаётся справиться с поручением. Возвращаться к этому разговору никто не предлагает.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E081.4",
+          "action": "Не трогать",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Вы проходите мимо и сохраняете силы для дальнейшего пути. Отряд собирается и снова выходит на дорогу.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "E082",
+      "title": "Гоблинская гонка",
+      "race": "Гоблины",
+      "tone": "не задан",
+      "actors": "",
+      "story": "Толпа гоблинов устраивает гонку на кривых тележках. Победителю обещают мешок золота и провиант. Гоблины уже спорят о выгоде встречи, поэтому любое решение немедленно станет частью нового торга или новой проблемы. Вокруг слышны торопливые шёпоты, звон мелочи и подозрительный треск самодельных механизмов.",
+      "choices": [
+        {
+          "id": "E082.1",
+          "action": "Участвовать",
+          "chance": 55,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "РИСК РАНЕНИЯ"
+          ],
+          "success": "После короткой заминки всё-таки удаётся участвовать. Вскоре путь снова свободен.",
+          "failure": "Замысел рассыпается на полпути: участвовать не выходит. Отряд уходит без желаемого результата.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E082.2",
+          "action": "Вести тележку",
+          "chance": 85,
+          "role": "knight",
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "РИСК РАНЕНИЯ"
+          ],
+          "success": "Пока остальные спорят, {{heroName}} доводит дело до конца. Окружающие ещё долго обсуждают случившееся.",
+          "failure": "Даже {{heroName}} не удаётся справиться с поручением. Возвращаться к этому разговору никто не предлагает.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E082.3",
+          "action": "Поставить 10 Gold на фаворита",
+          "chance": 55,
+          "role": null,
+          "cost": {
+            "gold": 10,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Поначалу никто не верит в затею, но вы сумели поставить 10 Gold на фаворита. Отряд собирается и снова выходит на дорогу.",
+          "failure": "Как ни старается отряд, поставить 10 Gold на фаворита не получается. Все замолкают, понимая, что дело не сложилось.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E082.4",
+          "action": "Саботировать соперников",
+          "chance": 40,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ СТЫЧКА"
+          ],
+          "success": "К удивлению свидетелей, вам удаётся саботировать соперников. Теперь можно оставить это место позади.",
+          "failure": "Замысел рассыпается на полпути: саботировать соперников не выходит. Приходится продолжить путь, оставив неудачу позади.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "E083",
+      "title": "Повар с котлом",
+      "race": "Гоблины",
+      "tone": "не задан",
+      "actors": "",
+      "story": "Гоблин-повар продаёт густое рагу. Запах подозрительный, но запасов у него много. Гоблины уже спорят о выгоде встречи, поэтому любое решение немедленно станет частью нового торга или новой проблемы. Вокруг слышны торопливые шёпоты, звон мелочи и подозрительный треск самодельных механизмов.",
+      "choices": [
+        {
+          "id": "E083.1",
+          "action": "Купить 2 Supplies за 14 Gold",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 14,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Вам удаётся купить 2 Supplies за 14 Gold. Окружающие ещё долго обсуждают случившееся.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E083.2",
+          "action": "Попробовать рагу бесплатно",
+          "chance": 70,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "РИСК РАНЕНИЯ"
+          ],
+          "success": "Поначалу никто не верит в затею, но вы сумели попробовать рагу бесплатно. Отряд собирается и снова выходит на дорогу.",
+          "failure": "Попытка попробовать рагу бесплатно приводит совсем не к тому результату, на который вы рассчитывали. Все замолкают, понимая, что дело не сложилось.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E083.3",
+          "action": "Проверить ингредиенты",
+          "chance": 90,
+          "role": "bishop",
+          "cost": {
+            "gold": 8,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "{{heroName}} берётся за поручение и находит решение. Теперь можно оставить это место позади.",
+          "failure": "{{heroName}} останавливается: продолжать становится опасно. Приходится продолжить путь, оставив неудачу позади.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E083.4",
+          "action": "Разогнать лавку",
+          "chance": 40,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ СТЫЧКА"
+          ],
+          "success": "Несколько напряжённых мгновений спустя становится ясно: удалось разогнать лавку. Вскоре путь снова свободен.",
+          "failure": "Попытка разогнать лавку оборачивается неудачей. Отряд уходит без желаемого результата.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "E084",
+      "title": "Гоблин с картой",
+      "race": "Гоблины",
+      "tone": "не задан",
+      "actors": "",
+      "story": "Один гоблин продаёт карту «точно настоящего сокровища». На обратной стороне видны ещё три старые цены. Вокруг слышны торопливые шёпоты, звон мелочи и подозрительный треск самодельных механизмов. Гоблины уже спорят о выгоде встречи, поэтому любое решение немедленно станет частью нового торга или новой проблемы.",
+      "choices": [
+        {
+          "id": "E084.1",
+          "action": "Купить карту за 12 Gold",
+          "chance": 55,
+          "role": null,
+          "cost": {
+            "gold": 12,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Поначалу никто не верит в затею, но вы сумели купить карту за 12 Gold. Отряд собирается и снова выходит на дорогу.",
+          "failure": "Попытка купить карту за 12 Gold оборачивается неудачей. Все замолкают, понимая, что дело не сложилось.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E084.2",
+          "action": "Запугать продавца",
+          "chance": 70,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ СТЫЧКА"
+          ],
+          "success": "К удивлению свидетелей, вам удаётся запугать продавца. Теперь можно оставить это место позади.",
+          "failure": "Попытка запугать продавца приводит совсем не к тому результату, на который вы рассчитывали. Приходится продолжить путь, оставив неудачу позади.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E084.3",
+          "action": "Проверить историю карты",
+          "chance": 85,
+          "role": "queen",
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "{{heroName}} действует без лишнего шума; план срабатывает. Вскоре путь снова свободен.",
+          "failure": "{{heroName}} вынужден отступить: попытка не удалась. Отряд уходит без желаемого результата.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E084.4",
+          "action": "Не покупать",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Отряд уходит, предоставив другим решать свои проблемы. Окружающие ещё долго обсуждают случившееся.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "E085",
+      "title": "Разбитый караван",
+      "race": "Нейтральные и смешанные",
+      "tone": "не задан",
+      "actors": "",
+      "story": "На дороге лежат остатки каравана сразу нескольких рас. Следы ведут в овраг, а часть груза ещё цела. Встреча собирает слишком разных участников, и каждый явно преследует собственную цель. Пока стороны присматриваются друг к другу, отряд получает редкую возможность решить, в какую сторону качнётся ситуация.",
+      "choices": [
+        {
+          "id": "E085.1",
+          "action": "Собирать уцелевшее",
+          "chance": 70,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ СТЫЧКА"
+          ],
+          "success": "К удивлению свидетелей, вам удаётся собирать уцелевшее. Теперь можно оставить это место позади.",
+          "failure": "Попытка собирать уцелевшее оборачивается неудачей. Приходится продолжить путь, оставив неудачу позади.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E085.2",
+          "action": "Идти по следам нападавших",
+          "chance": 55,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ БИТВА"
+          ],
+          "success": "Несколько напряжённых мгновений спустя становится ясно: удалось идти по следам нападавших. Вскоре путь снова свободен.",
+          "failure": "Замысел рассыпается на полпути: идти по следам нападавших не выходит. Отряд уходит без желаемого результата.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E085.3",
+          "action": "Разведать овраг",
+          "chance": 85,
+          "role": "knight",
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "РИСК РАНЕНИЯ"
+          ],
+          "success": "Пока остальные спорят, {{heroName}} доводит дело до конца. Окружающие ещё долго обсуждают случившееся.",
+          "failure": "Даже {{heroName}} не удаётся справиться с поручением. Возвращаться к этому разговору никто не предлагает.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E085.4",
+          "action": "Не задерживаться",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Вы проходите мимо и сохраняете силы для дальнейшего пути. Отряд собирается и снова выходит на дорогу.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "E086",
+      "title": "Старый алтарь без имени",
+      "race": "Нейтральные и смешанные",
+      "tone": "не задан",
+      "actors": "",
+      "story": "Алтарь не принадлежит ни одной известной вере. На нём лежат монеты разных народов и свежая кровь. Пока стороны присматриваются друг к другу, отряд получает редкую возможность решить, в какую сторону качнётся ситуация. Встреча собирает слишком разных участников, и каждый явно преследует собственную цель.",
+      "choices": [
+        {
+          "id": "E086.1",
+          "action": "Взять монеты",
+          "chance": 55,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "РИСК РАНЕНИЯ"
+          ],
+          "success": "Несколько напряжённых мгновений спустя становится ясно: удалось взять монеты. Вскоре путь снова свободен.",
+          "failure": "Как ни старается отряд, взять монеты не получается. Отряд уходит без желаемого результата.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E086.2",
+          "action": "Оставить 10 Gold",
+          "chance": 70,
+          "role": null,
+          "cost": {
+            "gold": 10,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Отряд уходит, предоставив другим решать свои проблемы. Окружающие ещё долго обсуждают случившееся.",
+          "failure": "Замысел рассыпается на полпути: оставить 10 Gold не выходит. Возвращаться к этому разговору никто не предлагает.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E086.3",
+          "action": "Исследовать алтарь",
+          "chance": 85,
+          "role": "bishop",
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ СТЫЧКА"
+          ],
+          "success": "{{heroName}} справляется с поручением, хотя поначалу почти никто не верил в успех. Отряд собирается и снова выходит на дорогу.",
+          "failure": "Расчёт {{heroName}} не выдерживает проверки. Все замолкают, понимая, что дело не сложилось.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E086.4",
+          "action": "Разрушить алтарь",
+          "chance": 40,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ БИТВА"
+          ],
+          "success": "Вам удаётся разрушить алтарь. Теперь можно оставить это место позади.",
+          "failure": "Как ни старается отряд, разрушить алтарь не получается. Приходится продолжить путь, оставив неудачу позади.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "E087",
+      "title": "Перекрёсток наёмников",
+      "race": "Нейтральные и смешанные",
+      "tone": "не задан",
+      "actors": "",
+      "story": "У костра сидят наёмники разных рас, каждый ищет следующий контракт. Пока стороны присматриваются друг к другу, отряд получает редкую возможность решить, в какую сторону качнётся ситуация. Встреча собирает слишком разных участников, и каждый явно преследует собственную цель.",
+      "choices": [
+        {
+          "id": "E087.1",
+          "action": "Нанять кандидата за 28 Gold",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 28,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Решительный шаг приносит плоды: удаётся нанять кандидата за 28 Gold. Окружающие ещё долго обсуждают случившееся.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E087.2",
+          "action": "Предложить долю будущей добычи",
+          "chance": 55,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "После короткой заминки всё-таки удаётся предложить долю будущей добычи. Отряд собирается и снова выходит на дорогу.",
+          "failure": "Попытка предложить долю будущей добычи оборачивается неудачей. Все замолкают, понимая, что дело не сложилось.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E087.3",
+          "action": "Провести торг между кандидатами",
+          "chance": 85,
+          "role": "queen",
+          "cost": {
+            "gold": 16,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "{{heroName}} берётся за поручение и находит решение. Теперь можно оставить это место позади.",
+          "failure": "{{heroName}} останавливается: продолжать становится опасно. Приходится продолжить путь, оставив неудачу позади.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E087.4",
+          "action": "Сыграть с ними в кости — 10 Gold",
+          "chance": 55,
+          "role": null,
+          "cost": {
+            "gold": 10,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Поначалу никто не верит в затею, но вы сумели сыграть с ними в кости. Вскоре путь снова свободен.",
+          "failure": "В самый неподходящий момент план срывается: сыграть с ними в кости не удаётся. Отряд уходит без желаемого результата.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E087.5",
+          "action": "Уйти",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Отряд уходит, предоставив другим решать свои проблемы. Окружающие ещё долго обсуждают случившееся.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "E088",
+      "title": "Камень с пятью дверями",
+      "race": "Нейтральные и смешанные",
+      "tone": "не задан",
+      "actors": "",
+      "story": "В скале пять одинаковых каменных дверей. На каждой — символ одной шахматной роли. Встреча собирает слишком разных участников, и каждый явно преследует собственную цель. Пока стороны присматриваются друг к другу, отряд получает редкую возможность решить, в какую сторону качнётся ситуация.",
+      "choices": [
+        {
+          "id": "E088.1",
+          "action": "Открыть дверь Pawn",
+          "chance": 70,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "После короткой заминки всё-таки удаётся открыть дверь Pawn. Отряд собирается и снова выходит на дорогу.",
+          "failure": "В самый неподходящий момент план срывается: открыть дверь Pawn не удаётся. Все замолкают, понимая, что дело не сложилось.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E088.2",
+          "action": "Открыть дверь Knight",
+          "chance": 55,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ СТЫЧКА"
+          ],
+          "success": "Вам удаётся открыть дверь Knight. Теперь можно оставить это место позади.",
+          "failure": "Попытка открыть дверь Knight оборачивается неудачей. Приходится продолжить путь, оставив неудачу позади.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E088.3",
+          "action": "Открыть дверь Bishop",
+          "chance": 55,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "РИСК РАНЕНИЯ"
+          ],
+          "success": "Поначалу никто не верит в затею, но вы сумели открыть дверь Bishop. Вскоре путь снова свободен.",
+          "failure": "Замысел рассыпается на полпути: открыть дверь Bishop не выходит. Отряд уходит без желаемого результата.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E088.4",
+          "action": "Открыть тяжёлую дверь Rook",
+          "chance": 85,
+          "role": "rook",
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "РИСК РАНЕНИЯ"
+          ],
+          "success": "Пока остальные спорят, {{heroName}} доводит дело до конца. Окружающие ещё долго обсуждают случившееся.",
+          "failure": "Даже {{heroName}} не удаётся справиться с поручением. Возвращаться к этому разговору никто не предлагает.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E088.5",
+          "action": "Не открывать ничего",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Вы проходите мимо и сохраняете силы для дальнейшего пути. Отряд собирается и снова выходит на дорогу.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "E089",
+      "title": "Дождь из монет",
+      "race": "Нейтральные и смешанные",
+      "tone": "не задан",
+      "actors": "",
+      "story": "На небольшом участке дороги с неба падают старые монеты. Некоторые раскалены, некоторые покрыты инеем. Встреча собирает слишком разных участников, и каждый явно преследует собственную цель. Пока стороны присматриваются друг к другу, отряд получает редкую возможность решить, в какую сторону качнётся ситуация.",
+      "choices": [
+        {
+          "id": "E089.1",
+          "action": "Собирать быстро",
+          "chance": 70,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "РИСК РАНЕНИЯ"
+          ],
+          "success": "Вам удаётся собирать быстро. Теперь можно оставить это место позади.",
+          "failure": "В самый неподходящий момент план срывается: собирать быстро не удаётся. Приходится продолжить путь, оставив неудачу позади.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E089.2",
+          "action": "Собирать только холодные",
+          "chance": 85,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Поначалу никто не верит в затею, но вы сумели собирать только холодные. Вскоре путь снова свободен.",
+          "failure": "Как ни старается отряд, собирать только холодные не получается. Отряд уходит без желаемого результата.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E089.3",
+          "action": "Пробираться между горячими монетами",
+          "chance": 90,
+          "role": "pawn",
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Пока остальные спорят, {{heroName}} доводит дело до конца. Окружающие ещё долго обсуждают случившееся.",
+          "failure": "Даже {{heroName}} не удаётся справиться с поручением. Возвращаться к этому разговору никто не предлагает.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E089.4",
+          "action": "Уйти от странного дождя",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Вы проходите мимо и сохраняете силы для дальнейшего пути. Отряд собирается и снова выходит на дорогу.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "E090",
+      "title": "Туманная гостиница",
+      "race": "Нейтральные и смешанные",
+      "tone": "не задан",
+      "actors": "",
+      "story": "В тумане появляется постоялый двор, которого нет на карте. Внутри сидят люди, гномы, эльфы и один молчаливый демон. Встреча собирает слишком разных участников, и каждый явно преследует собственную цель. Пока стороны присматриваются друг к другу, отряд получает редкую возможность решить, в какую сторону качнётся ситуация.",
+      "choices": [
+        {
+          "id": "E090.1",
+          "action": "Купить ночлег за 12 Gold",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 12,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Вам удаётся купить ночлег за 12 Gold. Теперь можно оставить это место позади.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E090.2",
+          "action": "Играть в карты — 10 Gold",
+          "chance": 55,
+          "role": null,
+          "cost": {
+            "gold": 10,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Несколько напряжённых мгновений спустя становится ясно: удалось играть в карты. Вскоре путь снова свободен.",
+          "failure": "В самый неподходящий момент план срывается: играть в карты не удаётся. Отряд уходит без желаемого результата.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E090.3",
+          "action": "Поговорить с молчаливым гостем",
+          "chance": 40,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ СТЫЧКА"
+          ],
+          "success": "К удивлению свидетелей, вам удаётся поговорить с молчаливым гостем. Окружающие ещё долго обсуждают случившееся.",
+          "failure": "Как ни старается отряд, поговорить с молчаливым гостем не получается. Возвращаться к этому разговору никто не предлагает.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E090.4",
+          "action": "Собрать слухи",
+          "chance": 85,
+          "role": "queen",
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "{{heroName}} справляется с поручением, хотя поначалу почти никто не верил в успех. Отряд собирается и снова выходит на дорогу.",
+          "failure": "Расчёт {{heroName}} не выдерживает проверки. Все замолкают, понимая, что дело не сложилось.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E090.5",
+          "action": "Не входить",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Вы решаете не вмешиваться и ведёте отряд дальше. Теперь можно оставить это место позади.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "E091",
+      "title": "Колокол тревоги",
+      "race": "Нейтральные и смешанные",
+      "tone": "не задан",
+      "actors": "",
+      "story": "На пустой дороге стоит сигнальная башня. Колокол звонит сам, а вдали движутся вооружённые силуэты. Пока стороны присматриваются друг к другу, отряд получает редкую возможность решить, в какую сторону качнётся ситуация. Встреча собирает слишком разных участников, и каждый явно преследует собственную цель.",
+      "choices": [
+        {
+          "id": "E091.1",
+          "action": "Занять башню",
+          "chance": 70,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ СТЫЧКА"
+          ],
+          "success": "Несколько напряжённых мгновений спустя становится ясно: удалось занять башню. Вскоре путь снова свободен.",
+          "failure": "Замысел рассыпается на полпути: занять башню не выходит. Отряд уходит без желаемого результата.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E091.2",
+          "action": "Устроить оборону",
+          "chance": 55,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ БИТВА"
+          ],
+          "success": "К удивлению свидетелей, вам удаётся устроить оборону. Окружающие ещё долго обсуждают случившееся.",
+          "failure": "Попытка устроить оборону приводит совсем не к тому результату, на который вы рассчитывали. Возвращаться к этому разговору никто не предлагает.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E091.3",
+          "action": "Укрепить позицию",
+          "chance": 85,
+          "role": "rook",
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ БИТВА"
+          ],
+          "success": "{{heroName}} справляется с поручением, хотя поначалу почти никто не верил в успех. Отряд собирается и снова выходит на дорогу.",
+          "failure": "Расчёт {{heroName}} не выдерживает проверки. Все замолкают, понимая, что дело не сложилось.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E091.4",
+          "action": "Уйти до прибытия армии",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Вы решаете не вмешиваться и ведёте отряд дальше. Теперь можно оставить это место позади.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "E092",
+      "title": "Река красного песка",
+      "race": "Нейтральные и смешанные",
+      "tone": "не задан",
+      "actors": "",
+      "story": "Река несёт вместо воды красный песок. На другом берегу блестят брошенные сундуки. Пока стороны присматриваются друг к другу, отряд получает редкую возможность решить, в какую сторону качнётся ситуация. Встреча собирает слишком разных участников, и каждый явно преследует собственную цель.",
+      "choices": [
+        {
+          "id": "E092.1",
+          "action": "Переходить сразу",
+          "chance": 55,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "РИСК РАНЕНИЯ"
+          ],
+          "success": "Решительный шаг приносит плоды: удаётся переходить сразу. Окружающие ещё долго обсуждают случившееся.",
+          "failure": "Попытка переходить сразу оборачивается неудачей. Возвращаться к этому разговору никто не предлагает.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E092.2",
+          "action": "Потратить 1 Supply на подготовку",
+          "chance": 85,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 1
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "После короткой заминки всё-таки удаётся потратить 1 Supply на подготовку. Отряд собирается и снова выходит на дорогу.",
+          "failure": "Попытка потратить 1 Supply на подготовку приводит совсем не к тому результату, на который вы рассчитывали. Все замолкают, понимая, что дело не сложилось.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E092.3",
+          "action": "Построить переход",
+          "chance": 90,
+          "role": "rook",
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "{{heroName}} берётся за поручение и находит решение. Теперь можно оставить это место позади.",
+          "failure": "{{heroName}} останавливается: продолжать становится опасно. Приходится продолжить путь, оставив неудачу позади.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E092.4",
+          "action": "Искать обход",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Поначалу никто не верит в затею, но вы сумели искать обход. Вскоре путь снова свободен.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "E093",
+      "title": "Плач из подземелья",
+      "race": "Нейтральные и смешанные",
+      "tone": "не задан",
+      "actors": "",
+      "story": "Из старого колодца слышен человеческий голос, хотя вокруг нет поселений. Пока стороны присматриваются друг к другу, отряд получает редкую возможность решить, в какую сторону качнётся ситуация. Встреча собирает слишком разных участников, и каждый явно преследует собственную цель.",
+      "choices": [
+        {
+          "id": "E093.1",
+          "action": "Спуститься",
+          "chance": 55,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ СТЫЧКА"
+          ],
+          "success": "После короткой заминки всё-таки удаётся спуститься. Отряд собирается и снова выходит на дорогу.",
+          "failure": "Попытка спуститься оборачивается неудачей. Все замолкают, понимая, что дело не сложилось.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E093.2",
+          "action": "Сбросить верёвку и ждать",
+          "chance": 70,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Решительный шаг приносит плоды: удаётся сбросить верёвку и ждать. Теперь можно оставить это место позади.",
+          "failure": "Замысел рассыпается на полпути: сбросить верёвку и ждать не выходит. Приходится продолжить путь, оставив неудачу позади.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E093.3",
+          "action": "Спуститься первым",
+          "chance": 85,
+          "role": "knight",
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "РИСК РАНЕНИЯ"
+          ],
+          "success": "{{heroName}} действует без лишнего шума; план срабатывает. Вскоре путь снова свободен.",
+          "failure": "{{heroName}} вынужден отступить: попытка не удалась. Отряд уходит без желаемого результата.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E093.4",
+          "action": "Завалить колодец",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Вам удаётся завалить колодец. Окружающие ещё долго обсуждают случившееся.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "E094",
+      "title": "Статуя с открытой ладонью",
+      "race": "Нейтральные и смешанные",
+      "tone": "не задан",
+      "actors": "",
+      "story": "Огромная статуя держит ладонь над дорогой. На пальцах видны углубления для монет. Встреча собирает слишком разных участников, и каждый явно преследует собственную цель. Пока стороны присматриваются друг к другу, отряд получает редкую возможность решить, в какую сторону качнётся ситуация.",
+      "choices": [
+        {
+          "id": "E094.1",
+          "action": "Положить 10 Gold",
+          "chance": 70,
+          "role": null,
+          "cost": {
+            "gold": 10,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Вам удаётся положить 10 Gold. Теперь можно оставить это место позади.",
+          "failure": "Как ни старается отряд, положить 10 Gold не получается. Приходится продолжить путь, оставив неудачу позади.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E094.2",
+          "action": "Положить 25 Gold",
+          "chance": 85,
+          "role": null,
+          "cost": {
+            "gold": 25,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Поначалу никто не верит в затею, но вы сумели положить 25 Gold. Вскоре путь снова свободен.",
+          "failure": "Замысел рассыпается на полпути: положить 25 Gold не выходит. Отряд уходит без желаемого результата.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E094.3",
+          "action": "Украсть старые монеты из ладони",
+          "chance": 40,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ СТЫЧКА"
+          ],
+          "success": "Вам удаётся украсть старые монеты из ладони. Окружающие ещё долго обсуждают случившееся.",
+          "failure": "Попытка украсть старые монеты из ладони приводит совсем не к тому результату, на который вы рассчитывали. Возвращаться к этому разговору никто не предлагает.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E094.4",
+          "action": "Расшифровать посвящение",
+          "chance": 90,
+          "role": "bishop",
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "{{heroName}} справляется с поручением, хотя поначалу почти никто не верил в успех. Отряд собирается и снова выходит на дорогу.",
+          "failure": "Расчёт {{heroName}} не выдерживает проверки. Все замолкают, понимая, что дело не сложилось.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E094.5",
+          "action": "Уйти",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Вы решаете не вмешиваться и ведёте отряд дальше. Теперь можно оставить это место позади.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "E095",
+      "title": "Три знамени",
+      "race": "Нейтральные и смешанные",
+      "tone": "не задан",
+      "actors": "",
+      "story": "На поле стоят три лагеря разных рас. Каждый предлагает отряду выступить против двух других. Пока стороны присматриваются друг к другу, отряд получает редкую возможность решить, в какую сторону качнётся ситуация. Встреча собирает слишком разных участников, и каждый явно преследует собственную цель.",
+      "choices": [
+        {
+          "id": "E095.1",
+          "action": "Поддержать первый лагерь",
+          "chance": 70,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ СТЫЧКА"
+          ],
+          "success": "Поначалу никто не верит в затею, но вы сумели поддержать первый лагерь. Вскоре путь снова свободен.",
+          "failure": "Как ни старается отряд, поддержать первый лагерь не получается. Отряд уходит без желаемого результата.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E095.2",
+          "action": "Поддержать второй лагерь",
+          "chance": 55,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ БИТВА"
+          ],
+          "success": "К удивлению свидетелей, вам удаётся поддержать второй лагерь. Окружающие ещё долго обсуждают случившееся.",
+          "failure": "Попытка поддержать второй лагерь оборачивается неудачей. Возвращаться к этому разговору никто не предлагает.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E095.3",
+          "action": "Поддержать третий лагерь",
+          "chance": 40,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ БИТВА"
+          ],
+          "success": "Несколько напряжённых мгновений спустя становится ясно: удалось поддержать третий лагерь. Отряд собирается и снова выходит на дорогу.",
+          "failure": "Попытка поддержать третий лагерь приводит совсем не к тому результату, на который вы рассчитывали. Все замолкают, понимая, что дело не сложилось.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E095.4",
+          "action": "Посадить лидеров за один стол",
+          "chance": 85,
+          "role": "queen",
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ СТЫЧКА"
+          ],
+          "success": "{{heroName}} берётся за поручение и находит решение. Теперь можно оставить это место позади.",
+          "failure": "{{heroName}} останавливается: продолжать становится опасно. Приходится продолжить путь, оставив неудачу позади.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E095.5",
+          "action": "Не вмешиваться",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Никто не преграждает путь, когда вы оставляете это место позади. Вскоре путь снова свободен.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "E096",
+      "title": "Брошенный трон",
+      "race": "Нейтральные и смешанные",
+      "tone": "не задан",
+      "actors": "",
+      "story": "Прямо у дороги стоит древний трон, вокруг которого нет ни руин, ни следов. На сиденье лежит корона без герба. Встреча собирает слишком разных участников, и каждый явно преследует собственную цель. Пока стороны присматриваются друг к другу, отряд получает редкую возможность решить, в какую сторону качнётся ситуация.",
+      "choices": [
+        {
+          "id": "E096.1",
+          "action": "King садится на трон",
+          "chance": 55,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "РИСК РАНЕНИЯ"
+          ],
+          "success": "К удивлению свидетелей, вам удаётся king садится на трон. Окружающие ещё долго обсуждают случившееся.",
+          "failure": "Как ни старается отряд, king садится на трон не получается. Возвращаться к этому разговору никто не предлагает.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E096.2",
+          "action": "King надевает корону",
+          "chance": 40,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": true,
+          "warnings": [
+            "КОРОЛЬ МОЖЕТ ПОГИБНУТЬ"
+          ],
+          "success": "Несколько напряжённых мгновений спустя становится ясно: удалось king надевает корону. Отряд собирается и снова выходит на дорогу.",
+          "failure": "Попытка king надевает корону оборачивается неудачей. Все замолкают, понимая, что дело не сложилось.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E096.3",
+          "action": "Исследовать трон",
+          "chance": 85,
+          "role": "bishop",
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "РИСК РАНЕНИЯ"
+          ],
+          "success": "{{heroName}} берётся за поручение и находит решение. Теперь можно оставить это место позади.",
+          "failure": "{{heroName}} останавливается: продолжать становится опасно. Приходится продолжить путь, оставив неудачу позади.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E096.4",
+          "action": "Разбить корону",
+          "chance": 70,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "После короткой заминки всё-таки удаётся разбить корону. Вскоре путь снова свободен.",
+          "failure": "В самый неподходящий момент план срывается: разбить корону не удаётся. Отряд уходит без желаемого результата.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E096.5",
+          "action": "Уйти",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Отряд уходит, предоставив другим решать свои проблемы. Окружающие ещё долго обсуждают случившееся.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "E097",
+      "title": "Невидимый рынок",
+      "race": "Нейтральные и смешанные",
+      "tone": "не задан",
+      "actors": "",
+      "story": "Слышны голоса торговцев и звон монет, но сами лавки видны только боковым зрением. Встреча собирает слишком разных участников, и каждый явно преследует собственную цель. Пока стороны присматриваются друг к другу, отряд получает редкую возможность решить, в какую сторону качнётся ситуация.",
+      "choices": [
+        {
+          "id": "E097.1",
+          "action": "Оставить 16 Gold на прилавке",
+          "chance": 70,
+          "role": null,
+          "cost": {
+            "gold": 16,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Вы проходите мимо и сохраняете силы для дальнейшего пути. Отряд собирается и снова выходит на дорогу.",
+          "failure": "В самый неподходящий момент план срывается: оставить 16 Gold на прилавке не удаётся. Все замолкают, понимая, что дело не сложилось.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E097.2",
+          "action": "Оставить 28 Gold с просьбой о спутнике",
+          "chance": 55,
+          "role": null,
+          "cost": {
+            "gold": 28,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Вы решаете не вмешиваться и ведёте отряд дальше. Теперь можно оставить это место позади.",
+          "failure": "Как ни старается отряд, оставить 28 Gold с просьбой о спутнике не получается. Приходится продолжить путь, оставив неудачу позади.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E097.3",
+          "action": "Найти границу чар",
+          "chance": 85,
+          "role": "bishop",
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "{{heroName}} действует без лишнего шума; план срабатывает. Вскоре путь снова свободен.",
+          "failure": "{{heroName}} вынужден отступить: попытка не удалась. Отряд уходит без желаемого результата.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E097.4",
+          "action": "Попытаться ограбить невидимую лавку",
+          "chance": 40,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ СТЫЧКА"
+          ],
+          "success": "Решительный шаг приносит плоды: удаётся ограбить невидимую лавку. Окружающие ещё долго обсуждают случившееся.",
+          "failure": "Попытка ограбить невидимую лавку приводит совсем не к тому результату, на который вы рассчитывали. Возвращаться к этому разговору никто не предлагает.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E097.5",
+          "action": "Уйти",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Вы проходите мимо и сохраняете силы для дальнейшего пути. Отряд собирается и снова выходит на дорогу.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "E098",
+      "title": "Башня без двери",
+      "race": "Нейтральные и смешанные",
+      "tone": "не задан",
+      "actors": "",
+      "story": "Одинокая башня стоит посреди равнины. Наверху горит свет, но входа нет. Пока стороны присматриваются друг к другу, отряд получает редкую возможность решить, в какую сторону качнётся ситуация. Встреча собирает слишком разных участников, и каждый явно преследует собственную цель.",
+      "choices": [
+        {
+          "id": "E098.1",
+          "action": "Лезть по стене",
+          "chance": 55,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "РИСК РАНЕНИЯ"
+          ],
+          "success": "Решительный шаг приносит плоды: удаётся лезть по стене. Теперь можно оставить это место позади.",
+          "failure": "В самый неподходящий момент план срывается: лезть по стене не удаётся. Приходится продолжить путь, оставив неудачу позади.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E098.2",
+          "action": "Найти слабое место кладки",
+          "chance": 85,
+          "role": "rook",
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "РИСК РАНЕНИЯ"
+          ],
+          "success": "{{heroName}} действует без лишнего шума; план срабатывает. Вскоре путь снова свободен.",
+          "failure": "{{heroName}} вынужден отступить: попытка не удалась. Отряд уходит без желаемого результата.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E098.3",
+          "action": "Искать магический вход",
+          "chance": 90,
+          "role": "bishop",
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Пока остальные спорят, {{heroName}} доводит дело до конца. Окружающие ещё долго обсуждают случившееся.",
+          "failure": "Даже {{heroName}} не удаётся справиться с поручением. Возвращаться к этому разговору никто не предлагает.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E098.4",
+          "action": "Разбить стену всем отрядом",
+          "chance": 40,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ БИТВА"
+          ],
+          "success": "Поначалу никто не верит в затею, но вы сумели разбить стену всем отрядом. Отряд собирается и снова выходит на дорогу.",
+          "failure": "Попытка разбить стену всем отрядом приводит совсем не к тому результату, на который вы рассчитывали. Все замолкают, понимая, что дело не сложилось.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E098.5",
+          "action": "Уйти",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Вы решаете не вмешиваться и ведёте отряд дальше. Теперь можно оставить это место позади.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "E099",
+      "title": "Последний костёр",
+      "race": "Нейтральные и смешанные",
+      "tone": "не задан",
+      "actors": "",
+      "story": "У дороги горит костёр, вокруг которого лежит снаряжение пропавшего отряда. Следы обрываются прямо у огня. Встреча собирает слишком разных участников, и каждый явно преследует собственную цель. Пока стороны присматриваются друг к другу, отряд получает редкую возможность решить, в какую сторону качнётся ситуация.",
+      "choices": [
+        {
+          "id": "E099.1",
+          "action": "Забрать припасы",
+          "chance": 70,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ СТЫЧКА"
+          ],
+          "success": "После короткой заминки всё-таки удаётся забрать припасы. Вскоре путь снова свободен.",
+          "failure": "Попытка забрать припасы приводит совсем не к тому результату, на который вы рассчитывали. Отряд уходит без желаемого результата.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E099.2",
+          "action": "Забрать золото",
+          "chance": 55,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "РИСК РАНЕНИЯ"
+          ],
+          "success": "Вам удаётся забрать золото. Окружающие ещё долго обсуждают случившееся.",
+          "failure": "Как ни старается отряд, забрать золото не получается. Возвращаться к этому разговору никто не предлагает.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E099.3",
+          "action": "Понять, что произошло",
+          "chance": 85,
+          "role": "bishop",
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ СТЫЧКА"
+          ],
+          "success": "{{heroName}} справляется с поручением, хотя поначалу почти никто не верил в успех. Отряд собирается и снова выходит на дорогу.",
+          "failure": "Расчёт {{heroName}} не выдерживает проверки. Все замолкают, понимая, что дело не сложилось.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E099.4",
+          "action": "Устроить засаду у костра",
+          "chance": 55,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ БИТВА"
+          ],
+          "success": "К удивлению свидетелей, вам удаётся устроить засаду у костра. Теперь можно оставить это место позади.",
+          "failure": "Замысел рассыпается на полпути: устроить засаду у костра не выходит. Приходится продолжить путь, оставив неудачу позади.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E099.5",
+          "action": "Не трогать место",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Никто не преграждает путь, когда вы оставляете это место позади. Вскоре путь снова свободен.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "E100",
+      "title": "Дорога просит цену",
+      "race": "Нейтральные и смешанные",
+      "tone": "не задан",
+      "actors": "",
+      "story": "Камни под ногами начинают светиться, и сама дорога будто предлагает сделку: золото, припасы, кровь или бой в обмен на безопасный дальнейший путь. Пока стороны присматриваются друг к другу, отряд получает редкую возможность решить, в какую сторону качнётся ситуация. Встреча собирает слишком разных участников, и каждый явно преследует собственную цель.",
+      "choices": [
+        {
+          "id": "E100.1",
+          "action": "Отдать 20 Gold",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 20,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Решительный шаг приносит плоды: удаётся отдать 20 Gold. Теперь можно оставить это место позади.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E100.2",
+          "action": "Отдать 2 Supplies",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 2
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [],
+          "success": "Поначалу никто не верит в затею, но вы сумели отдать 2 Supplies. Вскоре путь снова свободен.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E100.3",
+          "action": "Рискнуть случайным non-King героем",
+          "chance": 70,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "РИСК РАНЕНИЯ"
+          ],
+          "success": "Вам удаётся рискнуть случайным non-King героем. Окружающие ещё долго обсуждают случившееся.",
+          "failure": "Попытка рискнуть случайным non-King героем оборачивается неудачей. Возвращаться к этому разговору никто не предлагает.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E100.4",
+          "action": "King принимает вызов дороги",
+          "chance": 40,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": true,
+          "warnings": [
+            "КОРОЛЬ МОЖЕТ ПОГИБНУТЬ"
+          ],
+          "success": "Поначалу никто не верит в затею, но вы сумели king принимает вызов дороги. Отряд собирается и снова выходит на дорогу.",
+          "failure": "Замысел рассыпается на полпути: king принимает вызов дороги не выходит. Все замолкают, понимая, что дело не сложилось.",
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        },
+        {
+          "id": "E100.5",
+          "action": "Отказаться платить",
+          "chance": 100,
+          "role": null,
+          "cost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successCost": {
+            "gold": 0,
+            "supplies": 0
+          },
+          "successEffects": [],
+          "failureEffects": [],
+          "alwaysEffects": [],
+          "kingRisk": false,
+          "warnings": [
+            "МОЖЕТ НАЧАТЬСЯ БИТВА"
+          ],
+          "success": "Вы решаете не вмешиваться и ведёте отряд дальше. Теперь можно оставить это место позади.",
+          "failure": null,
+          "variants": {
+            "success": {},
+            "failure": {}
+          }
+        }
+      ]
+    }
+  ],
+  "meta": {
+    "eventCount": 50,
+    "choiceCount": 212,
+    "randomChoiceCount": 151,
+    "first": "E051",
+    "last": "E100"
+  }
+}
