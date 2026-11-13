@@ -1209,9 +1209,26 @@ async function assertTileImage(page,cellId){
   assert.strictEqual((await read(walking)).gold,afterClaim,
     'reopening the map never rewards an already-collected week');
   // Remote safe cell can become a paid outpost, using the very same Arena ledger.
-  await walking.evaluate(storage=>{
+  const firstOutpost=await walking.evaluate(async storage=>{
+    const core=await import('./js/kingdom-map-core.mjs');
     const run=JSON.parse(localStorage.getItem(storage));
-    run.kingdomMap.cells['4,0']={status:'completed',type:'empty',explored:true};
+    if(!core.validateKingdomMap(run.kingdomMap))throw Error('Outpost QA map unexpectedly invalid');
+    // The enemy-province layout varies with each new game's seed. Keep the
+    // genuine no-building-on-enemy-land rule, not a fixed sometimes-hostile cell.
+    const candidates=[];
+    for(let x=-4;x<=4;x++)for(let y=-3;y<=3;y++)
+      if(Math.abs(x)+Math.abs(y)>=3)candidates.push({x,y});
+    candidates.sort((a,b)=>Math.abs(b.x)-Math.abs(a.x)||
+      Math.abs(a.y)-Math.abs(b.y)||a.x-b.x||a.y-b.y);
+    let id=null;
+    for(const {x,y} of candidates){
+      const candidate=x+','+y,original=run.kingdomMap.cells[candidate];
+      run.kingdomMap.cells[candidate]={status:'completed',type:'empty',explored:true};
+      if(core.canBuildOutpost(run.kingdomMap,{x,y})){id=candidate;break;}
+      if(original)run.kingdomMap.cells[candidate]=original;
+      else delete run.kingdomMap.cells[candidate];
+    }
+    if(!id)throw Error('No safe outpost cell within the map viewport');
     localStorage.setItem(storage,JSON.stringify(run));
     localStorage.setItem('rpchess.reboot.v1.arena',JSON.stringify({
       version:1,events:[{id:'kingdom:production:seed',kind:'kingdom-production',
@@ -1220,23 +1237,25 @@ async function assertTileImage(page,cellId){
     }));
     globalThis.dispatchEvent(new CustomEvent('rpchess:arena-updated'));
     globalThis.RPChessKingdomMap.open();
+    return id;
   },key);
   // The 25% floating inspector overlaps edge cells; dispatch selection directly,
   // since pointer access to off-screen locations requires normal map panning.
   // A real king drag intentionally suppresses subsequent cell clicks for 500ms.
   // Wait out that input safety window rather than asserting a suppressed click.
-  const outpostEligibility=await walking.evaluate(async storage=>{
+  const outpostEligibility=await walking.evaluate(async({storage,id})=>{
     const {canBuildOutpost,isOwned}=await import('./js/kingdom-map-core.mjs');
     const map=JSON.parse(localStorage.getItem(storage)).kingdomMap;
-    return {canBuild:canBuildOutpost(map,{x:4,y:0}),owned:isOwned(map,{x:4,y:0}),
-      pending:map.pendingCell,cell:map.cells['4,0']};
-  },key);
+    const [x,y]=id.split(',').map(Number);
+    return {canBuild:canBuildOutpost(map,{x,y}),owned:isOwned(map,{x,y}),
+      pending:map.pendingCell,cell:map.cells[id]};
+  },{storage:key,id:firstOutpost});
   assert(outpostEligibility.canBuild,
     'outpost fixture must be safe and eligible before UI interaction: '+
     JSON.stringify(outpostEligibility));
   await walking.waitForTimeout(550);
-  await walking.locator('[data-kingdom-cell="4,0"]').dispatchEvent('click');
-  assert.equal(await walking.locator('[data-kingdom-cell="4,0"].km-cell--selected').count(),1,
+  await walking.locator('[data-kingdom-cell="'+firstOutpost+'"]').dispatchEvent('click');
+  assert.equal(await walking.locator('[data-kingdom-cell="'+firstOutpost+'"].km-cell--selected').count(),1,
     'safe outpost cell must be selected by an accepted post-drag click');
   const buildButton=walking.locator('[data-kingdom-outpost]');
   assert.equal(await buildButton.count(),1);
@@ -1249,7 +1268,7 @@ async function assertTileImage(page,cellId){
   await buildButton.click();
   assert.equal((await read(walking)).kingdomMap.outposts.length,1);
   assert.equal((await read(walking)).kingdomMap.day,8,'outpost construction advances one day');
-  const outpostIcon=walking.locator('[data-kingdom-cell="4,0"] .km-object--outpost');
+  const outpostIcon=walking.locator('[data-kingdom-cell="'+firstOutpost+'"] .km-object--outpost');
   assert.equal(await outpostIcon.count(),1);
   // Production strips parchment SVG masters; verify the actual outpost PNG
   // decodes even when the icon is outside the visible lazy-load viewport.
@@ -1276,23 +1295,37 @@ async function assertTileImage(page,cellId){
   const shardBalance=await walking.locator('[data-kingdom-shards]').textContent();
   assert.equal(shardBalance,'70','outpost price comes from the shared Arena ledger');
   // Unaffordable next outpost offers a real Arena redirect without touching the run.
-  await walking.evaluate(storage=>{
+  const secondOutpost=await walking.evaluate(async storage=>{
+    const core=await import('./js/kingdom-map-core.mjs');
     const run=JSON.parse(localStorage.getItem(storage));
-    run.kingdomMap.cells['4,2']={status:'completed',type:'empty',explored:true};
+    const candidates=[];
+    for(let x=-4;x<=4;x++)for(let y=-3;y<=3;y++)
+      if(Math.abs(x)+Math.abs(y)>=3)candidates.push({x,y});
+    candidates.sort((a,b)=>Math.abs(b.x)-Math.abs(a.x)||
+      Math.abs(a.y)-Math.abs(b.y)||a.x-b.x||a.y-b.y);
+    let id=null;
+    for(const {x,y} of candidates){
+      const candidate=x+','+y,old=run.kingdomMap.cells[candidate];
+      run.kingdomMap.cells[candidate]={status:'completed',type:'empty',explored:true};
+      if(core.canBuildOutpost(run.kingdomMap,{x,y})){id=candidate;break;}
+      if(old)run.kingdomMap.cells[candidate]=old;
+      else delete run.kingdomMap.cells[candidate];
+    }
+    if(!id)throw Error('No independent second outpost cell for Arena redirect QA');
     localStorage.setItem(storage,JSON.stringify(run));
     localStorage.setItem('rpchess.reboot.v1.arena',JSON.stringify({
       version:1,events:[],squad:'humans',match:null,updatedAt:2
     }));
     globalThis.dispatchEvent(new CustomEvent('rpchess:arena-updated'));
     globalThis.RPChessKingdomMap.open();
+    return id;
   },key);
-  // The first outpost at 4,0 already annexes nearby cardinal cells.
-  // Use a safe diagonal-distance site outside its three-cell footprint.
+  // The next valid site must be outside the first outpost's owned footprint.
   // Recent pointer drags temporarily suppress cell clicks for 650ms; honor
   // that gameplay safety contract instead of racing an ignored test click.
   await walking.waitForTimeout(690);
-  await walking.locator('[data-kingdom-cell="4,2"]').dispatchEvent('click');
-  await walking.locator('[data-kingdom-cell="4,2"].km-cell--selected').waitFor({state:'attached'});
+  await walking.locator('[data-kingdom-cell="'+secondOutpost+'"]').dispatchEvent('click');
+  await walking.locator('[data-kingdom-cell="'+secondOutpost+'"].km-cell--selected').waitFor({state:'attached'});
   const earnButton=walking.locator('[data-kingdom-earn-shards]');
   assert(await earnButton.isVisible(),'insufficient shards offer the Earn in Arena button');
   assert.equal(await earnButton.locator('img.km-shard-inline').getAttribute('src'),
