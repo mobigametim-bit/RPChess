@@ -35,19 +35,24 @@ function industryYield(building,map){
  return resource?{kind:resource,amount:industryBase(resource)*industryLevel(map)}:null;
 }
 function initialIndustry(processedWeek=0){
- return {buildings:[],processedWeek,accruedGold:0,accruedSupplies:0,creditedGold:0,creditedSupplies:0};
+ return {buildings:[],processedWeek,pending:{},accruedGold:0,accruedSupplies:0,creditedGold:0,creditedSupplies:0};
 }
 function validIndustry(value){
  if(value==null)return true; // old saves before feature rollout
  if(!value||!Array.isArray(value.buildings)||!integer(value.processedWeek))return false;
  if(!['accruedGold','accruedSupplies','creditedGold','creditedSupplies'].every(field=>integer(value[field])))return false;
  if(value.creditedGold>value.accruedGold||value.creditedSupplies>value.accruedSupplies)return false;
+ // Pre-manual-collection preview saves lack pending: their previously
+ // automatic credits are already accounted for and must not be paid twice.
+ if(value.pending!=null&&(!value.pending||typeof value.pending!=='object'||
+    Array.isArray(value.pending)))return false;
  const seen=new Set();
  return value.buildings.every(b=>{
   if(!b||!KEY.test(b.id||'')||!BUILDING_TYPES[b.kind]||!integer(b.builtWeek)||
     b.builtWeek<1||b.builtWeek>value.processedWeek||seen.has(b.id))return false;
   seen.add(b.id);return true;
- });
+ })&&(value.pending==null||Object.entries(value.pending).every(([id,amount])=>
+   seen.has(id)&&integer(amount)&&amount>0));
 }
 // Royal-road segments, historical completed-event roads and outpost roads
 // reserve endpoints. Generated natural roads also prohibit construction.
@@ -94,7 +99,7 @@ function settleIndustryWeek(map,week){
  const old=map.industry||initialIndustry(Math.max(0,week-1));
  if(!validIndustry(old))return map;
  if(week<=old.processedWeek)return map.industry?map:{...map,industry:old};
- let industry={...old,buildings:[...old.buildings]};
+ let industry={...old,buildings:[...old.buildings],pending:{...(old.pending||{})}};
  // No instant payment for a brand-new site. One weekly payment per completed
  // site, then exactly one construction attempt for that week.
  for(let current=old.processedWeek+1;current<=week;current++){
@@ -102,8 +107,10 @@ function settleIndustryWeek(map,week){
   for(const site of industry.buildings){
    if(site.builtWeek>=current)continue;
    const resource=BUILDING_TYPES[site.kind].kind;
-   if(resource==='gold')industry.accruedGold+=industryBase('gold')*level;
-   else industry.accruedSupplies+=industryBase('supplies')*level;
+   const gain=industryBase(resource)*level;
+   industry.pending[site.id]=(industry.pending[site.id]||0)+gain;
+   if(resource==='gold')industry.accruedGold+=gain;
+   else industry.accruedSupplies+=gain;
   }
   const site=selectConstruction(map,industry,current);
   if(site)industry.buildings.push(site);
@@ -111,18 +118,26 @@ function settleIndustryWeek(map,week){
  }
  return {...map,industry};
 }
-function applyIndustryCredits(run){
- const industry=run?.kingdomMap?.industry;
- if(!industry||!validIndustry(industry))return run;
- const gold=industry.accruedGold-industry.creditedGold,
-  supplies=industry.accruedSupplies-industry.creditedSupplies;
- if(!gold&&!supplies)return run;
- if(!integer(run.gold)||!integer(run.supplies))return run;
- if(!Number.isSafeInteger(run.gold+gold)||!Number.isSafeInteger(run.supplies+supplies))
-  throw new Error('Kingdom industry credit exceeds safe resource bounds');
- return {...run,gold:run.gold+gold,supplies:run.supplies+supplies,
-  kingdomMap:{...run.kingdomMap,industry:{...industry,
-   creditedGold:industry.accruedGold,creditedSupplies:industry.accruedSupplies}}};
+// Uncollected weekly yields stay above each finished building even across
+// saves and skipped weeks. The amount is frozen when its week is processed.
+function industryPending(map,id){
+ const state=map?.industry;
+ const amount=state?.pending?.[id]||0;
+ const site=state?.buildings?.find(b=>b.id===id);
+ if(!site||site.builtWeek>=state.processedWeek||!integer(amount)||!amount)return null;
+ return {kind:BUILDING_TYPES[site.kind].kind,amount};
+}
+function collectIndustry(map,id){
+ if(!validIndustry(map?.industry))return {ok:false,map};
+ const available=industryPending(map,id);
+ if(!available)return {ok:false,map};
+ const old=map.industry,pending={...old.pending};
+ delete pending[id];
+ const total=available.kind==='gold'?'creditedGold':'creditedSupplies';
+ const industry={...old,pending,[total]:old[total]+available.amount};
+ if(!validIndustry(industry))return {ok:false,map};
+ return {ok:true,map:{...map,industry},...available,
+  receiptId:'industry:'+id+':'+old.processedWeek};
 }
 function industrySprite(){return INDUSTRY_ATLAS;}
 function industrySpriteIndex(site,week){
@@ -130,4 +145,4 @@ function industrySpriteIndex(site,week){
 }
 export {BUILDING_TYPES,TYPES_BY_BIOME,BUILDING_DIR,INDUSTRY_ATLAS,INDUSTRY_ATLAS_ORDER,initialIndustry,validIndustry,
  occupiedRoadCells,candidateCells,selectConstruction,settleIndustryWeek,
- industryLevel,industryBase,industryYield,industrySprite,industrySpriteIndex,applyIndustryCredits};
+ industryLevel,industryBase,industryYield,industryPending,collectIndustry,industrySprite,industrySpriteIndex};
