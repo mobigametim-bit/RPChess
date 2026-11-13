@@ -3,9 +3,9 @@
 import {PARCHMENT_TILE} from './kingdom-parchment-core.mjs';
 import {hashString} from './race-assets.mjs';
 import {BATTLE_PROVINCE_HUES} from './kingdom-map-core.mjs?v=20261112-province-colors-v1';
-import {visibleRoyalRoads,visibleTravelRoads} from './kingdom-road-network.mjs?v=20261111-polish-v1';
+import {visibleRoyalRoads,visibleTravelRoads,ownedKeys} from './kingdom-road-network.mjs?v=20261111-polish-v1';
 import {drawSandstoneRoad} from './kingdom-road-paving.mjs?v=20261110-graystone-v3';
-import {VISUAL} from './kingdom-world-config.mjs?v=20261109-atlas-visual5';
+import {VISUAL} from './kingdom-world-config.mjs?v=20261113-opaque-terrain-v1';
 
 const TILE=PARCHMENT_TILE;
 const SIDES=Object.freeze([
@@ -132,6 +132,21 @@ function drawKingdomRoads(ctx,{map,view,columns,rows,paint=true}){
  const painted=new Set();
  const royalRoads=visibleRoyalRoads(map);
  const travelRoads=visibleTravelRoads(map);
+ // The owner boundary is evaluated per map tile, not per road ID.
+ // Otherwise a road crossing into the kingdom stays gray end-to-end.
+ const ownedRectangles=[];
+ for(const id of ownedKeys(map)){
+  const p=parseTile(id);
+  if(!p||p.x<left-2||p.x>left+columns+1||
+     p.y<top-2||p.y>top+rows+1)continue;
+  ownedRectangles.push([(p.x-left)*TILE,(p.y-top)*TILE]);
+ }
+ function clipRoadSurface(inside){
+  ctx.beginPath();
+  if(!inside)ctx.rect(-TILE*3,-TILE*3,width+TILE*6,height+TILE*6);
+  for(const [x,y] of ownedRectangles)ctx.rect(x,y,TILE,TILE);
+  ctx.clip(inside?'nonzero':'evenodd');
+ }
  for(const road of [...travelRoads,...royalRoads]){
   const a=parseTile(road.from),b=parseTile(road.to);
   if(!a||!b||!Number.isFinite(road.bend))continue;
@@ -145,15 +160,17 @@ function drawKingdomRoads(ctx,{map,view,columns,rows,paint=true}){
   const dx=x2-x1,dy=y2-y1,length=Math.hypot(dx,dy);
   if(length<1)continue;
   const offset=road.bend*TILE;
-  // Pale sandstone belongs inside the kingdom. Journey routes and
-  // roads outside the border use curved gray stone on the same world graph.
-  // Retain the approved 16px width and natural-road opacity.
+  // Paint the SAME 16px brick path with two disjoint territory masks:
+  // vivid yellow on owned tiles, gray outside. A border crossing changes
+  // tone exactly at the tile boundary without changing route geometry.
   if(!paint){roadCount++;continue;}
-  ctx.save();ctx.globalAlpha*=VISUAL.roadOpacity;
-  if(drawSandstoneRoad(ctx,{x1,y1,x2,y2,bend:offset,id:road.id||identity,
-     tone:road.kind==='travel'||road.surface==='gray'?'gray':'sandstone'}))
-   roadCount++;
-  ctx.restore();
+  for(const [inside,tone] of [[false,'gray'],[true,'sandstone']]){
+   ctx.save();ctx.globalAlpha*=VISUAL.roadOpacity;
+   clipRoadSurface(inside);
+   drawSandstoneRoad(ctx,{x1,y1,x2,y2,bend:offset,id:road.id||identity,tone});
+   ctx.restore();
+  }
+  roadCount++;
  }
 
  return roadCount;

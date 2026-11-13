@@ -84,6 +84,113 @@ class MemoryStorage {
   assert.strictEqual(persistence.readRun(storage).gold, 137, 'Gold must round-trip through save persistence');
   assert.strictEqual(persistence.readRun(storage).supplies, 4, 'Supplies must round-trip through save persistence');
 
+  // Minimal weekly production regression: reuse the Resources persistence suite,
+  // rather than create a second standalone economy testing framework.
+  const kingdom=await import(pathToFileURL(path.join(game,'js/kingdom-map-core.mjs')).href);
+  const industry=await import(pathToFileURL(path.join(game,'js/kingdom-industry-core.mjs')).href);
+  const industryRun=persistence.createRun({now:3000,id:'production-weekly-fixture'});
+  // Seed a wide owned QA area while keeping the initial Castle at level II.
+  let map={...kingdom.createKingdomMap(industryRun,6500,'humans'),peakKingPower:600};
+  assert(industry.candidateCells(map).length>0,
+    'large owned early-game territory must have at least one empty biome-compatible tile');
+  assert.equal(map.industry.buildings.length,0,'new map has no industry before first weekly boundary');
+  for(let n=2;n<=6;n++)map=kingdom.advanceDay(map,'industry-week:day'+n);
+  assert.equal(map.industry.buildings.length,0,'days before 7 must not construct');
+  map=kingdom.advanceDay(map,'industry-week:day7');
+  assert.equal(map.industry.buildings.length,1,'week 1 should found one site');
+  const site=map.industry.buildings[0];
+  assert.equal(site.builtWeek,1);
+  assert.equal(industry.industrySprite(site,1),'assets/kingdom-production/industry-atlas.png');
+  assert.equal(industry.industrySpriteIndex(site,1),0,'the construction site uses first atlas tile');
+  assert.equal(industry.industrySpriteIndex({kind:'oasis',builtWeek:1},2),8,'Oasis is last atlas tile');
+  const industryAtlasPath=path.join(game,industry.INDUSTRY_ATLAS);
+  const industryBytes=fs.readFileSync(industryAtlasPath);
+  assert.equal(industryBytes.subarray(0,8).toString('hex'),'89504e470d0a1a0a','production art must be a PNG');
+  assert.equal(industryBytes.readUInt32BE(16),576,'nine 64px sprites in the atlas');
+  assert.equal(industryBytes.readUInt32BE(20),64,'production art preserves original 64px height');
+  const expected=industry.industryYield(site,map);
+  assert([5,1].includes(industry.industryBase(expected.kind)));
+  assert.deepStrictEqual(industry.TYPES_BY_BIOME.wasteland,['oasis'],
+    'owner-added Oasis is the only wasteland production building');
+  assert.deepStrictEqual(industry.industryYield({kind:'oasis'},map),
+    {kind:'supplies',amount:industry.industryLevel(map)},
+    'Oasis produces one Supply per Castle level weekly');
+  assert(!industry.candidateCells(map).some(candidate=>candidate.id===site.id),
+    'industry cannot occupy an already occupied or existing road tile');
+  assert.deepStrictEqual(kingdom.advanceDay(map,'industry-week:day7'),map,
+    'repeated action ID may not advance day or create a duplicate site');
+  for(let n=8;n<=14;n++)map=kingdom.advanceDay(map,'industry-week:day'+n);
+  assert.equal(map.industry.buildings.length,2,'week 2 adds only one more construction');
+  assert.equal(map.industry.accruedGold,expected.kind==='gold'?expected.amount:0);
+  assert.equal(map.industry.accruedSupplies,expected.kind==='supplies'?expected.amount:0);
+  const industryStorage=new MemoryStorage();
+  const waiting=persistence.writeRun({...industryRun,kingdomMap:map},industryStorage,3100);
+  assert.equal(waiting.gold,industryRun.gold,'weekly building income is NOT paid on save');
+  assert.equal(waiting.supplies,industryRun.supplies,'weekly Supplies wait for player collection');
+  assert.deepStrictEqual(industry.industryPending(map,site.id),expected,
+    'newly completed production shows a collectible resource amount');
+  const waitingAgain=persistence.writeRun(persistence.readRun(industryStorage),industryStorage,3200);
+  assert.equal(waitingAgain.gold,waiting.gold,'reload cannot auto-credit pending resources');
+  assert.deepStrictEqual(industry.industryPending(waitingAgain.kingdomMap,site.id),expected,
+    'unclaimed resource survives reload');
+  const collected=industry.collectIndustry(waitingAgain.kingdomMap,site.id);
+  assert(collected.ok,'one click claims the finished building payout');
+  assert.equal(collected.amount,expected.amount);
+  const incomeRun=persistence.writeRun({...waitingAgain,kingdomMap:collected.map,
+    ...(collected.kind==='gold'?{gold:waitingAgain.gold+collected.amount}:
+      {supplies:waitingAgain.supplies+collected.amount})},industryStorage,3250);
+  assert.equal(incomeRun.gold,industryRun.gold+map.industry.accruedGold);
+  assert.equal(incomeRun.supplies,industryRun.supplies+map.industry.accruedSupplies);
+  assert.equal(industry.industryPending(incomeRun.kingdomMap,site.id),null,
+    'collected marker disappears after one click');
+  assert.equal(industry.collectIndustry(incomeRun.kingdomMap,site.id).ok,false,
+    'clicking the same building twice never produces two rewards');
+  const paidAgain=persistence.writeRun(persistence.readRun(industryStorage),industryStorage,3300);
+  assert.equal(paidAgain.gold,incomeRun.gold,'reloading after pickup does not duplicate Gold');
+  assert.equal(paidAgain.supplies,incomeRun.supplies,'reloading after pickup does not duplicate Supplies');
+  const upgraded=kingdom.updatePeak(paidAgain.kingdomMap,2000);
+  assert.equal(industry.industryLevel(upgraded),5,'castle level is the production multiplier');
+  assert.equal(industry.industryYield(site,upgraded).amount,industry.industryBase(expected.kind)*5);
+  let improved=upgraded;
+  for(let n=15;n<=21;n++)improved=kingdom.advanceDay(improved,'industry-week:day'+n);
+  const extras=improved.industry.buildings.slice(0,2).reduce((acc,b)=>{
+    const yieldNow=industry.industryYield(b,improved);
+    acc[yieldNow.kind]+=yieldNow.amount;return acc;
+  },{gold:0,supplies:0});
+  assert.equal(improved.industry.accruedGold-map.industry.accruedGold,extras.gold);
+  assert.equal(improved.industry.accruedSupplies-map.industry.accruedSupplies,extras.supplies);
+  const beforeNextClick=persistence.writeRun({...paidAgain,kingdomMap:improved},industryStorage,3400);
+  assert.equal(beforeNextClick.gold,incomeRun.gold,'week 3 resources also wait for manual pickup');
+  assert.equal(beforeNextClick.supplies,incomeRun.supplies);
+  let claimedMap=beforeNextClick.kingdomMap,claimedGold=0,claimedSupplies=0;
+  for(const previousSite of improved.industry.buildings.slice(0,2)){
+    const result=industry.collectIndustry(claimedMap,previousSite.id);
+    assert(result.ok,'previously finished sites must become claimable each week');
+    claimedMap=result.map;
+    if(result.kind==='gold')claimedGold+=result.amount;
+    else claimedSupplies+=result.amount;
+  }
+  assert.deepStrictEqual({gold:claimedGold,supplies:claimedSupplies},extras);
+  const replay=persistence.writeRun({...beforeNextClick,kingdomMap:claimedMap,
+    gold:beforeNextClick.gold+claimedGold,
+    supplies:beforeNextClick.supplies+claimedSupplies},industryStorage,3500);
+  assert.equal(replay.gold,incomeRun.gold+extras.gold,'week 3 Gold paid on manual collection');
+  assert.equal(replay.supplies,incomeRun.supplies+extras.supplies,'week 3 Supplies paid on manual collection');
+  // Backward compatibility: preview saves from automatic payouts lack pending
+  // but already have a credited ledger; do not recreate those paid markers.
+  const legacyIndustry={...map.industry};
+  delete legacyIndustry.pending;
+  legacyIndustry.creditedGold=legacyIndustry.accruedGold;
+  legacyIndustry.creditedSupplies=legacyIndustry.accruedSupplies;
+  assert.equal(industry.industryPending({...map,industry:legacyIndustry},site.id),null,
+    'previously auto-paid preview income must not be claimable a second time');
+  const prior={...map,day:70};
+  delete prior.industry;
+  const migrated=kingdom.migrateKingdomMap(prior,industryRun);
+  assert.equal(migrated.industry.processedWeek,10,'old save migrates without historical industry');
+  assert.deepStrictEqual(migrated.industry.buildings,[],'old save gains no backdated buildings');
+  assert.equal(migrated.industry.accruedGold,0,'old save gains no retroactive Gold');
+
   const travelSource = fs.readFileSync(path.join(game, 'js/travel-choice-app.mjs'), 'utf8');
   const travelCoreSource = fs.readFileSync(path.join(game, 'js/travel-choice-core.mjs'), 'utf8');
   const appSource = fs.readFileSync(path.join(game, 'js/resources-app.mjs'), 'utf8');

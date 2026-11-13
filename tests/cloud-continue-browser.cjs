@@ -9,8 +9,24 @@ const RUN_KEY='rpchess.reboot.v1.run';
   const browser=await chromium.launch({headless:true});
   try{
     const source=await browser.newPage();
+    const startupErrors=[];
+    source.on('pageerror',error=>startupErrors.push(String(error.stack||error)));
+    source.on('console',message=>{if(message.type()==='error')
+      startupErrors.push('console: '+message.text());});
     await source.goto(url,{waitUntil:'networkidle'});
-    await startNewRun(source,{playerName:'Cloud Tester'});
+    try{
+      await startNewRun(source,{playerName:'Cloud Tester'});
+    }catch(error){
+      throw new Error('Cloud new-run startup diagnostics: '+JSON.stringify({
+        pageErrors:startupErrors.slice(-12),
+        activeScripts:await source.evaluate(()=>({
+          readyState:document.readyState,
+          menu:!!globalThis.RPChessRebootFoundation,
+          gameLoading:document.querySelector('[data-game-loading]')?.hidden,
+          modalHidden:document.querySelector('[data-journey-choice-modal]')?.hidden
+        })).catch(()=>null)
+      })+' | '+String(error));
+    }
     const run=await source.evaluate(key=>localStorage.getItem(key),RUN_KEY);
     assert(run,'source device must have an active run');
     await source.close();

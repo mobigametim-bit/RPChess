@@ -20,17 +20,19 @@ import {kingdomMapSprite,kingdomEncounterSprite} from './kingdom-map-assets.mjs'
 import {renderParchment,renderParchmentFog} from './kingdom-parchment-app.mjs?v=20261112-fog98-v1';
 import {drawKingdomOverlay} from './kingdom-map-overlay.mjs?v=20261112-province-colors-v1';
 import {animateTravelers,stopTravelers} from './kingdom-traveler-renderer.mjs?v=20261111-npc-floor-v1';
+import {industrySprite,industrySpriteIndex,industryYield,industryLevel,industryPending,collectIndustry,BUILDING_TYPES} from './kingdom-industry-core.mjs';
+import {worldAt} from './kingdom-world-core.mjs';
 import {ATLAS_VIEW} from './kingdom-world-config.mjs?v=20261109-atlas-visual5';
 import {subscribe,currentLanguage,t} from './i18n.mjs';
 import {runtimeT} from '../localization/runtime-ui.mjs';
 import {createKingdomMap,validateKingdomMap,updatePeak,randomEncounter,enterCell,
  finishEncounter,matchesCombatReceipt,migrateKingdomMap,territoryCapacity,playerTerritoryCount,castleLevel,revealAround,
  collectProduction,canBuildOutpost,buildOutpost,canBuildSettlement,buildSettlement,
- romanForStars,keyOf,adjacent,shortestKingRoute,acknowledgeReturn,isOwned,borderEdges} from './kingdom-map-core.mjs?v=20261112-province-colors-v1';
+ romanForStars,keyOf,adjacent,shortestKingRoute,acknowledgeReturn,isOwned,borderEdges,weekForDay} from './kingdom-map-core.mjs?v=20261112-province-colors-v1';
 
 const COPY={
  ru:{day:'День',shards:'Осколки чести',castle:'Замок',supply:'Припасы',power:'Мощь',points:'Очки присоединения',
-   hidden:'Неизведанная территория',empty:'Спокойная местность',safeTerrain:'Здесь нет дорожного события.',annex:'Присоединить · 1 очко',annexed:'В составе королевства',
+   hidden:'Неизведанная территория',empty:'Местность',safeTerrain:'',annex:'Присоединить · 1 очко',annexed:'В составе королевства',
    complete:'Пройдена',failed:'Неудача — повторная попытка',inProgress:'Встреча продолжается',
    return:'К отряду',reveal:'Открыта встреча',entry:'Начинается',services:'Услуги поселения',
    pending:'Открываю путь…',level:'Уровень',unavailable:'Недоступно для присоединения',lands:'Владения',
@@ -40,9 +42,10 @@ const COPY={
    moveKing:'Перетащите короля для перемещения',collect:'Собрать',battleReady:'Защитник вернулся. Войди в клетку для нового боя.',
    needCompanion:'Стычка отложена: нужен хотя бы один боец помимо короля. Пополните отряд.',
 
-   zoomGroup:'Масштаб карты',zoomIn:'Увеличить масштаб',zoomOut:'Уменьшить масштаб',zoomReset:'Сбросить масштаб карты'},
+   productionSite:'Строится',productionWeekly:'за неделю',productionSupplies:'припасов',productionGold:'золота',
+ zoomGroup:'Масштаб карты',zoomIn:'Увеличить масштаб',zoomOut:'Уменьшить масштаб',zoomReset:'Сбросить масштаб карты'},
  en:{day:'Day',shards:'Honor shards',castle:'Castle',supply:'Supplies',power:'Power',points:'Annexation points',
-   hidden:'Unexplored territory',empty:'Quiet terrain',safeTerrain:'No encounter at this location.',annex:'Annex · 1 point',annexed:'Part of your kingdom',
+   hidden:'Unexplored territory',empty:'Terrain',safeTerrain:'',annex:'Annex · 1 point',annexed:'Part of your kingdom',
    complete:'Cleared',failed:'Failed — retry encounter',inProgress:'Encounter in progress',
    return:'Squad',reveal:'Encounter discovered',entry:'Entering',services:'Settlement services',
    pending:'Exploring…',level:'Level',unavailable:'Cannot annex yet',lands:'Territory',
@@ -52,8 +55,25 @@ const COPY={
    moveKing:'Drag the king to move',collect:'Collect',battleReady:'Defender returned. Enter the cell for a rematch.',
    needCompanion:'Skirmish postponed: recruit at least one fighter besides your King.',
 
-   zoomGroup:'Map zoom',zoomIn:'Zoom in',zoomOut:'Zoom out',zoomReset:'Reset map zoom'}
+   productionSite:'Under construction',productionWeekly:'per week',productionSupplies:'Supplies',productionGold:'Gold',
+ zoomGroup:'Map zoom',zoomIn:'Zoom in',zoomOut:'Zoom out',zoomReset:'Reset map zoom'}
 };
+const INDUSTRY_NAMES=Object.freeze({
+ ru:{farm:'Ферма',pasture:'Пастбище',fishing_pier:'Рыбацкий причал',
+  hunting_lodge:'Охотничий домик',gold_mine:'Золотая шахта',
+  stone_quarry:'Каменоломня',sawmill:'Лесопилка',oasis:'Оазис'},
+ en:{farm:'Farm',pasture:'Pasture',fishing_pier:'Fishing pier',
+  hunting_lodge:'Hunting lodge',gold_mine:'Gold mine',
+  stone_quarry:'Stone quarry',sawmill:'Sawmill',oasis:'Oasis'}
+});
+function industryName(kind){return INDUSTRY_NAMES[lang()==='en'?'en':'ru'][kind]||kind;}
+const TERRAIN_NAMES=Object.freeze({
+ ru:{forest:'Лес',mountain:'Горы',hills:'Холмы',plains:'Равнина',
+  marsh:'Болото',wasteland:'Пустоши'},
+ en:{forest:'Forest',mountain:'Mountains',hills:'Hills',plains:'Plains',
+  marsh:'Marsh',wasteland:'Wasteland'}
+});
+function terrainName(biome){return TERRAIN_NAMES[lang()==='en'?'en':'ru'][biome]||tr('empty');}
 // Atlas view scales the original 142px logical tiles to an interactive 87px default.
 const MAP_LAYOUT=Object.freeze({cellPx:142,eventScalePercent:73,kingPx:92,inspectorWidthPercent:25});
 const MIN_COLUMNS=9,MIN_ROWS=7;
@@ -192,6 +212,9 @@ function zoomWheel(e){
 const REVEAL_MS=680,MOVE_MS=460,FLAVOR_MS=2600,DISCOVERY_WAIT_MS=4050,RESOURCE_FX_MS=2600;
 const GOLD_ICON='generated_assets/reward_gold.png';
 const SUPPLIES_ICON='generated_assets/reward_supplies.png';
+const OUTPOST_ACTION_ICON='assets/ui/build_outpost_128.png';
+const SETTLEMENT_ACTION_ICON='assets/ui/build_settlement_128.png';
+const ARENA_ACTION_ICON='assets/ui/main-menu-arena.png';
 // Reuse Arena's canonical Power icon; already included in the optimized build.
 const POWER_ICON='generated_assets/node_battle.png';
 const GLORY_ICON='assets/relics/banner_nine.png';
@@ -384,7 +407,7 @@ function report(text){const node=screen?.querySelector('[data-kingdom-toast]');i
  node.textContent=text;node.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>{node.hidden=true},2400);}
 function cssReady(){
  if(document.querySelector('[data-kingdom-style]'))return;
- const link=document.createElement('link');link.rel='stylesheet';link.href='css/kingdom-map.css?v=20261111-polish-v1';link.dataset.kingdomStyle='';
+ const link=document.createElement('link');link.rel='stylesheet';link.href='css/kingdom-map.css?v=20261113-opaque-industry-v1';link.dataset.kingdomStyle='';
  link.addEventListener('load',()=>{if(screen&&!screen.hidden)render();});
  document.head.append(link);
 }
@@ -422,9 +445,9 @@ function screenReady(){
  <div class="km-inspector-summary" data-kingdom-summary>
  <h2 data-kingdom-inspector-title></h2><p data-kingdom-inspector-text></p></div>
  <div class="km-inspector-buttons"><button type="button" data-kingdom-annex hidden></button>
- <button type="button" data-kingdom-outpost hidden></button>
- <button type="button" data-kingdom-build-settlement hidden></button>
- <button type="button" data-kingdom-earn-shards hidden></button></div>
+ <button class="km-inspector-action" type="button" data-kingdom-outpost hidden></button>
+ <button class="km-inspector-action" type="button" data-kingdom-build-settlement hidden></button>
+ <button class="km-inspector-action km-inspector-action--arena" type="button" data-kingdom-earn-shards hidden></button></div>
  <p class="km-hint" data-kingdom-hint></p></aside></section></div>`;
  screen.style.setProperty('--km-event-size-px',(MAP_LAYOUT.cellPx*MAP_LAYOUT.eventScalePercent/100)+'px');
  screen.style.setProperty('--km-king-px',MAP_LAYOUT.kingPx+'px');
@@ -651,6 +674,8 @@ function render(){
  const cells=document.createDocumentFragment(),productions=document.createDocumentFragment();
  const tileUrls=new Map(); // Reuse resolved CSS URLs across the visible grid.
  const outpostCenters=new Set((map.outposts||[]).map(post=>post.id));
+ const industrySites=new Map((map.industry?.buildings||[]).map(site=>[site.id,site]));
+ const industryWeek=weekForDay(map.day);
  for(let row=-CENTER_Y;row<HEIGHT-CENTER_Y;row++)
   for(let col=-CENTER_X;col<WIDTH-CENTER_X;col++){
    const point={x:view.x+col,y:view.y+row},id=keyOf(point.x,point.y);
@@ -683,7 +708,7 @@ function render(){
     btn.style.backgroundImage='url("'+tileUrl+'")';
    }
    btn.setAttribute('aria-label',isCastle?tr('castle'):visible&&cell?.selectedEncounter?
-    t('travel.type.'+cell.selectedEncounter.type):cell?.type==='empty'?tr('empty'):tr('hidden'));
+    t('travel.type.'+cell.selectedEncounter.type):cell?.type==='empty'?terrainName(cell.biome||worldAt(map.seed,point.x,point.y).biome):tr('hidden'));
    // Outside scouting range: fog only, with no mystery punctuation or encounter placeholder.
    // Once scouted, the stored encounter SVG is drawn immediately on its revealed cell.
    if(isCastle&&cell){
@@ -730,6 +755,42 @@ function render(){
     tower.src='assets/kingdom-parchment/decor_minor_landmarks/04_watchtower.png';
     tower.alt='';tower.loading='lazy';btn.append(tower);
    }
+   const industrySite=industrySites.get(id);
+   if(visible&&industrySite){
+    const building=document.createElement('span');
+    building.className='km-object km-object--industry'+(industrySite.builtWeek>=industryWeek?' km-object--building-site':'');
+    building.style.backgroundImage='url("'+industrySprite()+'")';
+    building.style.backgroundPosition=(industrySpriteIndex(industrySite,industryWeek)*12.5)+'% center';
+    building.setAttribute('aria-hidden','true');
+    btn.dataset.kingdomIndustry=industrySite.kind;
+    btn.dataset.kingdomIndustryStage=industrySite.builtWeek>=industryWeek?'building':'complete';
+    btn.append(building);
+    const marker=document.createElement('small');marker.className='km-industry-level';
+    marker.textContent=industrySite.builtWeek>=industryWeek?'…':
+      ['','I','II','III','IV','V'][industryLevel(map)];
+    btn.append(marker);
+    btn.setAttribute('aria-label',industryName(industrySite.kind));
+    // Share existing floating collection UX with travel-event production.
+    // New sites become ready after their first completed weekly cycle.
+    const ready=industryPending(map,id);
+    if(ready&&owned){
+     const pickup=document.createElement('button');
+     pickup.type='button';pickup.className='km-production-marker';
+     pickup.dataset.kingdomCollect=id;
+     pickup.dataset.kingdomIndustryCollect=id;
+     pickup.dataset.productionKind=ready.kind;
+     pickup.style.left=((col+CENTER_X+.62)*100/WIDTH)+'%';
+     pickup.style.top=((row+CENTER_Y+.13)*100/HEIGHT)+'%';
+     const resourceIcon=document.createElement('img');
+     resourceIcon.src=ready.kind==='gold'?GOLD_ICON:SUPPLIES_ICON;
+     resourceIcon.alt='';
+     const amount=document.createElement('strong');amount.textContent=String(ready.amount);
+     pickup.append(resourceIcon,amount);
+     pickup.setAttribute('aria-label',tr('collect')+': '+
+      (ready.kind==='gold'?tr('productionGold'):tr('productionSupplies'))+' '+ready.amount);
+     productions.append(pickup);
+    }
+   }
    if(visible&&cell?.production&&owned&&cell.status==='completed'){
     const item=cell.production,marker=document.createElement('button');
     marker.type='button';marker.className='km-production-marker';
@@ -758,17 +819,21 @@ function render(){
   const atlas=document.createElement('canvas');atlas.className='km-parchment-canvas';
   atlas.dataset.kingdomParchment='';atlas.setAttribute('aria-hidden','true');
   world.prepend(atlas);
-  renderParchment(atlas,{seed:map.seed,view,columns:WIDTH,rows:HEIGHT,map});
  }
  const overlay=document.createElement('canvas');overlay.className='km-kingdom-overlay';
  overlay.dataset.kingdomOverlay='';overlay.setAttribute('aria-hidden','true');
  world.append(overlay);
- drawKingdomOverlay(overlay,{map,view,columns:WIDTH,rows:HEIGHT,drawBorder:!parchment,drawRoads:!parchment});
-  if(parchment){
-   // Preserve legacy diagnostic metadata on the overlay without painting
-   // the border above player-created roads or world objects.
-   overlay.dataset.borderSegments=world.querySelector('.km-parchment-canvas')?.dataset.borderSegments||'0';
-  }
+ // Paper < political tint and both sets of borders < roads/nature < sites.
+ // The transparent foreground canvas prevents borders from painting over
+ // water, paving, natural landmarks, pieces and resource markers.
+ if(parchment){
+  const details=document.createElement('canvas');details.className='km-parchment-details';
+  details.dataset.kingdomTerrainDetails='';details.setAttribute('aria-hidden','true');
+  world.append(details);
+  renderParchment(world.querySelector('.km-parchment-canvas'),
+   {seed:map.seed,view,columns:WIDTH,rows:HEIGHT,map,detailCanvas:details});
+ }
+ drawKingdomOverlay(overlay,{map,view,columns:WIDTH,rows:HEIGHT,drawBorder:true,drawRoads:!parchment});
   // One independent, noninteractive animation layer: no run state writes.
   const travelers=document.createElement('canvas');travelers.className='km-travelers-layer';
   travelers.dataset.kingdomTravelers='';travelers.setAttribute('aria-hidden','true');
@@ -832,13 +897,22 @@ function render(){
    knownChosen.status==='completed'&&knownChosen.selectedEncounter?.type==='settlement')));
  else{
   slot.replaceChildren();
+  const industrySite=industrySites.get(selectedId);
+  const industryBuilding=industrySite&&BUILDING_TYPES[industrySite.kind];
+  const industryActive=Boolean(industryBuilding&&industrySite.builtWeek<industryWeek);
+  const weeklyYield=industryBuilding?industryYield(industrySite,map):null;
+  const industryDetail=industrySite?(industryActive?
+   tr('level')+' '+['','I','II','III','IV','V'][industryLevel(map)]+' · +'+weeklyYield.amount+' '+
+    tr(weeklyYield.kind==='gold'?'productionGold':'productionSupplies')+' '+tr('productionWeekly'):
+   tr('productionSite')):null;
   const header=(map.outposts||[]).some(p=>p.id===(selected||keyOf(map.king.x,map.king.y)))?tr('outpost'):info?.type==='castle'?tr('castle'):
-   info?.type==='empty'?tr('empty'):info?.selectedEncounter?t('travel.type.'+info.selectedEncounter.type):tr('hidden');
+   info?.type==='empty'?terrainName(info.biome||worldAt(map.seed,...selectedId.split(',').map(Number)).biome):info?.selectedEncounter?t('travel.type.'+info.selectedEncounter.type):tr('hidden');
   const description=(map.outposts||[]).some(p=>p.id===(selected||keyOf(map.king.x,map.king.y)))?tr('outpostDetail'):info?.type==='castle'?tr('level')+' '+['','I','II','III','IV','V'][castleLevel(map.peakKingPower)]:
-   info?.type==='empty'?tr('safeTerrain'):
+   info?.type==='empty'?'':
    info?.status==='completed'?tr('complete'):tr('discover');
-  screen.querySelector('[data-kingdom-inspector-title]').textContent=header;
-  screen.querySelector('[data-kingdom-inspector-text]').textContent=description;
+  screen.querySelector('[data-kingdom-inspector-title]').textContent=
+   industrySite?industryName(industrySite.kind):header;
+  screen.querySelector('[data-kingdom-inspector-text]').textContent=industryDetail??description;
  }
  const ann=screen.querySelector('[data-kingdom-annex]'),outpost=screen.querySelector('[data-kingdom-outpost]'),earn=screen.querySelector('[data-kingdom-earn-shards]'),settlementBuild=screen.querySelector('[data-kingdom-build-settlement]');
  const id=selectedId;
@@ -848,10 +922,9 @@ function render(){
  const ownSettlement=Boolean(selectedPoint&&isOwned(map,selectedPoint));
  const costs=settlementPrice(ownSettlement);
  settlementBuild.hidden=!canPlaceSettlement;
- settlementBuild.replaceChildren(document.createTextNode((lang()==='en'?'Build Settlement':'Построить Поселение')+' · '+costs.gold+' '));
- const goldImage=document.createElement('img');goldImage.src=GOLD_ICON;goldImage.alt='';
- goldImage.style.cssText='height:20px;width:20px;object-fit:contain;vertical-align:middle';
- settlementBuild.append(goldImage,document.createTextNode(' + '+costs.shards+' '),shardIcon());
+ settlementBuild.replaceChildren(actionArtwork(SETTLEMENT_ACTION_ICON),
+  actionPrices([[costs.gold,GOLD_ICON],[costs.shards,SHARD_ICON]]));
+ settlementBuild.setAttribute('aria-label',actionLabel('settlement',costs));
  settlementBuild.disabled=!canPlaceSettlement||(run.gold||0)<costs.gold||honorShards()<costs.shards;
  settlementBuild.setAttribute('aria-disabled',String(settlementBuild.disabled));
  settlementBuild.title=settlementBuild.disabled?(lang()==='en'?'Not enough resources':'Недостаточно ресурсов'):
@@ -859,14 +932,16 @@ function render(){
  const buildable=Boolean(selectedPoint&&canBuildOutpost(map,selectedPoint));
  const needsShards=honorShards()<KINGDOM_OUTPOST_SHARD_COST;
  outpost.hidden=!buildable;
- outpost.replaceChildren(document.createTextNode(tr('buildOutpost')+' · '+KINGDOM_OUTPOST_SHARD_COST+' '),shardIcon());
+ outpost.replaceChildren(actionArtwork(OUTPOST_ACTION_ICON),
+  actionPrices([[KINGDOM_OUTPOST_SHARD_COST,SHARD_ICON]]));
+ outpost.setAttribute('aria-label',actionLabel('outpost',{shards:KINGDOM_OUTPOST_SHARD_COST}));
  outpost.disabled=!buildable||needsShards;
  outpost.setAttribute('aria-disabled',String(outpost.disabled));
  outpost.title=needsShards?tr('outpostNeed'):tr('buildOutpost');
  earn.hidden=!buildable||!needsShards;
- earn.replaceChildren(document.createTextNode(tr('earn')+' '),shardIcon(),
-  document.createTextNode(' '+tr('onArena')));
+ earn.replaceChildren(actionArtwork(ARENA_ACTION_ICON,true));
  earn.title=tr('earn')+' '+tr('shards')+' '+tr('onArena');
+ earn.setAttribute('aria-label',earn.title);
   const hint=screen.querySelector('[data-kingdom-hint]');
  hint.hidden=!map.pendingCell;
  hint.textContent=map.pendingCell?tr('pending'):'';
@@ -887,8 +962,21 @@ function showEconomyBurst(id,kind,amount){
   if(screen&&!screen.hidden)render();},RESOURCE_FX_MS);
 }
 function claimWeekly(id){
- const run=readRun(),item=run?.kingdomMap?.cells?.[id]?.production;
- if(!run||run.ended||run.activeTravelChoice||run.kingdomMap?.pendingCell||!item)return;
+ const run=readRun();
+ if(!run||run.ended||run.activeTravelChoice||run.kingdomMap?.pendingCell)return;
+ const industry=collectIndustry(run.kingdomMap,id);
+ if(industry.ok){
+  const next={...run,kingdomMap:industry.map,
+   ...(industry.kind==='gold'?{gold:run.gold+industry.amount}:{}),
+   ...(industry.kind==='supplies'?{supplies:run.supplies+industry.amount}:{})};
+  writeRun(next);showEconomyBurst(id,industry.kind,industry.amount);
+  selected=id;render();
+  globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated',{detail:{source:'kingdom-industry-collected'}}));
+  globalThis.dispatchEvent(new CustomEvent('rpchess:kingdom-production-collected'));
+  return;
+ }
+ const item=run.kingdomMap?.cells?.[id]?.production;
+ if(!item)return;
  if(item.kind==='battle'){
   const acknowledged=acknowledgeReturn(run.kingdomMap,id);
   if(!acknowledged.ok)return;
@@ -933,6 +1021,35 @@ function shardIcon(){
  icon.src=SHARD_ICON;icon.alt='';icon.className='km-shard-inline';
  icon.setAttribute('aria-hidden','true');return icon;
 }
+function actionArtwork(src,arena=false){
+ const art=document.createElement('span');art.className='km-action-art'+(arena?' km-action-art--arena':'');
+ const image=document.createElement('img');image.src=src;image.alt='';image.className='km-action-illustration';
+ image.setAttribute('aria-hidden','true');art.append(image);
+ if(arena){
+  // Center the existing Honor Shard on the main-menu Arena shield.
+  const badge=shardIcon();badge.classList.add('km-arena-shard');art.append(badge);
+ }
+ return art;
+}
+function actionPrices(prices){
+ const list=document.createElement('span');list.className='km-action-prices';
+ for(const [amount,currency] of prices){
+  const row=document.createElement('span');row.className='km-action-price';
+  const value=document.createElement('strong');value.textContent=String(amount);
+  const icon=currency===SHARD_ICON?shardIcon():document.createElement('img');
+  icon.src=currency;icon.alt='';icon.setAttribute('aria-hidden','true');
+  icon.classList.add('km-action-price__icon');
+  row.append(value,icon);list.append(row);
+ }
+ return list;
+}
+function actionLabel(kind,price){
+ const english=lang()==='en';
+ if(kind==='outpost')return (english?'Build outpost: ':'Построить аванпост: ')+price.shards+
+  (english?' Honor shards':' осколков чести');
+ return (english?'Build settlement: ':'Построить поселение: ')+price.gold+
+  (english?' Gold, ':' золота, ')+price.shards+(english?' Honor shards':' осколков чести');
+}
 function goToArena(){
  const arena=globalThis.RPChessArena;
  if(typeof arena?.enter!=='function'){report(tr('arenaUnavailable'));return;}
@@ -965,14 +1082,17 @@ function refreshEconomyControls(){
   const owned=Boolean(point&&isOwned(map,point)),price=settlementPrice(owned);
   target.disabled=!place||gold<price.gold||shards<price.shards;
   target.setAttribute('aria-disabled',String(target.disabled));
-  target.title=target.disabled?(lang()==='en'?'Not enough resources':'Недостаточно ресурсов'):
-   (lang()==='en'?(owned?'Inside your kingdom':'Outside your kingdom'):(owned?'Внутри владений':'Вне владений'));
+  target.title=actionLabel('settlement',price)+(target.disabled?
+   (lang()==='en'?' (not enough resources)':' (недостаточно ресурсов)'):'');
+  target.setAttribute('aria-label',target.title);
  }
  if(outpost){
   const place=Boolean(point&&canBuildOutpost(map,point)),needs=shards<KINGDOM_OUTPOST_SHARD_COST;
   outpost.disabled=!place||needs;
   outpost.setAttribute('aria-disabled',String(outpost.disabled));
-  outpost.title=needs?tr('outpostNeed'):tr('buildOutpost');
+  outpost.title=actionLabel('outpost',{shards:KINGDOM_OUTPOST_SHARD_COST})+
+   (needs?(lang()==='en'?' (not enough shards)':' (недостаточно осколков)'):'');
+  outpost.setAttribute('aria-label',outpost.title);
   if(earn)earn.hidden=!place||!needs;
  }
 }

@@ -164,6 +164,17 @@ async function assertTileImage(page,cellId){
   assert.equal(await settlementButton.isVisible(),true,'an eligible explored empty cell can host a Settlement');
   assert.equal(await settlementButton.isDisabled(),true,'insufficient Gold must block construction');
   assert.equal(await settlementButton.getAttribute('aria-disabled'),'true');
+  const settlementIcon=await settlementButton.locator('.km-action-illustration').getAttribute('src');
+  assert.equal(settlementIcon,'assets/ui/build_settlement_128.png',
+    'compact settlement action uses the owner-supplied construction PNG');
+  const settlementCosts=await settlementButton.locator('.km-action-price strong').allTextContents();
+  assert([['80','15'],['160','30']].some(pair=>pair.every((value,i)=>settlementCosts[i]===value)),
+    'settlement shows two numeric costs for the current land ownership tier: '+JSON.stringify(settlementCosts));
+  assert.deepEqual(await settlementButton.locator('.km-action-price img').evaluateAll(images=>images.map(i=>i.getAttribute('src'))),
+    ['generated_assets/reward_gold.png','assets/arena/mirror_shard.png']);
+  const settlementSize=await settlementButton.boundingBox();
+  assert(Math.abs(settlementSize.width-settlementSize.height)<2&&settlementSize.width<=102,
+    'settlement purchase action must be square and compact');
   await page.evaluate(storage=>{
     const run=JSON.parse(localStorage.getItem(storage));run.gold=1000;
     localStorage.setItem(storage,JSON.stringify(run));
@@ -211,7 +222,28 @@ async function assertTileImage(page,cellId){
   });
   assert(sandstone.painted&&sandstone.width===16&&sandstone.centerAlpha>0&&
     sandstone.outsideAlpha===0&&sandstone.stoneColors>=3,
-    'browser Canvas must draw pale sandstone with visible brick variation and approved 16px width');
+    'browser Canvas must draw 16px yellow-gold brick paving with visible variation');
+  const roadPalette=await page.evaluate(async()=>{
+    const {drawKingdomRoads}=await import('./js/kingdom-map-overlay.mjs');
+    const canvas=document.createElement('canvas');
+    canvas.width=710;canvas.height=426;
+    const map={seed:'owned-gray-contrast',castle:{x:0,y:0},
+      centralOwnedCells:['1,0'],outposts:[],completedRoads:[],
+      cells:{'0,0':{annexed:true},'1,0':{annexed:true}},
+      royalRoadsVersion:3,royalRoads:[
+       {from:'0,0',to:'1,0',id:'owned-test',bend:0},
+       {from:'1,0',to:'2,0',id:'border-test',bend:0}]};
+    const ctx=canvas.getContext('2d');
+    const count=drawKingdomRoads(ctx,{map,view:{x:1,y:0},columns:5,rows:3});
+    const pixel=x=>[...ctx.getImageData(x,213,1,1).data];
+    return {count,yellow:pixel(380),gray:pixel(478)};
+  });
+  assert.equal(roadPalette.count,2,'paved routes should be counted once, not once per color');
+  assert(roadPalette.yellow[3]>0&&roadPalette.gray[3]>0&&
+    roadPalette.yellow[0]-roadPalette.yellow[2]>35&&
+    Math.abs(roadPalette.gray[0]-roadPalette.gray[2])<45,
+    'brick road across border must be yellow inside and gray outside: '+
+    JSON.stringify(roadPalette));
 
   // Five independent NPC limits use floor(owned lands EXCLUDING castle / 5),
   // with no actors before their destinations/roads exist.
@@ -340,13 +372,19 @@ async function assertTileImage(page,cellId){
       'NPC walking atlas must decode with its real 256x320 sprite sheet: '+JSON.stringify(atlasStatus));
   }
   const boundaryLayer=await page.evaluate(()=>{
-    const terrain=document.querySelector('.km-parchment-canvas');
-    const completedRoads=document.querySelector('.km-kingdom-overlay');
-    return {count:Number(terrain?.dataset.borderSegments),terrainZ:Number(getComputedStyle(terrain).zIndex),
-      playerRoadZ:Number(getComputedStyle(completedRoads).zIndex)};
+    const paper=document.querySelector('.km-parchment-canvas');
+    const politics=document.querySelector('.km-kingdom-overlay');
+    const details=document.querySelector('.km-parchment-details');
+    const z=element=>element?Number(getComputedStyle(element).zIndex):NaN;
+    return {count:Number(politics?.dataset.borderSegments),
+      enemy:Number(politics?.dataset.enemyProvinceCount),
+      paperZ:z(paper),politicsZ:z(politics),detailsZ:z(details),
+      paperAbovePolitics:z(paper)>z(politics)};
   });
-  assert(boundaryLayer.count>0&&boundaryLayer.terrainZ<boundaryLayer.playerRoadZ,
-    'territory boundary is on the original natural-road terrain layer, below later event roads');
+  assert(boundaryLayer.count>0&&boundaryLayer.paperZ<boundaryLayer.politicsZ&&
+    boundaryLayer.politicsZ<boundaryLayer.detailsZ,
+    'political boundaries must paint above paper and below all roads and natural details: '+
+    JSON.stringify(boundaryLayer));
   // Exercise actual uploaded sprites in the bundled dist, not just the
   // procedural Canvas fallback that worked before the artist supplied art.
   const parchmentFormat='png'; // PNG-only runtime without SVG fallback.
@@ -1002,12 +1040,13 @@ async function assertTileImage(page,cellId){
       'royal roads connect the Castle and all eligible scouted owned events, not only completed events');
    const pavedLayer=await page.locator('[data-kingdom-parchment]').evaluate(canvas=>({
      layer:canvas.dataset.roadLayer,segments:Number(canvas.dataset.playerRoadSegments),
-     z:Number(getComputedStyle(canvas).zIndex),
-     overlayZ:Number(getComputedStyle(document.querySelector('.km-kingdom-overlay')).zIndex)
+     baseZ:Number(getComputedStyle(canvas).zIndex),
+     overlayZ:Number(getComputedStyle(document.querySelector('.km-kingdom-overlay')).zIndex),
+     detailsZ:Number(getComputedStyle(document.querySelector('.km-parchment-details')).zIndex)
    }));
-   assert(pavedLayer.layer==='terrain'&&pavedLayer.segments>=1&&
-     pavedLayer.z<pavedLayer.overlayZ,
-     'player roads and organic roads must share the terrain canvas and alpha');
+   assert(pavedLayer.layer==='terrain-details'&&pavedLayer.segments>=1&&
+     pavedLayer.baseZ<pavedLayer.overlayZ&&pavedLayer.overlayZ<pavedLayer.detailsZ,
+     'natural and player-built roads must share the foreground terrain, above political ink');
    const composition=await page.evaluate(()=>{
      const overlay=document.querySelector('.km-kingdom-overlay');
      const site=document.querySelector('[data-kingdom-cell="0,1"] .km-object--site');
@@ -1188,9 +1227,34 @@ async function assertTileImage(page,cellId){
   assert.strictEqual((await read(walking)).gold,afterClaim,
     'reopening the map never rewards an already-collected week');
   // Remote safe cell can become a paid outpost, using the very same Arena ledger.
-  await walking.evaluate(storage=>{
+  const firstOutpost=await walking.evaluate(async storage=>{
+    const core=await import('./js/kingdom-map-core.mjs');
     const run=JSON.parse(localStorage.getItem(storage));
-    run.kingdomMap.cells['4,0']={status:'completed',type:'empty',explored:true};
+    if(!core.validateKingdomMap(run.kingdomMap))throw Error('Outpost QA map unexpectedly invalid');
+    const {readPlayerRating}=await import('./js/player-rating.mjs');
+    const power=readPlayerRating().power;
+    // Open() migrates territory, updates power and scouts missing encounters,
+    // which can reserve additional enemy Battle provinces. Choose a cell
+    // against THAT canonical state, not a partially staged fixture map.
+    const normalized=core.revealAround(
+      core.updatePeak(core.migrateKingdomMap(run.kingdomMap,run),power),run,power);
+    // The enemy-province layout varies with each new game's seed. Keep the
+    // genuine no-building-on-enemy-land rule, not a fixed sometimes-hostile cell.
+    const candidates=[];
+    for(let x=-4;x<=4;x++)for(let y=-3;y<=3;y++)
+      if(Math.abs(x)+Math.abs(y)>=3)candidates.push({x,y});
+    candidates.sort((a,b)=>Math.abs(b.x)-Math.abs(a.x)||
+      Math.abs(a.y)-Math.abs(b.y)||a.x-b.x||a.y-b.y);
+    let id=null;
+    for(const {x,y} of candidates){
+      const candidate=x+','+y;
+      const candidateMap={...normalized,cells:{...normalized.cells,
+        [candidate]:{status:'completed',type:'empty',explored:true}}};
+      const stable=core.revealAround(core.migrateKingdomMap(candidateMap,run),run,power);
+      if(!core.canBuildOutpost(stable,{x,y}))continue;
+      run.kingdomMap=stable;id=candidate;break;
+    }
+    if(!id)throw Error('No safe outpost cell within the map viewport');
     localStorage.setItem(storage,JSON.stringify(run));
     localStorage.setItem('rpchess.reboot.v1.arena',JSON.stringify({
       version:1,events:[{id:'kingdom:production:seed',kind:'kingdom-production',
@@ -1199,36 +1263,44 @@ async function assertTileImage(page,cellId){
     }));
     globalThis.dispatchEvent(new CustomEvent('rpchess:arena-updated'));
     globalThis.RPChessKingdomMap.open();
+    return id;
   },key);
   // The 25% floating inspector overlaps edge cells; dispatch selection directly,
   // since pointer access to off-screen locations requires normal map panning.
-  // A real king drag intentionally suppresses subsequent cell clicks for 500ms.
+  // A real king drag intentionally suppresses subsequent clicks for 650ms.
   // Wait out that input safety window rather than asserting a suppressed click.
-  const outpostEligibility=await walking.evaluate(async storage=>{
+  const outpostEligibility=await walking.evaluate(async({storage,id})=>{
     const {canBuildOutpost,isOwned}=await import('./js/kingdom-map-core.mjs');
     const map=JSON.parse(localStorage.getItem(storage)).kingdomMap;
-    return {canBuild:canBuildOutpost(map,{x:4,y:0}),owned:isOwned(map,{x:4,y:0}),
-      pending:map.pendingCell,cell:map.cells['4,0']};
-  },key);
+    const [x,y]=id.split(',').map(Number);
+    return {canBuild:canBuildOutpost(map,{x,y}),owned:isOwned(map,{x,y}),
+      pending:map.pendingCell,cell:map.cells[id]};
+  },{storage:key,id:firstOutpost});
   assert(outpostEligibility.canBuild,
     'outpost fixture must be safe and eligible before UI interaction: '+
     JSON.stringify(outpostEligibility));
-  await walking.waitForTimeout(550);
-  await walking.locator('[data-kingdom-cell="4,0"]').dispatchEvent('click');
-  assert.equal(await walking.locator('[data-kingdom-cell="4,0"].km-cell--selected').count(),1,
+  await walking.waitForTimeout(690);
+  await walking.locator('[data-kingdom-cell="'+firstOutpost+'"]').dispatchEvent('click');
+  assert.equal(await walking.locator('[data-kingdom-cell="'+firstOutpost+'"].km-cell--selected').count(),1,
     'safe outpost cell must be selected by an accepted post-drag click');
   const buildButton=walking.locator('[data-kingdom-outpost]');
   assert.equal(await buildButton.count(),1);
   assert(await buildButton.isVisible(),'safe explored unowned land enables the outpost button');
   assert.equal(await buildButton.locator('img.km-shard-inline').getAttribute('src'),
     'assets/arena/mirror_shard.png','outpost button uses Arena shard art');
+  assert.equal(await buildButton.locator('.km-action-illustration').getAttribute('src'),
+    'assets/ui/build_outpost_128.png','outpost button uses owner-supplied PNG');
+  assert.deepEqual(await buildButton.locator('.km-action-price strong').allTextContents(),['30']);
+  const outpostSize=await buildButton.boundingBox();
+  assert(Math.abs(outpostSize.width-outpostSize.height)<2&&outpostSize.width<=102,
+    'outpost purchase action must remain a compact square');
   assert(!(await buildButton.textContent()).includes('Осколки чести'),
     'outpost price never spells out the currency name');
   assert.equal(await buildButton.isDisabled(),false,'shared shards are enough for construction');
   await buildButton.click();
   assert.equal((await read(walking)).kingdomMap.outposts.length,1);
   assert.equal((await read(walking)).kingdomMap.day,8,'outpost construction advances one day');
-  const outpostIcon=walking.locator('[data-kingdom-cell="4,0"] .km-object--outpost');
+  const outpostIcon=walking.locator('[data-kingdom-cell="'+firstOutpost+'"] .km-object--outpost');
   assert.equal(await outpostIcon.count(),1);
   // Production strips parchment SVG masters; verify the actual outpost PNG
   // decodes even when the icon is outside the visible lazy-load viewport.
@@ -1255,23 +1327,52 @@ async function assertTileImage(page,cellId){
   const shardBalance=await walking.locator('[data-kingdom-shards]').textContent();
   assert.equal(shardBalance,'70','outpost price comes from the shared Arena ledger');
   // Unaffordable next outpost offers a real Arena redirect without touching the run.
-  await walking.evaluate(storage=>{
+  const secondOutpost=await walking.evaluate(async storage=>{
+    const core=await import('./js/kingdom-map-core.mjs');
     const run=JSON.parse(localStorage.getItem(storage));
-    run.kingdomMap.cells['4,2']={status:'completed',type:'empty',explored:true};
+    const {readPlayerRating}=await import('./js/player-rating.mjs');
+    const power=readPlayerRating().power;
+    const normalized=core.revealAround(
+      core.updatePeak(core.migrateKingdomMap(run.kingdomMap,run),power),run,power);
+    const candidates=[];
+    for(let x=-4;x<=4;x++)for(let y=-3;y<=3;y++)
+      if(Math.abs(x)+Math.abs(y)>=3)candidates.push({x,y});
+    candidates.sort((a,b)=>Math.abs(b.x)-Math.abs(a.x)||
+      Math.abs(a.y)-Math.abs(b.y)||a.x-b.x||a.y-b.y);
+    let id=null;
+    for(const {x,y} of candidates){
+      const candidate=x+','+y;
+      const candidateMap={...normalized,cells:{...normalized.cells,
+        [candidate]:{status:'completed',type:'empty',explored:true}}};
+      const stable=core.revealAround(core.migrateKingdomMap(candidateMap,run),run,power);
+      if(!core.canBuildOutpost(stable,{x,y}))continue;
+      run.kingdomMap=stable;id=candidate;break;
+    }
+    if(!id)throw Error('No independent second outpost cell for Arena redirect QA');
     localStorage.setItem(storage,JSON.stringify(run));
     localStorage.setItem('rpchess.reboot.v1.arena',JSON.stringify({
       version:1,events:[],squad:'humans',match:null,updatedAt:2
     }));
     globalThis.dispatchEvent(new CustomEvent('rpchess:arena-updated'));
     globalThis.RPChessKingdomMap.open();
+    return id;
   },key);
-  // The first outpost at 4,0 already annexes nearby cardinal cells.
-  // Use a safe diagonal-distance site outside its three-cell footprint.
-  await walking.locator('[data-kingdom-cell="4,2"]').dispatchEvent('click');
+  // The next valid site must be outside the first outpost's owned footprint.
+  // Recent pointer drags temporarily suppress cell clicks for 650ms; honor
+  // that gameplay safety contract instead of racing an ignored test click.
+  await walking.waitForTimeout(690);
+  await walking.locator('[data-kingdom-cell="'+secondOutpost+'"]').dispatchEvent('click');
+  await walking.locator('[data-kingdom-cell="'+secondOutpost+'"].km-cell--selected').waitFor({state:'attached'});
   const earnButton=walking.locator('[data-kingdom-earn-shards]');
   assert(await earnButton.isVisible(),'insufficient shards offer the Earn in Arena button');
   assert.equal(await earnButton.locator('img.km-shard-inline').getAttribute('src'),
     'assets/arena/mirror_shard.png');
+  assert.equal(await earnButton.locator('.km-action-illustration').getAttribute('src'),
+    'assets/ui/main-menu-arena.png','Arena redirect uses the existing main-menu shield');
+  assert.equal(await earnButton.locator('.km-arena-shard').count(),1,
+    'Honor Shard must be visibly overlaid on Arena shield');
+  const earnSize=await earnButton.boundingBox();
+  assert(Math.abs(earnSize.width-earnSize.height)<2&&earnSize.width<=102);
   assert(await walking.locator('[data-kingdom-outpost]').isDisabled());
   const beforeArena=await read(walking);
   await earnButton.click();
@@ -1726,8 +1827,8 @@ async function assertTileImage(page,cellId){
     return {red:province.cells.length,owned:core.playerTerritoryCount(real),
       colors:[real.battleTerritories.find(p=>p.id===id)?.colorIndex,
         real.battleTerritories.find(p=>p.id===secondId)?.colorIndex],
-      provinces:document.querySelector('[data-kingdom-parchment]')?.dataset.enemyProvinceCount,
-      redBorders:document.querySelector('[data-kingdom-parchment]')?.dataset.enemyBorderSegments,
+      provinces:document.querySelector('[data-kingdom-overlay]')?.dataset.enemyProvinceCount,
+      redBorders:document.querySelector('[data-kingdom-overlay]')?.dataset.enemyBorderSegments,
       counter:document.querySelector('[data-kingdom-points]')?.textContent,
       blueOverlap:province.cells.filter(tile=>core.isOwned(real,tile))};
   },key);
@@ -1738,13 +1839,116 @@ async function assertTileImage(page,cellId){
   assert.equal(redStats.counter,String(redStats.owned),
     'territory HUD counts the actual unique owned area, excluding enemy provinces');
   assert.deepEqual(redStats.blueOverlap,[],'blue and red provinces must not overlap');
-  assert(Number(redStats.redBorders)>0,'colored Battle borders must draw on parchment');
+  assert(Number(redStats.redBorders)>0,'colored Battle borders must draw on the political overlay');
   if(process.env.RPCHESS_UI_SCREENSHOT_DIR){
     fs.mkdirSync(process.env.RPCHESS_UI_SCREENSHOT_DIR,{recursive:true});
     await enemy.screenshot({path:path.join(process.env.RPCHESS_UI_SCREENSHOT_DIR,
       'battle-red-territory.png'),fullPage:false});
   }
   await enemy.close();
+  // Reuse Kingdom Chromium coverage: this exercises actual saved weekly
+  // production and the nine-icon sprite atlas, including its public asset URL.
+  const productionPage=await browser.newPage({viewport:{width:1280,height:720},reducedMotion:'reduce'});
+  await productionPage.goto(url,{waitUntil:'domcontentloaded'});
+  await startNewRun(productionPage,{playerName:'Industry QA',legacyTravel:false});
+  await productionPage.locator('[data-roster-travel]').click();
+  await productionPage.locator('[data-kingdom-map-screen]:not([hidden])').waitFor({timeout:16000});
+  const industryResult=await productionPage.evaluate(async()=>{
+    const core=await import('./js/kingdom-map-core.mjs');
+    const industry=await import('./js/kingdom-industry-core.mjs');
+    const persistence=await import('./js/run-persistence.mjs');
+    const run=persistence.readRun(localStorage);
+    // The real save loader rejects tampered world seeds and regenerates a
+    // kingdom. Keep the original valid seed and only add QA-owned visible land.
+    const extra=[];
+    for(let y=-2;y<=2;y++)for(let x=-3;x<=3;x++)extra.push(x+','+y);
+    const mapStart={...run.kingdomMap,peakKingPower:600,
+      centralOwnedCells:[...new Set([...(run.kingdomMap.centralOwnedCells||[]),...extra])]};
+    let map=mapStart;
+    const available=industry.candidateCells(map);
+    if(available.length<2)throw Error('Production QA needs two eligible visible cells: '+JSON.stringify({
+      seed:map.seed,candidates:available.length}));
+    const originalSeed=map.seed;
+    for(let day=map.day+1;day<=14;day++)map=core.advanceDay(map,'industry-qa-day:'+day);
+    if(map.seed!==originalSeed)throw Error('Production may not change the saved world seed');
+    if(map.industry.buildings.length!==2)throw Error('Day 14 must have exactly two industries');
+    const ready=map.industry.buildings[0];
+    const pending=industry.industryPending(map,ready.id);
+    if(!pending)throw Error('A completed building must be collectible on week 2');
+    const terrain=industry.candidateCells(map).find(c=>
+      Math.abs(Number(c.id.split(',')[0]))<=3&&Math.abs(Number(c.id.split(',')[1]))<=2);
+    if(!terrain)throw Error('Expected a nearby empty and owned terrain tile');
+    map={...map,cells:{...map.cells,[terrain.id]:{
+      status:'completed',type:'empty',explored:true,annexed:true,biome:terrain.biome}}};
+    const persisted=persistence.writeRun({...run,kingdomMap:map},localStorage,Date.now());
+    globalThis.RPChessKingdomMap.open();
+    return {id:ready.id,kind:ready.kind,amount:pending.amount,
+      resource:pending.kind,initialGold:persisted.gold,initialSupplies:persisted.supplies,
+      creditedGold:persisted.kingdomMap.industry.creditedGold,
+      creditedSupplies:persisted.kingdomMap.industry.creditedSupplies,
+      empty:terrain.id};
+  });
+  const tile=productionPage.locator('[data-kingdom-cell="'+industryResult.id+'"]');
+  await tile.locator('.km-object--industry').waitFor({state:'attached',timeout:10000});
+  const industryVisual=await tile.evaluate(el=>{
+    const sprite=el.querySelector('.km-object--industry'),css=getComputedStyle(sprite);
+    const eventSprite=el.querySelector('.km-object--site');
+    return {kind:el.dataset.kingdomIndustry,stage:el.dataset.kingdomIndustryStage,
+      background:css.backgroundImage,badge:el.querySelector('.km-industry-level')?.textContent,
+      opacity:Number(css.opacity),width:Number.parseFloat(css.width),
+      expectedWidth:Number.parseFloat(getComputedStyle(document.querySelector('.kingdom-map-screen'))
+        .getPropertyValue('--km-event-size-px'))*.603,
+      eventSprite:!!eventSprite};
+  });
+  assert.equal(industryVisual.kind,industryResult.kind,'biome-specific production art must match site kind');
+  assert.equal(industryVisual.stage,'complete','week two completes first production site');
+  assert(industryVisual.background.includes('industry-atlas.png'),'production icon must load real atlas file');
+  assert.equal(industryVisual.badge,'II','production level follows Castle II');
+  assert.equal(industryVisual.opacity,1,'all producer buildings are fully opaque like the castle');
+  assert(Math.abs(industryVisual.width-industryVisual.expectedWidth)<1,
+    'all producer icons are 90% of their original size, up from 70%');
+  const icon=productionPage.locator('[data-kingdom-industry-collect="'+industryResult.id+'"]');
+  await icon.waitFor({state:'visible',timeout:12000});
+  assert.equal(await icon.locator('strong').textContent(),String(industryResult.amount),
+    'floating icon displays the collectible weekly amount');
+  // Reload before collecting: pending rewards must survive persistence.
+  await productionPage.reload({waitUntil:'domcontentloaded'});
+  await productionPage.locator('[data-reboot-foundation]:not([hidden])').waitFor();
+  await productionPage.locator('[data-new-game]').click();
+  await productionPage.locator('[data-journey-continue]').click();
+  await productionPage.locator('[data-roster-screen]:not([hidden])').waitFor();
+  await productionPage.locator('[data-roster-travel]').click();
+  await productionPage.locator('[data-kingdom-map-screen]:not([hidden])').waitFor();
+  const restored=productionPage.locator('[data-kingdom-industry-collect="'+industryResult.id+'"]');
+  await restored.waitFor({state:'visible'});
+  const beforePickup=await read(productionPage);
+  assert.equal(beforePickup.gold,industryResult.initialGold,'reload does not auto-credit Gold');
+  assert.equal(beforePickup.supplies,industryResult.initialSupplies,'reload does not auto-credit Supplies');
+  await restored.click();
+  await restored.waitFor({state:'detached'});
+  const claimed=await read(productionPage);
+  assert.equal(claimed.gold,beforePickup.gold+
+    (industryResult.resource==='gold'?industryResult.amount:0),'click credits Gold exactly once');
+  assert.equal(claimed.supplies,beforePickup.supplies+
+    (industryResult.resource==='supplies'?industryResult.amount:0),'click credits Supplies exactly once');
+  assert.equal(claimed.kingdomMap.industry.pending[industryResult.id],undefined,
+    'collected industry receipt survives save');
+  assert.equal(await productionPage.locator('[data-kingdom-industry-collect="'+industryResult.id+'"]').count(),0,
+    'resource icon disappears after manual collection');
+  if(industryResult.empty){
+    await productionPage.locator('[data-kingdom-cell="'+industryResult.empty+'"]').dispatchEvent('click');
+    const card=await productionPage.locator('[data-kingdom-inspector-title]').textContent();
+    assert(['Лес','Горы','Холмы','Равнина','Болото','Пустоши'].includes(card),
+      'empty terrain inspector should use its actual biome name, got '+card);
+    assert.equal((await productionPage.locator('[data-kingdom-inspector-text]').textContent()).trim(),'',
+      'no-event terrain has no redundant explanatory text');
+  }
+  const atlasResponse=await productionPage.request.get(new URL('assets/kingdom-production/industry-atlas.png',url).href);
+  assert.equal(atlasResponse.status(),200,'production atlas is included in the deployed game');
+  assert.equal((await atlasResponse.body()).subarray(0,8).toString('hex'),'89504e470d0a1a0a',
+    'production atlas must be a genuine PNG');
+  await productionPage.close();
+  console.log('KINGDOM PRODUCTION PASS — manual icon collection, reload persistence, atlas, scale, biome and Castle II');
   console.log('KINGDOM MAP PASS — click-inspect, king drag, shortest routes, event stop, map pan, step supplies, red provinces');
  }finally{await browser.close()}
 })().catch(e=>{console.error(e.stack||e);process.exitCode=1});

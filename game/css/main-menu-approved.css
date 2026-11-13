@@ -48,6 +48,7 @@
 .mm-menu-approved .mm-kingdom-king{z-index:7;filter:drop-shadow(0 3px 4px #161c20)}
 .mm-menu-approved .mm-kingdom-parchment{z-index:0}
 .mm-menu-approved .mm-kingdom-overlay{z-index:1}
+.mm-menu-approved .mm-kingdom-details{z-index:2}
 .mm-menu-approved .mm-kingdom-items{z-index:4}
 /* Same order as Journey: NPC over sites, below fog and the player's king. */
 .mm-menu-approved .mm-kingdom-actors{z-index:5}
