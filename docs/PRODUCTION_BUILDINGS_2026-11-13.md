@@ -15,14 +15,14 @@ Status: **approved for feature development**. No merge to `main` until manual QA
   - wasteland → **Oasis (Supplies)**, confirmed later by owner from newly supplied graphic
 - Foundation candidates are **currently player-owned** (castle annexations, completed conquests, outpost annexations), not already occupied by Castle/Outpost/settlement/encounter/production structure. Skip cells of generated travel events or existing royal/route/natural roads. Never place sites in fog outside owned land. No candidate → skip that week; never queue missed buildings.
 - Original weekly production by completed road events (settlements/events/caravans/puzzles/skirmishes/battles) remains untouched.
-- Eight original 64×64 transparent PNGs come from user-supplied `постройки.zip`, plus the additional Oasis icon for wastelands. Ship all production art in the runtime build without changing the gameplay geometry; do not silently use unrelated placeholder art for Oasis.
+- **Art completed:** The eight original 64×64 PNGs from `постройки.zip` and the owner's 64×64 Oasis PNG are packed (palette-compressed, no redraw) into a single transparent **576×64 PNG atlas**: `game/assets/kingdom-production/industry-atlas.png` (12,940 bytes). In left-to-right order: construction_site, farm, fishing_pier, gold_mine, hunting_lodge, pasture, sawmill, stone_quarry, oasis. CSS `background-size:900% 100%` and crop index position yield one map object per production tile; no new network request per icon.
 
 ## Implementation steps
 1. Add pure `kingdom-industry-core.mjs`: frozen biome-to-type catalog, deterministic eligible-cell scanning, weekly scheduler, structural validator, stable yield ledgers and build-stage introspection. Use existing `worldAt` and roads. No DOM, clock or RNG.
 2. Extend `kingdom-map-core.mjs` map state: `industry` ledger; create, migration and validation; settle once per week within the current `advanceDay` call. For pre-feature saved runs, initialize `processedWeek` at the current week to avoid retrospective construction/income.
 3. Update `run-persistence.mjs`: atomically credit the difference between accrued and already-paid totals before saving; persist the new paid totals as the idempotency receipt. No separate localStorage key.
 4. Render transparent construction sprite until completion and then final building sprite on the Kingdom board; show current Castle level and yield in the tile inspector, RU/EN copy, no additional controls.
-5. Copy and verify all eight production sprites with `scripts/build.cjs` so GitHub Pages/VK/Cloudflare previews include them.
+5. Ensure `scripts/build.cjs` preserves the production PNG atlas when copying game assets to `dist`; verify it in Node and Chromium, including the `/RPChess/` URL subpath.
 6. Minimal meaningful regressions: one focused pure-gameplay test (week boundary, resources, level, no duplicate, placement eligibility, migration) and a compact extension of the existing Kingdom browser scenario for DOM art + automatic income. Add to the existing CI selection and test:materialized. Verify base and build, then deploy **isolated preview** if available through existing action; do not touch production.
 7. Commit feature branch and open Draft PR with a manual QA checklist. Ask for owner inspection before `release-approved` / `gate:full` and merge.
 
