@@ -4,10 +4,10 @@
  * Pure Canvas drawing: no image downloads, gameplay state, or RNG mutations. */
 const SANDSTONE_WIDTH=16;
 const PALETTE=Object.freeze({
- base:'#bda27a',
- bricks:['#d9c397','#cdb487','#e1cca5','#c0a77e'],
- joint:'#796a52',
- edge:'#786347'
+ base:'#e4bd54',
+ bricks:['#f3d47a','#e7be50','#ffe18a','#d6a93b'],
+ joint:'#89692e',
+ edge:'#9b7938'
 });
 const GRAY_STONE=Object.freeze({
  base:'#9a9b98',bricks:['#bec1bf','#aeb3b1','#c8c9c5','#929896'],
