@@ -352,6 +352,22 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
     assert(count<=3,'each event has at most three other encounters within one king move');
   }
   assert(!worldGen.encounterPresent(seed,0,0),'starting castle stays reserved');
+   // PR #201 compatibility contract: v5 saves retain their old encounter geometry,
+   // while new v6 cells use the exact continuous lines rendered on the parchment.
+   let legacyDifferent=0;
+   for(let y=-12;y<=12;y++)for(let x=-12;x<=12;x++){
+     const old=worldGen.naturalPathAt(seed,x+.5,y+.5,{worldGeneratorVersion:5});
+     const current=worldGen.naturalPathAt(seed,x+.5,y+.5,{worldGeneratorVersion:6});
+     if(old.road!==current.road||old.river!==current.river)legacyDifferent++;
+   }
+   assert(legacyDifferent>0,'old generator v5 geography must remain separate from v6');
+   // PR #201 accessibility contract: an existing Skirmish is postponed, not rerolled.
+   const noCompanion={...mapRun,roster:mapRun.roster.filter(c=>c.isRunKing),
+     army:[],kingdomMap:startMap};
+   const retained=mapCore.randomEncounter(noCompanion,{x:9,y:9},500,
+     {type:'skirmish',biome:'plains',landmark:null,raceTag:'orcs'});
+   assert.strictEqual(retained.type,'skirmish',
+     'a seeded Skirmish must survive when the player has no healthy companion');
    const geography=await import(pathToFileURL(path.join(game,'js/kingdom-geography.mjs')).href);
    for(let y=-12;y<=12;y+=4)for(let x=-12;x<=12;x+=4){
      assert.deepStrictEqual(worldGen.naturalPathAt(seed,x+.5,y+.5),
