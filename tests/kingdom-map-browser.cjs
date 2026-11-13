@@ -1540,12 +1540,14 @@ async function assertTileImage(page,cellId){
     'R=1/N=3 respects the maximum number of other road events per encounter');
   // Compare the real game generator against Atlas Lab's LIVE worldAt() on
   // the same seed and coordinates, rather than testing two hardcoded fixtures.
-  const currentVisual=await labPage.evaluate(()=>
-    window.RPChessAtlasSimulation.exportConfig().visual);
-  assert.equal(currentVisual.zoom,117,'Atlas Lab starts with the active game zoom');
-  assert.deepStrictEqual([currentVisual.fogRadius,currentVisual.fogInner,
-   currentVisual.fogInkOpacity,currentVisual.fogIrregularity,currentVisual.revealRadius],
-   [1.1,.32,.2,.3,1.6],'Atlas Lab fog matches the active game visual preset');
+  const currentConfig=await labPage.evaluate(()=>
+    window.RPChessAtlasSimulation.exportConfig());
+  assert.equal(currentConfig.view.zoom,117,'Atlas Lab starts with the active game zoom');
+  assert.deepStrictEqual([currentConfig.visual.fogRadius,currentConfig.visual.fogInner,
+    currentConfig.visual.fogInkOpacity],[1.1,.32,.2],
+    'Atlas Lab fog matches current runtime v6 without obsolete knobs');
+  for(const retired of ['paperContrast','fogIrregularity','revealRadius'])
+    assert(!(retired in currentConfig.visual),'retired visual key cannot leak into Atlas exports');
   const atlasGameParity=await labPage.evaluate(async()=>{
    const game=await import('./js/kingdom-world-core.mjs?v=20261109-kingdom-feedback1');
    const atlas=window.RPChessAtlasSimulation;
@@ -1553,7 +1555,7 @@ async function assertTileImage(page,cellId){
    const bad=[];
    for(let y=-7;y<=7;y++)for(let x=-7;x<=7;x++){
     if(x===0&&y===0)continue; // castle belongs to the game UI, not world encounters
-    const a=atlas.worldAt(x,y),g=game.worldAt(cfg.visual.seed,x,y);
+    const a=atlas.worldAt(x,y),g=game.worldAt(cfg.view.seed,x,y,{generatorVersion:6});
     if(a.type!==g.type||a.biome!==biomes.indexOf(g.biome)||
        (a.race!=='mixed'?a.race:null)!==g.raceTag||
        a.road!==g.paths.road||a.river!==g.paths.river)
@@ -1562,7 +1564,7 @@ async function assertTileImage(page,cellId){
    return bad.slice(0,5);
   });
   assert.deepStrictEqual(atlasGameParity,[],
-    'game world generation must agree with author Atlas Lab v6 for same seed');
+    'game world generation must agree with author Atlas Lab v7 for same seed');
   const countsBefore=await labPage.evaluate(()=>{
    const x=window.RPChessAtlasSimulation.getSample();
    return Object.values(x.groups).reduce((a,b)=>a+b,0);
