@@ -1776,15 +1776,15 @@ async function assertTileImage(page,cellId){
   });
   const tile=productionPage.locator('[data-kingdom-cell="'+industryResult.id+'"]');
   await tile.locator('.km-object--industry').waitFor({state:'attached',timeout:10000});
-  const visual=await tile.evaluate(el=>({
+  const industryVisual=await tile.evaluate(el=>({
     kind:el.dataset.kingdomIndustry,stage:el.dataset.kingdomIndustryStage,
     background:getComputedStyle(el.querySelector('.km-object--industry')).backgroundImage,
     badge:el.querySelector('.km-industry-level')?.textContent
   }));
-  assert.equal(visual.kind,industryResult.kind,'biome-specific production art must match site kind');
-  assert.equal(visual.stage,'complete','week two completes first production site');
-  assert(visual.background.includes('industry-atlas.png'),'production icon must load real atlas file');
-  assert.equal(visual.badge,'II','production level follows Castle II');
+  assert.equal(industryVisual.kind,industryResult.kind,'biome-specific production art must match site kind');
+  assert.equal(industryVisual.stage,'complete','week two completes first production site');
+  assert(industryVisual.background.includes('industry-atlas.png'),'production icon must load real atlas file');
+  assert.equal(industryVisual.badge,'II','production level follows Castle II');
   const atlasResponse=await productionPage.request.get(new URL('assets/kingdom-production/industry-atlas.png',url).href);
   assert.equal(atlasResponse.status(),200,'production atlas is included in the deployed game');
   assert.equal((await atlasResponse.body()).subarray(0,8).toString('hex'),'89504e470d0a1a0a',
