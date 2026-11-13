@@ -1554,8 +1554,13 @@ async function assertTileImage(page,cellId){
     window.RPChessAtlasSimulation.exportConfig().visual);
   assert.equal(currentVisual.zoom,117,'Atlas Lab starts with the active game zoom');
   assert.deepStrictEqual([currentVisual.fogRadius,currentVisual.fogInner,
-   currentVisual.fogInkOpacity,currentVisual.fogIrregularity,currentVisual.revealRadius],
-   [1.1,.32,.2,.3,1.6],'Atlas Lab fog matches the active game visual preset');
+   currentVisual.fogInkOpacity,currentVisual.wastelandDensity],
+   [1.1,.32,.2,1.75],'Atlas Lab v7 matches active game fog and wasteland density');
+  for(const retired of ['paperContrast','fogIrregularity','revealRadius'])
+    assert.equal(Object.hasOwn(currentVisual,retired),false,
+      'Atlas Lab should not export unused '+retired+' preview settings');
+  assert.equal(await labPage.locator('#v-wastelandDensity').count(),1,
+    'v7 editor must expose independent wasteland density');
   const atlasGameParity=await labPage.evaluate(async()=>{
    const game=await import('./js/kingdom-world-core.mjs?v=20261109-kingdom-feedback1');
    const atlas=window.RPChessAtlasSimulation;
@@ -1572,7 +1577,7 @@ async function assertTileImage(page,cellId){
    return bad.slice(0,5);
   });
   assert.deepStrictEqual(atlasGameParity,[],
-    'game world generation must agree with author Atlas Lab v6 for same seed');
+    'game world generation must agree with Atlas Lab v7 for the same seed');
   const countsBefore=await labPage.evaluate(()=>{
    const x=window.RPChessAtlasSimulation.getSample();
    return Object.values(x.groups).reduce((a,b)=>a+b,0);
