@@ -1897,16 +1897,16 @@ async function assertTileImage(page,cellId){
       background:css.backgroundImage,badge:el.querySelector('.km-industry-level')?.textContent,
       opacity:Number(css.opacity),width:Number.parseFloat(css.width),
       expectedWidth:Number.parseFloat(getComputedStyle(document.querySelector('.kingdom-map-screen'))
-        .getPropertyValue('--km-event-size-px'))*.469,
+        .getPropertyValue('--km-event-size-px'))*.603,
       eventSprite:!!eventSprite};
   });
   assert.equal(industryVisual.kind,industryResult.kind,'biome-specific production art must match site kind');
   assert.equal(industryVisual.stage,'complete','week two completes first production site');
   assert(industryVisual.background.includes('industry-atlas.png'),'production icon must load real atlas file');
   assert.equal(industryVisual.badge,'II','production level follows Castle II');
-  assert.equal(industryVisual.opacity,.8,'industry and forest decorations share opacity');
+  assert.equal(industryVisual.opacity,1,'all producer buildings are fully opaque like the castle');
   assert(Math.abs(industryVisual.width-industryVisual.expectedWidth)<1,
-    'all producer icons are 30% smaller than prior preview');
+    'all producer icons are 90% of their original size, up from 70%');
   const icon=productionPage.locator('[data-kingdom-industry-collect="'+industryResult.id+'"]');
   await icon.waitFor({state:'visible',timeout:12000});
   assert.equal(await icon.locator('strong').textContent(),String(industryResult.amount),
