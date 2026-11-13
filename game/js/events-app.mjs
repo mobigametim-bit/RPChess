@@ -5,6 +5,7 @@ import { currentLanguage } from './i18n.mjs';
 import { brandLogoSrc, brandLogoAlt } from './brand-logo.mjs';
 import { eventBackgroundPath } from './race-assets.mjs';
 import { literaryStory } from './event-narrative.mjs';
+import { literaryOutcomeForEvent } from './event-literary-outcome.mjs';
 import { playerNameForRun, personalizePlayerNarrative, personalizePlayerTitle } from './player-identity-core.mjs';
 import { EVENT_CONTENT_V3, applyEventContentV3, formatHeroReaction } from './events/event-content-v3.mjs';
 import {
@@ -37,7 +38,7 @@ function ensureCss() {
   if (!document.querySelector('[data-events-css]')) {
     const link = document.createElement('link');
     link.rel = 'stylesheet';
-    link.href = 'css/events.css?v=20261021-outcome-fit';
+    link.href = 'css/events.css?v=20261113-literary-centered';
     link.dataset.eventsCss = '';
     document.head.append(link);
   }
@@ -85,6 +86,7 @@ function ensureScreen() {
         <div class="reboot-eyebrow" data-events-outcome-eyebrow>${t('events.outcomeKicker')}</div>
         <h2 id="events-outcome-title" data-events-outcome-title></h2>
         <div class="events-roll" data-events-roll></div>
+        <p class="events-outcome-literary" data-events-literary hidden></p>
         <div class="events-outcome-notes" data-events-outcome-notes></div>
         <button class="reboot-button reboot-button--primary events-continue" type="button" data-events-continue>${t('events.continue')}</button>
       </section>
@@ -280,9 +282,14 @@ function renderOutcome(event) {
   }
   root.hidden = false;
   document.body.classList.add('events-outcome-open');
-  const title=root.querySelector('[data-events-outcome-title]'),roll=root.querySelector('[data-events-roll]'),notes=root.querySelector('[data-events-outcome-notes]'),button=root.querySelector('[data-events-continue]');
+  const title=root.querySelector('[data-events-outcome-title]'),roll=root.querySelector('[data-events-roll]'),literary=root.querySelector('[data-events-literary]'),notes=root.querySelector('[data-events-outcome-notes]'),button=root.querySelector('[data-events-continue]');
   if(title) title.textContent = t(outcome.success ? 'events.success' : 'events.failure');
   if(roll) roll.textContent = outcome.chance < 100 ? t('events.roll',{roll:outcome.roll,chance:outcome.chance}) : t('events.guaranteedOutcome');
+  if(literary){
+    const prose = literaryOutcomeForEvent(event, outcome, activeRun, currentLanguage());
+    literary.hidden = !prose;
+    literary.textContent = prose ? presentEventText(prose) : '';
+  }
   if(notes){
     notes.replaceChildren();
     const list=outcome.notes?.length?outcome.notes:[t('events.noChange')];
