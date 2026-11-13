@@ -1083,7 +1083,7 @@ function refreshEconomyControls(){
   target.disabled=!place||gold<price.gold||shards<price.shards;
   target.setAttribute('aria-disabled',String(target.disabled));
   target.title=actionLabel('settlement',price)+(target.disabled?
-   (lang()==='en?' (not enough resources)':' (недостаточно ресурсов)'):'');
+   (lang()==='en'?' (not enough resources)':' (недостаточно ресурсов)'):'');
   target.setAttribute('aria-label',target.title);
  }
  if(outpost){
