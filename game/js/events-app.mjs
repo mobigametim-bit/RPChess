@@ -5,6 +5,7 @@ import { currentLanguage } from './i18n.mjs';
 import { brandLogoSrc, brandLogoAlt } from './brand-logo.mjs';
 import { eventBackgroundPath } from './race-assets.mjs';
 import { literaryStory } from './event-narrative.mjs';
+import { literaryOutcomeForEvent } from './event-literary-outcome.mjs';
 import { playerNameForRun, personalizePlayerNarrative, personalizePlayerTitle } from './player-identity-core.mjs';
 import { EVENT_CONTENT_V3, applyEventContentV3, formatHeroReaction } from './events/event-content-v3.mjs';
 import {
@@ -37,7 +38,7 @@ function ensureCss() {
   if (!document.querySelector('[data-events-css]')) {
     const link = document.createElement('link');
     link.rel = 'stylesheet';
-    link.href = 'css/events.css?v=20261021-outcome-fit';
+    link.href = 'css/events.css?v=20261113-literary-centered';
     link.dataset.eventsCss = '';
     document.head.append(link);
   }
@@ -85,7 +86,8 @@ function ensureScreen() {
         <div class="reboot-eyebrow" data-events-outcome-eyebrow>${t('events.outcomeKicker')}</div>
         <h2 id="events-outcome-title" data-events-outcome-title></h2>
         <div class="events-roll" data-events-roll></div>
-        <div class="events-outcome-notes" data-events-outcome-notes></div>
+        <p class="events-outcome-literary" data-events-literary hidden></p>
+        <div class="events-outcome-notes" data-events-outcome-notes data-label="${t('events.consequences')}"></div>
         <button class="reboot-button reboot-button--primary events-continue" type="button" data-events-continue>${t('events.continue')}</button>
       </section>
     </div>`;
@@ -102,6 +104,8 @@ function renderStaticCopy() {
   const outcomeKicker=screen.querySelector('[data-events-outcome-eyebrow]');
   if(kicker)kicker.textContent=t('events.kicker');
   if(outcomeKicker)outcomeKicker.textContent=t('events.outcomeKicker');
+  const consequences=screen.querySelector('[data-events-outcome-notes]');
+  if(consequences)consequences.dataset.label=t('events.consequences');
 }
 
 function hideAllScenes() {
@@ -177,7 +181,7 @@ function choiceButton(eventChoice) {
   const role = heroState ? '' : hero ? `${PIECE_GLYPHS[hero.pieceType] || ''} ${hero.name}` : choice.role ? `${PIECE_GLYPHS[choice.role] || ''} ${t(`piece.${choice.role}`)}` : '';
   const chance = choice.chance < 100 ? t('events.choice.successChance',{chance:choice.chance}) : t('events.choice.guaranteed');
   const cost = costLabel(choice), risk = riskLabel(choice);
-  const unavailable=availability.enabled?'':availability.reason==='skirmish-needs-companion'?
+  const unavailable=availability.enabled?'':['skirmish-needs-companion','wound-needs-companion'].includes(availability.reason)?
     (currentLanguage()==='en'?'At least one healthy fighter besides the King is required':
       'Нужен хотя бы один здоровый боец помимо короля'):
     localizeEventSource(availability.reason);
@@ -280,9 +284,14 @@ function renderOutcome(event) {
   }
   root.hidden = false;
   document.body.classList.add('events-outcome-open');
-  const title=root.querySelector('[data-events-outcome-title]'),roll=root.querySelector('[data-events-roll]'),notes=root.querySelector('[data-events-outcome-notes]'),button=root.querySelector('[data-events-continue]');
+  const title=root.querySelector('[data-events-outcome-title]'),roll=root.querySelector('[data-events-roll]'),literary=root.querySelector('[data-events-literary]'),notes=root.querySelector('[data-events-outcome-notes]'),button=root.querySelector('[data-events-continue]');
   if(title) title.textContent = t(outcome.success ? 'events.success' : 'events.failure');
   if(roll) roll.textContent = outcome.chance < 100 ? t('events.roll',{roll:outcome.roll,chance:outcome.chance}) : t('events.guaranteedOutcome');
+  if(literary){
+    const prose = literaryOutcomeForEvent(event, outcome, activeRun, currentLanguage(), localizeEventSource);
+    literary.hidden = !prose;
+    literary.textContent = prose ? presentEventText(prose) : '';
+  }
   if(notes){
     notes.replaceChildren();
     const list=outcome.notes?.length?outcome.notes:[t('events.noChange')];

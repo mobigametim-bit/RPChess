@@ -116,6 +116,9 @@ function choiceMayStartSkirmish(choice){
 }
 function choiceAvailability(run, choice) {
   const normalized = normalizeChoice(choice);
+  // E037.3 trades a guaranteed non-King wound for Gold; never pay out without an eligible healthy hero.
+  if (normalized.id === 'E037.3' && !(run?.roster || []).some((hero) => !hero?.isRunKing && hero?.status === 'healthy'))
+    return { enabled: false, reason: 'wound-needs-companion', hero: null, choice: normalized };
   if(choiceMayStartSkirmish(normalized)&&!hasEventSkirmishCompanion(run))
     return {enabled:false,reason:'skirmish-needs-companion',hero:null,choice:normalized};
   let requiredHero = null;
@@ -152,24 +155,29 @@ function recruitCandidate(run, key) {
 function applyEffect(run, effect, key) {
   let next = run;
   const notes = [];
+  const receipts = [];
   let combat = null;
-  if (!effect) return { run: next, notes, combat };
+  if (!effect) return { run: next, notes, combat, receipts };
   if (effect.type === 'gold') {
     const before = next.gold || 0;
     next = { ...next, gold: Math.max(0, before + safeInt(effect.delta)) };
     notes.push(`${next.gold - before >= 0 ? '+' : ''}${next.gold - before} Gold`);
+    receipts.push({ type: 'gold', delta: next.gold - before });
   } else if (effect.type === 'supplies') {
     const before = next.supplies || 0;
     next = { ...next, supplies: Math.max(0, before + safeInt(effect.delta)) };
     notes.push(`${next.supplies - before >= 0 ? '+' : ''}${next.supplies - before} Supplies`);
+    receipts.push({ type: 'supplies', delta: next.supplies - before });
   } else if (effect.type === 'recruit') {
     const recruit = recruitCandidate(next, key);
     if (recruit) {
       next = { ...next, roster: [...next.roster, { ...recruit, status: 'healthy', isRunKing: false }] };
       notes.push(`${recruit.name} присоединяется к отряду`);
+      receipts.push({ type: 'recruit', recruitId: recruit.id, recruitName: recruit.name });
     } else {
       next = { ...next, gold: (next.gold || 0) + 18 };
       notes.push('+18 Gold (нет свободных рекрутов)');
+      receipts.push({ type: 'recruit', unavailable: true, delta: 18 });
     }
   } else if (effect.type === 'wound' || effect.type === 'death') {
     let target = null;
@@ -184,14 +192,18 @@ function applyEffect(run, effect, key) {
       const status = effect.type === 'death' ? 'dead' : 'wounded';
       next = { ...next, roster: next.roster.map((c) => c.id === target.id ? { ...c, status } : c) };
       notes.push(`${target.name}: ${status === 'dead' ? 'погиб' : 'тяжело ранен'}`);
+      receipts.push({ type: effect.type, targetId: target.id, targetName: target.name });
       if (target.isRunKing && status === 'dead') next = { ...next, ended: true, endReason: 'event_king' };
+    } else {
+      receipts.push({ type: effect.type, skipped: true });
     }
   } else if (effect.type === 'combat') {
     const stars = clampStars((next.activeTravelChoice?.stars || 1) + safeInt(effect.threatMod));
     combat = { type: effect.combatType, stars, seed: `${next.activeTravelChoice?.seed || key}:event:${key}:${effect.combatType}`, threatMod: safeInt(effect.threatMod) };
     notes.push(effect.combatType === 'battle' ? 'Начинается Битва' : 'Начинается Стычка');
+    receipts.push({ type: 'combat', combatType: effect.combatType });
   }
-  return { run: next, notes, combat };
+  return { run: next, notes, combat, receipts };
 }
 
 function resolveEventChoice(run, choiceId) {
@@ -210,18 +222,20 @@ function resolveEventChoice(run, choiceId) {
   let next = { ...run, gold: Math.max(0, (run.gold || 0) - choice.cost.gold), supplies: Math.max(0, (run.supplies || 0) - choice.cost.supplies) };
   const effects = [...(succeeded ? choice.successEffects : choice.failureEffects), ...choice.alwaysEffects];
   const notes = [];
+  const effectReceipts = [];
   let combat = null;
   effects.forEach((effect, index) => {
     const applied = applyEffect(next, effect, `${state.eventId}:${choice.id}:${index}`);
     next = applied.run;
     notes.push(...applied.notes);
+    effectReceipts.push(...applied.receipts);
     if (applied.combat) combat = applied.combat;
   });
   if (combat) {
     const theme = combatTheme({ seed: combat.seed, raceTag: event?.raceTag || 'mixed', mixed: event?.raceTag === 'mixed' });
     combat = { ...combat, ...theme, sourceEventId: event.id, sourceEventTitle: event.title, raceTag: event.raceTag || 'mixed' };
   }
-  const outcome = { choiceId: choice.id, roll, chance: choice.chance, success: succeeded, notes, heroId: availability.hero?.id || null, combat };
+  const outcome = { choiceId: choice.id, roll, chance: choice.chance, success: succeeded, notes, effectReceipts, heroId: availability.hero?.id || null, combat };
   const nextState = { ...state, choiceId: choice.id, roll, success: succeeded, resolved: true, outcome, combat };
   next = { ...next, currentEvent: nextState };
   return { run: next, success: true, reason: 'resolved', state: nextState, outcome, event, choice };

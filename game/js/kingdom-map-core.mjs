@@ -9,7 +9,7 @@ import {difficultyForStars} from './encounter-difficulty.mjs';
 import {KINGDOM_OUTPOST_SHARD_COST} from './arena-core.mjs?v=20261109-kingdom-economy-v7';
 import {DEFAULT_KINGDOM_ECONOMY,weeklyResourceProduction} from './kingdom-economy-config.mjs';
 import {synchronizeRoyalRoads} from './kingdom-road-network.mjs?v=20261111-polish-v1';
-import {initialIndustry,validIndustry,settleIndustryWeek} from './kingdom-industry-core.mjs';
+import {initialIndustry,validIndustry,settleIndustryWeek,realignLandlockedPiers} from './kingdom-industry-core.mjs';
 
 // Live defaults mirror Atlas Lab's canonical economy; change only after acceptance.
 const production=DEFAULT_KINGDOM_ECONOMY.production;
@@ -199,6 +199,7 @@ function migrateKingdomMap(map,run=null){
   result={...result,processedThroughWeek:0};
  // Old run saves do not receive backdated buildings or free resources.
  if(!result.industry)result={...result,industry:initialIndustry(weekForDay(result.day))};
+ result=realignLandlockedPiers(result);
  if(!Array.isArray(result.outposts))result={...result,outposts:[]};
  if(!Array.isArray(result.builtSettlements))result={...result,builtSettlements:[]};
  if(!Array.isArray(result.outpostRoads))result={...result,outpostRoads:[]};

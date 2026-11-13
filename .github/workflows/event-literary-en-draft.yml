@@ -1,0 +1,65 @@
+name: Event literary EN draft — authoring only
+on:
+  push:
+    branches:
+      - feature/event-literary-outcomes-integration-2026-11
+    paths:
+      - '.github/workflows/event-literary-en-draft.yml'
+      - 'scripts/event-outcomes-en-translate.cjs'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: rpchess-event-literary-en-draft
+  cancel-in-progress: false
+jobs:
+  translate:
+    if: github.repository == 'mobigametim-bit/RPChess' && github.ref == 'refs/heads/feature/event-literary-outcomes-integration-2026-11'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify source input count and remote translator on sample
+        run: |
+          set -euo pipefail
+          node --check scripts/event-outcomes-en-translate.cjs
+          node <<'NODE'
+          (async()=>{
+            const query='https://translate.googleapis.com/translate_a/single?'+new URLSearchParams({
+              client:'gtx',sl:'ru',tl:'en',dt:'t',q:'Отряд возвращается на дорогу.'
+            });
+            const res=await fetch(query,{signal:AbortSignal.timeout(15000)});
+            if(!res.ok)throw new Error('Translation service unreachable: HTTP '+res.status);
+            const data=await res.json();
+            if(!data?.[0]?.[0]?.[0])throw new Error('Invalid translator response shape');
+            console.log('Translation draft provider reachable; manual editorial approval remains mandatory.');
+          })().catch(e=>{console.error(e);process.exitCode=1});
+          NODE
+      - name: Generate complete EN first-pass catalog
+        id: translate
+        continue-on-error: true
+        run: node scripts/event-outcomes-en-translate.cjs
+      - name: Save translated chunks to the same PR branch
+        env:
+          BRANCH: feature/event-literary-outcomes-integration-2026-11
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add game/js/events/literary-outcomes-en-*.mjs || true
+          if git diff --cached --quiet; then
+            echo 'No translation chunks generated'
+          else
+            git commit -m 'chore(events): add first-pass English event narrative translations [editorial review required]'
+            git push origin "HEAD:refs/heads/$BRANCH"
+          fi
+      - name: Do not accept incomplete or unreviewed EN translation as released
+        if: steps.translate.outcome != 'success'
+        run: |
+          echo 'EN draft generator did not complete. Partial generated modules were preserved for review/retry.'
+          exit 1
