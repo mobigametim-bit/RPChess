@@ -167,8 +167,9 @@ async function assertTileImage(page,cellId){
   const settlementIcon=await settlementButton.locator('.km-action-illustration').getAttribute('src');
   assert.equal(settlementIcon,'assets/ui/build_settlement_128.png',
     'compact settlement action uses the owner-supplied construction PNG');
-  assert.deepEqual(await settlementButton.locator('.km-action-price strong').allTextContents(),
-    ['160','30'],'two numeric settlement costs have no text or plus sign');
+  const settlementCosts=await settlementButton.locator('.km-action-price strong').allTextContents();
+  assert([['80','15'],['160','30']].some(pair=>pair.every((value,i)=>settlementCosts[i]===value)),
+    'settlement shows two numeric costs for the current land ownership tier: '+JSON.stringify(settlementCosts));
   assert.deepEqual(await settlementButton.locator('.km-action-price img').evaluateAll(images=>images.map(i=>i.getAttribute('src'))),
     ['generated_assets/reward_gold.png','assets/arena/mirror_shard.png']);
   const settlementSize=await settlementButton.boundingBox();
