@@ -508,7 +508,7 @@ function ensureMap(run){
  const race=commanderById(run.commanderId).raceTag;
  if(validateKingdomMap(run.kingdomMap)&&
      (run.kingdomMap.seed===run.id||run.kingdomMap.seed.startsWith(run.id+':castle-biome:'))&&
-     [4,5].includes(run.kingdomMap.worldGeneratorVersion)){
+     [4,5,6].includes(run.kingdomMap.worldGeneratorVersion)){
   const peaked=updatePeak(migrateKingdomMap(run.kingdomMap,run),power);
   const map=peaked.castle.raceTag===race?peaked:
    {...peaked,castle:{...peaked.castle,raceTag:race}};
