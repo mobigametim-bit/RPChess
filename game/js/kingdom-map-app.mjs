@@ -75,7 +75,7 @@ const TERRAIN_NAMES=Object.freeze({
 });
 function terrainName(biome){return TERRAIN_NAMES[lang()==='en'?'en':'ru'][biome]||tr('empty');}
 // Atlas view scales the original 142px logical tiles to an interactive 87px default.
-const MAP_LAYOUT=Object.freeze({cellPx:142,kingPx:92});
+const MAP_LAYOUT=Object.freeze({cellPx:142,eventScalePercent:73,kingPx:92,inspectorWidthPercent:25});
 const MIN_COLUMNS=9,MIN_ROWS=7;
 // Adopt the new authored default once, while continuing to persist manual zoom.
 const ZOOM_KEY='rpchess.kingdom.zoom.v2',ZOOM_MIN=55,ZOOM_MAX=220;
