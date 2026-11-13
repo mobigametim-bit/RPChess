@@ -898,7 +898,7 @@ async function assertTileImage(page,cellId){
       overlap:a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top};
   });
   assert(layers.siteSize>layers.defenderSize&&layers.defenderDepth>layers.siteDepth&&layers.overlap,
-    'enemy guardian must be smaller, overlaid and visually in front of the site');
+    'enemy guardian must be smaller, overlaid and visually in front of the site: '+JSON.stringify(layers));
   const stepPrice=before.kingdomMap.centralOwnedCells.includes('1,0')?0:1;
   assert.equal(moved.supplies,before.supplies-stepPrice,
     'the arrival step charges exactly one Supply outside owned territory');
