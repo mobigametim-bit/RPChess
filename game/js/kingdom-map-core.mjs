@@ -277,6 +277,7 @@ function canBuildSettlement(map,point){
  return Boolean(cell?.explored&&cell.type==='empty'&&cell.status==='completed'&&
   !cell.selectedEncounter&&id!==keyOf(map.castle.x,map.castle.y)&&
   !(map.outposts||[]).some(post=>post.id===id||post.cells?.includes(id))&&
+  !(map.industry?.buildings||[]).some(site=>site.id===id)&&
   !(map.builtSettlements||[]).some(site=>site.id===id));
 }
 function buildSettlement(map,point,transactionId,{gold,shards,raceTag='humans'}={}){
