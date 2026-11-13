@@ -78,6 +78,7 @@ function drawTiledPaper(ctx,left,top,width,height,repaint){
  return true;
 }
 function drawVector(ctx,src,x,y,width,height,alpha,repaint){
+ if(!src)return false;
  const art=getArt(src,repaint);if(!art)return false;
  ctx.save();ctx.globalAlpha=alpha;
  // Pre-rendered pixel art must not be blurred on canvas zoom/repaint.
