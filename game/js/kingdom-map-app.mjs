@@ -20,7 +20,7 @@ import {kingdomMapSprite,kingdomEncounterSprite} from './kingdom-map-assets.mjs'
 import {renderParchment,renderParchmentFog} from './kingdom-parchment-app.mjs?v=20261112-fog98-v1';
 import {drawKingdomOverlay} from './kingdom-map-overlay.mjs?v=20261112-province-colors-v1';
 import {animateTravelers,stopTravelers} from './kingdom-traveler-renderer.mjs?v=20261111-npc-floor-v1';
-import {industrySprite,industryYield,industryLevel,BUILDING_TYPES} from './kingdom-industry-core.mjs';
+import {industrySprite,industrySpriteIndex,industryYield,industryLevel,BUILDING_TYPES} from './kingdom-industry-core.mjs';
 import {ATLAS_VIEW} from './kingdom-world-config.mjs?v=20261109-atlas-visual5';
 import {subscribe,currentLanguage,t} from './i18n.mjs';
 import {runtimeT} from '../localization/runtime-ui.mjs';
@@ -746,10 +746,10 @@ function render(){
    }
    const industrySite=industrySites.get(id);
    if(visible&&industrySite){
-    const building=document.createElement('img');
+    const building=document.createElement('span');
     building.className='km-object km-object--industry'+(industrySite.builtWeek>=industryWeek?' km-object--building-site':'');
-    building.src=industrySprite(industrySite,industryWeek);
-    building.loading='lazy';building.alt='';
+    building.style.backgroundImage='url("'+industrySprite()+'")';
+    building.style.backgroundPosition=(industrySpriteIndex(industrySite,industryWeek)*12.5)+'% center';
     building.setAttribute('aria-hidden','true');
     btn.dataset.kingdomIndustry=industrySite.kind;
     btn.dataset.kingdomIndustryStage=industrySite.builtWeek>=industryWeek?'building':'complete';
