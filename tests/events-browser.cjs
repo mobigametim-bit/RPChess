@@ -4,6 +4,38 @@ async function fresh(page){await page.goto(url,{waitUntil:'networkidle'});await 
 async function seedEvent(page,eventId=null,runId='events-browser'){await page.evaluate(({key,route,eventId,runId})=>{const r=JSON.parse(localStorage.getItem(key));r.id=runId;r.supplies=9;r.journeyStep=1;r.currentTravelChoices=null;r.activeTravelChoice=route;r.currentSettlement=null;r.currentPuzzle=null;r.currentEvent=eventId?{routeId:route.id,eventId,choiceId:null,roll:null,success:null,resolved:false,outcome:null,combat:null}:null;localStorage.setItem(key,JSON.stringify(r));dispatchEvent(new CustomEvent('rpchess:run-updated'));},{key:RUN_KEY,route:eventRoute,eventId,runId});}
 (async()=>{const browser=await chromium.launch({headless:true});try{
   const page=await browser.newPage({viewport:{width:1440,height:900}}),errors=[];page.on('pageerror',e=>errors.push(String(e.stack||e)));await fresh(page);await seedEvent(page,'E001','events-browser');await page.locator('[data-roster-travel]').click();const screen=page.locator('[data-events-screen]:not([hidden])');await screen.waitFor();
+  // Existing Mentor-style Web Speech must read exactly title → story → choices,
+  // not the label, risk tags or buttons before the title.
+  await page.evaluate(()=>{
+    window.__eventSpoken=[];
+    Object.defineProperty(window,'speechSynthesis',{configurable:true,value:{
+      cancel(){window.__eventCanceled=(window.__eventCanceled||0)+1;},
+      speak(u){window.__eventSpoken.push({text:u.text,lang:u.lang,rate:u.rate});},
+      getVoices(){return[{name:'Pavel',lang:'ru-RU',localService:true}]}
+    }});
+    Object.defineProperty(window,'SpeechSynthesisUtterance',{configurable:true,
+      value:class SpeechSynthesisUtteranceStub{constructor(text){this.text=text;}}});
+  });
+  const readButton=page.locator('[data-events-speech]');
+  await readButton.click();
+  const said=await page.evaluate(()=>window.__eventSpoken[0]);
+  const opening=await page.locator('[data-events-title]').innerText();
+  const firstAction=await page.locator('[data-event-choice] .events-choice__head strong').first().innerText();
+  const finalAction=await page.locator('[data-event-choice] .events-choice__head strong').last().innerText();
+  assert(said?.text.startsWith(opening+'.'),'Event speech must begin with the event title');
+  assert(said.text.indexOf(firstAction)>said.text.indexOf((await page.locator('[data-events-story] p').last().innerText()).slice(0,20)),
+    'all story paragraphs must be read before choices');
+  assert(said.text.includes(finalAction)&&said.rate===1.5&&said.lang==='ru-RU',
+    'full action list uses the Mentor speech rate and Russian voice');
+  await readButton.click();
+  assert.equal(await readButton.getAttribute('aria-pressed'),'false','speech button toggles playback');
+  const readingGeometry=await page.evaluate(()=>{
+    const copy=document.querySelector('.events-copy-frame')?.getBoundingClientRect();
+    const view=innerHeight;
+    return{center:(copy.top+copy.bottom)/2,view};
+  });
+  assert(Math.abs(readingGeometry.center-readingGeometry.view/2)<readingGeometry.view*.25,
+    'approved Event copy should be vertically centered instead of bottom-left');
   const paragraphs=page.locator('[data-events-story] p'),storyText=await page.locator('[data-events-story]').innerText();assert.strictEqual(await paragraphs.count(),2,'E001 must render its two canonical literary story paragraphs');assert(storyText.length>=450,'Event scene must preserve the extended canonical literary copy');assert(storyText.includes('«'),'literary scene must include dialogue');const bg=page.locator('[data-events-background]');await bg.waitFor();const bgSrc=await bg.getAttribute('src');assert(bgSrc&&bgSrc.includes('/assets/events/register-04/backgrounds/'),'Event scene must use the explicit canonical backdrop image');assert.strictEqual(await page.locator('[data-events-roster]').count(),0,'obsolete Event Roster shortcut must be absent from the runtime DOM');assert.strictEqual(await page.locator('[data-events-settings]').count(),0,'obsolete Event Settings shortcut must be absent from the runtime DOM');
   // Full-catalog currency rendering audit: exercise all 2,114 choice actions,
   // including v3 literary overlays, against the same DOM iconizer used live.
