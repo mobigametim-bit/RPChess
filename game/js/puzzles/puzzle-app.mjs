@@ -5,6 +5,7 @@ import { fantasyPieceMarkup } from '../fantasy-piece.mjs';
 import { readRun, writeRun } from '../run-persistence.mjs';
 import { t, subscribe } from '../i18n.mjs';
 import { brandLogoSrc } from '../brand-logo.mjs';
+import { SHARD_ICON } from '../arena-core.mjs';
 import { PUZZLE_CATALOG } from './puzzle-catalog.mjs';
 import { loadPuzzleStar } from './puzzle-catalog-loader.mjs';
 import { featuredPuzzleTheme } from './puzzle-theme-catalog.mjs';
@@ -88,6 +89,7 @@ function ensureScreen() {
       <header class="puzzle-topbar">
         <img class="puzzle-logo" data-brand-logo src="${brandLogoSrc()}" alt="RPChess">
         <div class="puzzle-topbar__actions">
+          <button class="reboot-button" type="button" data-puzzle-weekly-exit hidden></button>
           <button class="reboot-button reboot-button--primary" type="button" data-puzzle-settings>${t('puzzle.settings')}</button>
         </div>
       </header>
@@ -139,6 +141,7 @@ function ensureScreen() {
   app.append(screen);
   screen.querySelector('[data-puzzle-settings]')?.addEventListener('click', () => globalThis.RPChessOpenSettings?.());
   screen.querySelector('[data-puzzle-continue]')?.addEventListener('click', continueTravel);
+  screen.querySelector('[data-puzzle-weekly-exit]')?.addEventListener('click', abandonWeeklyPuzzle);
   return screen;
 }
 
@@ -213,8 +216,14 @@ function instructionText(item) {
 function renderMeta() {
   const objective = objectiveText(puzzle);
   const stars = starsText(state.stars);
-  const baseReward = puzzleBaseGold(state.stars);
-  const currentReward = puzzleGoldReward(state.stars, state.errors);
+  const weekly=state.weekly;
+  const baseReward=weekly?weekly.amount:puzzleBaseGold(state.stars);
+  const currentReward=weekly?weekly.amount:puzzleGoldReward(state.stars,state.errors);
+  const english=currentLanguage()==='en';
+  const shardsLabel=english?'Honor shards':'осколков чести';
+  const exit=screen.querySelector('[data-puzzle-weekly-exit]');
+  exit.hidden=!weekly||state.resolved;
+  exit.textContent=english?'Leave task (lose reward)':'Выйти (потерять награду)';
   renderStaticCopy();
   const featured=featuredPuzzleTheme(puzzle,currentLanguage());
   const kicker=screen.querySelector('[data-puzzle-kicker]');
@@ -228,9 +237,15 @@ function renderMeta() {
   screen.querySelector('[data-puzzle-compact-objective-label]').textContent = objective;
   screen.querySelector('[data-puzzle-compact-stars]').textContent = stars;
   screen.querySelector('[data-puzzle-instruction]').textContent = instructionText(puzzle);
-  screen.querySelector('[data-puzzle-base-reward]').textContent = `${baseReward} ${t('resources.goldDelta')}`;
-  screen.querySelector('[data-puzzle-current-reward]').textContent = t('puzzle.rewardCurrent',{reward:currentReward});
-  screen.querySelector('[data-puzzle-compact-reward-value]').textContent = String(currentReward);
+  screen.querySelector('[data-puzzle-base-reward]').textContent=weekly?
+    `${baseReward} ${shardsLabel}`:`${baseReward} ${t('resources.goldDelta')}`;
+  screen.querySelector('[data-puzzle-reward-perfect]').textContent=weekly?
+    (english?'Weekly task reward':'Еженедельная награда'):t('puzzle.rewardPerfect');
+  screen.querySelector('[data-puzzle-current-reward]').textContent=weekly?
+    (english?'Mistakes do not reduce the reward':'Ошибки не уменьшают награду'):
+    t('puzzle.rewardCurrent',{reward:currentReward});
+  screen.querySelector('[data-puzzle-compact-reward-value]').textContent=String(currentReward);
+  screen.querySelector('.puzzle-polish-reward img').src=weekly?SHARD_ICON:'generated_assets/reward_gold.png';
 
   const attempts = screen.querySelector('[data-puzzle-attempts]');
   attempts.replaceChildren();
@@ -248,7 +263,10 @@ function renderMeta() {
   screen.querySelector('[data-puzzle-outcome-text]').textContent = state.result === 'solved'
     ? t('puzzle.outcome.solvedText',{errors:state.errors})
     : t('puzzle.outcome.failedText');
-  screen.querySelector('[data-puzzle-outcome-gold]').textContent = `${state.goldReward > 0 ? '+' : ''}${state.goldReward} ${t('resources.goldDelta')}`;
+  screen.querySelector('[data-puzzle-outcome-gold]').textContent=weekly?
+    (state.result==='solved'? `+${weekly.amount} ${shardsLabel}`:
+       (english?'Weekly reward forfeited':'Награда за неделю потеряна')):
+    `${state.goldReward > 0 ? '+' : ''}${state.goldReward} ${t('resources.goldDelta')}`;
 }
 
 function renderBoard() {
@@ -475,6 +493,14 @@ async function correctMove(from, to, promotion) {
 function settleReward() {
   activeRun = readRun() || activeRun;
   if (!activeRun || !state.resolved || state.rewardSettled) return;
+  if(state.weekly){
+    if(globalThis.RPChessKingdomMap?.settleWeeklyPuzzle?.()){
+      activeRun=readRun();state=activeRun.currentPuzzle;
+      globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated'));
+    }else status(currentLanguage()==='en'?'Could not settle reward. Retry later.':
+      'Не удалось завершить начисление. Повторите позже.','error');
+    return;
+  }
   const reward = state.goldReward || 0;
   const stateWithReceipt = { ...state, rewardSettled: true };
   activeRun = writeRun({
@@ -503,7 +529,7 @@ function finishSolved() {
     status(t('puzzle.status.solved'), 'correct');
     return;
   }
-  persist(resolvedPuzzleState(state, 'solved'));
+  persist(state.weekly?{...resolvedPuzzleState(state,'solved'),goldReward:0}:resolvedPuzzleState(state,'solved'));
   settleReward();
   locked = false;
   status(t('puzzle.status.solved'), 'correct');
@@ -570,18 +596,60 @@ async function openPuzzle(event) {
   });
 }
 
+// The weekly mode uses the existing chess board, moves and three-attempt logic,
+// but never awards Gold or changes normal Puzzle visit completion.
+function abandonWeeklyPuzzle(){
+ if(!state?.weekly||state.resolved||locked)return;
+ persist({...state,resolved:true,result:'failed',errors:3,goldReward:0});
+ settleReward();
+ continueTravel();
+}
+async function openWeeklyPuzzle({cellId,productionId,stars,week,amount,initialRouteId}={}){
+ const run=readRun(),item=run?.kingdomMap?.cells?.[cellId]?.production;
+ if(!run||run.ended||run.activeTravelChoice||run.kingdomMap?.pendingCell||
+    item?.id!==productionId||item.kind!=='shards'||
+    run.kingdomMap.cells[cellId]?.selectedEncounter?.type!=='puzzle'||
+    (run.currentPuzzle?.weekly&&!run.currentPuzzle.resolved))return false;
+ const choiceStars=run.kingdomMap.cells[cellId].selectedEncounter.stars;
+ if(stars!==choiceStars||week!==item.week||amount!==item.amount)return false;
+ const available=await loadPuzzleStar(stars);
+ const latest=readRun(),still=latest?.kingdomMap?.cells?.[cellId]?.production;
+ if(!latest||latest.id!==run.id||still?.id!==productionId)return false;
+ const history=puzzleHistory(latest);
+ const original=latest.lastPuzzle?.routeId===initialRouteId?latest.lastPuzzle.puzzleId:null;
+ const excluded=[...new Set([...history,original].filter(Boolean))];
+ if(!available.some(p=>p.difficulty===stars&&!excluded.includes(p.id)))
+   throw new Error('No fresh weekly puzzle at this level');
+ const routeId='weekly:'+productionId;
+ puzzle=selectPuzzle(available,{runId:latest.id,routeId,stars,
+   excludedIds:excluded,expanded:true});
+ state={...createPuzzleState({puzzle,routeId,stars,week}),weekly:{cellId,productionId,week,amount},
+   goldReward:0};
+ activeRun=writeRun({...latest,currentPuzzle:state,puzzleHistory:[...history,puzzle.id]});
+ engine=new ClassicChessEngine(state.currentFen);
+ selected=null;selectedMoves=[];locked=false;
+ ensureScreen();await ensurePuzzleStylesReady();showPuzzle();renderAll();
+ globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated'));
+ return true;
+}
 function continueTravel() {
   if (!state?.resolved) return;
   audio()?.click?.();
   activeRun = readRun() || activeRun;
   if (!activeRun) return;
-  activeRun = writeRun({ ...activeRun, currentPuzzle: null, activeTravelChoice: null, currentTravelChoices: null });
+  if(state.weekly&&!state.rewardSettled){
+    settleReward();if(!state.rewardSettled)return;
+  }
+  const weekly=Boolean(state.weekly);
+  activeRun=writeRun(weekly?{...activeRun,currentPuzzle:null}:
+    {...activeRun,currentPuzzle:null,activeTravelChoice:null,currentTravelChoices:null});
   state = null;
   puzzle = null;
   engine = null;
   hidePuzzle();
   globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated'));
-  globalThis.dispatchEvent(new CustomEvent('rpchess:travel-open', { detail: { source: 'puzzle-aftermath' } }));
+  if(weekly)globalThis.RPChessKingdomMap?.open?.({detail:{source:'weekly-puzzle-aftermath'}});
+  else globalThis.dispatchEvent(new CustomEvent('rpchess:travel-open', { detail: { source: 'puzzle-aftermath' } }));
 }
 
 ensureScreen();
@@ -609,6 +677,7 @@ subscribe(() => {
 addEventListener('rpchess:puzzle-open', openPuzzle);
 globalThis.RPChessPuzzle = Object.freeze({
   open: openPuzzle,
+  openWeekly:openWeeklyPuzzle,
   continueTravel,
   get state() { return state; },
   get puzzle() { return puzzle; }
