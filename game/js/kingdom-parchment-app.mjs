@@ -6,6 +6,7 @@ import {VISUAL} from './kingdom-world-config.mjs?v=20261113-opaque-terrain-v1';
 import {biomeAt,landmarkAt} from './kingdom-world-core.mjs';
 import {roadYAt,riverXAt,closestRiver} from './kingdom-geography.mjs';
 import {drawKingdomRoads} from './kingdom-map-overlay.mjs?v=20261112-province-colors-v1';
+import {FOG_SHOULDER,FOG_SHOULDER_ALPHA,visibleThroughFog} from './kingdom-fog-visibility.mjs';
 
 const PAPER_TILE_SRC='assets/kingdom-parchment/parchment_tile_256.webp',PAPER_TILE_SIZE=256;
 const spriteCache=new Map();
@@ -291,41 +292,6 @@ function ownedIds(map){
  for(const [id,cell] of Object.entries(map?.cells||{}))if(cell.annexed)ids.add(id);
  for(const id of map?.battleConqueredCells||[])ids.add(id);
  return ids;
-}
-// Use the SAME radial stops as drawFog() when deciding whether an encounter's
-// cell center is readable. This is a visual test only: it never changes
-// explored (visited), encounter status, the calendar or the saved world seed.
-const FOG_SHOULDER=.68,FOG_SHOULDER_ALPHA=.98;
-const FOG_EVENT_CLEARANCE=.75;
-function fogRevealAtDistance(distance){
- const radius=VISUAL.fogRadius;
- if(!(radius>0)||distance>=radius)return 0;
- const inner=Math.min(radius*.9,VISUAL.fogInner);
- if(distance<=inner)return 1;
- const shoulder=radius*FOG_SHOULDER;
- if(distance<shoulder)return 1-(1-FOG_SHOULDER_ALPHA)*(distance-inner)/(shoulder-inner);
- return FOG_SHOULDER_ALPHA*(radius-distance)/(radius-shoulder);
-}
-// A tile is visibly scouted once its CENTER has at least 75% of the fog
-// cleared by existing visited centers. Several overlapping gradients combine
-// exactly like Canvas destination-out. Red Battle provinces do NOT count as
-// scouting centers even though their political silhouette is visible.
-function visibleThroughFog(map,point){
- if(!map||!point||!Number.isSafeInteger(point.x)||!Number.isSafeInteger(point.y))return false;
- const {x,y}=point,id=x+','+y;
- if(map.cells?.[id]?.explored===true||map.castle?.x===x&&map.castle?.y===y)return true;
- const range=Math.ceil(VISUAL.fogRadius);
- let remaining=1;
- for(let dy=-range;dy<=range;dy++)for(let dx=-range;dx<=range;dx++){
-  const cx=x+dx,cy=y+dy;
-  if(!(map.castle?.x===cx&&map.castle?.y===cy) &&
-     map.cells?.[cx+','+cy]?.explored!==true)continue;
-  const reveal=fogRevealAtDistance(Math.hypot(dx,dy));
-  if(!reveal)continue;
-  remaining*=1-reveal;
-  if(1-remaining>=FOG_EVENT_CLEARANCE)return true;
- }
- return false;
 }
 function drawFog(ctx,map,left,top,width,height,resolution=1){
  const fog=document.createElement('canvas');fog.width=Math.round(width*PARCHMENT_TILE*resolution);
