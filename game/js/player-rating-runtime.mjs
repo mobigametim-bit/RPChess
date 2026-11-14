@@ -52,7 +52,12 @@ function settlePuzzle(run) {
   const state = run?.currentPuzzle;
   const receiptId = puzzleReceiptId(run);
   if (!receiptId || !state) return null;
-  return settlePlayerRating({ receiptId, opponentElo:opponentEloForStars(state.stars), result:state.result === 'solved' ? 1 : 0, gainDivisor:PUZZLE_WIN_GAIN_DIVISOR }).receipt;
+  if(state.weekly&&(!state.rewardSettled||state.result!=='solved'))return null;
+  return settlePlayerRating({ receiptId,
+    opponentElo:opponentEloForStars(state.stars),
+    result:state.result === 'solved' ? 1 : 0,
+    gainDivisor:PUZZLE_WIN_GAIN_DIVISOR,
+    fixedWinGain:state.weekly?state.stars:null }).receipt;
 }
 
 function settleCurrentRatedOutcome(run = readRun()) {
@@ -112,6 +117,13 @@ function renderPuzzleResult(run) {
   const receipt = ratingReceipt(receiptId);
   const outcome = document.querySelector('[data-puzzle-outcome]');
   const button = outcome?.querySelector('[data-puzzle-continue]');
+  const previous=outcome?.querySelector(':scope > [data-power-result]');
+  if(!receipt){
+    // A reused puzzle screen must not show a prior week's Power receipt when
+    // the current weekly task has failed or has not yet settled.
+    if(previous)previous.hidden=true;
+    return;
+  }
   paint(ensureResult(outcome, button), receipt);
 }
 function renderPowerResults(run = readRun()) {
@@ -129,6 +141,10 @@ function sync() {
 
 addEventListener('rpchess:combat-completed', sync);
 addEventListener('rpchess:puzzle-resolved', sync);
+ // Weekly shards are settled after the Puzzle's resolved event. This narrow
+ // semantic event ensures Power is credited only once the success receipt
+ // exists, without subscribing to every ordinary run update.
+addEventListener('rpchess:kingdom-production-collected', sync);
 addEventListener('rpchess:power-updated', () => queueMicrotask(() => renderPowerResults()));
 subscribe(() => queueMicrotask(() => renderPowerResults()));
 queueMicrotask(sync);
