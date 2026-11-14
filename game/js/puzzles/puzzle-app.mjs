@@ -89,7 +89,6 @@ function ensureScreen() {
       <header class="puzzle-topbar">
         <img class="puzzle-logo" data-brand-logo src="${brandLogoSrc()}" alt="RPChess">
         <div class="puzzle-topbar__actions">
-          <button class="reboot-button" type="button" data-puzzle-weekly-exit hidden></button>
           <button class="reboot-button reboot-button--primary" type="button" data-puzzle-settings>${t('puzzle.settings')}</button>
         </div>
       </header>
@@ -141,7 +140,6 @@ function ensureScreen() {
   app.append(screen);
   screen.querySelector('[data-puzzle-settings]')?.addEventListener('click', () => globalThis.RPChessOpenSettings?.());
   screen.querySelector('[data-puzzle-continue]')?.addEventListener('click', continueTravel);
-  screen.querySelector('[data-puzzle-weekly-exit]')?.addEventListener('click', abandonWeeklyPuzzle);
   return screen;
 }
 
@@ -221,9 +219,6 @@ function renderMeta() {
   const currentReward=weekly?weekly.amount:puzzleGoldReward(state.stars,state.errors);
   const english=currentLanguage()==='en';
   const shardsLabel=english?'Honor shards':'осколков чести';
-  const exit=screen.querySelector('[data-puzzle-weekly-exit]');
-  exit.hidden=!weekly||state.resolved;
-  exit.textContent=english?'Leave task (lose reward)':'Выйти (потерять награду)';
   renderStaticCopy();
   const featured=featuredPuzzleTheme(puzzle,currentLanguage());
   const kicker=screen.querySelector('[data-puzzle-kicker]');
@@ -241,8 +236,9 @@ function renderMeta() {
     `${baseReward} ${shardsLabel}`:`${baseReward} ${t('resources.goldDelta')}`;
   screen.querySelector('[data-puzzle-reward-perfect]').textContent=weekly?
     (english?'Weekly task reward':'Еженедельная награда'):t('puzzle.rewardPerfect');
-  screen.querySelector('[data-puzzle-current-reward]').textContent=weekly?
-    (english?'Mistakes do not reduce the reward':'Ошибки не уменьшают награду'):
+  // Same DOM and dimensions as the original Puzzle task card. Weekly attempts
+  // preserve the full reward value when the number of mistakes increases.
+  screen.querySelector('[data-puzzle-current-reward]').textContent=
     t('puzzle.rewardCurrent',{reward:currentReward});
   screen.querySelector('[data-puzzle-compact-reward-value]').textContent=String(currentReward);
   screen.querySelector('.puzzle-polish-reward img').src=weekly?SHARD_ICON:'generated_assets/reward_gold.png';
@@ -599,10 +595,12 @@ async function openPuzzle(event) {
 // The weekly mode uses the existing chess board, moves and three-attempt logic,
 // but never awards Gold or changes normal Puzzle visit completion.
 function abandonWeeklyPuzzle(){
- if(!state?.weekly||state.resolved||locked)return;
+ if(!state?.weekly||state.resolved)return false;
+ // A true scene/page exit costs the current week's reward even if the board
+ // was temporarily locked during the opponent's forced reply.
  persist({...state,resolved:true,result:'failed',errors:3,goldReward:0});
  settleReward();
- continueTravel();
+ return true;
 }
 async function openWeeklyPuzzle({cellId,productionId,stars,week,amount,initialRouteId}={}){
  const run=readRun(),item=run?.kingdomMap?.cells?.[cellId]?.production;
@@ -673,6 +671,14 @@ attachPieceDrag(screen?.querySelector('[data-puzzle-board]'), {
 subscribe(() => {
   renderStaticCopy();
   if (screen && !screen.hidden && puzzle && state && engine) renderAll();
+});
+// Original Puzzle UI has only Settings above the board and Continue on result.
+ // Do not inject an extra weekly-only action: it shifts the fixed chess layout.
+ // Count actual navigation away/reload as abandonment, without changing buttons.
+addEventListener('pagehide',()=>{if(screen&&!screen.hidden)abandonWeeklyPuzzle();});
+addEventListener('rpchess:scene-changed',event=>{
+  if(screen&&!screen.hidden&&['menu','roster'].includes(event?.detail?.scene))
+    {abandonWeeklyPuzzle();hidePuzzle();}
 });
 addEventListener('rpchess:puzzle-open', openPuzzle);
 globalThis.RPChessPuzzle = Object.freeze({
