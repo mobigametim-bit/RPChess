@@ -408,7 +408,7 @@ function report(text){const node=screen?.querySelector('[data-kingdom-toast]');i
  node.textContent=text;node.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>{node.hidden=true},2400);}
 function cssReady(){
  if(document.querySelector('[data-kingdom-style]'))return;
- const link=document.createElement('link');link.rel='stylesheet';link.href='css/kingdom-map.css?v=20261113-opaque-industry-v1';link.dataset.kingdomStyle='';
+ const link=document.createElement('link');link.rel='stylesheet';link.href='css/kingdom-map.css?v=20261114-polish-ten-v1';link.dataset.kingdomStyle='';
  link.addEventListener('load',()=>{if(screen&&!screen.hidden)render();});
  document.head.append(link);
 }
@@ -687,13 +687,15 @@ function render(){
    const cell=map.cells[id],isCastle=id===keyOf(map.castle.x,map.castle.y);
    const owned=isOwned(map,point);
    const visible=Boolean(isCastle||owned||visibleThroughFog(map,point));
+   // A Skirmish is a concealed bandit ambush until the king actually enters.
+   const encounterKnown=visible&&!(cell?.selectedEncounter?.type==='skirmish'&&cell.explored!==true);
    const within=adjacent(visualKing,point),here=id===keyOf(visualKing.x,visualKing.y);
    const edges=owned?borderEdges(map,point):[];
    const btn=document.createElement('button');btn.type='button';btn.dataset.kingdomCell=id;
    const light=(point.x+point.y)%2===0;
    btn.setAttribute('role','gridcell');btn.className='km-cell'+
     (light?' km-cell--light':' km-cell--dark')+
-    (!visible?' km-cell--fog':' km-cell--terrain'+(cell?.status?' km-cell--'+cell.status:''))+
+    (!visible?' km-cell--fog':' km-cell--terrain'+(encounterKnown&&cell?.status?' km-cell--'+cell.status:''))+
     (owned?' km-cell--annexed':'')+(within?' km-cell--adjacent':'')+
     (selected===id?' km-cell--selected':'')+(here?' km-cell--here':'')+
     (movement?.phase==='reveal'&&selected===id?' km-cell--opening':'')+
@@ -712,7 +714,7 @@ function render(){
     let tileUrl=tileUrls.get(tile);if(!tileUrl){tileUrl=new URL(tile,document.baseURI).href;tileUrls.set(tile,tileUrl);}
     btn.style.backgroundImage='url("'+tileUrl+'")';
    }
-   btn.setAttribute('aria-label',isCastle?tr('castle'):visible&&cell?.selectedEncounter?
+   btn.setAttribute('aria-label',isCastle?tr('castle'):encounterKnown&&cell?.selectedEncounter?
     t('travel.type.'+cell.selectedEncounter.type):cell?.type==='empty'?terrainName(cell.biome||worldAt(map.seed,point.x,point.y).biome):tr('hidden'));
    // Only a visibly cleared fog center exposes a stored encounter, without walking
    // onto it. Enemy province borders alone never reveal its interior events.
@@ -722,7 +724,7 @@ function render(){
     const level=document.createElement('small');level.className='km-level';level.textContent=['','I','II','III','IV','V'][castleLevel(map.peakKingPower)];btn.append(level);}
    else if(visible&&cell){
     const choice=cell.selectedEncounter;
-    if(choice){
+    if(choice&&encounterKnown){
      // The encounter SVG is the site itself. Its defending chess piece is a
      // separate foreground element (just as our king moves over map assets).
      const siteArt=kingdomMapSprite(choice.type,choice.raceTag||choice.enemyRaceTag,
@@ -739,6 +741,11 @@ function render(){
       }
      }
      const lvl=document.createElement('small');lvl.className='km-level';lvl.textContent=romanForStars(choice.stars);btn.append(lvl);
+     // Scouted but unvisited events carry a small corner question mark.
+     if(cell.explored!==true){
+      const unknown=document.createElement('span');unknown.className='km-scout-question';
+      unknown.textContent='?';unknown.setAttribute('aria-hidden','true');btn.append(unknown);
+     }
     }
     if(cell.status==='failed'){const flag=document.createElement('span');flag.className='km-failure';flag.textContent='!';btn.append(flag);}
    }
@@ -888,7 +895,9 @@ function render(){
  world.append(kingHandle);
  const chosen=selected?map.cells[selected]:null;
  const current=map.cells[keyOf(map.king.x,map.king.y)];
- const knownChosen=chosen&&(isOwned(map,selected)||visibleThroughFog(map,parsePoint(selected)))?chosen:null;
+ const knownChosen=chosen&&
+  !(chosen.selectedEncounter?.type==='skirmish'&&chosen.explored!==true)&&
+  (isOwned(map,selected)||visibleThroughFog(map,parsePoint(selected)))?chosen:null;
  const info=knownChosen||(!chosen?current:null);
  const castleSelected=(selected||keyOf(map.king.x,map.king.y))===keyOf(map.castle.x,map.castle.y);
  const selectedId=selected||keyOf(map.king.x,map.king.y);
