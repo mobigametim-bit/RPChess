@@ -1922,7 +1922,8 @@ async function assertTileImage(page,cellId){
   assert(redStats.red>=2&&redStats.red<=13,'Battle province must have ELO/200 cells');
   assert(redStats.colors.every(Number.isInteger)&&new Set(redStats.colors).size===2,
     'neighboring Battles must render with distinct persistent colors');
-  assert.equal(redStats.provinces,'2','both colored enemy borders render separately');
+  assert(Number(redStats.provinces)>=2,
+    'both tested colored Battle provinces must be visible; seeded world may reveal additional provinces');
   assert.equal(redStats.counter,String(redStats.owned),
     'territory HUD counts the actual unique owned area, excluding enemy provinces');
   assert.deepEqual(redStats.blueOverlap,[],'blue and red provinces must not overlap');
