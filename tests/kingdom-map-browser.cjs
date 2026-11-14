@@ -548,13 +548,15 @@ async function assertTileImage(page,cellId){
       return [id,isOwned(map,point)||visibleThroughFog(map,point)];
     }));
   },before.kingdomMap);
-  for(const [id] of scoutedEvents){
+  for(const [id,cell] of scoutedEvents){
     if(!await page.locator('[data-kingdom-cell="'+id+'"]').count())continue;
     // A stored route is not itself visible. Its center must be cleared by
     // the same fog mask used to paint the parchment, or sovereign land.
     const site=page.locator('[data-kingdom-cell="'+id+'"] img.km-object--site');
-    assert.equal(await site.count(),fogVisibility[id]?1:0,
-      'site visibility must follow fog center rather than physical entry: '+id);
+    // Skirmishes stay hidden bandit ambushes until the King arrives.
+    const known=fogVisibility[id]&&(cell.selectedEncounter.type!=='skirmish'||cell.explored===true);
+    assert.equal(await site.count(),known?1:0,
+      'site visibility must follow fog for events and conceal unvisited Skirmishes: '+id);
     if(!fogVisibility[id])
       assert.equal(await page.locator('[data-kingdom-cell="'+id+'"] .km-object--defender').count(),0,
         'concealed defender never leaks from a pre-generated route: '+id);
