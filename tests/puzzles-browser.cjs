@@ -333,6 +333,11 @@ async function clickMove(page,from,to,promotion=null){
   });
   const initialBalance=await balance();
   const initialGold=(await weeklyPage.evaluate(key=>JSON.parse(localStorage.getItem(key)),RUN_KEY)).gold;
+  const readWeeklyPower=()=>weeklyPage.evaluate(async()=>{
+    const {readPlayerRating}=await import('./js/player-rating.mjs');
+    return readPlayerRating().power;
+  });
+  const initialPower=await readWeeklyPower();
   const firstWeekly=await seedWeekly(1);
   const weeklyDesktop=await puzzleGeometry(weeklyPage);
   assertSamePuzzleLayout(ordinaryDesktop,weeklyDesktop,'1280x720');
@@ -348,6 +353,7 @@ async function clickMove(page,from,to,promotion=null){
   });
   await weeklyPage.locator('[data-kingdom-map-screen]:not([hidden])').waitFor();
   assert.equal(await balance(),initialBalance,'exiting a weekly task forfeits the full reward');
+  assert.equal(await readWeeklyPower(),initialPower,'abandonment must not raise weekly Puzzle Power');
   const exitRun=await weeklyPage.evaluate(key=>JSON.parse(localStorage.getItem(key)),RUN_KEY);
   assert(exitRun.kingdomMap.productionClaims.includes(firstWeekly.weekly.productionId),
     'abandoned weekly payout has a persistent spent receipt');
@@ -369,6 +375,25 @@ async function clickMove(page,from,to,promotion=null){
     },{key:RUN_KEY,index:snapshot.solutionIndex},{timeout:12000});
   }
   await weeklyPage.locator('[data-puzzle-outcome]:not([hidden])').waitFor();
+  await weeklyPage.waitForFunction(async expected=>{
+    const {readPlayerRating}=await import('./js/player-rating.mjs');
+    return readPlayerRating().power===expected;
+  },initialPower+1,{timeout:12000});
+  assert.strictEqual(await readWeeklyPower(),initialPower+1,
+    'revisited one-star Puzzle grants exactly +1 Power, not the Elo-based +4');
+  const powerReceipt=weeklyPage.locator('[data-puzzle-outcome] [data-power-result]:not([hidden])');
+  await powerReceipt.waitFor({state:'visible'});
+  assert((await powerReceipt.innerText()).includes('+1'),
+    'weekly Puzzle result displays the +1 Power receipt');
+  const shardReward=weeklyPage.locator('[data-puzzle-outcome-gold]');
+  assert.equal((await shardReward.innerText()).trim(),'+1',
+    'weekly payout result must show only +N, not written-out Honor shards');
+  assert.equal(await shardReward.locator('img').getAttribute('src'),'assets/arena/mirror_shard.png',
+    'weekly payout uses the canonical Honor shard icon');
+  assert(await shardReward.locator('img').evaluate(img=>img.complete&&img.naturalWidth>0),
+    'Honor shard reward icon must load');
+  assert.equal(await weeklyPage.locator('[data-puzzle-outcome-text]').isVisible(),false,
+    'weekly results omit the misleading accuracy-based reward copy');
   assert.equal(await balance(),initialBalance+1,'successful weekly task adds exactly the full Honor shard payout');
   assert.equal((await weeklyPage.evaluate(key=>JSON.parse(localStorage.getItem(key)),RUN_KEY)).gold,initialGold,
     'weekly payout must never add normal Puzzle gold');
@@ -381,6 +406,9 @@ async function clickMove(page,from,to,promotion=null){
   for(let i=0;i<3;i++)await clickMove(weeklyPage,thirdMoves.wrong.from,thirdMoves.wrong.to);
   await weeklyPage.locator('[data-puzzle-outcome]:not([hidden])').waitFor();
   assert.equal(await balance(),initialBalance+1,'three wrong moves forfeit shards without reducing prior payout');
+  assert.equal(await readWeeklyPower(),initialPower+1,'failed weekly Puzzle cannot add Power');
+  assert.equal(await weeklyPage.locator('[data-puzzle-outcome] [data-power-result]:visible').count(),0,
+    'failed weekly Puzzle must not leak the previous Power result');
   await weeklyPage.locator('[data-puzzle-continue]').click();
   await weeklyPage.locator('[data-kingdom-map-screen]:not([hidden])').waitFor();
   assert.deepStrictEqual(weeklyErrors,[]);
