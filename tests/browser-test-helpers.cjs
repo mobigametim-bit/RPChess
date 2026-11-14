@@ -90,4 +90,27 @@ async function startNewRun(page, { playerName = 'Browser Tester', legacyTravel =
   await installManualTravelFixtureNormalizer(page);
 }
 
-module.exports = { startNewRun, waitForVisible, markOnboardingComplete };
+// Existing battle regression flows still need to reach the artifact screen.
+// Explicitly consent to the new one-battle hire (including first Patrick hint).
+// Real opt-in / decline assertions live in the Battle and Kingdom suites.
+async function acceptMercenariesBeforeArtifact(page) {
+  await page.waitForFunction(()=>{
+    const hire=document.querySelector('[data-mercenary-hire-overlay]');
+    const artifact=document.querySelector('[data-artifact-choice-modal]');
+    return (hire&&!hire.hidden)||(artifact&&!artifact.hidden);
+  },null,{timeout:25000});
+  for(let stage=0;stage<3;stage++){
+    const hire=page.locator('[data-mercenary-hire-overlay]:not([hidden])');
+    if(!await hire.count())break;
+    const learn=hire.locator('[data-mercenary-action="learn"]');
+    if(await learn.count())await learn.click();
+    else{
+      const accept=hire.locator('[data-mercenary-action="yes"]');
+      if(!await accept.count())throw new Error('Mercenary dialog has no consent action');
+      await accept.click();
+    }
+  }
+  await page.locator('[data-artifact-choice-modal]:not([hidden])').waitFor({state:'visible',timeout:25000});
+}
+
+module.exports = { startNewRun, waitForVisible, markOnboardingComplete, acceptMercenariesBeforeArtifact };
