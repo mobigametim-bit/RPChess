@@ -257,6 +257,42 @@ async function clickMove(page,from,to,promotion=null){
   assert.deepStrictEqual(promotionErrors,[]);
   await promotionPage.close();
 
+  // Compare exactly the existing Puzzle screen with the weekly task UI.
+  // The original header contains Settings only; every rectangle must keep
+  // its original position at both desktop and landscape phone sizes.
+  async function puzzleGeometry(p){
+    await p.evaluate(()=>document.fonts.ready);
+    return p.evaluate(()=>{
+      const rect=selector=>{
+        const node=document.querySelector(selector),r=node?.getBoundingClientRect();
+        return r?{left:r.left,top:r.top,width:r.width,height:r.height}:null;
+      };
+      return{
+        buttons:Array.from(document.querySelectorAll('.puzzle-topbar__actions>button'))
+          .filter(button=>getComputedStyle(button).display!=='none').map(button=>button.textContent.trim()),
+        board:rect('[data-puzzle-board]'),
+        heading:rect('.puzzle-heading'),
+        panel:rect('.puzzle-layout>.puzzle-panel:first-child'),
+        settings:rect('[data-puzzle-settings]')
+      };
+    });
+  }
+  function assertSamePuzzleLayout(ordinary,weekly,viewport){
+    assert.deepStrictEqual(weekly.buttons,ordinary.buttons,
+      `${viewport}: weekly Puzzle must show precisely the original buttons`);
+    for(const key of ['board','panel','settings']){
+      assert(ordinary[key]&&weekly[key],`${viewport}: missing ${key} geometry`);
+      for(const axis of ['left','top','width','height']){
+        assert(Math.abs(ordinary[key][axis]-weekly[key][axis])<=3,
+          `${viewport}: ${key}.${axis} differs from ordinary Puzzle: ${ordinary[key][axis]} / ${weekly[key][axis]}`);
+      }
+    }
+  }
+  await page.setViewportSize({width:1280,height:720});
+  const ordinaryDesktop=await puzzleGeometry(page);
+  await mobile.setViewportSize({width:844,height:390});
+  const ordinaryMobile=await puzzleGeometry(mobile);
+
   // Weekly Puzzle at an owned completed road site: leave = forfeit, solve =
   // full shards with no gold, three wrong moves = zero and no second claim.
   const weeklyPage=await browser.newPage({viewport:{width:1280,height:720},reducedMotion:'reduce'});
@@ -284,7 +320,8 @@ async function clickMove(page,from,to,promotion=null){
     const r=await weeklyPage.evaluate(key=>JSON.parse(localStorage.getItem(key)),RUN_KEY);
     assert.equal(r.currentPuzzle.weekly.week,week);
     assert.equal(r.currentPuzzle.goldReward,0);
-    assert.equal(await weeklyPage.locator('[data-puzzle-weekly-exit]:not([hidden])').count(),1);
+    assert.equal(await weeklyPage.locator('.puzzle-topbar__actions > button').count(),1,
+      'weekly Puzzle uses the exact original single Settings button');
     return r.currentPuzzle;
   }
   const balance=async()=>weeklyPage.evaluate(async()=>{
@@ -294,7 +331,18 @@ async function clickMove(page,from,to,promotion=null){
   const initialBalance=await balance();
   const initialGold=(await weeklyPage.evaluate(key=>JSON.parse(localStorage.getItem(key)),RUN_KEY)).gold;
   const firstWeekly=await seedWeekly(1);
-  await weeklyPage.locator('[data-puzzle-weekly-exit]').click();
+  const weeklyDesktop=await puzzleGeometry(weeklyPage);
+  assertSamePuzzleLayout(ordinaryDesktop,weeklyDesktop,'1280x720');
+  await weeklyPage.setViewportSize({width:844,height:390});
+  const weeklyMobile=await puzzleGeometry(weeklyPage);
+  assertSamePuzzleLayout(ordinaryMobile,weeklyMobile,'844x390');
+  await weeklyPage.setViewportSize({width:1280,height:720});
+  // A real exit (page unload / back to the map) forfeits the week, without
+  // injecting a noncanonical "Leave task" button into the header.
+  await weeklyPage.evaluate(()=>{
+    dispatchEvent(new Event('pagehide'));
+    globalThis.RPChessKingdomMap.open({detail:{source:'weekly-test-left-scene'}});
+  });
   await weeklyPage.locator('[data-kingdom-map-screen]:not([hidden])').waitFor();
   assert.equal(await balance(),initialBalance,'exiting a weekly task forfeits the full reward');
   const exitRun=await weeklyPage.evaluate(key=>JSON.parse(localStorage.getItem(key)),RUN_KEY);
@@ -304,8 +352,8 @@ async function clickMove(page,from,to,promotion=null){
   assert.notEqual(secondWeekly.puzzleId,firstWeekly.puzzleId,'next week must use a new task at the same star level');
   const weeklyMoves=await selectedPuzzleMoves(weeklyPage);
   await clickMove(weeklyPage,weeklyMoves.wrong.from,weeklyMoves.wrong.to);
-  assert((await weeklyPage.locator('[data-puzzle-current-reward]').innerText()).includes('не уменьшают'),
-    'weekly reward does not shrink after a wrong move');
+  assert((await weeklyPage.locator('[data-puzzle-current-reward]').innerText()).includes('1'),
+    'weekly current-reward line preserves its full amount after an incorrect move');
   for(let n=0;n<6;n++){
     const snapshot=await weeklyPage.evaluate(key=>JSON.parse(localStorage.getItem(key))?.currentPuzzle,RUN_KEY);
     if(snapshot.resolved)break;
