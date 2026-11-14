@@ -257,5 +257,83 @@ async function clickMove(page,from,to,promotion=null){
   assert.deepStrictEqual(promotionErrors,[]);
   await promotionPage.close();
 
+  // Weekly Puzzle at an owned completed road site: leave = forfeit, solve =
+  // full shards with no gold, three wrong moves = zero and no second claim.
+  const weeklyPage=await browser.newPage({viewport:{width:1280,height:720},reducedMotion:'reduce'});
+  const weeklyErrors=[];weeklyPage.on('pageerror',e=>weeklyErrors.push(String(e.stack||e)));
+  await fresh(weeklyPage,'puzzles-browser-weekly');
+  await weeklyPage.locator('[data-roster-travel]').click();
+  await weeklyPage.locator('[data-kingdom-map-screen]:not([hidden])').waitFor();
+  async function seedWeekly(week){
+    await weeklyPage.evaluate(async ({key,week})=>{
+      const r=JSON.parse(localStorage.getItem(key));
+      const {createTravelChoices}=await import('./js/travel-choice-core.mjs');
+      const id='1,0',route={...createTravelChoices({runId:r.id,step:1,types:['puzzle'],playerPower:500})[0],
+        id:'weekly-test-original',stars:1};
+      r.activeTravelChoice=null;r.currentPuzzle=null;
+      r.kingdomMap.cells[id]={...r.kingdomMap.cells[id],explored:true,annexed:true,
+        status:'completed',completedOnce:true,selectedEncounter:route,
+        production:{id:'production:'+id+':'+week+':shards',week,kind:'shards',amount:1}};
+      r.kingdomMap.day=week*7;r.kingdomMap.processedThroughWeek=week;
+      localStorage.setItem(key,JSON.stringify(r));
+      globalThis.RPChessKingdomMap.open({detail:{source:'weekly-test'}});
+    },{key:RUN_KEY,week});
+    await weeklyPage.locator('[data-kingdom-collect="1,0"]').waitFor({state:'visible'});
+    await weeklyPage.locator('[data-kingdom-collect="1,0"]').click();
+    await weeklyPage.locator('[data-puzzle-screen]:not([hidden])').waitFor();
+    const r=await weeklyPage.evaluate(key=>JSON.parse(localStorage.getItem(key)),RUN_KEY);
+    assert.equal(r.currentPuzzle.weekly.week,week);
+    assert.equal(r.currentPuzzle.goldReward,0);
+    assert.equal(await weeklyPage.locator('[data-puzzle-weekly-exit]:not([hidden])').count(),1);
+    return r.currentPuzzle;
+  }
+  const balance=async()=>weeklyPage.evaluate(async()=>{
+    const {ARENA_KEY,normalizeArena,arenaSummary}=await import('./js/arena-core.mjs');
+    return arenaSummary(normalizeArena(JSON.parse(localStorage.getItem(ARENA_KEY)||'null'))).balance;
+  });
+  const initialBalance=await balance();
+  const initialGold=(await weeklyPage.evaluate(key=>JSON.parse(localStorage.getItem(key)),RUN_KEY)).gold;
+  const firstWeekly=await seedWeekly(1);
+  await weeklyPage.locator('[data-puzzle-weekly-exit]').click();
+  await weeklyPage.locator('[data-kingdom-map-screen]:not([hidden])').waitFor();
+  assert.equal(await balance(),initialBalance,'exiting a weekly task forfeits the full reward');
+  const exitRun=await weeklyPage.evaluate(key=>JSON.parse(localStorage.getItem(key)),RUN_KEY);
+  assert(exitRun.kingdomMap.productionClaims.includes(firstWeekly.weekly.productionId),
+    'abandoned weekly payout has a persistent spent receipt');
+  const secondWeekly=await seedWeekly(2);
+  assert.notEqual(secondWeekly.puzzleId,firstWeekly.puzzleId,'next week must use a new task at the same star level');
+  const weeklyMoves=await selectedPuzzleMoves(weeklyPage);
+  await clickMove(weeklyPage,weeklyMoves.wrong.from,weeklyMoves.wrong.to);
+  assert((await weeklyPage.locator('[data-puzzle-current-reward]').innerText()).includes('не уменьшают'),
+    'weekly reward does not shrink after a wrong move');
+  for(let n=0;n<6;n++){
+    const snapshot=await weeklyPage.evaluate(key=>JSON.parse(localStorage.getItem(key))?.currentPuzzle,RUN_KEY);
+    if(snapshot.resolved)break;
+    const uci=weeklyMoves.solution[snapshot.solutionIndex];
+    if(!uci)throw new Error('Weekly solution exhausted before success');
+    await clickMove(weeklyPage,uci.slice(0,2),uci.slice(2,4),uci.slice(4)||null);
+    await weeklyPage.waitForFunction(({key,index})=>{
+      const p=JSON.parse(localStorage.getItem(key))?.currentPuzzle;
+      return p?.resolved||p?.solutionIndex>index;
+    },{key:RUN_KEY,index:snapshot.solutionIndex},{timeout:12000});
+  }
+  await weeklyPage.locator('[data-puzzle-outcome]:not([hidden])').waitFor();
+  assert.equal(await balance(),initialBalance+1,'successful weekly task adds exactly the full Honor shard payout');
+  assert.equal((await weeklyPage.evaluate(key=>JSON.parse(localStorage.getItem(key)),RUN_KEY)).gold,initialGold,
+    'weekly payout must never add normal Puzzle gold');
+  await weeklyPage.locator('[data-puzzle-continue]').click();
+  await weeklyPage.locator('[data-kingdom-map-screen]:not([hidden])').waitFor();
+  assert.equal(await weeklyPage.locator('[data-kingdom-collect="1,0"]').count(),0,
+    'already claimed weekly reward cannot be collected twice');
+  await seedWeekly(3);
+  const thirdMoves=await selectedPuzzleMoves(weeklyPage);
+  for(let i=0;i<3;i++)await clickMove(weeklyPage,thirdMoves.wrong.from,thirdMoves.wrong.to);
+  await weeklyPage.locator('[data-puzzle-outcome]:not([hidden])').waitFor();
+  assert.equal(await balance(),initialBalance+1,'three wrong moves forfeit shards without reducing prior payout');
+  await weeklyPage.locator('[data-puzzle-continue]').click();
+  await weeklyPage.locator('[data-kingdom-map-screen]:not([hidden])').waitFor();
+  assert.deepStrictEqual(weeklyErrors,[]);
+  await weeklyPage.close();
+
     assert.deepStrictEqual(errors,[]);assert.deepStrictEqual(resumeErrors,[]);assert.deepStrictEqual(mobileErrors,[]);console.log('Puzzles identity flow, catalog-derived move acceptance, accepted hidden source attribution, canonical wrong-move/resume state, removed obsolete Roster shortcut, compact hidden status, no-repeat history, reward/idempotency, reload resume and landscape-mobile one-screen acceptance: PASS');
 }finally{await browser.close();}})().catch(e=>{console.error(e.stack||e);process.exitCode=1});
