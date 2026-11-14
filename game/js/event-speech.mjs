@@ -54,8 +54,8 @@ function createEventSpeech({getRoot,getLanguage}){
    const prefix=locale.slice(0,2).toLowerCase();
    const matches=v=>String(v.lang||'').toLowerCase().startsWith(prefix);
    const preferred=prefix==='ru'
-    ?voices.find(v=>matches(v)&&/\\bpavel\\b/i.test(v.name||''))
-    :voices.find(v=>matches(v)&&/^google\\s+uk\\s+english\\s+male$/i.test((v.name||'').trim()));
+    ?voices.find(v=>matches(v)&&/\bpavel\b/i.test(v.name||''))
+    :voices.find(v=>matches(v)&&/^google\s+uk\s+english\s+male$/i.test((v.name||'').trim()));
    const voice=preferred||
     voices.find(v=>v.lang?.toLowerCase()===locale.toLowerCase()&&v.localService)||
     voices.find(v=>v.lang?.toLowerCase()===locale.toLowerCase())||
