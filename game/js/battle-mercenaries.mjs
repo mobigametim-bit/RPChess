@@ -1,6 +1,6 @@
 import { readRun, writeRun } from './run-persistence.mjs';
 import { validateBattleSelection, SLOT_CAPACITY } from './battle-core.mjs';
-import { subscribe, t } from './i18n.mjs';
+import { subscribe, t, currentLanguage } from './i18n.mjs';
 import {armyCandidates} from './kingdom-army-core.mjs';
 import {boardRacePiecePath} from './race-assets.mjs';
 import {DEFAULT_KINGDOM_ECONOMY as K} from './kingdom-economy-config.mjs';
