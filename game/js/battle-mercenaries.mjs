@@ -292,7 +292,7 @@ function displayHireOffer(){
  const state=consentContext;if(!state)return;
  const root=mountHireOverlay(),copy=hireCopy();
  root.hidden=false;
- root.querySelector('[data-mercenary-portrait]').src='assets/ui/orc-mercenary-recruiter.webp';
+ root.querySelector('[data-mercenary-portrait]').src='assets/ui/orc-mercenary-recruiter.png?v=20261114-original-512';
  root.querySelector('[data-mercenary-title]').textContent=copy.offer;
  const wrap=root.querySelector('[data-mercenary-copy]');
  wrap.replaceChildren();

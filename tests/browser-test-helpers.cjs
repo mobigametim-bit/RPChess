@@ -106,6 +106,13 @@ async function acceptMercenariesBeforeArtifact(page) {
       await img.decode();
       if(!img.naturalWidth||!img.naturalHeight)
         throw new Error('Patrick or Orc portrait failed to load');
+      if(img.currentSrc.includes('orc-mercenary-recruiter')){
+        if(!img.currentSrc.includes('orc-mercenary-recruiter.png')||
+           img.naturalWidth!==512||img.naturalHeight!==512)
+          throw new Error('Orc portrait must be the source PNG at native 512x512 resolution');
+        if(img.getBoundingClientRect().width>img.naturalWidth)
+          throw new Error('Orc portrait must not be upscaled past its native width');
+      }
     });
     const learn=hire.locator('[data-mercenary-action="learn"]');
     if(await learn.count())await learn.click();
