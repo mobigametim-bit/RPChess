@@ -1375,5 +1375,5 @@ addEventListener('rpchess:arena-updated',refreshEconomyControls);
 addEventListener('rpchess:run-updated',refreshEconomyControls);
 addEventListener('rpchess:scene-changed',e=>{if(e.detail?.scene==='menu'||e.detail?.scene==='roster')hideMap();});
 subscribe(()=>{if(screen&&!screen.hidden)render();});
-globalThis.RPChessKingdomMap=Object.freeze({open:openMap,hide:hideMap,get map(){return readRun()?.kingdomMap||null;},get zoom(){return zoomPx;}});
+globalThis.RPChessKingdomMap=Object.freeze({open:openMap,hide:hideMap,rejectMercenaryEntry,get map(){return readRun()?.kingdomMap||null;},get zoom(){return zoomPx;}});
 export {openMap};
