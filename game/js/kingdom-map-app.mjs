@@ -20,7 +20,7 @@ import {translateLegacy} from './i18n.mjs';
 import {commanderPortrait,commanderTitle} from './commander-portraits.mjs';
 import {kingdomMapSprite,kingdomEncounterSprite} from './kingdom-map-assets.mjs';
 import {renderParchment,renderParchmentFog,visibleThroughFog} from './kingdom-parchment-app.mjs?v=20261114-fog-events-v1';
-import {drawKingdomOverlay} from './kingdom-map-overlay.mjs?v=20261112-province-colors-v1';
+import {drawKingdomOverlay} from './kingdom-map-overlay.mjs?v=20261114-corridor-joints-v2';
 import {animateTravelers,stopTravelers} from './kingdom-traveler-renderer.mjs?v=20261111-npc-floor-v1';
 import {industrySprite,industrySpriteIndex,industryYield,industryLevel,industryPending,collectIndustry,BUILDING_TYPES} from './kingdom-industry-core.mjs';
 import {worldAt} from './kingdom-world-core.mjs';
@@ -631,7 +631,8 @@ function schedulePending(run){
     gold:current.gold||0,supplies:current.supplies||0,shards:honorShards()}}}};
   const launched=globalThis.RPChessTravelChoice?.startMapEncounter?.(currentCell.selectedEncounter,staged);
   // A refused skirmish returns immediately to the Kingdom map; do not hide it.
-  if(launched&&readRun()?.activeTravelChoice)hideMap();
+  if(launched&&readRun()?.activeTravelChoice&&
+     !globalThis.RPChessBattleMercenaries?.consentPending)hideMap();
   else if(!launched)report(tr('inProgress'));
  },Math.max(0,expires-Date.now()));
 }

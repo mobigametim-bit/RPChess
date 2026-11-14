@@ -207,7 +207,7 @@ function ensureHireOverlay(){
  if(hireOverlay)return hireOverlay;
  if(!document.querySelector('[data-mercenary-hire-style]')){
   const link=document.createElement('link');link.rel='stylesheet';
-  link.href='css/battle-mercenary-dialog.css?v=20261114-approved-ui-v1';
+  link.href='css/battle-mercenary-dialog.css?v=20261114-travel-overlay-v2';
   link.dataset.mercenaryHireStyle='';document.head.append(link);
  }
  hireOverlay=document.createElement('div');hireOverlay.className='rpchess-mercenary-modal';
@@ -254,11 +254,22 @@ function ensureHireOverlay(){
     ...result.kingdomMap.cells,[id]:clean}}};
   }
   writeRun(result);
+  // On approval, leave the map for artifact choice/combat; refusal keeps it.
+  globalThis.RPChessKingdomMap?.hide?.();
   globalThis.dispatchEvent(new CustomEvent('rpchess:resources-updated',
    {detail:{source:'mercenary-accepted'}}));
   saved.onAccept?.();
  });
  return hireOverlay;
+}
+// Keep consent anchored inside Journey, not an isolated body overlay.
+function mountHireOverlay(){
+ const root=ensureHireOverlay();
+ const scene=document.querySelector('[data-kingdom-map-screen]:not([hidden])')||
+  document.querySelector('[data-travel-choice-screen]:not([hidden])');
+ if(scene&&root.parentElement!==scene)scene.append(root);
+ else if(!scene&&root.parentElement!==document.body)document.body.append(root);
+ return root;
 }
 function hireCopy(){return OFFER_COPY[currentLanguage()==='en'?'en':'ru'];}
 function hireButton(action,label,title){
@@ -269,7 +280,7 @@ function hireButton(action,label,title){
  return btn;
 }
 function showHireTutorial(){
- const root=ensureHireOverlay(),copy=hireCopy();
+ const root=mountHireOverlay(),copy=hireCopy();
  root.hidden=false;root.querySelector('[data-mercenary-portrait]').src='assets/ui/jester-patrick.webp';
  root.querySelector('[data-mercenary-title]').textContent=copy.tutorial;
  root.querySelector('[data-mercenary-copy]').textContent=copy.tip;
@@ -279,7 +290,7 @@ function showHireTutorial(){
 }
 function displayHireOffer(){
  const state=consentContext;if(!state)return;
- const root=ensureHireOverlay(),copy=hireCopy();
+ const root=mountHireOverlay(),copy=hireCopy();
  root.hidden=false;
  root.querySelector('[data-mercenary-portrait]').src='assets/ui/orc-mercenary-recruiter.webp';
  root.querySelector('[data-mercenary-title]').textContent=copy.offer;
@@ -363,6 +374,7 @@ globalThis.RPChessBattleMercenaries = Object.freeze({
   mercenaryGoldCost,
   mercenaryQuote,
   requestMercenaryConsent,
+  get consentPending(){return Boolean(consentContext);},
   chargeBattleMercenaries,
   deterministicMercenaryCasualty,
   resolveBattleMercenaryDebt

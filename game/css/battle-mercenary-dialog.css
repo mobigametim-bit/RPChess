@@ -2,8 +2,11 @@
 .rpchess-mercenary-modal[hidden]{display:none!important}
 .rpchess-mercenary-modal{
  position:fixed;inset:0;z-index:2147482950;display:grid;place-items:center;
- padding:12px;background:rgba(2,5,9,.76);backdrop-filter:blur(2px)
+ padding:12px;background:rgba(2,5,9,.38);backdrop-filter:blur(1px)
 }
+/* Modal is scoped to the visible Journey scene. */
+.kingdom-map-screen>.rpchess-mercenary-modal,
+.travel-choice-screen>.rpchess-mercenary-modal{position:absolute;z-index:90}
 .rpchess-mercenary-layout{
  position:relative;isolation:isolate;width:min(730px,calc(100vw - 28px));
  --merc-start:clamp(122px,21vh,165px);padding-top:var(--merc-start)
