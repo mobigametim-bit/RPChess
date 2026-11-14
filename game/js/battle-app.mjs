@@ -337,7 +337,10 @@ function showCaravanOutcome(){
 }
 function finishCaravanBattle(status){
   clearTimeout(finalizeTimer);finalizeTimer=null;if(battleFinalized||!battlePlan)return;
-  activeRun=writeRun(finishCaravan(readRun(),{capturedIds:[...capturedIds],status,plan:battlePlan}));
+  const finished=finishCaravan(readRun(),{capturedIds:[...capturedIds],status,plan:battlePlan});
+  const debt=globalThis.RPChessBattleMercenaries?.resolveBattleMercenaryDebt?.(finished)||
+   {run:finished,resolved:false};
+  activeRun=writeRun(debt.run);
   battleFinalized=true;setBattleNavigationLocked(false);clearTimeout(toastTimer);
   document.querySelectorAll('.battle-toast').forEach(node=>node.remove());
   globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated',{detail:{source:'caravan-completed'}}));
@@ -346,7 +349,7 @@ function finishCaravanBattle(status){
 function pieceImage(piece, side) {
   if (side === 'player') {
     if (piece.id) return boardPieceArtForCharacter(characterForId(piece.id)||piece, battlePlan.playerColor, piece.pieceType);
-    return boardRacePiecePath('humans',piece.pieceType,battlePlan.playerColor);
+    return boardRacePiecePath('orcs',piece.pieceType,battlePlan.playerColor);
   }
   return enemyArt(piece.pieceType);
 }
@@ -378,7 +381,7 @@ function launchBattle(resume = false) {
   playerBySquare=new Map(battlePlan.playerFormation.map((piece)=>[piece.square,piece])); enemyBySquare=new Map(battlePlan.enemyFormation.map((piece)=>[piece.square,piece]));
   capturedIds=new Set();processedMoves=0;battleFinalized=false;lastCapturedVisual=null;lastBattleStatus=null;lastMercenaryCasualty=null;clearTimeout(finalizeTimer);audio()?.click?.();showOnly('classic');setBattleNavigationLocked(true);
   globalThis.RPChessClassicChess?.newGame(battlePlan.fen,{mode:'ai',playerColor:battlePlan.playerColor,aiElo:encounter.aiElo,chess960:isCaravan(),moves:isCaravan()?activeRun.currentCaravan.moves:saved?.moves||[],combatOwner:combatType,
-    boardArtResolver:(square,piece)=>piece.color===battlePlan.playerColor&&playerBySquare.get(square)?.id?pieceImage(playerBySquare.get(square),'player'):null,
+    boardArtResolver:(square,piece)=>piece.color===battlePlan.playerColor&&playerBySquare.has(square)?pieceImage(playerBySquare.get(square),'player'):null,
     onCommittedMove:(entry,replayed)=>{processMove(entry,replayed);processedMoves++;},
     promotionArtResolver:(from,type,color)=>{if(color!==battlePlan.playerColor)return null;const pawn=playerBySquare.get(from);return pawn?.id?(characterForId(pawn.id)?.isArmyRecruit?boardPieceArtForCharacter(characterForId(pawn.id),color,({q:'queen',r:'rook',b:'bishop',n:'knight'})[type]||type):namedPawnPieceArt(characterForId(pawn.id),type,color)):null;}});
   restoring=true;syncBattleFromChess();restoring=false;applyBoardArt();
@@ -386,7 +389,25 @@ function launchBattle(resume = false) {
   globalThis.dispatchEvent(new CustomEvent('rpchess:combat-started',{detail:{combatType}}));
 }
 function startBattle() {
-  activeRun=readRun();if(!activeRun||activeRun.ended)return;const validation=validateBattleSelection(combatRoster(),[...selectedIds]);if(!validation.ok){setNotice(() => battleReason(validation));return;}
+  activeRun=readRun();if(!activeRun||activeRun.ended)return;
+  const roster=combatRoster(),selection=[...selectedIds];
+  const validation=validateBattleSelection(roster,selection);
+  if(!validation.ok){setNotice(() => battleReason(validation));return;}
+  const consent=globalThis.RPChessBattleMercenaries?.requestMercenaryConsent?.({
+   combatType,roster,selectedIds:selection,encounterId:encounter.id,
+   onAccept:()=>startBattle(),
+   onDecline:()=>{
+    if(globalThis.RPChessKingdomMap?.rejectMercenaryEntry?.())return;
+    const run=readRun();if(run){
+     // Non-Kingdom compatibility fallback: close the encounter without charging.
+     writeRun({...run,activeTravelChoice:null,currentCaravan:null,
+      currentTravelChoices:null,combatArtifactChoice:null});
+    }
+    globalThis.dispatchEvent(new CustomEvent('rpchess:travel-open',
+     {detail:{source:'mercenary-refused'}}));
+   }
+  });
+  if(consent)return;
   if(isCaravan()) activeRun=writeRun({...activeRun,currentCaravan:{...activeRun.currentCaravan,phase:'artifact',selectedIds:[...selectedIds]}});
   chooseArtifact({run:activeRun,combatType,encounterId:encounter.id,onChoose:(run)=>{activeRun=writeRun(run);globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated',{detail:{source:'artifact-choice'}}));launchBattle();}});
 }
