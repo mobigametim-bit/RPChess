@@ -6,6 +6,7 @@ import {BATTLE_PROVINCE_HUES} from './kingdom-map-core.mjs?v=20261112-province-c
 import {visibleRoyalRoads,visibleTravelRoads,ownedKeys} from './kingdom-road-network.mjs?v=20261111-polish-v1';
 import {drawSandstoneRoad} from './kingdom-road-paving.mjs?v=20261110-graystone-v3';
 import {VISUAL} from './kingdom-world-config.mjs?v=20261113-opaque-terrain-v1';
+import {visibleThroughFog} from './kingdom-fog-visibility.mjs';
 
 const TILE=PARCHMENT_TILE;
 const SIDES=Object.freeze([
@@ -23,7 +24,10 @@ function parseTile(id){
 // Scouting a Battle reveals its political boundary, not hidden event icons.
 // Each Battle's persisted set is painted separately: no merged red union.
 function visibleBattleProvinces(map){
- return (map.battleTerritories||[]).filter(p=>map.cells?.[p.id]?.explored===true);
+ return (map.battleTerritories||[]).filter(p=>{
+  const point=parseTile(p.id);
+  return point&&visibleThroughFog(map,point);
+ });
 }
 function politicalClipKeys(map){
  return new Set([...(map.battleConqueredCells||[]),
