@@ -233,7 +233,8 @@ async function assertResponsiveStars(page, selector, cardSelector) {
       mode: document.querySelector('[data-game-mode]')?.textContent || '',
       firstSquare: document.querySelector('[data-chess-board] [data-square]')?.dataset.square || ''
     }), { genericSquare: blackGeneric.square, enemySquare: darkEnemy.square });
-    assert(blackArt.generic.includes('assets/races/humans/pieces/board/black/'));
+    assert(blackArt.generic.includes(`assets/races/orcs/pieces/board/black/${blackGeneric.pieceType}.png`),
+      'Black-side hired pieces must use their Orc race sprite, not the old human fallback');
     assert(blackArt.enemy.includes('assets/races/dark_elves/pieces/board/white/rook.png'),
       'Black-side encounter must show the enemy white-color race board rook');
     assert.strictEqual(blackArt.firstSquare, 'h1', 'Black-side Battle must render the board from Black perspective');
