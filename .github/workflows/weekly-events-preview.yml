@@ -1,0 +1,108 @@
+name: Weekly Puzzle and Events Polish — isolated QA preview
+on:
+  push:
+    branches: [feature/weekly-puzzle-event-polish-20261114]
+    paths:
+      - 'game/**'
+      - 'tests/**'
+      - 'weekly-events-preview/**'
+      - '.github/workflows/weekly-events-preview.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+concurrency:
+  group: rpchess-weekly-events-qa-preview
+  cancel-in-progress: true
+jobs:
+  preview:
+    name: Validate and deploy weekly Puzzle and Events QA
+    if: github.repository == 'mobigametim-bit/RPChess' && github.ref == 'refs/heads/feature/weekly-puzzle-event-polish-20261114'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 65
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm/rpchess-runtime-assets-v1
+          key: rpchess-runtime-assets-v1-${{ runner.os }}-${{ hashFiles('game/assets/**/*.png', 'game/generated_assets/*.png', 'scripts/*asset*.cjs', 'scripts/runtime-assets-build.cjs') }}
+          restore-keys: rpchess-runtime-assets-v1-${{ runner.os }}-
+      - name: Install dependencies and verified Stockfish 18
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund
+          npm pack stockfish@18.0.0 --silent --pack-destination /tmp
+          mkdir -p /tmp/rpchess-stockfish-package /tmp/rpchess-stockfish-verified
+          tar -xzf /tmp/stockfish-18.0.0.tgz -C /tmp/rpchess-stockfish-package
+          package=/tmp/rpchess-stockfish-package/package
+          for name in stockfish-18-lite-single.js stockfish-18-lite-single.wasm; do
+            source=$(find "$package" -type f -name "$name" -print -quit)
+            test -n "$source"
+            cp "$source" "/tmp/rpchess-stockfish-verified/$name"
+          done
+          license=$(find "$package" -type f -iname 'Copying.txt' -print -quit)
+          test -n "$license"
+          cp "$license" /tmp/rpchess-stockfish-verified/COPYING.txt
+      - name: Canonical Node gate and production build
+        env:
+          RPCHESS_STOCKFISH_ASSET_DIR: /tmp/rpchess-stockfish-verified
+        run: npm run gate:local
+      - name: Install pinned Chromium for existing Kingdom regression
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
+          npx playwright install chromium
+      - name: Test Kingdom, Puzzle, Events and portrait UI in Chromium
+        env:
+          RPCHESS_BROWSER_TEST: kingdom-map-browser.cjs,puzzles-browser.cjs,events-browser.cjs,portrait-key-scenes-browser.cjs
+          RPCHESS_GATE_PREFIX: /RPChess
+        run: npm run test:browser
+      - name: Deploy isolated weekly Puzzle + Events QA Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          npx wrangler deploy --config weekly-events-preview/wrangler.toml
+      - name: Smoke-test weekly Puzzle and Events modules
+        run: |
+          node <<'NODE'
+          const assert=require('node:assert/strict');
+          const root='https://rpchess-weekly-events-preview.mobigametim.workers.dev';
+          (async()=>{
+            for(let attempt=0;attempt<12;attempt++){
+              try{
+                for(const [path,token] of [
+                  ['/','data-reboot-foundation'],
+                  ['/js/kingdom-map-app.mjs','settleWeeklyPuzzle'],
+                  ['/js/puzzles/puzzle-app.mjs','openWeeklyPuzzle'],
+                  ['/js/events-app.mjs','data-events-speech'],
+                  ['/js/event-speech.mjs','createEventSpeech'],
+                  ['/css/events-polish.css','events-copy-frame']]){
+                    const response=await fetch(root+path,{cache:'no-store'});
+                    assert.equal(response.status,200,path);
+                    assert((await response.text()).includes(token),path+' is not the fog-discovery build');
+                  }
+                console.log('Weekly Puzzle and Events QA preview smoke: PASS '+root);
+                return;
+              }catch(error){
+                if(attempt===11)throw error;
+                await new Promise(resolve=>setTimeout(resolve,3000));
+              }
+            }
+          })().catch(error=>{console.error(error);process.exitCode=1;});
+          NODE
+      - name: Save existing Kingdom browser screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: weekly-events-qa-screenshots
+          path: test-results/kingdom-map/
+          retention-days: 7
+          if-no-files-found: ignore
