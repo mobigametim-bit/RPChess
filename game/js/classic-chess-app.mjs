@@ -54,6 +54,18 @@ let combatOwner = null;
 let aiThinking = false;
 let visualAnimating = false;
 let gameGeneration = 0;
+let mateResultTimer=null,mateResultUntil=0;
+function resetMateCeremony(){if(mateResultTimer!==null)clearTimeout(mateResultTimer);mateResultTimer=null;mateResultUntil=0;}
+function scheduleMateCeremony(status){
+ if(status?.type!=='checkmate'||mateResultUntil)return;
+ mateResultUntil=Date.now()+3000;
+ const generation=gameGeneration;
+ mateResultTimer=setTimeout(()=>{
+  mateResultTimer=null;
+  if(generation!==gameGeneration||engine.status().type!=='checkmate')return;
+  mateResultUntil=0;renderStatus();
+ },3000);
+}
 let gameConfig = { mode: 'local', playerColor: 'w', aiColor: null, aiElo: 800 };
 let aiAdapter = new ChessAIAdapter();
 
@@ -262,7 +274,7 @@ function renderStatus() {
   else if (status.checked) renderSideSummary('classic.summary.checked', snapshot.turn);
   else renderSideSummary('classic.summary.turn', snapshot.turn);
 
-  if (status.over) {
+  if (status.over && !(status.type==='checkmate'&&mateResultUntil>Date.now())) {
     resultRoot.hidden = false;
     resultTitle.textContent = description.title;
     resultText.textContent = description.text;
@@ -307,6 +319,8 @@ function renderBoard() {
       if (targetMove) button.classList.add(targetMove.capture ? 'classic-square--capture' : 'classic-square--legal');
 
       if (piece) {
+        if(snapshot.status.type==='checkmate'&&piece.type==='k')button.classList.add(
+          piece.color===snapshot.status.winner?'rpchess-king-victorious':'rpchess-king-defeated');
         const image = document.createElement('img');
         image.className = 'classic-piece classic-piece--new-race';
         // Combat scenes provide the hero's stable sprite before the cell enters
@@ -501,6 +515,7 @@ function executeMove(from, to, promotion = null, { triggerAI = true } = {}) {
 
   visualAnimating = Boolean(geometry);
   render();
+  if(result.status.type==='checkmate')scheduleMateCeremony(result.status);
   const afterVisual = () => { if (triggerAI) void maybeScheduleAI(); };
   if (geometry) animateCommittedMove(geometry, to, afterVisual);
   else { visualAnimating = false; renderBoard(); afterVisual(); }
@@ -554,6 +569,7 @@ function showGame() {
 }
 
 function cancelAI() {
+  resetMateCeremony();
   gameGeneration += 1;
   aiAdapter.stop();
   aiThinking = false;
@@ -602,6 +618,7 @@ function newGame(fen = null, options = {}) {
     onCommittedMove?.(replayed, true);
   }
   pendingPromotion = null;
+  if(engine.status().type==='checkmate')scheduleMateCeremony(engine.status());
   closePromotion();
   showGame();
   render();
