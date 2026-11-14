@@ -308,7 +308,8 @@ function castleCard(map){
   const row=document.createElement('div');row.className='km-castle-recruit';
   const label=lang()==='en'?({pawn:'Pawn',knight:'Knight',bishop:'Bishop',rook:'Rook',queen:'Queen'}[type]):PIECE_LABELS[type];
   const buy=document.createElement('button');buy.type='button';buy.dataset.kingdomCastleHire=type;
-  buy.disabled=gold<price;buy.setAttribute('aria-disabled',String(buy.disabled));
+  buy.disabled=gold<price||map.king.x!==map.castle.x||map.king.y!==map.castle.y;
+  buy.setAttribute('aria-disabled',String(buy.disabled));
   buy.setAttribute('aria-label',(lang()==='en'?'Hire ':'Нанять ')+label+
     (lang()==='en'?', owned ':', в наличии ')+typeCounts[type]+
     (lang()==='en'?', cost ':', стоимость ')+price+' '+(lang()==='en'?'gold':'золота'));
@@ -417,7 +418,7 @@ function screenReady(){
  screen.dataset.kingdomMapScreen='';screen.hidden=true;
  screen.innerHTML=`<div class="km-shell">
  <header class="km-header">
- <div class="km-heading"><h1 data-kingdom-day></h1><span class="km-heading-glory" data-kingdom-heading-glory><img src="${GLORY_ICON}" alt="" aria-hidden="true"><strong data-kingdom-heading-glory-value></strong></span></div>
+ <div class="km-heading"><div class="km-heading-lines"><div class="km-player-name" data-kingdom-player-name></div><h1 data-kingdom-day></h1></div><span class="km-heading-glory" data-kingdom-heading-glory><img src="${GLORY_ICON}" alt="" aria-hidden="true"><strong data-kingdom-heading-glory-value></strong></span></div>
  <div class="km-commandbar">
  <div class="km-commander-meta"><img class="km-commander-portrait" data-kingdom-portrait alt=""></div>
  <div class="km-resource-group">
@@ -643,9 +644,13 @@ function render(){
  const power=readPlayerRating().power;
  // Independent in-game calendar: one new cell or completed meaningful encounter = one day.
  const dayNode=screen.querySelector('[data-kingdom-day]');
+ const nameNode=screen.querySelector('[data-kingdom-player-name]');
+ nameNode.textContent=run.playerName||(lang()==='en'?'Ruler':'Правитель');
  dayNode.textContent=tr('day')+' '+(map.day||1);
- fitDayHeading(dayNode);
- if(document.fonts?.status==='loading')void document.fonts.ready.then(()=>{if(dayNode.isConnected)fitDayHeading(dayNode);});
+ fitDayHeading(nameNode);fitDayHeading(dayNode);
+ if(document.fonts?.status==='loading')void document.fonts.ready.then(()=>{
+  if(dayNode.isConnected){fitDayHeading(nameNode);fitDayHeading(dayNode);}
+ });
  screen.querySelector('[data-kingdom-roster]').textContent=t('travel.roster');
  screen.querySelector('[data-kingdom-settings]').textContent=t('travel.settings');
  screen.querySelector('[data-kingdom-menu]').textContent=t('menu.actionsLabel');
@@ -1121,7 +1126,8 @@ function constructSettlement(){
 function hireCastleUnit(pieceType){
  const run=readRun(),map=run?.kingdomMap;
  if(!run||run.ended||!map||!PIECE_TYPES.includes(pieceType)||map.pendingCell||
-    selected!==keyOf(map.castle.x,map.castle.y))return;
+    selected!==keyOf(map.castle.x,map.castle.y)||
+    map.king.x!==map.castle.x||map.king.y!==map.castle.y)return;
  const id='castle:'+run.id+':'+pieceType+':'+Date.now()+':'+Math.random().toString(36).slice(2);
  const result=buyCastleRecruit(run,{raceTag:map.castle.raceTag,pieceType,receiptId:id});
  if(!result.ok){report(lang()==='en'?'Not enough gold':'Недостаточно золота');return;}
