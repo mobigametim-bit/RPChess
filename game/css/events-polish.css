@@ -108,6 +108,15 @@ body.events-active .events-speech-button.is-speaking{
 }
 body.events-active .events-speech-button:disabled{opacity:.45;cursor:default}
 body.events-active .events-speech-button:focus-visible{outline:2px solid #f7d688;outline-offset:3px}
+/* The Events logo occupies a normal-flow header in the base stylesheet.
+   On desktop landscape it must overlay the scene, otherwise the centered
+   full-viewport panel starts below that header and its choices escape 1024×768. */
+@media (orientation:landscape) and (min-height:651px){
+ body.events-active .events-topbar{
+  position:absolute!important;top:0;left:0;right:0;z-index:8;
+  margin:0!important;pointer-events:none!important;
+ }
+}
 @media (orientation:landscape) and (max-width:1180px){
  body.events-active .events-panel{
   grid-template-columns:minmax(0,1fr) minmax(320px,.92fr)!important;gap:12px!important;
