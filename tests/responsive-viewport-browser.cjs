@@ -1,3 +1,4 @@
+const {acceptMercenariesBeforeArtifact}=require('./browser-test-helpers.cjs');
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
@@ -115,6 +116,7 @@ async function setLanguage(page, language) {
 }
 
 async function chooseNoArtifactForTest(page) {
+  await acceptMercenariesBeforeArtifact(page);
   await page.locator('[data-artifact-choice-modal]:not([hidden])').waitFor({ state: 'visible' });
   await page.locator('[data-artifact-choice="none"]').click();
 }
@@ -451,7 +453,8 @@ async function auditSoloKingBattleRunEnd(browser, width, height, language) {
       dispatchEvent(new CustomEvent('rpchess:run-updated'));
       dispatchEvent(new CustomEvent('rpchess:battle-open'));
     },RUN_KEY);
-    await page.locator('[data-artifact-choice-modal]').waitFor();
+    await acceptMercenariesBeforeArtifact(page);
+  await page.locator('[data-artifact-choice-modal]').waitFor();
     assert.strictEqual(await page.locator('[data-battle-screen]').isHidden(),true);
     const kingId=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).roster.find(c=>c.isRunKing).id,RUN_KEY);
     await chooseNoArtifactForTest(page);
@@ -489,7 +492,8 @@ async function auditPrepAndCombat(browser, width, height, language) {
     await setLanguage(page, language);
     await startNewRun(page, { playerName: `Breakpoint ${width} ${language}` });
     await page.evaluate(() => dispatchEvent(new CustomEvent('rpchess:skirmish-open')));
-    await page.locator('[data-artifact-choice-modal]').waitFor();
+    await acceptMercenariesBeforeArtifact(page);
+  await page.locator('[data-artifact-choice-modal]').waitFor();
     assert.strictEqual(await page.locator('[data-skirmish-screen]').isHidden(),true,`${label}: no Skirmish preparation`);
     await assertPageFitsViewport(page,`${label} Skirmish artifact choice`);
     await assertViewportContained(page,'[data-artifact-choice-modal] .artifact-choice-panel',`${label} Skirmish artifact panel`);
@@ -575,7 +579,8 @@ async function auditPrepAndCombat(browser, width, height, language) {
     await assertViewportContained(page, '[data-aftermath-continue]', `${label} Skirmish aftermath CTA`);
 
     await page.evaluate(() => dispatchEvent(new CustomEvent('rpchess:battle-open')));
-    await page.locator('[data-artifact-choice-modal]').waitFor();
+    await acceptMercenariesBeforeArtifact(page);
+  await page.locator('[data-artifact-choice-modal]').waitFor();
     assert.strictEqual(await page.locator('[data-battle-screen]').isHidden(),true,`${label}: no Battle preparation`);
     await assertPageFitsViewport(page,`${label} Battle artifact choice`);
     await assertViewportContained(page,'[data-artifact-choice-modal] .artifact-choice-panel',`${label} Battle artifact panel`);

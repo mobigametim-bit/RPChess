@@ -1,3 +1,4 @@
+const {acceptMercenariesBeforeArtifact}=require('./browser-test-helpers.cjs');
 const assert = require('assert');
 const { chromium } = require('playwright');
 const { startNewRun } = require('./browser-test-helpers.cjs');
@@ -139,7 +140,8 @@ async function seedZeroSupplyTravel(page, { kingOnly = false } = {}) {
     assert.strictEqual(reloaded.roster.filter((character) => character.status === 'dead').length, 1, 'reload must not kill a second character');
 
     await page.locator('[data-starvation-continue]').click();
-    await page.locator('[data-artifact-choice-modal]').waitFor();
+    await acceptMercenariesBeforeArtifact(page);
+  await page.locator('[data-artifact-choice-modal]').waitFor();
     const acknowledged = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), RUN_KEY);
     assert.strictEqual(acknowledged.activeTravelChoice.starvationAcknowledged, true, 'ordinary casualty must be acknowledged exactly once');
     assert.strictEqual(acknowledged.roster.filter((character) => character.status === 'dead').length, 1);

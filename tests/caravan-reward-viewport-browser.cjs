@@ -1,3 +1,4 @@
+const {acceptMercenariesBeforeArtifact}=require('./browser-test-helpers.cjs');
 const assert = require('assert');
 const { chromium } = require('playwright');
 const { startNewRun } = require('./browser-test-helpers.cjs');
@@ -87,7 +88,8 @@ async function audit(browser,language) {
     },runKey);
     await page.locator('[data-roster-travel]').click();
     await page.locator('[data-travel-type="caravan"]').first().click();
-    await page.locator('[data-artifact-choice-modal]').waitFor();
+    await acceptMercenariesBeforeArtifact(page);
+  await page.locator('[data-artifact-choice-modal]').waitFor();
     await page.locator('[data-game-loading]').waitFor({state:'hidden',timeout:25000});
     assert.strictEqual(await page.locator('[data-battle-screen]').isHidden(),true);
     for (const [width,height] of [[1024,768],[844,390]]) {
@@ -95,7 +97,8 @@ async function audit(browser,language) {
       await assertPageFitsViewport(page,`${language} ${width}x${height} Caravan artifact choice`);
       await assertViewportContained(page,'[data-artifact-choice-modal] .artifact-choice-panel',`${language} Caravan artifact choice`);
     }
-    await page.locator('[data-artifact-choice-modal]').waitFor();
+    await acceptMercenariesBeforeArtifact(page);
+  await page.locator('[data-artifact-choice-modal]').waitFor();
     await page.locator('[data-artifact-choice="none"]').click();
     await page.locator('[data-classic-screen]:not([hidden])').waitFor();
     await assertPageFitsViewport(page,`${language} Caravan combat`);
