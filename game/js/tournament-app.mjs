@@ -54,6 +54,21 @@ let queueWriteJob=Promise.resolve(); // serialize join/cancel so a late join can
 let chosenMode='online',shadowClock='unlimited',shadowGame=null;
 // Arena-matched 290 ms smooth move flight for authoritative server moves.
 let pendingFlight=null,moveFlyer=null,captureGhost=null,moveAnimation=null,moveAnimationSerial=0;
+let mateCeremonyTimer=null,mateCeremonyWaiting=false;
+function cancelMateCeremony(){clearTimeout(mateCeremonyTimer);mateCeremonyTimer=null;mateCeremonyWaiting=false;}
+function showTournamentMateBeforeResult(){
+ if(chess?.status().type!=='checkmate'||!tabVisible||page!=='match')return false;
+ if(mateCeremonyWaiting)return true;
+ mateCeremonyWaiting=true;
+ const snapshotId=live?.matchId||matchState?.matchId;
+ render();
+ mateCeremonyTimer=setTimeout(()=>{
+  mateCeremonyTimer=null;
+  if(!tabVisible||page!=='match'||(live?.matchId||matchState?.matchId)!==snapshotId)return;
+  mateCeremonyWaiting=false;page='result';render();
+ },3000);
+ return true;
+}
 const ROLE={p:'pawn',n:'knight',b:'bishop',r:'rook',q:'queen',k:'king'};
 function lang(){return currentLanguage()==='en'?'en':'ru';}
 function t(key){return words[lang()][key]||key;}
@@ -137,7 +152,7 @@ function invite(){return '<section class="tournament-card tournament-center"><h2
 function joining(){return '<section class="tournament-card tournament-center"><h2>'+t('join')+'</h2><p>'+t('entry')+'</p><input class="tournament-code-input" data-tour-code maxlength="12" autocomplete="off" placeholder="AB12CD" value="'+esc(roomCode)+'"><div class="tournament-actions">'+action('join-submit',t('enter'))+action('cancel',t('leave'))+'</div>'+notice(message)+'</section>';}
 function render(){
  if(!tabVisible)return;
- const inBattle=page==='match'&&matchState?.status==='playing';
+ const inBattle=page==='match'&&(matchState?.status==='playing'||mateCeremonyWaiting);
  root.classList.toggle('tournament-screen--setup',page==='setup');
  root.classList.toggle('tournament-screen--shadow',Boolean(shadowGame));
  root.classList.toggle('tournament-screen--match',Boolean(inBattle));
@@ -163,7 +178,8 @@ function boardMarkup(){
   const move=legal.find(m=>m.to===sq);
   const arriving=pendingFlight?.to===sq;
   const art=arriving?img.replace('class="classic-piece"','class="classic-piece classic-piece--arriving"'):img;
-  output+='<button type="button" class="classic-square '+(light?'classic-square--light':'classic-square--dark')+(selectedSquare===sq?' classic-square--selected':'')+(move?' classic-square--legal':'')+(move?.capture?' classic-square--capture':'')+(idx===checkedKing?' classic-square--check':'')+'" data-square="'+sq+'" aria-label="'+sq+'">'+art+symbol+'</button>';
+  output+='<button type="button" class="classic-square '+(light?'classic-square--light':'classic-square--dark')+
+   (snapshot.status.type==='checkmate'&&piece?.type==='k'?(piece.color===snapshot.status.winner?' rpchess-king-victorious':' rpchess-king-defeated'):'')+(selectedSquare===sq?' classic-square--selected':'')+(move?' classic-square--legal':'')+(move?.capture?' classic-square--capture':'')+(idx===checkedKing?' classic-square--check':'')+'" data-square="'+sq+'" aria-label="'+sq+'">'+art+symbol+'</button>';
  }
  return output;
 }
@@ -405,7 +421,7 @@ async function syncMatch(){
     ratedReceipt=rating;
     tournamentProfile={ranked:true,power:rating.after};
    }
-   stopMatch();page='result';render();return;
+   stopMatch();if(showTournamentMateBeforeResult())return;page='result';render();return;
   }
   page='match';render();
   if(flight)startTournamentFlight(flight);
@@ -449,7 +465,7 @@ function visible(active){
  if(active){window.scrollTo(0,0);render();}
 }
 function open(){
- shadowGame=null;chosenMode='online';shadowClock='unlimited';
+ cancelMateCeremony();shadowGame=null;chosenMode='online';shadowClock='unlimited';
  squad=arena().owned.has(saved().squad)?saved().squad:'humans';
  page='setup';message='';visible(true);
  const serial=++resumeSerial;
@@ -465,7 +481,7 @@ function open(){
   }catch{ /* Offline state still allows opening Tournament setup. */ }
  })();
 }
-function leave(){if(shadowGame)saveShadowGame(platform.storage.local,shadowGame);shadowGame=null;resumeSerial++;if(page==='search')void cancelQueue();if(page==='invite')void cancelRoom();stopPolling();stopMatch();visible(false);}
+function leave(){cancelMateCeremony();if(shadowGame)saveShadowGame(platform.storage.local,shadowGame);shadowGame=null;resumeSerial++;if(page==='search')void cancelQueue();if(page==='invite')void cancelRoom();stopPolling();stopMatch();visible(false);}
 function stopPolling(){if(searchJob){clearInterval(searchJob);searchJob=null;}}
 async function endpoint(path){return (await apiBase('tournament',API)).replace(/\/$/,'')+path;}
 async function call(path,data){
@@ -595,6 +611,7 @@ async function pollQueue(){
  }catch(err){message=err.message;render();}
 }
 async function openMatch(response){
+ cancelMateCeremony();
  queueMayExist=false;shadowGame=null;
  stopPolling();stopMatch();live=response;page='match';message='';selectedSquare=null;matchRendered=false;ratedReceipt=null;
  await syncMatch();
@@ -610,14 +627,14 @@ function syncShadow(){
  // Avoid rewriting localStorage four times per second just to paint digits.
  if(matchState.status==='finished'){
   saveShadowGame(platform.storage.local,shadowGame);
-  stopMatch();page='result';render();return;
+  stopMatch();if(showTournamentMateBeforeResult())return;page='result';render();return;
  }
  if(page==='match'){
   if(!matchRendered)render();else refreshBoard();
  }
 }
 function startShadow({resume=false}={}){
- stopMatch();stopPolling();
+ cancelMateCeremony();stopMatch();stopPolling();
  // No network request, cloud save, rating receipt or online Tournament match.
  live=null;selectedSquare=null;matchRendered=false;busyMove=false;ratedReceipt=null;
  const owner=identity();
