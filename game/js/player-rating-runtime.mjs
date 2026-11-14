@@ -121,7 +121,9 @@ function renderPuzzleResult(run) {
   if(!receipt){
     // A reused puzzle screen must not show a prior week's Power receipt when
     // the current weekly task has failed or has not yet settled.
-    if(previous)previous.hidden=true;
+    // Do not rewrite an already-hidden attribute: MutationObserver watches
+    // this subtree and would otherwise recursively schedule renderPowerResults.
+    if(previous&&!previous.hidden)previous.hidden=true;
     return;
   }
   paint(ensureResult(outcome, button), receipt);
