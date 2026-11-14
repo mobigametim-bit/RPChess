@@ -102,6 +102,11 @@ async function acceptMercenariesBeforeArtifact(page) {
   for(let stage=0;stage<3;stage++){
     const hire=page.locator('[data-mercenary-hire-overlay]:not([hidden])');
     if(!await hire.count())break;
+    await hire.locator('[data-mercenary-portrait]').evaluate(async img=>{
+      await img.decode();
+      if(!img.naturalWidth||!img.naturalHeight)
+        throw new Error('Patrick or Orc portrait failed to load');
+    });
     const learn=hire.locator('[data-mercenary-action="learn"]');
     if(await learn.count())await learn.click();
     else{

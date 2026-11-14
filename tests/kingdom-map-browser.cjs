@@ -1014,8 +1014,11 @@ async function assertTileImage(page,cellId){
   assert.equal(started.activeTravelChoice.id,encounter.id);
   assert.equal(started.supplies,moved.supplies,'the encounter cannot bill an already paid step twice');
   assert.equal(started.kingdomMap.cells['1,0'].selectedEncounter.id,encounter.id);
-  assert.equal(await page.locator('[data-kingdom-map-screen]:not([hidden])').count(),0,
-   'the player is routed into an existing encounter owner');
+  await page.locator('[data-mercenary-hire-overlay]:not([hidden])').waitFor({state:'visible',timeout:15000});
+  assert.equal(await page.locator('[data-kingdom-map-screen]:not([hidden])').count(),1,
+   'Kingdom Journey must remain visible behind mercenary consent');
+  assert.equal(await page.locator('[data-kingdom-map-screen] > [data-mercenary-hire-overlay]:not([hidden])').count(),1,
+   'hire dialog must be mounted over the Kingdom Journey, not a blank body');
   assert.deepEqual(errors,[],'map bootstrap/transition must not emit JavaScript errors');
   // A saved return from a failed fight must rewind the king and preserve the
   // original encounter. Emulate the existing owner result without replacing it.
