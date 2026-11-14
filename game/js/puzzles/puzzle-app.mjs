@@ -256,13 +256,30 @@ function renderMeta() {
   outcome.hidden = !state.resolved;
   if (!state.resolved) return;
   screen.querySelector('[data-puzzle-outcome-title]').textContent = t(state.result === 'solved' ? 'puzzle.outcome.solved' : 'puzzle.outcome.failed');
-  screen.querySelector('[data-puzzle-outcome-text]').textContent = state.result === 'solved'
+  const outcomeText=screen.querySelector('[data-puzzle-outcome-text]');
+  // Accuracy determines Gold only in ordinary tasks, not weekly Honor shards.
+  outcomeText.hidden=Boolean(weekly&&state.result==='solved');
+  outcomeText.textContent=outcomeText.hidden?'':state.result==='solved'
     ? t('puzzle.outcome.solvedText',{errors:state.errors})
     : t('puzzle.outcome.failedText');
-  screen.querySelector('[data-puzzle-outcome-gold]').textContent=weekly?
-    (state.result==='solved'? `+${weekly.amount} ${shardsLabel}`:
-       (english?'Weekly reward forfeited':'Награда за неделю потеряна')):
-    `${state.goldReward > 0 ? '+' : ''}${state.goldReward} ${t('resources.goldDelta')}`;
+  const outcomeReward=screen.querySelector('[data-puzzle-outcome-gold]');
+  const weeklySolved=Boolean(weekly&&state.result==='solved');
+  outcomeReward.classList.toggle('is-weekly-shards',weeklySolved);
+  if(weeklySolved){
+    const amount=document.createElement('span');
+    amount.textContent=`+${weekly.amount}`;
+    const image=document.createElement('img');
+    image.src=SHARD_ICON;
+    image.alt='';
+    image.setAttribute('aria-hidden','true');
+    outcomeReward.replaceChildren(amount,image);
+    outcomeReward.setAttribute('aria-label',`+${weekly.amount} ${shardsLabel}`);
+  }else{
+    outcomeReward.textContent=weekly
+      ?(english?'Weekly reward forfeited':'Награда за неделю потеряна')
+      :`${state.goldReward > 0 ? '+' : ''}${state.goldReward} ${t('resources.goldDelta')}`;
+    outcomeReward.removeAttribute('aria-label');
+  }
 }
 
 function renderBoard() {
