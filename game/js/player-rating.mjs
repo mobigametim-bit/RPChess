@@ -97,7 +97,7 @@ function ratingReceipt(receiptId, storage = null) {
   return readPlayerRating(storage).receipts.find((receipt) => receipt.id === receiptId) || null;
 }
 
-function settlePlayerRating({ receiptId, opponentElo, result, gainDivisor = 1, storage = null } = {}) {
+function settlePlayerRating({ receiptId, opponentElo, result, gainDivisor = 1, fixedWinGain = null, storage = null } = {}) {
   if (!receiptId || typeof receiptId !== 'string') throw new Error('Power settlement requires receiptId');
   const profile = readPlayerRating(storage);
   const existing = profile.receipts.find((receipt) => receipt.id === receiptId);
@@ -106,7 +106,13 @@ function settlePlayerRating({ receiptId, opponentElo, result, gainDivisor = 1, s
   const normalizedOpponent = Math.max(0, Math.round(Number(opponentElo) || 0));
   const normalizedResult = normalizeResult(result) >= 0.75 ? 1 : normalizeResult(result) >= 0.25 ? 0.5 : 0;
   const rawDelta = ratingDelta(before, normalizedOpponent, normalizedResult);
-  const delta = scaledPositiveRatingDelta(rawDelta, gainDivisor);
+  // Completed weekly Puzzle sites earn precisely one Power per star, rather
+  // than the ordinary Journey Puzzle's Elo-based (K / 3) win gain.
+  if(fixedWinGain!==null&&(!Number.isInteger(fixedWinGain)||
+      fixedWinGain<1||fixedWinGain>12||normalizedResult!==1))
+    throw new Error('Fixed weekly Puzzle Power requires a win and 1..12 stars');
+  const delta = fixedWinGain===null?
+    scaledPositiveRatingDelta(rawDelta,gainDivisor):fixedWinGain;
   const after = Math.max(0, before + delta);
   const receipt = Object.freeze({ id:receiptId, before, after, delta, opponentElo:normalizedOpponent, result:normalizedResult });
   const next = writePlayerRating({ ...profile, power:after, receipts:[...profile.receipts, receipt] }, storage);
@@ -162,6 +168,14 @@ function combatCountForKind(run, kind) {
 }
 
 function ratedOutcomeKind(run) {
+  // Weekly Puzzle is opened from an already completed Kingdom site, not a
+  // fresh activeTravelChoice. Credit it only after the Honor shard receipt is
+  // committed; a failed or abandoned weekly task never earns Power.
+  const weekly=run?.currentPuzzle;
+  if(weekly?.weekly){
+    return weekly.resolved===true&&weekly.rewardSettled===true&&
+      weekly.result==='solved'?'puzzle':null;
+  }
   const route = run?.activeTravelChoice;
   if (!route || route.difficultyModel !== 'power-v1') return null;
 
