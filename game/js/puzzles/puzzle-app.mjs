@@ -257,11 +257,14 @@ function renderMeta() {
   if (!state.resolved) return;
   screen.querySelector('[data-puzzle-outcome-title]').textContent = t(state.result === 'solved' ? 'puzzle.outcome.solved' : 'puzzle.outcome.failed');
   const outcomeText=screen.querySelector('[data-puzzle-outcome-text]');
-  // Accuracy determines Gold only in ordinary tasks, not weekly Honor shards.
-  outcomeText.hidden=Boolean(weekly&&state.result==='solved');
-  outcomeText.textContent=outcomeText.hidden?'':state.result==='solved'
-    ? t('puzzle.outcome.solvedText',{errors:state.errors})
-    : t('puzzle.outcome.failedText');
+  // The error count is useful in either mode, but accuracy-based Gold copy
+  // must never be shown for a fixed weekly Honor shard reward.
+  outcomeText.hidden=false;
+  outcomeText.textContent=weekly&&state.result==='solved'
+    ?(english?`Mistakes: ${state.errors}.`:`Ошибок: ${state.errors}.`)
+    :state.result==='solved'
+      ?t('puzzle.outcome.solvedText',{errors:state.errors})
+      :t('puzzle.outcome.failedText');
   const outcomeReward=screen.querySelector('[data-puzzle-outcome-gold]');
   const weeklySolved=Boolean(weekly&&state.result==='solved');
   outcomeReward.classList.toggle('is-weekly-shards',weeklySolved);
