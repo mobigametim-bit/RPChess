@@ -2,6 +2,7 @@ import { readRun, writeRun } from './run-persistence.mjs';
 import { validateBattleSelection, SLOT_CAPACITY } from './battle-core.mjs';
 import { subscribe, t } from './i18n.mjs';
 import {armyCandidates} from './kingdom-army-core.mjs';
+import {boardRacePiecePath} from './race-assets.mjs';
 import {DEFAULT_KINGDOM_ECONOMY as K} from './kingdom-economy-config.mjs';
 
 const MERCENARY_COSTS=Object.freeze({...K.mercenaries.goldCost});
@@ -73,13 +74,13 @@ function spendForMercenaries(run, totalCost) {
   return { chargedGold, chargedSupplies, unpaidValue, casualtyDebt:unpaidValue>0 };
 }
 
-function chargeBattleMercenaries(run,{roster=run?.roster||[],selectedIds=[],encounterId='',battleCountAtCharge=run?.battleCount||0}={}) {
+function chargeBattleMercenaries(run,{roster=run?.roster||[],selectedIds=[],encounterId='',battleCountAtCharge=run?.battleCount||0,combatType='battle'}={}) {
   if (!run) return { run, chargedGold:0, chargedSupplies:0, contract:null };
   const existing=run.battleMercenaryContract;
   if (existing?.encounterId===encounterId) return { run, chargedGold:0, chargedSupplies:0, contract:existing };
   const quote=mercenaryQuote(roster,selectedIds),payment=spendForMercenaries(run,quote.totalCost);
   const contract={
-    encounterId,
+    encounterId,combatType,
     totalCost:quote.totalCost,
     totalCount:quote.totalCount,
     counts:quote.counts,
@@ -118,7 +119,8 @@ function deterministicMercenaryCasualty(roster = [], contract = {}) {
 function resolveBattleMercenaryDebt(run) {
   const contract=run?.battleMercenaryContract;
   if(!run||!contract||contract.settled)return{run,resolved:false,casualty:null};
-  if((Number(run.battleCount)||0)<=Number(contract.battleCountAtCharge||0))return{run,resolved:false,casualty:null};
+  const progress=contract.combatType==='caravan'?run.caravanCount:run.battleCount;
+  if((Number(progress)||0)<=Number(contract.battleCountAtCharge||0))return{run,resolved:false,casualty:null};
   let next={...run},casualty=null;
   if(contract.casualtyDebt&&!run.ended){
     casualty=deterministicMercenaryCasualty(run.roster,contract);
@@ -152,7 +154,7 @@ function paymentToast(charged) {
 // Battle reserve replacement uses its separately configurable per-piece Gold tariff (not healing prices).
 function renderBattlePrepQuote() {
   const screen = document.querySelector('[data-battle-screen]');
-  if(globalThis.RPChessBattle?.combatType==='caravan'){screen?.querySelector('[data-battle-mercenary-quote]')?.remove();return;}
+  // Caravan uses the same paid mercenary offer as regular Battle.
   const run = readRun();
   const selectedIds = globalThis.RPChessBattle?.selectedIds || [];
   if (!screen || !run || run.ended) return;
@@ -185,22 +187,148 @@ function renderBattlePrepQuote() {
   screen.dataset.battleMercenaryCost = String(quote.totalCost);
 }
 
-function handleBattleStartCapture(event) {
-  const button = event.target?.closest?.('[data-battle-start]');
-  if (!button || button.disabled) return;
-  const battle = globalThis.RPChessBattle;
-  if(battle?.combatType==='caravan')return;
-  const run = readRun();
-  const selectedIds = battle?.selectedIds || [];
-  const encounterId = battle?.encounter?.id || '';
-  if (!run || run.ended || !encounterId) return;
-  const complete=[...run.roster,...armyCandidates(run)];
-  const validation = validateBattleSelection(complete, selectedIds);
-  if (!validation.ok) return;
-  const charged = chargeBattleMercenaries(run, { roster: complete, selectedIds, encounterId, battleCountAtCharge: run.battleCount || 0 });
-  writeRun(charged.run);
-  globalThis.dispatchEvent(new CustomEvent('rpchess:resources-updated', { detail: { mercenaryPayment: true } }));
-  if (charged.chargedGold || charged.chargedSupplies || charged.contract?.casualtyDebt) paymentToast(charged);
+/* The prior capture handler silently spent Gold on Start. All paid hires
+ * now pass through this explicit shared dialog, including Caravan. */
+const OFFER_COPY={
+ ru:{offer:'«Мы к вашим услугам, Ваше Величество! За подходящую плату, конечно...»',
+  tutorial:'«Ваше Величество! Если для Битвы не хватает фигур, орки-наёмники помогут закрыть бреши в строю. Но не злоупотребляйте: их услуги стоят золота и припасов!»',
+  tip:'При нехватке золота остаток оплачивается припасами. Наёмники участвуют только в одной партии.',
+  approve:'Подтвердить найм',refuse:'Отказаться',gotIt:'Понятно',
+  gold:'Золото',supplies:'Припасы',unpaid:'Недостаточно оплаты — наёмники потребуют долг.'},
+ en:{offer:'“At your service, Your Majesty! For a suitable fee, of course...”',
+  tutorial:'“Your Majesty! When you lack enough pieces for Battle, Orc mercenaries can fill the ranks. But do not rely on them too often: they charge Gold and Supplies!”',
+  tip:'When Gold runs short, the remainder is paid in Supplies. Mercenaries serve for one match only.',
+  approve:'Confirm hire',refuse:'Decline',gotIt:'Understood',
+  gold:'Gold',supplies:'Supplies',unpaid:'Not fully paid — mercenaries will demand the debt.'}
+};
+const MERCENARY_PIECES=['queen','rook','bishop','knight','pawn'];
+let consentContext=null,hireOverlay=null;
+function ensureHireOverlay(){
+ if(hireOverlay)return hireOverlay;
+ if(!document.querySelector('[data-mercenary-hire-style]')){
+  const link=document.createElement('link');link.rel='stylesheet';
+  link.href='css/battle-mercenary-dialog.css?v=20261114-approved-ui-v1';
+  link.dataset.mercenaryHireStyle='';document.head.append(link);
+ }
+ hireOverlay=document.createElement('div');hireOverlay.className='rpchess-mercenary-modal';
+ hireOverlay.dataset.mercenaryHireOverlay='';
+ hireOverlay.innerHTML='<div class="rpchess-mercenary-layout">'+
+  '<img class="rpchess-mercenary-portrait" alt="" data-mercenary-portrait>'+
+  '<section class="rpchess-mercenary-panel" role="dialog" aria-modal="true">'+
+  '<h2 class="rpchess-mercenary-title" data-mercenary-title></h2>'+
+  '<div class="rpchess-mercenary-tip"><span class="rpchess-mercenary-dot" aria-hidden="true"></span>'+
+  '<div data-mercenary-copy></div></div>'+
+  '<div class="rpchess-mercenary-actions" data-mercenary-actions></div>'+
+  '</section></div>';
+ document.body.append(hireOverlay);
+ hireOverlay.addEventListener('click',event=>{
+  const button=event.target.closest('[data-mercenary-action]');
+  if(!button||!consentContext)return;
+  const action=button.dataset.mercenaryAction;
+  if(action==='learn'){
+   const run=readRun();
+   if(run?.id===consentContext.runId)writeRun({...run,mercenaryTutorialSeen:true});
+   displayHireOffer();
+   return;
+  }
+  const saved=consentContext;
+  consentContext=null;hireOverlay.hidden=true;
+  if(action==='no'){
+   saved.onDecline?.();
+   return;
+  }
+  if(action!=='yes')return;
+  const run=readRun();
+  if(!run||run.ended||run.id!==saved.runId)return;
+  const charged=chargeBattleMercenaries(run,{
+   roster:saved.roster,selectedIds:saved.selectedIds,encounterId:saved.encounterId,
+   combatType:saved.combatType,
+   battleCountAtCharge:saved.combatType==='caravan'?(run.caravanCount||0):(run.battleCount||0)
+  });
+  let result=charged.run;
+  // Consent is final: never leave the reversal snapshot in a started combat.
+  const id=result.kingdomMap?.pendingCell,cell=result.kingdomMap?.cells?.[id];
+  if(cell?.mercenaryEntryRollback){
+   const {mercenaryEntryRollback,...clean}=cell;
+   result={...result,kingdomMap:{...result.kingdomMap,cells:{
+    ...result.kingdomMap.cells,[id]:clean}}};
+  }
+  writeRun(result);
+  globalThis.dispatchEvent(new CustomEvent('rpchess:resources-updated',
+   {detail:{source:'mercenary-accepted'}}));
+  saved.onAccept?.();
+ });
+ return hireOverlay;
+}
+function hireCopy(){return OFFER_COPY[currentLanguage()==='en'?'en':'ru'];}
+function hireButton(action,label,title){
+ const btn=document.createElement('button');
+ btn.type='button';btn.dataset.mercenaryAction=action;btn.textContent=label;
+ btn.title=title;btn.setAttribute('aria-label',title);
+ if(action==='learn')btn.classList.add('is-continue');
+ return btn;
+}
+function showHireTutorial(){
+ const root=ensureHireOverlay(),copy=hireCopy();
+ root.hidden=false;root.querySelector('[data-mercenary-portrait]').src='assets/ui/jester-patrick.webp';
+ root.querySelector('[data-mercenary-title]').textContent=copy.tutorial;
+ root.querySelector('[data-mercenary-copy]').textContent=copy.tip;
+ const actions=root.querySelector('[data-mercenary-actions]');
+ actions.replaceChildren(hireButton('learn',copy.gotIt,copy.gotIt));
+ actions.querySelector('button').focus();
+}
+function displayHireOffer(){
+ const state=consentContext;if(!state)return;
+ const root=ensureHireOverlay(),copy=hireCopy();
+ root.hidden=false;
+ root.querySelector('[data-mercenary-portrait]').src='assets/ui/orc-mercenary-recruiter.webp';
+ root.querySelector('[data-mercenary-title]').textContent=copy.offer;
+ const wrap=root.querySelector('[data-mercenary-copy]');
+ wrap.replaceChildren();
+ const row=document.createElement('div');row.className='rpchess-mercenary-roster';
+ const addSign=(txt)=>{const span=document.createElement('span');span.className='rpchess-mercenary-plus';span.textContent=txt;row.append(span);};
+ let count=0;
+ for(const type of MERCENARY_PIECES){
+  const n=state.quote.counts[type]||0;if(!n)continue;
+  if(count++)addSign('+');
+  const item=document.createElement('span');item.className='rpchess-mercenary-piece';
+  const image=document.createElement('img');image.src=boardRacePiecePath('orcs',type,'w');image.alt=type;
+  const number=document.createElement('strong');number.textContent=n>1?'×'+n:'';
+  item.append(image,number);row.append(item);
+ }
+ addSign('=');
+ for(const [i,[amount,imageSrc,label]] of [
+  [state.payment.chargedGold,'generated_assets/reward_gold.png',copy.gold],
+  [state.payment.chargedSupplies,'generated_assets/reward_supplies.png',copy.supplies]
+ ].entries()){
+  if(i)addSign('+');
+  const part=document.createElement('span');part.className='rpchess-mercenary-cost';
+  const value=document.createElement('strong');value.textContent=String(amount);
+  const image=document.createElement('img');image.src=imageSrc;image.alt=label;
+  part.append(value,image);row.append(part);
+ }
+ wrap.append(row);
+ if(state.payment.unpaidValue>0){
+  const notice=document.createElement('p');notice.textContent=copy.unpaid;
+  wrap.append(notice);
+ }
+ const actions=root.querySelector('[data-mercenary-actions]');
+ actions.replaceChildren(hireButton('no','✕',copy.refuse),hireButton('yes','✓',copy.approve));
+ actions.querySelector('[data-mercenary-action="yes"]').focus();
+}
+function requestMercenaryConsent({combatType='battle',roster=[],selectedIds=[],encounterId='',onAccept=null,onDecline=null}={}){
+ const run=readRun();
+ if(!run||run.ended||!encounterId)return false;
+ if(run.battleMercenaryContract?.encounterId===encounterId)return false;
+ const quote=mercenaryQuote(roster,selectedIds);
+ if(!quote.totalCount)return false;
+ if(consentContext)return true;
+ consentContext={runId:run.id,combatType,roster,selectedIds:[...selectedIds],
+  encounterId,quote,payment:spendForMercenaries(run,quote.totalCost),
+  onAccept,onDecline};
+ if(run.mercenaryTutorialSeen===true)displayHireOffer();
+ else showHireTutorial();
+ return true;
 }
 
 function handleBattleSelectionRefresh(event) {
@@ -210,7 +338,6 @@ function handleBattleSelectionRefresh(event) {
 
 if (typeof document !== 'undefined') {
   renderBattlePrepQuote();
-  document.addEventListener('click', handleBattleStartCapture, true);
   document.addEventListener('click', handleBattleSelectionRefresh);
   globalThis.addEventListener?.('rpchess:battle-open', () => setTimeout(renderBattlePrepQuote, 0));
   globalThis.addEventListener?.('rpchess:caravan-open', () => setTimeout(renderBattlePrepQuote, 0));
@@ -226,9 +353,10 @@ globalThis.RPChessBattleMercenaries = Object.freeze({
   healthyReserveCounts,
   mercenaryGoldCost,
   mercenaryQuote,
+  requestMercenaryConsent,
   chargeBattleMercenaries,
   deterministicMercenaryCasualty,
   resolveBattleMercenaryDebt
 });
 
-export { MERCENARY_COSTS, RESERVE_REPLACEMENT_COSTS, SUPPLY_GOLD_VALUE, mercenaryCounts, healthyReserveCounts, mercenaryGoldCost, mercenaryQuote, chargeBattleMercenaries, deterministicMercenaryCasualty, resolveBattleMercenaryDebt };
+export { MERCENARY_COSTS, RESERVE_REPLACEMENT_COSTS, SUPPLY_GOLD_VALUE, mercenaryCounts, healthyReserveCounts, mercenaryGoldCost, mercenaryQuote, requestMercenaryConsent, chargeBattleMercenaries, deterministicMercenaryCasualty, resolveBattleMercenaryDebt };
