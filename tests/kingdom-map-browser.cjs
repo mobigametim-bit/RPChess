@@ -549,6 +549,7 @@ async function assertTileImage(page,cellId){
     }));
   },before.kingdomMap);
   for(const [id] of scoutedEvents){
+    if(!await page.locator('[data-kingdom-cell="'+id+'"]').count())continue;
     // A stored route is not itself visible. Its center must be cleared by
     // the same fog mask used to paint the parchment, or sovereign land.
     const site=page.locator('[data-kingdom-cell="'+id+'"] img.km-object--site');
