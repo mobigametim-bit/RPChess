@@ -17,7 +17,7 @@ import {FLAVOR_POOLS} from './travel-choice-core.mjs';
 import {translateLegacy} from './i18n.mjs';
 import {commanderPortrait,commanderTitle} from './commander-portraits.mjs';
 import {kingdomMapSprite,kingdomEncounterSprite} from './kingdom-map-assets.mjs';
-import {renderParchment,renderParchmentFog} from './kingdom-parchment-app.mjs?v=20261112-fog98-v1';
+import {renderParchment,renderParchmentFog,visibleThroughFog} from './kingdom-parchment-app.mjs?v=20261114-fog-events-v1';
 import {drawKingdomOverlay} from './kingdom-map-overlay.mjs?v=20261112-province-colors-v1';
 import {animateTravelers,stopTravelers} from './kingdom-traveler-renderer.mjs?v=20261111-npc-floor-v1';
 import {industrySprite,industrySpriteIndex,industryYield,industryLevel,industryPending,collectIndustry,BUILDING_TYPES} from './kingdom-industry-core.mjs';
@@ -681,7 +681,7 @@ function render(){
    const point={x:view.x+col,y:view.y+row},id=keyOf(point.x,point.y);
    const cell=map.cells[id],isCastle=id===keyOf(map.castle.x,map.castle.y);
    const owned=isOwned(map,point);
-   const visible=Boolean(isCastle||owned||cell?.explored);
+   const visible=Boolean(isCastle||owned||visibleThroughFog(map,point));
    const within=adjacent(visualKing,point),here=id===keyOf(visualKing.x,visualKing.y);
    const edges=owned?borderEdges(map,point):[];
    const btn=document.createElement('button');btn.type='button';btn.dataset.kingdomCell=id;
@@ -709,8 +709,8 @@ function render(){
    }
    btn.setAttribute('aria-label',isCastle?tr('castle'):visible&&cell?.selectedEncounter?
     t('travel.type.'+cell.selectedEncounter.type):cell?.type==='empty'?terrainName(cell.biome||worldAt(map.seed,point.x,point.y).biome):tr('hidden'));
-   // Outside scouting range: fog only, with no mystery punctuation or encounter placeholder.
-   // Once scouted, the stored encounter SVG is drawn immediately on its revealed cell.
+   // Only a visibly cleared fog center exposes a stored encounter, without walking
+   // onto it. Enemy province borders alone never reveal its interior events.
    if(isCastle&&cell){
     const mark=document.createElement('img');mark.className='km-object km-object--castle';
     mark.src=kingdomMapSprite('castle',map.castle.raceTag);mark.alt='';mark.loading='lazy';btn.append(mark);
@@ -883,7 +883,7 @@ function render(){
  world.append(kingHandle);
  const chosen=selected?map.cells[selected]:null;
  const current=map.cells[keyOf(map.king.x,map.king.y)];
- const knownChosen=chosen&&(isOwned(map,selected)||chosen.explored)?chosen:null;
+ const knownChosen=chosen&&(isOwned(map,selected)||visibleThroughFog(map,parsePoint(selected)))?chosen:null;
  const info=knownChosen||(!chosen?current:null);
  const castleSelected=(selected||keyOf(map.king.x,map.king.y))===keyOf(map.castle.x,map.castle.y);
  const selectedId=selected||keyOf(map.king.x,map.king.y);
