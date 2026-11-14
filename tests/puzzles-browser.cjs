@@ -3,11 +3,11 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173',RUN_KEY='r
 const mate1Route={id:'manual.puzzle.mate1',step:1,type:'puzzle',label:'ЗАДАЧА',stars:1,threatLabel:'СЛОЖНОСТЬ ★1',flavor:'На дороге обнаружена позиция, требующая точного решения.',mechanicalHint:'Шахматная задача с конкретной целью.',seed:'manual-puzzle-mate1',supplyCostAtSelection:1,supplyPaid:1};
 const mate2Route={id:'manual.puzzle.resume',step:17,type:'puzzle',label:'ЗАДАЧА',stars:3,threatLabel:'СЛОЖНОСТЬ ★3',flavor:'Древний механизм ждёт точного решения.',mechanicalHint:'Шахматная задача с конкретной целью.',seed:'manual-puzzle-resume',supplyCostAtSelection:1,supplyPaid:1};
 
-async function fresh(page,runId){
+async function fresh(page,runId,{legacyTravel=true}={}){
   await page.goto(url,{waitUntil:'networkidle'});
   await page.evaluate(k=>localStorage.removeItem(k),RUN_KEY);
   await page.reload({waitUntil:'networkidle'});
-  await startNewRun(page);
+  await startNewRun(page,{legacyTravel});
   await page.evaluate(({k,runId})=>{const r=JSON.parse(localStorage.getItem(k));r.id=runId;r.currentTravelChoices=null;r.activeTravelChoice=null;r.currentPuzzle=null;r.lastPuzzle=null;r.puzzleHistory=[];localStorage.setItem(k,JSON.stringify(r));dispatchEvent(new CustomEvent('rpchess:run-updated'));},{k:RUN_KEY,runId});
 }
 
@@ -261,7 +261,7 @@ async function clickMove(page,from,to,promotion=null){
   // full shards with no gold, three wrong moves = zero and no second claim.
   const weeklyPage=await browser.newPage({viewport:{width:1280,height:720},reducedMotion:'reduce'});
   const weeklyErrors=[];weeklyPage.on('pageerror',e=>weeklyErrors.push(String(e.stack||e)));
-  await fresh(weeklyPage,'puzzles-browser-weekly');
+  await fresh(weeklyPage,'puzzles-browser-weekly',{legacyTravel:false});
   await weeklyPage.locator('[data-roster-travel]').click();
   await weeklyPage.locator('[data-kingdom-map-screen]:not([hidden])').waitFor();
   async function seedWeekly(week){
