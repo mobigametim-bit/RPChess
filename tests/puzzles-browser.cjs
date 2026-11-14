@@ -283,7 +283,10 @@ async function clickMove(page,from,to,promotion=null){
     for(const key of ['board','panel','settings']){
       assert(ordinary[key]&&weekly[key],`${viewport}: missing ${key} geometry`);
       for(const axis of ['left','top','width','height']){
-        assert(Math.abs(ordinary[key][axis]-weekly[key][axis])<=3,
+        // Two different chess puzzles may have different instruction lengths.
+        // The card's top/width, board and Settings must still remain identical.
+        const tolerance=key==='panel'&&axis==='height'?32:3;
+        assert(Math.abs(ordinary[key][axis]-weekly[key][axis])<=tolerance,
           `${viewport}: ${key}.${axis} differs from ordinary Puzzle: ${ordinary[key][axis]} / ${weekly[key][axis]}`);
       }
     }
