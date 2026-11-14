@@ -1,0 +1,106 @@
+name: Kingdom Fog Discovery — isolated QA preview
+on:
+  push:
+    branches: [feature/kingdom-fog-encounter-visibility-20261114]
+    paths:
+      - 'game/**'
+      - 'tests/**'
+      - 'kingdom-fog-preview/**'
+      - '.github/workflows/kingdom-fog-preview.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+concurrency:
+  group: rpchess-fog-events-qa-preview
+  cancel-in-progress: true
+jobs:
+  preview:
+    name: Validate and deploy fog visibility QA
+    if: github.repository == 'mobigametim-bit/RPChess' && github.ref == 'refs/heads/feature/kingdom-fog-encounter-visibility-20261114'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 65
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm/rpchess-runtime-assets-v1
+          key: rpchess-runtime-assets-v1-${{ runner.os }}-${{ hashFiles('game/assets/**/*.png', 'game/generated_assets/*.png', 'scripts/*asset*.cjs', 'scripts/runtime-assets-build.cjs') }}
+          restore-keys: rpchess-runtime-assets-v1-${{ runner.os }}-
+      - name: Install dependencies and verified Stockfish 18
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund
+          npm pack stockfish@18.0.0 --silent --pack-destination /tmp
+          mkdir -p /tmp/rpchess-stockfish-package /tmp/rpchess-stockfish-verified
+          tar -xzf /tmp/stockfish-18.0.0.tgz -C /tmp/rpchess-stockfish-package
+          package=/tmp/rpchess-stockfish-package/package
+          for name in stockfish-18-lite-single.js stockfish-18-lite-single.wasm; do
+            source=$(find "$package" -type f -name "$name" -print -quit)
+            test -n "$source"
+            cp "$source" "/tmp/rpchess-stockfish-verified/$name"
+          done
+          license=$(find "$package" -type f -iname 'Copying.txt' -print -quit)
+          test -n "$license"
+          cp "$license" /tmp/rpchess-stockfish-verified/COPYING.txt
+      - name: Canonical Node gate and production build
+        env:
+          RPCHESS_STOCKFISH_ASSET_DIR: /tmp/rpchess-stockfish-verified
+        run: npm run gate:local
+      - name: Install pinned Chromium for existing Kingdom regression
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
+          npx playwright install chromium
+      - name: Test fog-revealed encounters in real Chromium
+        env:
+          RPCHESS_BROWSER_TEST: kingdom-map-browser.cjs
+          RPCHESS_GATE_PREFIX: /RPChess
+        run: npm run test:browser
+      - name: Deploy only isolated fog QA Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          npx wrangler deploy --config kingdom-fog-preview/wrangler.toml
+      - name: Smoke-test QA game and updated fog visibility modules
+        run: |
+          node <<'NODE'
+          const assert=require('node:assert/strict');
+          const root='https://rpchess-fog-events-preview.mobigametim.workers.dev';
+          (async()=>{
+            for(let attempt=0;attempt<12;attempt++){
+              try{
+                for(const [path,token] of [
+                  ['/','data-reboot-foundation'],
+                  ['/js/kingdom-parchment-app.mjs','visibleThroughFog'],
+                  ['/js/kingdom-map-app.mjs','visibleThroughFog(map,point)'],
+                  ['/js/kingdom-menu-preview.mjs','visibleThroughFog(map,{x,y})']]){
+                    const response=await fetch(root+path,{cache:'no-store'});
+                    assert.equal(response.status,200,path);
+                    assert((await response.text()).includes(token),path+' is not the fog-discovery build');
+                  }
+                console.log('Fog discovery QA preview smoke: PASS '+root);
+                return;
+              }catch(error){
+                if(attempt===11)throw error;
+                await new Promise(resolve=>setTimeout(resolve,3000));
+              }
+            }
+          })().catch(error=>{console.error(error);process.exitCode=1;});
+          NODE
+      - name: Save existing Kingdom browser screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kingdom-fog-qa-screenshots
+          path: test-results/kingdom-map/
+          retention-days: 7
+          if-no-files-found: ignore

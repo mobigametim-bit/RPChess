@@ -1,11 +1,11 @@
 /* Compact, live, read-only kingdom projection for the six responsive main-menu layouts.
  * Reuses the game's parchment, roads and NPC renderers; never mutates the saved run. */
 import {readRun} from './run-persistence.mjs';
-import {validateKingdomMap} from './kingdom-map-core.mjs?v=20261112-province-colors-v1';
+import {validateKingdomMap,isOwned} from './kingdom-map-core.mjs?v=20261112-province-colors-v1';
 import {kingdomMapSprite,kingdomEncounterSprite} from './kingdom-map-assets.mjs';
 import {PARCHMENT_TILE} from './kingdom-parchment-core.mjs?v=20261111-parchment-png-only-v1';
 import {commanderPieceArt} from './commander-portraits.mjs';
-import {renderParchment,renderParchmentFog,parchmentAssetsSettled} from './kingdom-parchment-app.mjs?v=20261112-fog98-v1';
+import {renderParchment,renderParchmentFog,parchmentAssetsSettled,visibleThroughFog} from './kingdom-parchment-app.mjs?v=20261114-fog-events-v1';
 import {drawKingdomOverlay} from './kingdom-map-overlay.mjs?v=20261112-province-colors-v1';
 import {animateTravelers,stopTravelers} from './kingdom-traveler-renderer.mjs?v=20261111-npc-floor-v1';
 
@@ -160,9 +160,10 @@ function render(){
   };
   add(kingdomMapSprite('castle',map.castle.raceTag),map.castle,'mm-kingdom-site',TILE*.73);
   for(const [id,cell] of Object.entries(map.cells||{})){
-    if(!cell?.explored||!cell.selectedEncounter||id===map.castle.x+','+map.castle.y)continue;
+    if(!cell?.selectedEncounter||id===map.castle.x+','+map.castle.y)continue;
     const [x,y]=id.split(',').map(Number);
-    if(!Number.isFinite(x)||!Number.isFinite(y))continue;
+    if(!Number.isSafeInteger(x)||!Number.isSafeInteger(y))continue;
+    if(!isOwned(map,{x,y})&&!visibleThroughFog(map,{x,y}))continue;
     const choice=cell.selectedEncounter;
     add(kingdomMapSprite(choice.type,choice.raceTag||choice.enemyRaceTag,
       choice.visualRaceTag||choice.seed||choice.id),{x,y},'mm-kingdom-site',TILE*.73);
@@ -174,7 +175,8 @@ function render(){
   }
   for(const post of map.outposts||[]){
     const [x,y]=String(post.id||'').split(',').map(Number);
-    if(Number.isSafeInteger(x)&&Number.isSafeInteger(y)&&map.cells?.[post.id]?.explored)
+    if(Number.isSafeInteger(x)&&Number.isSafeInteger(y)&&
+       (isOwned(map,{x,y})||visibleThroughFog(map,{x,y})))
       add('assets/kingdom-parchment/decor_minor_landmarks/04_watchtower.png',
         {x,y},'mm-kingdom-site',TILE*.73);
   }

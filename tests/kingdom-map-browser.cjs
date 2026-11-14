@@ -540,14 +540,54 @@ async function assertTileImage(page,cellId){
   assert.equal(terrain.questionMarks,0,'fog never shows question-mark markers');
   const scoutedEvents=Object.entries(before.kingdomMap.cells).filter(([,cell])=>cell.selectedEncounter);
   assert(scoutedEvents.length>0,'world stores deterministic future encounters');
-  for(const [id,cell] of scoutedEvents){
-    if(cell.explored||before.kingdomMap.centralOwnedCells.includes(id)||
-      (before.kingdomMap.outposts||[]).some(p=>p.cells.includes(id)))continue;
-    assert.equal(await page.locator('[data-kingdom-cell="'+id+'"] img.km-object--site').count(),0,
-      'unexplored site '+id+' is concealed, even if assigned in save');
-    assert.equal(await page.locator('[data-kingdom-cell="'+id+'"] .km-object--defender').count(),0,
-      'unexplored defender cannot leak through fog');
+  const fogVisibility=await page.evaluate(async map=>{
+    const {visibleThroughFog}=await import('./js/kingdom-parchment-app.mjs');
+    const {isOwned}=await import('./js/kingdom-map-core.mjs');
+    return Object.fromEntries(Object.keys(map.cells).map(id=>{
+      const [x,y]=id.split(',').map(Number),point={x,y};
+      return [id,isOwned(map,point)||visibleThroughFog(map,point)];
+    }));
+  },before.kingdomMap);
+  for(const [id] of scoutedEvents){
+    if(!await page.locator('[data-kingdom-cell="'+id+'"]').count())continue;
+    // A stored route is not itself visible. Its center must be cleared by
+    // the same fog mask used to paint the parchment, or sovereign land.
+    const site=page.locator('[data-kingdom-cell="'+id+'"] img.km-object--site');
+    assert.equal(await site.count(),fogVisibility[id]?1:0,
+      'site visibility must follow fog center rather than physical entry: '+id);
+    if(!fogVisibility[id])
+      assert.equal(await page.locator('[data-kingdom-cell="'+id+'"] .km-object--defender').count(),0,
+        'concealed defender never leaks from a pre-generated route: '+id);
   }
+  // Force one non-owned, unvisited event inside the actually clear part of
+  // the king's starting radial fog, then restore the save for later regressions.
+  const fogWitness=await page.evaluate(async storage=>{
+    const {isOwned,randomEncounter}=await import('./js/kingdom-map-core.mjs');
+    const {visibleThroughFog}=await import('./js/kingdom-parchment-app.mjs');
+    const previous=localStorage.getItem(storage),run=JSON.parse(previous),map=run.kingdomMap;
+    const point=[[1,1],[-1,-1],[1,-1],[-1,1],[0,-1],[-1,0],[0,1],[1,0]]
+      .map(([x,y])=>({x,y}))
+      .find(point=>!isOwned(map,point)&&visibleThroughFog(map,point));
+    if(!point)throw Error('No scouted foreign center near the starting king');
+    const id=point.x+','+point.y;
+    const encounter=randomEncounter(run,point,400,{
+      type:'event',biome:'plains',landmark:null,raceTag:null,paths:{road:false,river:false}});
+    run.kingdomMap.cells[id]={...map.cells[id],status:'revealed',explored:false,
+      selectedEncounter:encounter,annexed:false};
+    localStorage.setItem(storage,JSON.stringify(run));
+    globalThis.RPChessKingdomMap.open();
+    return {id,previous};
+  },key);
+  assert.equal(await page.locator('[data-kingdom-cell="'+fogWitness.id+'"] .km-object--site').count(),1,
+    'a never-visited event appears as soon as the player clears fog over its center');
+  await page.locator('[data-kingdom-cell="'+fogWitness.id+'"]').dispatchEvent('click');
+  assert.equal(await page.locator('[data-kingdom-route-card]').count(),1,
+    'an unvisited yet scouted encounter can be inspected before entering the tile');
+  assert.equal((await read(page)).kingdomMap.cells[fogWitness.id].explored,false,
+    'inspecting a visible event never counts as a visit');
+  await page.evaluate(({storage,previous})=>{
+    localStorage.setItem(storage,previous);globalThis.RPChessKingdomMap.open();
+  },{storage:key,previous:fogWitness.previous});
   assert.equal(await page.locator('.km-parchment-fog').count(),1,
     'the upper fog canvas covers the parchment and site art');
   const territoryFog=await page.evaluate(()=>{
@@ -1268,8 +1308,10 @@ async function assertTileImage(page,cellId){
     let id=null;
     for(const {x,y} of candidates){
       const candidate=x+','+y;
+      // Actual player case: a visited, completed event on a foreign road.
       const candidateMap={...normalized,cells:{...normalized.cells,
-        [candidate]:{status:'completed',type:'empty',explored:true}}};
+        [candidate]:{status:'completed',explored:true,completedOnce:true,
+          selectedEncounter:{id:'qa.completed-road-event',type:'event',stars:2}}}};
       const stable=core.revealAround(core.migrateKingdomMap(candidateMap,run),run,power);
       if(!core.canBuildOutpost(stable,{x,y}))continue;
       run.kingdomMap=stable;id=candidate;break;
@@ -1296,8 +1338,9 @@ async function assertTileImage(page,cellId){
     return {canBuild:canBuildOutpost(map,{x,y}),owned:isOwned(map,{x,y}),
       pending:map.pendingCell,cell:map.cells[id]};
   },{storage:key,id:firstOutpost});
-  assert(outpostEligibility.canBuild,
-    'outpost fixture must be safe and eligible before UI interaction: '+
+  assert(outpostEligibility.canBuild&&outpostEligibility.cell.completedOnce&&
+    outpostEligibility.cell.selectedEncounter?.id==='qa.completed-road-event',
+    'outpost fixture must remain a completed road encounter: '+
     JSON.stringify(outpostEligibility));
   await walking.waitForTimeout(690);
   await walking.locator('[data-kingdom-cell="'+firstOutpost+'"]').dispatchEvent('click');
