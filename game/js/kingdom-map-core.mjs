@@ -444,7 +444,7 @@ function updatePeak(map,power){
 function randomEncounter(run,point,power,planned=null){
  const coord=keyOf(point.x,point.y),worldSeed=run.kingdomMap?.seed||run.id,
   seed=worldSeed+':kingdom:'+coord;
- const possible=PLAYABLE_TRAVEL_TYPES.filter(t=>t!=='skirmish'||hasHealthySkirmishCompanion(run));
+ const possible=PLAYABLE_TRAVEL_TYPES; // Kingdom ambushes remain possible without bodyguards.
  const world=planned||worldAt(worldSeed,point.x,point.y,{worldGeneratorVersion:run.kingdomMap?.worldGeneratorVersion||WORLD_GENERATOR_VERSION});
  // Keep this public factory compatible with the previous map and its existing
  // regression fixtures. Only revealAround decides whether a cell has a meeting.
