@@ -47,20 +47,37 @@ function drawGravelRoad(ctx,{x1,y1,x2,y2,bend=0,id=''}) {
  ctx.restore();
  return true;
 }
-function drawRoadJunction(ctx,{x,y,tone='sandstone',id=''}) {
- const gravel=tone==='gravel',fill=gravel?'#a59b82':'#e4bd54';
- const edge=gravel?'#706858':'#9b7938';
- ctx.save();ctx.beginPath();ctx.arc(x,y,12,0,2*Math.PI);
- ctx.fillStyle=edge;ctx.fill();
- ctx.beginPath();ctx.arc(x,y,9.5,0,2*Math.PI);ctx.fillStyle=fill;ctx.fill();
- const salt=hash32(id);
- for(let i=0;i<9;i++){
-  const h=hash32(salt+':cap:'+i),r=(h%75)/100*9,a=(h>>>9)%628/100;
-  ctx.beginPath();ctx.arc(x+Math.cos(a)*r,y+Math.sin(a)*r,1+(h>>>16)%3*.3,0,Math.PI*2);
-  ctx.fillStyle=gravel?(i%2?'#e0d6ba':'#766d5f'):(i%2?'#f3d47a':'#ba9238');
-  ctx.fill();
+// Junction texture follows connected road corridors; there is NO circular cap.
+// Existing Bezier geometry, paving and terrain masks remain unchanged.
+function drawRoadJunction(ctx,{x,y,tone='sandstone',id='',arms=[]}) {
+ if(!ctx||arms.length<2)return false;
+ const gravel=tone==='gravel',half=gravel?6.5:7.5,reach=13;
+ ctx.save();ctx.beginPath();
+ let valid=0;
+ for(const [vx,vy] of arms){
+  const length=Math.hypot(vx,vy);
+  if(!Number.isFinite(length)||length<1e-6)continue;
+  const dx=vx/length,dy=vy/length,nx=-dy,ny=dx;
+  ctx.moveTo(x+nx*half,y+ny*half);
+  ctx.lineTo(x+dx*reach+nx*half,y+dy*reach+ny*half);
+  ctx.lineTo(x+dx*reach-nx*half,y+dy*reach-ny*half);
+  ctx.lineTo(x-nx*half,y-ny*half);
+  ctx.closePath();valid++;
  }
- ctx.restore();
+ if(valid<2){ctx.restore();return false;}
+ ctx.clip();
+ ctx.globalAlpha*=.91;
+ ctx.fillStyle=gravel?'#a9a18b':'#e4bd54';
+ ctx.fillRect(x-reach-half,y-reach-half,(reach+half)*2,(reach+half)*2);
+ const salt=hash32(String(id));
+ for(let i=0;i<10;i++){
+  const h=hash32(salt+':joint:'+i);
+  const px=x+((h&255)/255-.5)*22,py=y+(((h>>>8)&255)/255-.5)*22;
+  ctx.fillStyle=gravel?(['#c1b8a1','#958a72','#d3c9ac'][h%3]):
+   (['#e7be50','#f3d47a','#d6a93b'][h%3]);
+  ctx.fillRect(px,py,2.1+(h%3),1.3+((h>>>16)%3));
+ }
+ ctx.restore();return true;
 }
 
 function hash32(value){

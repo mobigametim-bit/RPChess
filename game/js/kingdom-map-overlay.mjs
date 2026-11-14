@@ -4,7 +4,7 @@ import {PARCHMENT_TILE} from './kingdom-parchment-core.mjs';
 import {hashString} from './race-assets.mjs';
 import {BATTLE_PROVINCE_HUES} from './kingdom-map-core.mjs?v=20261112-province-colors-v1';
 import {visibleRoyalRoads,visibleTravelRoads,ownedKeys} from './kingdom-road-network.mjs?v=20261111-polish-v1';
-import {drawSandstoneRoad,drawRoadJunction} from './kingdom-road-paving.mjs?v=20261114-gravel-joints-v1';
+import {drawSandstoneRoad,drawRoadJunction} from './kingdom-road-paving.mjs?v=20261114-corridor-joints-v2';
 import {VISUAL} from './kingdom-world-config.mjs?v=20261113-opaque-terrain-v1';
 import {visibleThroughFog} from './kingdom-fog-visibility.mjs';
 
@@ -157,10 +157,6 @@ function drawKingdomRoads(ctx,{map,view,columns,rows,paint=true}){
   const identity=[road.from,road.to].sort().join('::');
   if(painted.has(identity))continue;
   painted.add(identity);
-  for(const [node,point] of [[road.from,a],[road.to,b]]){
-   const previous=junctions.get(node)||{point,count:0};
-   previous.count++;junctions.set(node,previous);
-  }
   const x1=(a.x-left+.5)*TILE,y1=(a.y-top+.5)*TILE;
   const x2=(b.x-left+.5)*TILE,y2=(b.y-top+.5)*TILE;
   if(Math.max(x1,x2)<-TILE*2||Math.min(x1,x2)>width+TILE*2||
@@ -168,6 +164,15 @@ function drawKingdomRoads(ctx,{map,view,columns,rows,paint=true}){
   const dx=x2-x1,dy=y2-y1,length=Math.hypot(dx,dy);
   if(length<1)continue;
   const offset=road.bend*TILE;
+  const nx=-dy/length,ny=dx/length;
+  for(const [id,point,arm] of [
+   [road.from,a,[dx*.32+nx*offset,dy*.32+ny*offset]],
+   [road.to,b,[-dx*.32-nx*offset*.45,-dy*.32-ny*offset*.45]]
+  ]){
+   const junction=junctions.get(id)||{point,arms:[]};
+   junction.arms.push(arm);
+   junctions.set(id,junction);
+  }
   // Paint a shared-gravel or sandstone path with disjoint territory masks:
   // pale sandstone inside, naturally textured gravel outside. A border crossing changes
   // tone exactly at the tile boundary without changing route geometry.
@@ -180,15 +185,14 @@ function drawKingdomRoads(ctx,{map,view,columns,rows,paint=true}){
   }
   roadCount++;
  }
- // Cover every two- or three-way join with a single compact texture patch.
- // This removes the overlapping stroke endings without changing route points.
- if(paint)for(const [id,{point,count}] of junctions){
-  if(count<2)continue;
+ // Blend only intersecting road strips; never draw circle-shaped joint caps.
+ if(paint)for(const [id,{point,arms}] of junctions){
+  if(arms.length<2)continue;
   const x=(point.x-left+.5)*TILE,y=(point.y-top+.5)*TILE;
   if(x<-TILE||y<-TILE||x>width+TILE||y>height+TILE)continue;
   for(const [inside,tone] of [[false,'gravel'],[true,'sandstone']]){
    ctx.save();clipRoadSurface(inside);
-   drawRoadJunction(ctx,{x,y,tone,id});ctx.restore();
+   drawRoadJunction(ctx,{x,y,tone,id,arms});ctx.restore();
   }
  }
  return roadCount;
