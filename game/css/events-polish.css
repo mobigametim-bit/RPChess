@@ -11,6 +11,7 @@ body.events-active .events-shell{
 body.events-active .events-panel{
  --event-reading-size:clamp(19px,1.65vw,25px);
  position:relative!important;inset:auto!important;
+ box-sizing:border-box!important;
  width:100%!important;height:auto!important;max-width:none!important;
  min-height:calc(100dvh - clamp(20px,3.4vw,56px))!important;
  padding:clamp(65px,8vh,104px) 0 clamp(12px,2vh,30px)!important;
