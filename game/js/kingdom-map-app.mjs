@@ -15,6 +15,7 @@ import {buyCastleRecruit,addArmyRecruits} from './kingdom-army-core.mjs';
 import {createSettlementState} from './settlement-core.mjs';
 import {FLAVOR_POOLS} from './travel-choice-core.mjs';
 import {isUnprotectedBanditAmbush,resolveUnprotectedBanditAmbush} from './kingdom-bandit-core.mjs';
+import {captureMercenaryEntry,rollbackMercenaryEntry} from './kingdom-entry-rollback.mjs';
 import {translateLegacy} from './i18n.mjs';
 import {commanderPortrait,commanderTitle} from './commander-portraits.mjs';
 import {kingdomMapSprite,kingdomEncounterSprite} from './kingdom-map-assets.mjs';
@@ -1232,6 +1233,9 @@ function moveKingOneStep(point){
  const payment=isOwned(map,point)?{run,paid:0,requested:0}:
   applyTravelSupplyCost(run,TRAVEL_SUPPLY_COST);
  const nextMap=revealAround(entered.map,run,readPlayerRating().power);
+ const entryType=nextMap.cells[id]?.selectedEncounter?.type;
+ if(entered.kind!=='walk'&&['battle','caravan'].includes(entryType))
+  nextMap.cells[id]={...nextMap.cells[id],mercenaryEntryRollback:captureMercenaryEntry(run,point)};
  const from={...map.king},to={...nextMap.king};
  const reduced=document.documentElement.dataset.reducedMotion==='1';
  const discovering=entered.kind==='discover';
@@ -1270,6 +1274,16 @@ function moveKingOneStep(point){
   flightTimer=setTimeout(moveKing,reduced?80:REVEAL_MS);
  }else moveKing();
  if(entered.kind!=='walk')schedulePending(readRun());
+}
+function rejectMercenaryEntry(){
+ const current=readRun(),reverted=rollbackMercenaryEntry(current);
+ if(!reverted.ok)return false;
+ clearTimeout(launchTimer);clearTimeout(flightTimer);routeQueue=[];
+ movement=null;flavorBurst=null;
+ writeRun(reverted.run);
+ globalThis.RPChessResources?.render?.();
+ openMap({detail:{source:'mercenary-refused'}});
+ return true;
 }
 function onCell(event){
  const target=event.target.closest('[data-kingdom-cell]');
