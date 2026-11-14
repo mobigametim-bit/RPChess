@@ -336,7 +336,16 @@ function handleBattleSelectionRefresh(event) {
   setTimeout(renderBattlePrepQuote, 0);
 }
 
+function dismissStaleMercenaryOffer(){
+ // A forced leave, defeat, reload or synthetic QA completion must not leave
+ // an invisible old battle's consent panel above the Kingdom king handle.
+ consentContext=null;
+ if(hireOverlay)hireOverlay.hidden=true;
+}
 if (typeof document !== 'undefined') {
+  globalThis.addEventListener?.('rpchess:kingdom-map-shown',dismissStaleMercenaryOffer);
+  globalThis.addEventListener?.('rpchess:travel-open',dismissStaleMercenaryOffer);
+  globalThis.addEventListener?.('rpchess:combat-aftermath',dismissStaleMercenaryOffer);
   renderBattlePrepQuote();
   document.addEventListener('click', handleBattleSelectionRefresh);
   globalThis.addEventListener?.('rpchess:battle-open', () => setTimeout(renderBattlePrepQuote, 0));
