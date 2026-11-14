@@ -154,7 +154,8 @@ async function assertResponsiveStars(page, selector, cardSelector) {
       generic: document.querySelector(`[data-square="${genericSquare}"] .classic-piece`)?.getAttribute('src') || '',
       enemy: document.querySelector(`[data-square="${enemySquare}"] .classic-piece`)?.getAttribute('src') || ''
     }), { genericSquare: generic.square, enemySquare: enemyQueen.square });
-    assert(art.generic.includes('assets/races/humans/pieces/board/white/'));
+    assert(art.generic.includes('assets/races/orcs/pieces/board/white/'),
+      'temporary hired pieces must use Orc race sprites, not generic human pieces');
     assert(art.enemy.includes('assets/races/orcs/pieces/board/black/queen.png'));
     // The Power badge must display the player's selected King, not a blank
     // rectangle or a hardcoded Oathkeeper in an Ash Regent run.

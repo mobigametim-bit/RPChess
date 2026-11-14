@@ -44,8 +44,18 @@ async function dragKing(page,id){
    };
  },{x:handle.x+handle.width/2,y:handle.y+handle.height/2});
  await page.mouse.down();
- assert.equal(await page.locator('.km-king-drag-aura.is-active').count(),1,
-  'the green reusable check aura follows the king during drag');
+ const dragAuraCount=await page.locator('.km-king-drag-aura.is-active').count();
+ if(dragAuraCount!==1){
+  const diag=await page.evaluate(()=>({
+   hit:window.__kingStartHit,events:window.__kingDragEvents,
+   kingHandle:document.querySelector('[data-kingdom-king-handle]')?.outerHTML.slice(0,500),
+   mapMode:document.querySelector('[data-kingdom-world]')?.dataset.kingdomMotion,
+   auraCount:document.querySelectorAll('.km-king-drag-aura').length,
+   dialogs:[...document.querySelectorAll('[role="dialog"]')].filter(n=>!n.hidden).map(n=>n.outerHTML.slice(0,500)),
+   scroll:window.scrollY,viewport:[innerWidth,innerHeight]
+  }));
+  assert.equal(dragAuraCount,1,'the green reusable check aura follows the king during drag '+JSON.stringify(diag));
+ }
  await page.mouse.move(tile.x+tile.width/2,tile.y+tile.height/2,{steps:9});
  await page.mouse.up();
 }
