@@ -360,7 +360,7 @@ async function clickMove(page,from,to,promotion=null){
   // ★4 is a level-II *site* on the map, not level IV; this proves that
   // weekly Power comes from the point badge rather than its chess stars.
   const secondWeekly=await seedWeekly(2,4);
-  assert.equal(secondWeekly.stars,4,'weekly task retains the site's ★4 difficulty');
+  assert.equal(secondWeekly.stars,4,"weekly task retains the site's ★4 difficulty");
   assert.notEqual(secondWeekly.puzzleId,firstWeekly.puzzleId,'each week selects a fresh task');
   const weeklyMoves=await selectedPuzzleMoves(weeklyPage);
   await clickMove(weeklyPage,weeklyMoves.wrong.from,weeklyMoves.wrong.to);
