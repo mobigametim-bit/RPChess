@@ -261,11 +261,17 @@ function acknowledgeReturn(map,id){
  next.cells[id]={...cell,production:null}; // Defender sprite stays visible.
  return {ok:true,map:next};
 }
-function collectProduction(map,id){
+function collectProduction(map,id,{weeklyPuzzleResult=null}={}){
  const cell=map?.cells?.[id],item=cell?.production;
  if(!cell||!item||!['gold','supplies','shards','recruits'].includes(item.kind)||
     !(isOwned(map,id)||(map.builtSettlements||[]).some(p=>p.id===id))||cell.status!=='completed'||
     (map.productionClaims||[]).includes(item.id))return {ok:false,map};
+ // Honor shards from a Puzzle site require a solved/failed weekly attempt.
+ if(item.kind==='shards'&&cell.selectedEncounter?.type==='puzzle'&&
+   (weeklyPuzzleResult?.productionId!==item.id||
+    !['solved','failed'].includes(weeklyPuzzleResult.result)||
+    typeof weeklyPuzzleResult.puzzleId!=='string'||!weeklyPuzzleResult.puzzleId))
+   return {ok:false,map};
  const next=copyMap(map);
  next.cells[id]={...cell,production:null};
  next.productionClaims=[...(map.productionClaims||[]),item.id];
@@ -347,7 +353,13 @@ function advanceDay(map,actionId){
  if(actions.includes(actionId))return map;
  return settleWeeklyProduction({...map,day:Math.max(1,map.day||1)+1,calendarActions:[...actions,actionId]});
 }
-function romanForStars(stars){const n=Math.max(1,Math.min(12,Math.round(stars||1)));return n===1?'I':n<=4?'II':n<=6?'III':n<=9?'IV':'V';}
+// A road site's displayed I–V level; distinct from its 1–12 star
+// chess difficulty. Keep both badge and weekly Power on this same scale.
+function siteLevelForStars(stars){
+ const n=Math.max(1,Math.min(12,Math.round(stars||1)));
+ return n===1?1:n<=4?2:n<=6?3:n<=9?4:5;
+}
+function romanForStars(stars){return ROMANS[siteLevelForStars(stars)-1];}
 function castleLevel(power){return Math.max(1,Math.min(5,Math.floor(Math.max(0,power||0)/500)+1));}
 function copyMap(map){return {...map,king:{...map.king},cells:{...map.cells}};}
 // Select the new run's world by king race while preserving the castle at (0,0).
@@ -628,7 +640,7 @@ function borderEdges(map,point){
   .filter(([_,dx,dy])=>!isOwned(map,keyOf(point.x+dx,point.y+dy)))
   .map(([edge])=>edge);
 }
-export {MAP_VERSION,TYPES,ROMANS,keyOf,isPoint,adjacent,orthogonal,shortestKingRoute,romanForStars,castleLevel,
+export {MAP_VERSION,TYPES,ROMANS,keyOf,isPoint,adjacent,orthogonal,shortestKingRoute,siteLevelForStars,romanForStars,castleLevel,
  createKingdomMap,validateKingdomMap,migrateKingdomMap,updatePeak,randomEncounter,revealAround,enterCell,beginEncounter,cancelEncounterBeforeStart,
  finishEncounter,matchesCombatReceipt,canAnnex,annexCell,pointsEarned,pointsAvailable,territoryCapacity,
  growTerritory,reserveBattleTerritories,BATTLE_PROVINCE_HUES,playerTerritoryKeys,playerTerritoryCount,enemyBattleKeys,advanceDay,isOwned,linkCompletedRoad,borderEdges,weekForDay,productionFor,

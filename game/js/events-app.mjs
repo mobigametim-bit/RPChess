@@ -4,6 +4,7 @@ import { subscribe, t, translateLegacy } from './i18n.mjs';
 import { currentLanguage } from './i18n.mjs';
 import { brandLogoSrc, brandLogoAlt } from './brand-logo.mjs';
 import { eventBackgroundPath } from './race-assets.mjs';
+import { createEventSpeech } from './event-speech.mjs';
 import { literaryStory } from './event-narrative.mjs';
 import { literaryOutcomeForEvent } from './event-literary-outcome.mjs';
 import { playerNameForRun, personalizePlayerNarrative, personalizePlayerTitle } from './player-identity-core.mjs';
@@ -23,6 +24,7 @@ let screen = null;
 let activeRun = null;
 let busy = false;
 let syncingCombat = false;
+const eventSpeech=createEventSpeech({getRoot:()=>screen,getLanguage:currentLanguage});
 
 function audio() { return globalThis.RPChessRebootAudio; }
 function playerName() { return playerNameForRun(activeRun); }
@@ -49,6 +51,11 @@ function ensureCss() {
     link.dataset.eventsV5Css = '';
     document.head.append(link);
   }
+  if(!document.querySelector('[data-events-polish-css]')){
+    const link=document.createElement('link');link.rel='stylesheet';
+    link.href='css/events-polish.css?v=20261114-centered-tts-v1';
+    link.dataset.eventsPolishCss='';document.head.append(link);
+  }
 }
 
 function ensureScreen() {
@@ -72,7 +79,7 @@ function ensureScreen() {
       <section class="events-panel">
         <div class="events-copy-frame ui-panel-safe">
           <div class="events-kicker"><span data-events-kicker>${t('events.kicker')}</span><strong data-events-race></strong></div>
-          <h1 data-events-title></h1>
+          <div class="events-title-row"><h1 data-events-title></h1>${eventSpeech.buttonMarkup()}</div>
           <div class="events-story" data-events-story></div>
           <div class="events-reaction events-reaction--king" data-events-king-reaction hidden></div>
         </div>
@@ -94,6 +101,7 @@ function ensureScreen() {
   app.append(screen);
   screen.querySelector('[data-events-continue]')?.addEventListener('click', continueOutcome);
   screen.addEventListener('click', handleChoice);
+  screen.querySelector('[data-events-speech]')?.addEventListener('click',()=>eventSpeech.toggle());
   return screen;
 }
 
@@ -121,7 +129,7 @@ function showEvents() {
   window.scrollTo({ top: 0, behavior: 'auto' });
   globalThis.RPChessResources?.render?.();
 }
-function hideEvents() { if (screen) screen.hidden = true; document.body.classList.remove('events-active'); }
+function hideEvents() { eventSpeech.stop();if (screen) screen.hidden = true; document.body.classList.remove('events-active'); }
 
 function riskLabel(choice) {
   const warnings = [...(choice.warnings || [])];
@@ -271,6 +279,7 @@ function renderEvent() {
   // global UI sweep alone can precede a late Event rerender.
   globalThis.RPChessResourceIcons?.iconize?.(choices);
   globalThis.RPChessResourceIcons?.iconize?.(screen.querySelector('[data-events-outcome-notes]'));
+  eventSpeech.onRender();
 }
 
 function renderOutcome(event) {
@@ -310,6 +319,7 @@ function handleChoice(event) {
   const current = readRun();
   if (!current || current.ended || current.activeTravelChoice?.type !== 'event' || current.currentEvent?.resolved) return;
   busy = true;
+  eventSpeech.stop();
   audio()?.click?.();
   const result = resolveEventChoice(current, button.dataset.eventChoice);
   if (!result.success) { busy = false; renderEvent(); return; }
@@ -365,7 +375,7 @@ function continueOutcome() {
 }
 
 function openEvent(event=null) {
-  busy=false;
+  eventSpeech.stop();busy=false;
   activeRun=readRun();
   if(!activeRun||activeRun.ended)return;
   const route=activeRun.activeTravelChoice||event?.detail?.choice;
@@ -394,9 +404,11 @@ function syncRun() {
 
 ensureScreen();
 subscribe(() => {
-  renderStaticCopy();
+  eventSpeech.stop();renderStaticCopy();
   if(screen&&!screen.hidden&&activeRun?.activeTravelChoice?.type==='event')renderEvent();
 });
+document.addEventListener('visibilitychange',()=>{if(document.hidden)eventSpeech.stop();});
+addEventListener('beforeunload',()=>eventSpeech.stop());
 addEventListener('rpchess:event-open',openEvent);
 addEventListener('rpchess:combat-completed',syncRun);
 globalThis.RPChessEvents=Object.freeze({open:openEvent,render:renderEvent,get run(){return activeRun;},get state(){return activeRun?.currentEvent||null;}});

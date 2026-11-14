@@ -1,0 +1,7 @@
+name = "rpchess-weekly-events-preview"
+compatibility_date = "2026-11-14"
+
+# Separate QA Worker for owner review; production Pages and APIs untouched.
+[assets]
+directory = "../dist"
+not_found_handling = "single-page-application"

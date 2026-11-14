@@ -1025,6 +1025,67 @@ function showEconomyBurst(id,kind,amount){
  resourceTimer=setTimeout(()=>{resourceBurst=null;
   if(screen&&!screen.hidden)render();},RESOURCE_FX_MS);
 }
+let weeklyOpening=false;
+async function beginWeeklyPuzzle(id,item){
+ if(weeklyOpening)return;
+ const run=readRun(),cell=run?.kingdomMap?.cells?.[id],choice=cell?.selectedEncounter;
+ if(!run||run.ended||run.activeTravelChoice||run.kingdomMap?.pendingCell||
+    !screen||screen.hidden||choice?.type!=='puzzle'||
+    item?.id!==cell.production?.id||item?.kind!=='shards')return;
+ weeklyOpening=true;
+ try{
+  await import('./puzzles/puzzle-app.mjs');
+  const latest=readRun(),current=latest?.kingdomMap?.cells?.[id];
+  if(!latest||latest.id!==run.id||latest.ended||latest.activeTravelChoice||
+     current?.production?.id!==item.id||screen.hidden)return;
+  const owner=globalThis.RPChessPuzzle;
+  if(!owner?.openWeekly)throw new Error('Puzzle owner unavailable');
+  if(!await owner.openWeekly({cellId:id,productionId:item.id,
+     stars:choice.stars,week:item.week,amount:item.amount,initialRouteId:choice.id}))
+    throw new Error('Weekly puzzle could not be started');
+  hideMap();
+ }catch(error){
+  console.error('[RPChess] Weekly Puzzle start failed',error);
+  report(lang()==='en'?'Could not open the weekly task. Try again.':
+   'Не удалось открыть еженедельную задачу. Повторите попытку.');
+ }finally{weeklyOpening=false;}
+}
+function settleWeeklyPuzzle(){
+ const run=readRun(),session=run?.currentPuzzle,weekly=session?.weekly;
+ if(!run||!weekly||!session.resolved||
+    !['solved','failed'].includes(session.result))return false;
+ const id=weekly.cellId,productionId=weekly.productionId;
+ const item=run.kingdomMap?.cells?.[id]?.production;
+ if(!item||item.id!==productionId||item.kind!=='shards')return Boolean(
+   run.kingdomMap?.productionClaims?.includes(productionId));
+ const result=collectProduction(run.kingdomMap,id,{
+   weeklyPuzzleResult:{productionId,result:session.result,puzzleId:session.puzzleId}
+ });
+ if(!result.ok)return false;
+ if(session.result==='solved'){
+  const receiptId='kingdom:production:'+hashString(run.id+':'+productionId).toString(36);
+  if(!shardTransaction({id:receiptId,kind:'kingdom-production',
+    runId:run.id,productionId,amount:result.amount}))return false;
+ }
+ writeRun({...run,kingdomMap:result.map,
+   currentPuzzle:{...session,rewardSettled:true,goldReward:0},
+   lastWeeklyPuzzle:{productionId,cellId:id,result:session.result,
+     puzzleId:session.puzzleId,errors:session.errors,amount:session.result==='solved'?result.amount:0}});
+ selected=id;
+ if(screen&&!screen.hidden)render();
+ globalThis.dispatchEvent(new CustomEvent('rpchess:kingdom-production-collected'));
+ return true;
+}
+function expireWeeklyPuzzleOnReturn(){
+ const run=readRun(),session=run?.currentPuzzle;
+ if(!session?.weekly)return;
+ if(!session.resolved)writeRun({...run,currentPuzzle:{
+   ...session,resolved:true,result:'failed',errors:3,goldReward:0}});
+ if(!readRun()?.currentPuzzle?.rewardSettled)settleWeeklyPuzzle();
+ const latest=readRun();
+ if(latest?.currentPuzzle?.weekly&&latest.currentPuzzle.rewardSettled)
+   writeRun({...latest,currentPuzzle:null});
+}
 function claimWeekly(id){
  const run=readRun();
  if(!run||run.ended||run.activeTravelChoice||run.kingdomMap?.pendingCell)return;
@@ -1041,6 +1102,9 @@ function claimWeekly(id){
  }
  const item=run.kingdomMap?.cells?.[id]?.production;
  if(!item)return;
+ if(item.kind==='shards'&&run.kingdomMap?.cells?.[id]?.selectedEncounter?.type==='puzzle'){
+  void beginWeeklyPuzzle(id,item);return;
+ }
  if(item.kind==='battle'){
   const acknowledged=acknowledgeReturn(run.kingdomMap,id);
   if(!acknowledged.ok)return;
@@ -1340,6 +1404,10 @@ async function visitSettlement(){
 }
 function openMap(event){
  let run=readRun();if(!run||run.ended)return;
+ // A closed or reloaded unfinished weekly task forfeits its current reward.
+ // A solved task whose save was interrupted is settled idempotently.
+ expireWeeklyPuzzleOnReturn();
+ run=readRun();
  run=ensureMap(run);
  // A saved reveal can be resumed without replaying a misleading in-flight king.
  clearTimeout(flightTimer);clearTimeout(flavorTimer);
@@ -1376,5 +1444,5 @@ addEventListener('rpchess:arena-updated',refreshEconomyControls);
 addEventListener('rpchess:run-updated',refreshEconomyControls);
 addEventListener('rpchess:scene-changed',e=>{if(e.detail?.scene==='menu'||e.detail?.scene==='roster')hideMap();});
 subscribe(()=>{if(screen&&!screen.hidden)render();});
-globalThis.RPChessKingdomMap=Object.freeze({open:openMap,hide:hideMap,rejectMercenaryEntry,get map(){return readRun()?.kingdomMap||null;},get zoom(){return zoomPx;}});
+globalThis.RPChessKingdomMap=Object.freeze({open:openMap,hide:hideMap,settleWeeklyPuzzle,rejectMercenaryEntry,get map(){return readRun()?.kingdomMap||null;},get zoom(){return zoomPx;}});
 export {openMap};

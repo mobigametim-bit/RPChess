@@ -3,11 +3,11 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173',RUN_KEY='r
 const mate1Route={id:'manual.puzzle.mate1',step:1,type:'puzzle',label:'ЗАДАЧА',stars:1,threatLabel:'СЛОЖНОСТЬ ★1',flavor:'На дороге обнаружена позиция, требующая точного решения.',mechanicalHint:'Шахматная задача с конкретной целью.',seed:'manual-puzzle-mate1',supplyCostAtSelection:1,supplyPaid:1};
 const mate2Route={id:'manual.puzzle.resume',step:17,type:'puzzle',label:'ЗАДАЧА',stars:3,threatLabel:'СЛОЖНОСТЬ ★3',flavor:'Древний механизм ждёт точного решения.',mechanicalHint:'Шахматная задача с конкретной целью.',seed:'manual-puzzle-resume',supplyCostAtSelection:1,supplyPaid:1};
 
-async function fresh(page,runId){
+async function fresh(page,runId,{legacyTravel=true}={}){
   await page.goto(url,{waitUntil:'networkidle'});
   await page.evaluate(k=>localStorage.removeItem(k),RUN_KEY);
   await page.reload({waitUntil:'networkidle'});
-  await startNewRun(page);
+  await startNewRun(page,{legacyTravel});
   await page.evaluate(({k,runId})=>{const r=JSON.parse(localStorage.getItem(k));r.id=runId;r.currentTravelChoices=null;r.activeTravelChoice=null;r.currentPuzzle=null;r.lastPuzzle=null;r.puzzleHistory=[];localStorage.setItem(k,JSON.stringify(r));dispatchEvent(new CustomEvent('rpchess:run-updated'));},{k:RUN_KEY,runId});
 }
 
@@ -256,6 +256,168 @@ async function clickMove(page,from,to,promotion=null){
     'one queen click closes promotion overlay after completing the task');
   assert.deepStrictEqual(promotionErrors,[]);
   await promotionPage.close();
+
+  // Compare exactly the existing Puzzle screen with the weekly task UI.
+  // The original header contains Settings only; every rectangle must keep
+  // its original position at both desktop and landscape phone sizes.
+  async function puzzleGeometry(p){
+    await p.evaluate(()=>document.fonts.ready);
+    return p.evaluate(()=>{
+      const rect=selector=>{
+        const node=document.querySelector(selector),r=node?.getBoundingClientRect();
+        return r?{left:r.left,top:r.top,width:r.width,height:r.height}:null;
+      };
+      return{
+        buttons:Array.from(document.querySelectorAll('.puzzle-topbar__actions>button'))
+          .filter(button=>getComputedStyle(button).display!=='none').map(button=>button.textContent.trim()),
+        board:rect('[data-puzzle-board]'),
+        heading:rect('.puzzle-heading'),
+        panel:rect('.puzzle-layout>.puzzle-panel:first-child'),
+        settings:rect('[data-puzzle-settings]')
+      };
+    });
+  }
+  function assertSamePuzzleLayout(ordinary,weekly,viewport){
+    assert.deepStrictEqual(weekly.buttons,ordinary.buttons,
+      `${viewport}: weekly Puzzle must show precisely the original buttons`);
+    for(const key of ['board','panel','settings']){
+      assert(ordinary[key]&&weekly[key],`${viewport}: missing ${key} geometry`);
+      for(const axis of ['left','top','width','height']){
+        // Two different chess puzzles may have different instruction lengths.
+        // The card's top/width, board and Settings must still remain identical.
+        const tolerance=key==='panel'&&axis==='height'?32:3;
+        assert(Math.abs(ordinary[key][axis]-weekly[key][axis])<=tolerance,
+          `${viewport}: ${key}.${axis} differs from ordinary Puzzle: ${ordinary[key][axis]} / ${weekly[key][axis]}`);
+      }
+    }
+  }
+  await page.setViewportSize({width:1280,height:720});
+  const ordinaryDesktop=await puzzleGeometry(page);
+  await mobile.setViewportSize({width:844,height:390});
+  const ordinaryMobile=await puzzleGeometry(mobile);
+
+  // Weekly Puzzle at an owned completed road site: leave = forfeit, solve =
+  // full shards with no gold, three wrong moves = zero and no second claim.
+  const weeklyPage=await browser.newPage({viewport:{width:1280,height:720},reducedMotion:'reduce'});
+  const weeklyErrors=[];weeklyPage.on('pageerror',e=>weeklyErrors.push(String(e.stack||e)));
+  await fresh(weeklyPage,'puzzles-browser-weekly',{legacyTravel:false});
+  await weeklyPage.locator('[data-roster-travel]').click();
+  await weeklyPage.locator('[data-kingdom-map-screen]:not([hidden])').waitFor();
+  async function seedWeekly(week,stars=1){
+    await weeklyPage.evaluate(async ({key,week,stars})=>{
+      const r=JSON.parse(localStorage.getItem(key));
+      const {createTravelChoices}=await import('./js/travel-choice-core.mjs');
+      const id='1,0',route={...createTravelChoices({runId:r.id,step:1,types:['puzzle'],playerPower:500})[0],
+        id:'weekly-test-original',stars};
+      r.activeTravelChoice=null;r.currentPuzzle=null;
+      r.kingdomMap.cells[id]={...r.kingdomMap.cells[id],explored:true,annexed:true,
+        status:'completed',completedOnce:true,selectedEncounter:route,
+        production:{id:'production:'+id+':'+week+':shards',week,kind:'shards',amount:stars}};
+      r.kingdomMap.day=week*7;r.kingdomMap.processedThroughWeek=week;
+      localStorage.setItem(key,JSON.stringify(r));
+      globalThis.RPChessKingdomMap.open({detail:{source:'weekly-test'}});
+    },{key:RUN_KEY,week,stars});
+    await weeklyPage.locator('[data-kingdom-collect="1,0"]').waitFor({state:'visible'});
+    await weeklyPage.locator('[data-kingdom-collect="1,0"]').click();
+    await weeklyPage.locator('[data-puzzle-screen]:not([hidden])').waitFor();
+    const r=await weeklyPage.evaluate(key=>JSON.parse(localStorage.getItem(key)),RUN_KEY);
+    assert.equal(r.currentPuzzle.weekly.week,week);
+    assert.equal(r.currentPuzzle.goldReward,0);
+    assert.equal(await weeklyPage.locator('.puzzle-topbar__actions > button').count(),1,
+      'weekly Puzzle uses the exact original single Settings button');
+    return r.currentPuzzle;
+  }
+  const balance=async()=>weeklyPage.evaluate(async()=>{
+    const {ARENA_KEY,normalizeArena,arenaSummary}=await import('./js/arena-core.mjs');
+    return arenaSummary(normalizeArena(JSON.parse(localStorage.getItem(ARENA_KEY)||'null'))).balance;
+  });
+  const initialBalance=await balance();
+  const initialGold=(await weeklyPage.evaluate(key=>JSON.parse(localStorage.getItem(key)),RUN_KEY)).gold;
+  const readWeeklyPower=()=>weeklyPage.evaluate(async()=>{
+    const {readPlayerRating}=await import('./js/player-rating.mjs');
+    return readPlayerRating().power;
+  });
+  const initialPower=await readWeeklyPower();
+  const firstWeekly=await seedWeekly(1);
+  const weeklyDesktop=await puzzleGeometry(weeklyPage);
+  assertSamePuzzleLayout(ordinaryDesktop,weeklyDesktop,'1280x720');
+  await weeklyPage.setViewportSize({width:844,height:390});
+  const weeklyMobile=await puzzleGeometry(weeklyPage);
+  assertSamePuzzleLayout(ordinaryMobile,weeklyMobile,'844x390');
+  await weeklyPage.setViewportSize({width:1280,height:720});
+  // A real exit (page unload / back to the map) forfeits the week, without
+  // injecting a noncanonical "Leave task" button into the header.
+  await weeklyPage.evaluate(()=>{
+    dispatchEvent(new Event('pagehide'));
+    globalThis.RPChessKingdomMap.open({detail:{source:'weekly-test-left-scene'}});
+  });
+  await weeklyPage.locator('[data-kingdom-map-screen]:not([hidden])').waitFor();
+  assert.equal(await balance(),initialBalance,'exiting a weekly task forfeits the full reward');
+  assert.equal(await readWeeklyPower(),initialPower,'abandonment must not raise weekly Puzzle Power');
+  const exitRun=await weeklyPage.evaluate(key=>JSON.parse(localStorage.getItem(key)),RUN_KEY);
+  assert(exitRun.kingdomMap.productionClaims.includes(firstWeekly.weekly.productionId),
+    'abandoned weekly payout has a persistent spent receipt');
+  // ★4 is a level-II *site* on the map, not level IV; this proves that
+  // weekly Power comes from the point badge rather than its chess stars.
+  const secondWeekly=await seedWeekly(2,4);
+  assert.equal(secondWeekly.stars,4,"weekly task retains the site's ★4 difficulty");
+  assert.notEqual(secondWeekly.puzzleId,firstWeekly.puzzleId,'each week selects a fresh task');
+  const weeklyMoves=await selectedPuzzleMoves(weeklyPage);
+  await clickMove(weeklyPage,weeklyMoves.wrong.from,weeklyMoves.wrong.to);
+  assert((await weeklyPage.locator('[data-puzzle-current-reward]').innerText()).includes('4'),
+    '★4 weekly reward remains four Honor shards after an incorrect move');
+  for(let n=0;n<6;n++){
+    const snapshot=await weeklyPage.evaluate(key=>JSON.parse(localStorage.getItem(key))?.currentPuzzle,RUN_KEY);
+    if(snapshot.resolved)break;
+    const uci=weeklyMoves.solution[snapshot.solutionIndex];
+    if(!uci)throw new Error('Weekly solution exhausted before success');
+    await clickMove(weeklyPage,uci.slice(0,2),uci.slice(2,4),uci.slice(4)||null);
+    await weeklyPage.waitForFunction(({key,index})=>{
+      const p=JSON.parse(localStorage.getItem(key))?.currentPuzzle;
+      return p?.resolved||p?.solutionIndex>index;
+    },{key:RUN_KEY,index:snapshot.solutionIndex},{timeout:12000});
+  }
+  await weeklyPage.locator('[data-puzzle-outcome]:not([hidden])').waitFor();
+  await weeklyPage.waitForFunction(async expected=>{
+    const {readPlayerRating}=await import('./js/player-rating.mjs');
+    return readPlayerRating().power===expected;
+  },initialPower+2,{timeout:12000});
+  assert.strictEqual(await readWeeklyPower(),initialPower+2,
+    '★4 point is visibly level II and grants +2 Power, not +4 stars');
+  const powerReceipt=weeklyPage.locator('[data-puzzle-outcome] [data-power-result]:not([hidden])');
+  await powerReceipt.waitFor({state:'visible'});
+  assert((await powerReceipt.innerText()).includes('+2'),
+    'level-II weekly point displays the +2 Power receipt');
+  const shardReward=weeklyPage.locator('[data-puzzle-outcome-gold]');
+  assert.equal((await shardReward.innerText()).trim(),'+4',
+    'weekly payout result must show only +N, not written-out Honor shards');
+  assert.equal(await shardReward.locator('img').getAttribute('src'),'assets/arena/mirror_shard.png',
+    'weekly payout uses the canonical Honor shard icon');
+  assert(await shardReward.locator('img').evaluate(img=>img.complete&&img.naturalWidth>0),
+    'Honor shard reward icon must load');
+  const outcomeCopy=await weeklyPage.locator('[data-puzzle-outcome-text]').innerText();
+  assert(outcomeCopy.includes('Ошибок: 1.')&&
+    !outcomeCopy.includes('Награда рассчитана по точности решения'),
+    'weekly result keeps the mistakes count but removes only the inaccurate accuracy-based payout claim');
+  assert.equal(await balance(),initialBalance+4,'★4 weekly task adds all four Honor shards');
+  assert.equal((await weeklyPage.evaluate(key=>JSON.parse(localStorage.getItem(key)),RUN_KEY)).gold,initialGold,
+    'weekly payout must never add normal Puzzle gold');
+  await weeklyPage.locator('[data-puzzle-continue]').click();
+  await weeklyPage.locator('[data-kingdom-map-screen]:not([hidden])').waitFor();
+  assert.equal(await weeklyPage.locator('[data-kingdom-collect="1,0"]').count(),0,
+    'already claimed weekly reward cannot be collected twice');
+  await seedWeekly(3);
+  const thirdMoves=await selectedPuzzleMoves(weeklyPage);
+  for(let i=0;i<3;i++)await clickMove(weeklyPage,thirdMoves.wrong.from,thirdMoves.wrong.to);
+  await weeklyPage.locator('[data-puzzle-outcome]:not([hidden])').waitFor();
+  assert.equal(await balance(),initialBalance+4,'three wrong moves forfeit shards without reducing prior payout');
+  assert.equal(await readWeeklyPower(),initialPower+2,'failed weekly Puzzle cannot add Power');
+  assert.equal(await weeklyPage.locator('[data-puzzle-outcome] [data-power-result]:visible').count(),0,
+    'failed weekly Puzzle must not leak the previous Power result');
+  await weeklyPage.locator('[data-puzzle-continue]').click();
+  await weeklyPage.locator('[data-kingdom-map-screen]:not([hidden])').waitFor();
+  assert.deepStrictEqual(weeklyErrors,[]);
+  await weeklyPage.close();
 
     assert.deepStrictEqual(errors,[]);assert.deepStrictEqual(resumeErrors,[]);assert.deepStrictEqual(mobileErrors,[]);console.log('Puzzles identity flow, catalog-derived move acceptance, accepted hidden source attribution, canonical wrong-move/resume state, removed obsolete Roster shortcut, compact hidden status, no-repeat history, reward/idempotency, reload resume and landscape-mobile one-screen acceptance: PASS');
 }finally{await browser.close();}})().catch(e=>{console.error(e.stack||e);process.exitCode=1});

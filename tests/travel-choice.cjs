@@ -482,6 +482,30 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   ],[120,10,null,null],'cap at level XII, legacy level I and exclude non-resources');
 
 
+  // Weekly Puzzle shards require a completed attempt. Mistakes and abandonment
+  // forfeit the full week; only a solved attempt may grant the unchanged amount.
+  const puzzleId=startMap.centralOwnedCells.find(id=>id!=='0,0');
+  const puzzleFixture={...startMap,cells:{...startMap.cells,
+    [puzzleId]:{status:'completed',explored:true,annexed:true,completedOnce:true,
+      selectedEncounter:{id:'kingdom.puzzle.fixture',type:'puzzle',stars:5}}}};
+  const puzzleWeek=mapCore.settleWeeklyProduction({...puzzleFixture,day:7,processedThroughWeek:0});
+  const puzzleProduction=puzzleWeek.cells[puzzleId].production;
+  assert.equal(puzzleProduction.kind,'shards');
+  assert.equal(puzzleProduction.amount,5,'level-five Puzzle awards five full shards');
+  assert.equal(mapCore.collectProduction(puzzleWeek,puzzleId).ok,false,
+    'clicking a weekly Puzzle payout without a played task must not grant shards');
+  for(const outcome of ['solved','failed']){
+    const receipt={productionId:puzzleProduction.id,puzzleId:'puzzle.fixture',result:outcome};
+    const claim=mapCore.collectProduction(puzzleWeek,puzzleId,{weeklyPuzzleResult:receipt});
+    assert(claim.ok&&claim.amount===5,'every final result consumes exactly one weekly payout');
+    assert(!mapCore.collectProduction(claim.map,puzzleId,{weeklyPuzzleResult:receipt}).ok,
+      'retrying a settled weekly payout is always blocked');
+    assert(claim.map.productionClaims.includes(puzzleProduction.id));
+  }
+  assert(!mapCore.collectProduction(puzzleWeek,puzzleId,{weeklyPuzzleResult:{
+    productionId:'fake',puzzleId:'puzzle.fixture',result:'solved'}}).ok,
+    'a different production receipt must not collect a weekly payout');
+
   const collected=mapCore.collectProduction(weekly,producerId);
   assert(collected.ok&&collected.kind==='gold'&&collected.amount===10);
   assert(!mapCore.collectProduction(collected.map,producerId).ok,
