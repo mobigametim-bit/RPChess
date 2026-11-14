@@ -165,6 +165,7 @@ function render(){
     if(!Number.isSafeInteger(x)||!Number.isSafeInteger(y))continue;
     if(!isOwned(map,{x,y})&&!visibleThroughFog(map,{x,y}))continue;
     const choice=cell.selectedEncounter;
+    if(choice.type==='skirmish'&&cell.explored!==true)continue;
     add(kingdomMapSprite(choice.type,choice.raceTag||choice.enemyRaceTag,
       choice.visualRaceTag||choice.seed||choice.id),{x,y},'mm-kingdom-site',TILE*.73);
     if(['battle','skirmish','caravan'].includes(choice.type)&&
