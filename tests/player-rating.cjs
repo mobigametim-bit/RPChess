@@ -31,6 +31,35 @@ function memoryStorage(){const data=new Map();return{getItem:k=>data.has(k)?data
   const skirmishStorage=memoryStorage();const skirmishWin=rating.settlePlayerRating({receiptId:'skirmish-win',opponentElo:800,result:1,gainDivisor:rating.SKIRMISH_WIN_GAIN_DIVISOR,storage:skirmishStorage});assert.strictEqual(skirmishWin.receipt.delta,14,'Skirmish positive Power gain must be halved');
   const puzzleStorage=memoryStorage();const puzzleWin=rating.settlePlayerRating({receiptId:'puzzle-win',opponentElo:800,result:1,gainDivisor:rating.PUZZLE_WIN_GAIN_DIVISOR,storage:puzzleStorage});assert.strictEqual(puzzleWin.receipt.delta,9,'Training positive Power gain must be divided by three');
   const puzzleLossStorage=memoryStorage();const puzzleLoss=rating.settlePlayerRating({receiptId:'puzzle-loss',opponentElo:800,result:0,gainDivisor:rating.PUZZLE_WIN_GAIN_DIVISOR,storage:puzzleLossStorage});assert.strictEqual(puzzleLoss.receipt.delta,-5,'Training loss must retain the canonical Elo penalty');
+
+  // Returning to a previously solved Kingdom Puzzle site is not another Elo
+  // match: every successful weekly task awards exactly 1 Power per star.
+  for(const stars of [1,4,12]){
+    const weeklyStorage=memoryStorage(),receiptId='weekly-'+stars;
+    const weekly=rating.settlePlayerRating({receiptId,
+      opponentElo:rating.opponentEloForStars(stars),result:1,
+      fixedWinGain:stars,storage:weeklyStorage});
+    assert.strictEqual(weekly.receipt.delta,stars,`weekly star-${stars} puzzle must award +${stars} Power`);
+    assert.strictEqual(weekly.receipt.after,500+stars);
+    assert.strictEqual(rating.settlePlayerRating({receiptId,
+      opponentElo:rating.opponentEloForStars(stars),result:1,
+      fixedWinGain:stars,storage:weeklyStorage}).changed,false,'weekly Power receipt must be idempotent');
+    assert.strictEqual(rating.readPlayerRating(weeklyStorage).power,500+stars);
+  }
+  assert.throws(()=>rating.settlePlayerRating({receiptId:'invalid-weekly',opponentElo:400,
+    result:0,fixedWinGain:1,storage:memoryStorage()}),/Fixed weekly Puzzle Power/,
+    'failed weekly puzzles never use the positive fixed-gain settlement');
+  const weeklyFinished={currentPuzzle:{weekly:{productionId:'week-1'},result:'solved',
+    resolved:true,rewardSettled:true}};
+  assert.strictEqual(rating.ratedOutcomeKind(weeklyFinished),'puzzle',
+    'weekly success must enter semantic Power settlement without an activeTravelChoice');
+  assert.strictEqual(rating.ratedOutcomeKind({...weeklyFinished,currentPuzzle:{
+    ...weeklyFinished.currentPuzzle,rewardSettled:false}}),null,
+    'weekly Power is only granted after its Honor shard receipt is settled');
+  assert.strictEqual(rating.ratedOutcomeKind({...weeklyFinished,currentPuzzle:{
+    ...weeklyFinished.currentPuzzle,result:'failed'}}),null,
+    'failed weekly tasks must not award Power');
+
   const carryStorage=memoryStorage();rating.writePlayerRating({power:1000,receipts:[]},carryStorage);const carry=rating.applyNewRunPowerCarryover(carryStorage);assert.strictEqual(carry.before,1000);assert.strictEqual(carry.after,750);assert.strictEqual(rating.readPlayerRating(carryStorage).power,750);
   const serverStorage=memoryStorage();
   const receipt={id:'tournament:12345678-aaaa-bbbb-cccc-123456789abc:w',before:500,after:516,delta:16,opponentElo:500,result:1};
