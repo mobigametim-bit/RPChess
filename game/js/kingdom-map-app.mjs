@@ -14,6 +14,7 @@ import {PIECE_TYPES,PIECE_LABELS,DEFAULT_KINGDOM_ECONOMY,recruitTypeForLevel} fr
 import {buyCastleRecruit,addArmyRecruits} from './kingdom-army-core.mjs';
 import {createSettlementState} from './settlement-core.mjs';
 import {FLAVOR_POOLS} from './travel-choice-core.mjs';
+import {isUnprotectedBanditAmbush,resolveUnprotectedBanditAmbush} from './kingdom-bandit-core.mjs';
 import {translateLegacy} from './i18n.mjs';
 import {commanderPortrait,commanderTitle} from './commander-portraits.mjs';
 import {kingdomMapSprite,kingdomEncounterSprite} from './kingdom-map-assets.mjs';
@@ -563,6 +564,45 @@ function settleIfReturned(run,source){
  finished.map.cells[id]=cleanCell;
  return writeRun({...run,kingdomMap:finished.map});
 }
+function showBanditOutcome(kind){
+ if(!screen)return;
+ let overlay=screen.querySelector('[data-kingdom-bandit-overlay]');
+ if(!overlay){
+  overlay=document.createElement('div');overlay.className='km-bandit-overlay';
+  overlay.dataset.kingdomBanditOverlay='';
+  overlay.innerHTML='<section class="km-bandit-card" role="dialog" aria-modal="true" aria-labelledby="km-bandit-title">'+
+   '<h2 id="km-bandit-title" data-kingdom-bandit-title></h2>'+
+   '<div class="km-bandit-tip"><span class="km-bandit-tip-dot" aria-hidden="true"></span>'+
+   '<div data-kingdom-bandit-copy></div></div>'+
+   '<button type="button" class="reboot-button reboot-button--primary" data-kingdom-bandit-continue></button>'+
+   '</section>';
+  screen.append(overlay);
+  overlay.querySelector('[data-kingdom-bandit-continue]').addEventListener('click',()=>{
+   const fatal=overlay.dataset.result==='murdered';
+   overlay.remove();
+   if(fatal){
+    const current=readRun();
+    if(!globalThis.RPChessEndlessRun?.open?.(current))
+      globalThis.dispatchEvent(new CustomEvent('rpchess:run-end',{detail:{run:current}}));
+   }else{
+    render();
+    globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated',{detail:{source:'kingdom-bandit-robbery'}}));
+   }
+  });
+ }
+ overlay.dataset.result=kind;
+ overlay.querySelector('[data-kingdom-bandit-title]').textContent=kind==='murdered'?
+  (lang()==='en'?'Bandits attacked':'Разбойники напали'):
+  (lang()==='en'?'The bandits robbed you':'Вас ограбили разбойники');
+ overlay.querySelector('[data-kingdom-bandit-copy]').textContent=kind==='murdered'?
+  (lang()==='en'?'The King had no defenders and could not pay the bandits. His journey ends here.':
+   'Король остался без защитников и не смог расплатиться с разбойниками. Его путешествие окончено.'):
+  (lang()==='en'?'The bandits took everything except 10 Gold and 10 Supplies. The King survived.':
+   'Разбойники забрали добычу, оставив королю 10 золота и 10 припасов. Король выжил.');
+ overlay.querySelector('[data-kingdom-bandit-continue]').textContent=kind==='murdered'?
+  (lang()==='en'?'Results':'К итогам'):(lang()==='en'?'Continue':'Продолжить');
+ overlay.querySelector('[data-kingdom-bandit-continue]').focus();
+}
 function schedulePending(run){
  const map=run.kingdomMap,id=map?.pendingCell;
  const cell=map?.cells?.[id];
@@ -575,6 +615,14 @@ function schedulePending(run){
   if(!current||current.id!==runId||current.ended||current.activeTravelChoice)return;
   const currentCell=current.kingdomMap?.cells?.[id];
   if(current.kingdomMap?.pendingCell!==id||currentCell?.status!=='revealed')return;
+  // Bandits ambush an unprotected King on arrival. This is NOT a chess
+  // encounter: no mercenary charge, no false victory and no conquest award.
+  if(isUnprotectedBanditAmbush(current)){
+   const outcome=resolveUnprotectedBanditAmbush(current);
+   if(!outcome.ok)return;
+   writeRun(outcome.run);render();showBanditOutcome(outcome.kind);
+   return;
+  }
   // Snapshot the balance but DO NOT begin the encounter here. Starvation
   // resolves and is acknowledged first, before the combat owner can open.
   const staged={...current.kingdomMap,cells:{...current.kingdomMap.cells,
