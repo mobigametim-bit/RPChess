@@ -1,3 +1,4 @@
+const {acceptMercenariesBeforeArtifact}=require('./browser-test-helpers.cjs');
 const assert = require('assert');
 const { chromium } = require('playwright');
 const { startNewRun } = require('./browser-test-helpers.cjs');
@@ -26,7 +27,8 @@ const url = process.env.RPCHESS_ACCEPTANCE_URL || 'http://127.0.0.1:4173';
         writeRun({ ...readRun(), artifacts: { 'threat.attack': 3, 'threat.defense': 3, 'threat.great': 3 } });
         globalThis.RPChessSkirmish.open();
       });
-      await page.locator('[data-artifact-choice-modal]').waitFor({state:'visible'});
+      await acceptMercenariesBeforeArtifact(page);
+  await page.locator('[data-artifact-choice-modal]').waitFor({state:'visible'});
       await page.locator('[data-game-loading]').waitFor({state:'hidden',timeout:25000});
       const modalLayout=await page.evaluate(()=>{
         const panel=document.querySelector('[data-artifact-choice-modal] .artifact-choice-panel');

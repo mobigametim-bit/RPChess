@@ -14,6 +14,72 @@ const GRAY_STONE=Object.freeze({
  joint:'#555c5d',edge:'#55595b'
 });
 const BRICK_LENGTH=22,BRICK_STEP=24,ROWS=3;
+/* Forest-path gravel: a continuous compacted-earth ribbon, not gray bricks.
+ * Deterministic pebbles and rounded caps avoid apparent segment brush strokes. */
+function drawGravelRoad(ctx,{x1,y1,x2,y2,bend=0,id=''}) {
+ const dx=x2-x1,dy=y2-y1,len=Math.hypot(dx,dy);
+ if(!len)return false;
+ const nx=-dy/len,ny=dx/len;
+ const c1x=x1+dx*.32+nx*bend,c1y=y1+dy*.32+ny*bend;
+ const c2x=x1+dx*.68-nx*bend*.45,c2y=y1+dy*.68-ny*bend*.45;
+ const path=()=>{ctx.beginPath();ctx.moveTo(x1,y1);ctx.bezierCurveTo(c1x,c1y,c2x,c2y,x2,y2);};
+ ctx.save();ctx.lineJoin='round';ctx.lineCap='round';
+ path();ctx.lineWidth=22;ctx.strokeStyle='#6b6555';ctx.stroke();
+ path();ctx.lineWidth=18;ctx.strokeStyle='#958a72';ctx.stroke();
+ path();ctx.lineWidth=13;ctx.strokeStyle='#a9a18b';ctx.stroke();
+ const total=Math.max(12,Math.ceil((len+Math.abs(bend))/6));
+ const colors=['#d3c9ac','#c1b8a1','#736b5e','#e0d6ba','#8b8071'];
+ const salt=hash32(String(id));
+ for(let i=1;i<total;i++){
+  const t=i/total,u=1-t,x=u*u*u*x1+3*u*u*t*c1x+3*u*t*t*c2x+t*t*t*x2,
+    y=u*u*u*y1+3*u*u*t*c1y+3*u*t*t*c2y+t*t*t*y2;
+  const tx=3*u*u*(c1x-x1)+6*u*t*(c2x-c1x)+3*t*t*(x2-c2x);
+  const ty=3*u*u*(c1y-y1)+6*u*t*(c2y-c1y)+3*t*t*(y2-c2y);
+  const norm=Math.max(1e-8,Math.hypot(tx,ty)),sideX=-ty/norm,sideY=tx/norm;
+  for(let j=0;j<3;j++){
+   const seed=hash32(salt+':'+i+':'+j),lateral=((seed%170)/170-.5)*13,
+    forward=((seed>>>13)%37)/37*3-1.5,size=.75+(seed>>>21)%17/12;
+   ctx.beginPath();ctx.ellipse(x+sideX*lateral+tx/norm*forward,
+    y+sideY*lateral+ty/norm*forward,size,size*.53,(seed%31)/30*Math.PI,0,Math.PI*2);
+   ctx.fillStyle=colors[(seed>>>5)%colors.length];ctx.fill();
+  }
+ }
+ ctx.restore();
+ return true;
+}
+// Junction texture follows connected road corridors; there is NO circular cap.
+// Existing Bezier geometry, paving and terrain masks remain unchanged.
+function drawRoadJunction(ctx,{x,y,tone='sandstone',id='',arms=[]}) {
+ if(!ctx||arms.length<2)return false;
+ const gravel=tone==='gravel',half=gravel?6.5:7.5,reach=13;
+ ctx.save();ctx.beginPath();
+ let valid=0;
+ for(const [vx,vy] of arms){
+  const length=Math.hypot(vx,vy);
+  if(!Number.isFinite(length)||length<1e-6)continue;
+  const dx=vx/length,dy=vy/length,nx=-dy,ny=dx;
+  ctx.moveTo(x+nx*half,y+ny*half);
+  ctx.lineTo(x+dx*reach+nx*half,y+dy*reach+ny*half);
+  ctx.lineTo(x+dx*reach-nx*half,y+dy*reach-ny*half);
+  ctx.lineTo(x-nx*half,y-ny*half);
+  ctx.closePath();valid++;
+ }
+ if(valid<2){ctx.restore();return false;}
+ ctx.clip();
+ ctx.globalAlpha*=.91;
+ ctx.fillStyle=gravel?'#a9a18b':'#e4bd54';
+ ctx.fillRect(x-reach-half,y-reach-half,(reach+half)*2,(reach+half)*2);
+ const salt=hash32(String(id));
+ for(let i=0;i<10;i++){
+  const h=hash32(salt+':joint:'+i);
+  const px=x+((h&255)/255-.5)*22,py=y+(((h>>>8)&255)/255-.5)*22;
+  ctx.fillStyle=gravel?(['#c1b8a1','#958a72','#d3c9ac'][h%3]):
+   (['#e7be50','#f3d47a','#d6a93b'][h%3]);
+  ctx.fillRect(px,py,2.1+(h%3),1.3+((h>>>16)%3));
+ }
+ ctx.restore();return true;
+}
+
 function hash32(value){
  let h=2166136261;
  for(let i=0;i<value.length;i++){h^=value.charCodeAt(i);h=Math.imul(h,16777619);}
@@ -21,6 +87,7 @@ function hash32(value){
 }
 function drawSandstoneRoad(ctx,{x1,y1,x2,y2,bend=0,id='',tone='sandstone'}) {
  if(!ctx||![x1,y1,x2,y2,bend].every(Number.isFinite))return false;
+ if(tone==='gravel')return drawGravelRoad(ctx,{x1,y1,x2,y2,bend,id});
  const palette=tone==='gray'?GRAY_STONE:PALETTE;
  const dx=x2-x1,dy=y2-y1,length=Math.hypot(dx,dy);
  if(length<1)return false;
@@ -112,4 +179,4 @@ function drawSandstoneRoad(ctx,{x1,y1,x2,y2,bend=0,id='',tone='sandstone'}) {
  ctx.restore();
  return true;
 }
-export {SANDSTONE_WIDTH,drawSandstoneRoad};
+export {SANDSTONE_WIDTH,drawSandstoneRoad,drawRoadJunction};

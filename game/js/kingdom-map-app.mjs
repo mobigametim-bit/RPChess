@@ -14,11 +14,13 @@ import {PIECE_TYPES,PIECE_LABELS,DEFAULT_KINGDOM_ECONOMY,recruitTypeForLevel} fr
 import {buyCastleRecruit,addArmyRecruits} from './kingdom-army-core.mjs';
 import {createSettlementState} from './settlement-core.mjs';
 import {FLAVOR_POOLS} from './travel-choice-core.mjs';
+import {isUnprotectedBanditAmbush,resolveUnprotectedBanditAmbush} from './kingdom-bandit-core.mjs';
+import {captureMercenaryEntry,rollbackMercenaryEntry} from './kingdom-entry-rollback.mjs';
 import {translateLegacy} from './i18n.mjs';
 import {commanderPortrait,commanderTitle} from './commander-portraits.mjs';
 import {kingdomMapSprite,kingdomEncounterSprite} from './kingdom-map-assets.mjs';
 import {renderParchment,renderParchmentFog,visibleThroughFog} from './kingdom-parchment-app.mjs?v=20261114-fog-events-v1';
-import {drawKingdomOverlay} from './kingdom-map-overlay.mjs?v=20261112-province-colors-v1';
+import {drawKingdomOverlay} from './kingdom-map-overlay.mjs?v=20261114-corridor-joints-v2';
 import {animateTravelers,stopTravelers} from './kingdom-traveler-renderer.mjs?v=20261111-npc-floor-v1';
 import {industrySprite,industrySpriteIndex,industryYield,industryLevel,industryPending,collectIndustry,BUILDING_TYPES} from './kingdom-industry-core.mjs';
 import {worldAt} from './kingdom-world-core.mjs';
@@ -308,7 +310,8 @@ function castleCard(map){
   const row=document.createElement('div');row.className='km-castle-recruit';
   const label=lang()==='en'?({pawn:'Pawn',knight:'Knight',bishop:'Bishop',rook:'Rook',queen:'Queen'}[type]):PIECE_LABELS[type];
   const buy=document.createElement('button');buy.type='button';buy.dataset.kingdomCastleHire=type;
-  buy.disabled=gold<price;buy.setAttribute('aria-disabled',String(buy.disabled));
+  buy.disabled=gold<price||map.king.x!==map.castle.x||map.king.y!==map.castle.y;
+  buy.setAttribute('aria-disabled',String(buy.disabled));
   buy.setAttribute('aria-label',(lang()==='en'?'Hire ':'Нанять ')+label+
     (lang()==='en'?', owned ':', в наличии ')+typeCounts[type]+
     (lang()==='en'?', cost ':', стоимость ')+price+' '+(lang()==='en'?'gold':'золота'));
@@ -407,7 +410,7 @@ function report(text){const node=screen?.querySelector('[data-kingdom-toast]');i
  node.textContent=text;node.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>{node.hidden=true},2400);}
 function cssReady(){
  if(document.querySelector('[data-kingdom-style]'))return;
- const link=document.createElement('link');link.rel='stylesheet';link.href='css/kingdom-map.css?v=20261113-opaque-industry-v1';link.dataset.kingdomStyle='';
+ const link=document.createElement('link');link.rel='stylesheet';link.href='css/kingdom-map.css?v=20261114-polish-ten-v1';link.dataset.kingdomStyle='';
  link.addEventListener('load',()=>{if(screen&&!screen.hidden)render();});
  document.head.append(link);
 }
@@ -417,7 +420,7 @@ function screenReady(){
  screen.dataset.kingdomMapScreen='';screen.hidden=true;
  screen.innerHTML=`<div class="km-shell">
  <header class="km-header">
- <div class="km-heading"><h1 data-kingdom-day></h1><span class="km-heading-glory" data-kingdom-heading-glory><img src="${GLORY_ICON}" alt="" aria-hidden="true"><strong data-kingdom-heading-glory-value></strong></span></div>
+ <div class="km-heading"><div class="km-heading-lines"><div class="km-player-name" data-kingdom-player-name></div><h1 data-kingdom-day></h1></div><span class="km-heading-glory" data-kingdom-heading-glory><img src="${GLORY_ICON}" alt="" aria-hidden="true"><strong data-kingdom-heading-glory-value></strong></span></div>
  <div class="km-commandbar">
  <div class="km-commander-meta"><img class="km-commander-portrait" data-kingdom-portrait alt=""></div>
  <div class="km-resource-group">
@@ -562,6 +565,45 @@ function settleIfReturned(run,source){
  finished.map.cells[id]=cleanCell;
  return writeRun({...run,kingdomMap:finished.map});
 }
+function showBanditOutcome(kind){
+ if(!screen)return;
+ let overlay=screen.querySelector('[data-kingdom-bandit-overlay]');
+ if(!overlay){
+  overlay=document.createElement('div');overlay.className='km-bandit-overlay';
+  overlay.dataset.kingdomBanditOverlay='';
+  overlay.innerHTML='<section class="km-bandit-card" role="dialog" aria-modal="true" aria-labelledby="km-bandit-title">'+
+   '<h2 id="km-bandit-title" data-kingdom-bandit-title></h2>'+
+   '<div class="km-bandit-tip"><span class="km-bandit-tip-dot" aria-hidden="true"></span>'+
+   '<div data-kingdom-bandit-copy></div></div>'+
+   '<button type="button" class="reboot-button reboot-button--primary" data-kingdom-bandit-continue></button>'+
+   '</section>';
+  screen.append(overlay);
+  overlay.querySelector('[data-kingdom-bandit-continue]').addEventListener('click',()=>{
+   const fatal=overlay.dataset.result==='murdered';
+   overlay.remove();
+   if(fatal){
+    const current=readRun();
+    if(!globalThis.RPChessEndlessRun?.open?.(current))
+      globalThis.dispatchEvent(new CustomEvent('rpchess:run-end',{detail:{run:current}}));
+   }else{
+    render();
+    globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated',{detail:{source:'kingdom-bandit-robbery'}}));
+   }
+  });
+ }
+ overlay.dataset.result=kind;
+ overlay.querySelector('[data-kingdom-bandit-title]').textContent=kind==='murdered'?
+  (lang()==='en'?'Bandits attacked':'Разбойники напали'):
+  (lang()==='en'?'The bandits robbed you':'Вас ограбили разбойники');
+ overlay.querySelector('[data-kingdom-bandit-copy]').textContent=kind==='murdered'?
+  (lang()==='en'?'The King had no defenders and could not pay the bandits. His journey ends here.':
+   'Король остался без защитников и не смог расплатиться с разбойниками. Его путешествие окончено.'):
+  (lang()==='en'?'The bandits took everything except 10 Gold and 10 Supplies. The King survived.':
+   'Разбойники забрали добычу, оставив королю 10 золота и 10 припасов. Король выжил.');
+ overlay.querySelector('[data-kingdom-bandit-continue]').textContent=kind==='murdered'?
+  (lang()==='en'?'Results':'К итогам'):(lang()==='en'?'Continue':'Продолжить');
+ overlay.querySelector('[data-kingdom-bandit-continue]').focus();
+}
 function schedulePending(run){
  const map=run.kingdomMap,id=map?.pendingCell;
  const cell=map?.cells?.[id];
@@ -574,6 +616,14 @@ function schedulePending(run){
   if(!current||current.id!==runId||current.ended||current.activeTravelChoice)return;
   const currentCell=current.kingdomMap?.cells?.[id];
   if(current.kingdomMap?.pendingCell!==id||currentCell?.status!=='revealed')return;
+  // Bandits ambush an unprotected King on arrival. This is NOT a chess
+  // encounter: no mercenary charge, no false victory and no conquest award.
+  if(isUnprotectedBanditAmbush(current)){
+   const outcome=resolveUnprotectedBanditAmbush(current);
+   if(!outcome.ok)return;
+   writeRun(outcome.run);render();showBanditOutcome(outcome.kind);
+   return;
+  }
   // Snapshot the balance but DO NOT begin the encounter here. Starvation
   // resolves and is acknowledged first, before the combat owner can open.
   const staged={...current.kingdomMap,cells:{...current.kingdomMap.cells,
@@ -581,7 +631,8 @@ function schedulePending(run){
     gold:current.gold||0,supplies:current.supplies||0,shards:honorShards()}}}};
   const launched=globalThis.RPChessTravelChoice?.startMapEncounter?.(currentCell.selectedEncounter,staged);
   // A refused skirmish returns immediately to the Kingdom map; do not hide it.
-  if(launched&&readRun()?.activeTravelChoice)hideMap();
+  if(launched&&readRun()?.activeTravelChoice&&
+     !globalThis.RPChessBattleMercenaries?.consentPending)hideMap();
   else if(!launched)report(tr('inProgress'));
  },Math.max(0,expires-Date.now()));
 }
@@ -643,9 +694,13 @@ function render(){
  const power=readPlayerRating().power;
  // Independent in-game calendar: one new cell or completed meaningful encounter = one day.
  const dayNode=screen.querySelector('[data-kingdom-day]');
+ const nameNode=screen.querySelector('[data-kingdom-player-name]');
+ nameNode.textContent=run.playerName||(lang()==='en'?'Ruler':'Правитель');
  dayNode.textContent=tr('day')+' '+(map.day||1);
- fitDayHeading(dayNode);
- if(document.fonts?.status==='loading')void document.fonts.ready.then(()=>{if(dayNode.isConnected)fitDayHeading(dayNode);});
+ fitDayHeading(nameNode);fitDayHeading(dayNode);
+ if(document.fonts?.status==='loading')void document.fonts.ready.then(()=>{
+  if(dayNode.isConnected){fitDayHeading(nameNode);fitDayHeading(dayNode);}
+ });
  screen.querySelector('[data-kingdom-roster]').textContent=t('travel.roster');
  screen.querySelector('[data-kingdom-settings]').textContent=t('travel.settings');
  screen.querySelector('[data-kingdom-menu]').textContent=t('menu.actionsLabel');
@@ -682,13 +737,15 @@ function render(){
    const cell=map.cells[id],isCastle=id===keyOf(map.castle.x,map.castle.y);
    const owned=isOwned(map,point);
    const visible=Boolean(isCastle||owned||visibleThroughFog(map,point));
+   // A Skirmish is a concealed bandit ambush until the king actually enters.
+   const encounterKnown=visible&&!(cell?.selectedEncounter?.type==='skirmish'&&cell.explored!==true);
    const within=adjacent(visualKing,point),here=id===keyOf(visualKing.x,visualKing.y);
    const edges=owned?borderEdges(map,point):[];
    const btn=document.createElement('button');btn.type='button';btn.dataset.kingdomCell=id;
    const light=(point.x+point.y)%2===0;
    btn.setAttribute('role','gridcell');btn.className='km-cell'+
     (light?' km-cell--light':' km-cell--dark')+
-    (!visible?' km-cell--fog':' km-cell--terrain'+(cell?.status?' km-cell--'+cell.status:''))+
+    (!visible?' km-cell--fog':' km-cell--terrain'+(encounterKnown&&cell?.status?' km-cell--'+cell.status:''))+
     (owned?' km-cell--annexed':'')+(within?' km-cell--adjacent':'')+
     (selected===id?' km-cell--selected':'')+(here?' km-cell--here':'')+
     (movement?.phase==='reveal'&&selected===id?' km-cell--opening':'')+
@@ -707,7 +764,7 @@ function render(){
     let tileUrl=tileUrls.get(tile);if(!tileUrl){tileUrl=new URL(tile,document.baseURI).href;tileUrls.set(tile,tileUrl);}
     btn.style.backgroundImage='url("'+tileUrl+'")';
    }
-   btn.setAttribute('aria-label',isCastle?tr('castle'):visible&&cell?.selectedEncounter?
+   btn.setAttribute('aria-label',isCastle?tr('castle'):encounterKnown&&cell?.selectedEncounter?
     t('travel.type.'+cell.selectedEncounter.type):cell?.type==='empty'?terrainName(cell.biome||worldAt(map.seed,point.x,point.y).biome):tr('hidden'));
    // Only a visibly cleared fog center exposes a stored encounter, without walking
    // onto it. Enemy province borders alone never reveal its interior events.
@@ -717,7 +774,7 @@ function render(){
     const level=document.createElement('small');level.className='km-level';level.textContent=['','I','II','III','IV','V'][castleLevel(map.peakKingPower)];btn.append(level);}
    else if(visible&&cell){
     const choice=cell.selectedEncounter;
-    if(choice){
+    if(choice&&encounterKnown){
      // The encounter SVG is the site itself. Its defending chess piece is a
      // separate foreground element (just as our king moves over map assets).
      const siteArt=kingdomMapSprite(choice.type,choice.raceTag||choice.enemyRaceTag,
@@ -734,6 +791,11 @@ function render(){
       }
      }
      const lvl=document.createElement('small');lvl.className='km-level';lvl.textContent=romanForStars(choice.stars);btn.append(lvl);
+     // Scouted but unvisited events carry a small corner question mark.
+     if(cell.explored!==true){
+      const unknown=document.createElement('span');unknown.className='km-scout-question';
+      unknown.textContent='?';unknown.setAttribute('aria-hidden','true');btn.append(unknown);
+     }
     }
     if(cell.status==='failed'){const flag=document.createElement('span');flag.className='km-failure';flag.textContent='!';btn.append(flag);}
    }
@@ -883,7 +945,9 @@ function render(){
  world.append(kingHandle);
  const chosen=selected?map.cells[selected]:null;
  const current=map.cells[keyOf(map.king.x,map.king.y)];
- const knownChosen=chosen&&(isOwned(map,selected)||visibleThroughFog(map,parsePoint(selected)))?chosen:null;
+ const knownChosen=chosen&&
+  !(chosen.selectedEncounter?.type==='skirmish'&&chosen.explored!==true)&&
+  (isOwned(map,selected)||visibleThroughFog(map,parsePoint(selected)))?chosen:null;
  const info=knownChosen||(!chosen?current:null);
  const castleSelected=(selected||keyOf(map.king.x,map.king.y))===keyOf(map.castle.x,map.castle.y);
  const selectedId=selected||keyOf(map.king.x,map.king.y);
@@ -1121,7 +1185,8 @@ function constructSettlement(){
 function hireCastleUnit(pieceType){
  const run=readRun(),map=run?.kingdomMap;
  if(!run||run.ended||!map||!PIECE_TYPES.includes(pieceType)||map.pendingCell||
-    selected!==keyOf(map.castle.x,map.castle.y))return;
+    selected!==keyOf(map.castle.x,map.castle.y)||
+    map.king.x!==map.castle.x||map.king.y!==map.castle.y)return;
  const id='castle:'+run.id+':'+pieceType+':'+Date.now()+':'+Math.random().toString(36).slice(2);
  const result=buyCastleRecruit(run,{raceTag:map.castle.raceTag,pieceType,receiptId:id});
  if(!result.ok){report(lang()==='en'?'Not enough gold':'Недостаточно золота');return;}
@@ -1169,6 +1234,9 @@ function moveKingOneStep(point){
  const payment=isOwned(map,point)?{run,paid:0,requested:0}:
   applyTravelSupplyCost(run,TRAVEL_SUPPLY_COST);
  const nextMap=revealAround(entered.map,run,readPlayerRating().power);
+ const entryType=nextMap.cells[id]?.selectedEncounter?.type;
+ if(entered.kind!=='walk'&&['battle','caravan'].includes(entryType))
+  nextMap.cells[id]={...nextMap.cells[id],mercenaryEntryRollback:captureMercenaryEntry(run,point)};
  const from={...map.king},to={...nextMap.king};
  const reduced=document.documentElement.dataset.reducedMotion==='1';
  const discovering=entered.kind==='discover';
@@ -1207,6 +1275,16 @@ function moveKingOneStep(point){
   flightTimer=setTimeout(moveKing,reduced?80:REVEAL_MS);
  }else moveKing();
  if(entered.kind!=='walk')schedulePending(readRun());
+}
+function rejectMercenaryEntry(){
+ const current=readRun(),reverted=rollbackMercenaryEntry(current);
+ if(!reverted.ok)return false;
+ clearTimeout(launchTimer);clearTimeout(flightTimer);routeQueue=[];
+ movement=null;flavorBurst=null;
+ writeRun(reverted.run);
+ globalThis.RPChessResources?.render?.();
+ openMap({detail:{source:'mercenary-refused'}});
+ return true;
 }
 function onCell(event){
  const target=event.target.closest('[data-kingdom-cell]');
@@ -1298,5 +1376,5 @@ addEventListener('rpchess:arena-updated',refreshEconomyControls);
 addEventListener('rpchess:run-updated',refreshEconomyControls);
 addEventListener('rpchess:scene-changed',e=>{if(e.detail?.scene==='menu'||e.detail?.scene==='roster')hideMap();});
 subscribe(()=>{if(screen&&!screen.hidden)render();});
-globalThis.RPChessKingdomMap=Object.freeze({open:openMap,hide:hideMap,get map(){return readRun()?.kingdomMap||null;},get zoom(){return zoomPx;}});
+globalThis.RPChessKingdomMap=Object.freeze({open:openMap,hide:hideMap,rejectMercenaryEntry,get map(){return readRun()?.kingdomMap||null;},get zoom(){return zoomPx;}});
 export {openMap};

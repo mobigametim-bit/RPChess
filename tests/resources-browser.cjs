@@ -1,3 +1,4 @@
+const {acceptMercenariesBeforeArtifact}=require('./browser-test-helpers.cjs');
 const assert = require('assert');
 const { chromium } = require('playwright');
 const { startNewRun } = require('./browser-test-helpers.cjs');
@@ -40,7 +41,8 @@ async function fresh(page) {
     for (const label of await page.locator('.travel-choice-card__cost').evaluateAll((nodes) => nodes.map((node) => node.getAttribute('aria-label') || ''))) assert(label.includes('Стоимость пути: 1 припас.'));
     assert.strictEqual(await page.locator('[data-resource-hud]').isVisible(), false, 'fixed HUD must stay visually removed on compact Travel');
     await page.locator('[data-travel-type="skirmish"]').first().click();
-    await page.locator('[data-artifact-choice-modal]').waitFor();
+    await acceptMercenariesBeforeArtifact(page);
+  await page.locator('[data-artifact-choice-modal]').waitFor();
     let run = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), RUN_KEY);
     assert.strictEqual(run.supplies, 29);
     const stars = run.activeTravelChoice.stars;

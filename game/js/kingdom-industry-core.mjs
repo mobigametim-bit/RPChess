@@ -45,7 +45,8 @@ function nearVisibleRiver(seed,x,y,worldGeneratorVersion=6){
  }
  // Place new fishing piers on banks, not on water through the cell centre.
  const dist=closestRiver(seed,cx,cy).distance;
- return dist>=.55&&dist<=1.35;
+ // A fishing pier can stand in the river tile as well as beside the bank.
+ return naturalTileOccupancy(seed,x,y).river||(dist>=.55&&dist<=1.35);
 }
 
 const integer=n=>Number.isSafeInteger(n)&&n>=0;
@@ -130,14 +131,21 @@ function candidateCells(map,industry=map?.industry){
   const [x,y]=id.split(',').map(Number);
   if(!Number.isSafeInteger(x)||!Number.isSafeInteger(y))continue;
   const terrain=worldAt(map.seed,x,y,{worldGeneratorVersion:map.worldGeneratorVersion||5});
+  // Rivers are valid specifically for fishing piers. Roads (natural or
+  // built), landmarks and occupied sites are still off-limits to industry.
+  const natural=naturalTileOccupancy(map.seed,x,y);
+  const pierOnRiver=natural.river&&!natural.road&&!builtRoadCrossesTile(map,x,y);
   if(!TYPES_BY_BIOME[terrain.biome]?.length||terrain.type||
-     terrain.paths?.road||terrain.landmark||siteHasGeographyConflict(map,x,y))continue;
+     terrain.paths?.road||terrain.landmark||
+     (siteHasGeographyConflict(map,x,y)&&!pierOnRiver))continue;
   // A wet cell with no drawn water is forest in the player's view.
   // Give it normal forest buildings instead of losing its weekly site.
   const riverbank=nearVisibleRiver(map.seed,x,y,map.worldGeneratorVersion||5);
   if(terrain.biome==='marsh'&&!riverbank&&(map.worldGeneratorVersion||5)>=6)continue;
   const industryBiome=terrain.biome==='marsh'&&!riverbank?'forest':terrain.biome;
-  available.push({id,biome:industryBiome});
+  // Select only the pier on a river: never grant river construction to
+  // the other marsh/forest/land production types.
+  available.push({id,biome:pierOnRiver?'marsh':industryBiome,pierOnly:pierOnRiver});
  }
  return available.sort((a,b)=>a.id.localeCompare(b.id,'en'));
 }
@@ -146,7 +154,8 @@ function selectConstruction(map,industry,week){
  if(!options.length)return null;
  const id=options[hashString(map.seed+':industry:cell:'+week)%options.length];
  const types=TYPES_BY_BIOME[id.biome].filter(type=>
-  type!=='fishing_pier'||nearVisibleRiver(map.seed,...id.id.split(',').map(Number),map.worldGeneratorVersion||5));
+  (id.pierOnly?type==='fishing_pier':true)&&
+  (type!=='fishing_pier'||nearVisibleRiver(map.seed,...id.id.split(',').map(Number),map.worldGeneratorVersion||5)));
  if(!types.length)return null;
  const kind=types[hashString(map.seed+':industry:type:'+week+':'+id.id)%types.length];
  return {id:id.id,kind,builtWeek:week};

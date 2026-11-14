@@ -23,8 +23,8 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   assert(overlaySource.includes('ctx.globalAlpha*=VISUAL.roadOpacity'),
     'Royal-road paving opacity must match naturally generated roads');
   assert(overlaySource.includes("clipRoadSurface(inside)")&&
-     overlaySource.includes("for(const [inside,tone] of [[false,'gray'],[true,'sandstone']]"),
-    'paved roads switch from yellow to gray exactly at owned-cell boundaries');
+     overlaySource.includes("for(const [inside,tone] of [[false,'gravel'],[true,'sandstone']]"),
+    'paved roads switch from sandstone to gravel exactly at owned-cell boundaries');
   assert(overlaySource.includes('visibleTravelRoads(map)'),
     'historic roads remain an independent visible layer');
   const rendererSource=fs.readFileSync(path.join(game,'js/kingdom-traveler-renderer.mjs'),'utf8');
@@ -264,6 +264,38 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
    [outsideId]:{status:'completed',explored:true,annexed:false,type:'empty'}}};
   assert(walkers.visibleTraveler(visibleOutside,courier,destination),
     'the courier is visible on previously scouted foreign land');
+
+  // New encounter rules stay pure: an unprotected King never enters a
+  // pretend chess Skirmish; a refused mercenary deal rewinds the full step.
+  const bandits=await import(pathToFileURL(path.join(game,'js/kingdom-bandit-core.mjs')).href);
+  const entryRollback=await import(pathToFileURL(path.join(game,'js/kingdom-entry-rollback.mjs')).href);
+  const soloBase=persistence.createRun({id:'kingdom-bandit-regression',now:1700000000000});
+  const soloMap=mapCore.createKingdomMap(soloBase,400);
+  const ambushPoint={x:1,y:0},ambushId='1,0';
+  const armedCell={status:'revealed',explored:true,selectedEncounter:{type:'skirmish',id:'bandit-hit',step:1}};
+  const solo={...soloBase,army:[],roster:soloBase.roster.filter(x=>x.isRunKing),gold:50,supplies:60,
+    kingdomMap:{...soloMap,pendingCell:ambushId,king:{...ambushPoint},cells:{...soloMap.cells,[ambushId]:armedCell}}};
+  assert(bandits.isUnprotectedBanditAmbush(solo),'a solo King receives a robber ambush');
+  const robbed=bandits.resolveUnprotectedBanditAmbush(solo);
+  assert(robbed.ok&&robbed.kind==='robbed'&&robbed.run.gold===10&&robbed.run.supplies===10&&
+    robbed.run.kingdomMap.pendingCell===null&&!robbed.run.ended,
+    'bandits leave exactly ten Gold and ten Supplies');
+  assert(!bandits.resolveUnprotectedBanditAmbush(robbed.run).ok,'robbery is single-use');
+  const killed=bandits.resolveUnprotectedBanditAmbush({...solo,gold:9,supplies:60});
+  assert(killed.kind==='murdered'&&killed.run.ended&&killed.run.endReason==='bandit_murder'&&
+    killed.run.roster.find(x=>x.isRunKing).status==='dead',
+    'below-ten resources end the run with the canonical bandit death reason');
+  const freshEntry={...soloBase,kingdomMap:soloMap,supplies:33};
+  const snapshot=entryRollback.captureMercenaryEntry(freshEntry,ambushPoint);
+  const pending={...freshEntry,supplies:30,kingdomMap:{...soloMap,king:{...ambushPoint},
+    day:soloMap.day+1,pendingCell:ambushId,cells:{...soloMap.cells,
+      [ambushId]:{status:'revealed',selectedEncounter:{type:'battle',id:'mercenary-refusal'},
+        mercenaryEntryRollback:snapshot}}}};
+  const reverted=entryRollback.rollbackMercenaryEntry(pending);
+  assert(reverted.ok&&reverted.run.supplies===33&&reverted.run.kingdomMap.day===soloMap.day&&
+    reverted.run.kingdomMap.pendingCell===null&&
+    reverted.run.kingdomMap.king.x===soloMap.king.x&&!reverted.run.kingdomMap.cells[ambushId],
+    'declining Battle/Caravan mercenaries restores the exact movement snapshot');
 
   const mapRun=persistence.createRun({id:'kingdom-map-contract',now:1700000000000});
   for(const type of ['battle','skirmish']){

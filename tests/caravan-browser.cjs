@@ -1,3 +1,4 @@
+const {acceptMercenariesBeforeArtifact}=require('./browser-test-helpers.cjs');
 const assert = require('assert');
 const { chromium } = require('playwright');
 const { startNewRun } = require('./browser-test-helpers.cjs');
@@ -34,6 +35,7 @@ async function openCaravan(page) {
   const card = page.locator('[data-travel-type="caravan"]').first();
   assert((await card.innerText()).includes('???'), 'route must conceal its reward');
   await card.click();
+  await acceptMercenariesBeforeArtifact(page);
   await page.locator('[data-artifact-choice-modal]').waitFor();
   assert.strictEqual(await page.locator('[data-battle-screen]').isHidden(),true,'Caravan preparation is skipped');
   const run = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), RUN_KEY);
@@ -58,7 +60,8 @@ async function openCaravan(page) {
     assert.equal(restored.supplies, before.supplies, 'reload must not charge Supplies twice');
 
     assert.deepStrictEqual(restored.currentCaravan.selectedIds,before.currentCaravan.selectedIds,'reload must preserve the automatic team');
-    await page.locator('[data-artifact-choice-modal]').waitFor();
+    await acceptMercenariesBeforeArtifact(page);
+  await page.locator('[data-artifact-choice-modal]').waitFor();
     await page.locator('[data-artifact-choice="none"]').click();
     await page.locator('[data-classic-screen]:not([hidden])').waitFor();
     assert.equal(await page.locator('[data-classic-screen] .classic-party-panel h2').innerText(), 'Защита каравана');

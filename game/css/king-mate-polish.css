@@ -1,0 +1,30 @@
+/* Shared checkmate ceremony for Classic, Battle, Skirmish, Caravan, Arena and Tournament.
+ * Same red aura asset and 90° loser fall as Mentor; never used by Puzzle screens. */
+.classic-board:not(.puzzle-board) .classic-square.rpchess-king-defeated::after,
+.classic-board:not(.puzzle-board) .classic-square.rpchess-king-victorious::after{
+ content:'';position:absolute;inset:0;
+ background:url('../assets/vfx/aura_red.png') center/100% 100% no-repeat!important;
+ opacity:.8!important;z-index:1;pointer-events:none;
+ animation:rpchess-mate-royal-aura 1.25s ease-in-out infinite alternate
+}
+.classic-board:not(.puzzle-board) .classic-square.rpchess-king-defeated::after{filter:none}
+.classic-board:not(.puzzle-board) .classic-square.rpchess-king-victorious::after{filter:hue-rotate(125deg) saturate(1.5)}
+.classic-board:not(.puzzle-board) .classic-square.rpchess-king-defeated .classic-piece,
+.classic-board:not(.puzzle-board) .classic-square.rpchess-king-defeated .rpchess-fantasy-piece,
+.classic-board:not(.puzzle-board) .classic-square.rpchess-king-defeated .rpchess-piece-symbol,
+.classic-board:not(.puzzle-board) .classic-square.rpchess-king-defeated .classic-piece-marker{
+ transform-origin:50% 50%;
+ animation:rpchess-mate-king-fall .55s cubic-bezier(.2,.6,.2,1) both
+}
+@keyframes rpchess-mate-king-fall{0%{transform:rotate(0deg)}100%{transform:rotate(90deg)}}
+@keyframes rpchess-mate-royal-aura{from{opacity:.62}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){
+ .classic-board:not(.puzzle-board) .classic-square.rpchess-king-defeated .classic-piece,
+ .classic-board:not(.puzzle-board) .classic-square.rpchess-king-defeated .rpchess-fantasy-piece,
+ .classic-board:not(.puzzle-board) .classic-square.rpchess-king-defeated .rpchess-piece-symbol,
+ .classic-board:not(.puzzle-board) .classic-square.rpchess-king-defeated .classic-piece-marker{
+  animation:none;transform:rotate(90deg)!important
+ }
+ .classic-board:not(.puzzle-board) .classic-square.rpchess-king-defeated::after,
+ .classic-board:not(.puzzle-board) .classic-square.rpchess-king-victorious::after{animation:none;opacity:1!important}
+}

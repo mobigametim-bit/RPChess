@@ -1,7 +1,8 @@
-name = "rpchess-kingdom-polish-preview"
-compatibility_date = "2026-11-11"
+name = "rpchess-polish-ten-preview"
+compatibility_date = "2026-11-14"
 
-# Independent QA build. Never touches the public GitHub Pages deployment.
+# Explicitly isolated QA worker for Draft PR #205.
+# No deployment to GitHub Pages, VK Mini Apps or production API backends.
 [assets]
 directory = "../dist"
 not_found_handling = "single-page-application"

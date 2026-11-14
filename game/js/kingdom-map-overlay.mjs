@@ -4,8 +4,9 @@ import {PARCHMENT_TILE} from './kingdom-parchment-core.mjs';
 import {hashString} from './race-assets.mjs';
 import {BATTLE_PROVINCE_HUES} from './kingdom-map-core.mjs?v=20261112-province-colors-v1';
 import {visibleRoyalRoads,visibleTravelRoads,ownedKeys} from './kingdom-road-network.mjs?v=20261111-polish-v1';
-import {drawSandstoneRoad} from './kingdom-road-paving.mjs?v=20261110-graystone-v3';
+import {drawSandstoneRoad,drawRoadJunction} from './kingdom-road-paving.mjs?v=20261114-corridor-joints-v2';
 import {VISUAL} from './kingdom-world-config.mjs?v=20261113-opaque-terrain-v1';
+import {visibleThroughFog} from './kingdom-fog-visibility.mjs';
 
 const TILE=PARCHMENT_TILE;
 const SIDES=Object.freeze([
@@ -23,7 +24,10 @@ function parseTile(id){
 // Scouting a Battle reveals its political boundary, not hidden event icons.
 // Each Battle's persisted set is painted separately: no merged red union.
 function visibleBattleProvinces(map){
- return (map.battleTerritories||[]).filter(p=>map.cells?.[p.id]?.explored===true);
+ return (map.battleTerritories||[]).filter(p=>{
+  const point=parseTile(p.id);
+  return point&&visibleThroughFog(map,point);
+ });
 }
 function politicalClipKeys(map){
  return new Set([...(map.battleConqueredCells||[]),
@@ -129,7 +133,7 @@ function drawKingdomRoads(ctx,{map,view,columns,rows,paint=true}){
  const left=view.x-Math.floor(columns/2),top=view.y-Math.floor(rows/2);
  const width=columns*TILE,height=rows*TILE;
  let roadCount=0;
- const painted=new Set();
+ const painted=new Set(),junctions=new Map();
  const royalRoads=visibleRoyalRoads(map);
  const travelRoads=visibleTravelRoads(map);
  // The owner boundary is evaluated per map tile, not per road ID.
@@ -160,11 +164,20 @@ function drawKingdomRoads(ctx,{map,view,columns,rows,paint=true}){
   const dx=x2-x1,dy=y2-y1,length=Math.hypot(dx,dy);
   if(length<1)continue;
   const offset=road.bend*TILE;
-  // Paint the SAME 16px brick path with two disjoint territory masks:
-  // vivid yellow on owned tiles, gray outside. A border crossing changes
+  const nx=-dy/length,ny=dx/length;
+  for(const [id,point,arm] of [
+   [road.from,a,[dx*.32+nx*offset,dy*.32+ny*offset]],
+   [road.to,b,[-dx*.32-nx*offset*.45,-dy*.32-ny*offset*.45]]
+  ]){
+   const junction=junctions.get(id)||{point,arms:[]};
+   junction.arms.push(arm);
+   junctions.set(id,junction);
+  }
+  // Paint a shared-gravel or sandstone path with disjoint territory masks:
+  // pale sandstone inside, naturally textured gravel outside. A border crossing changes
   // tone exactly at the tile boundary without changing route geometry.
   if(!paint){roadCount++;continue;}
-  for(const [inside,tone] of [[false,'gray'],[true,'sandstone']]){
+  for(const [inside,tone] of [[false,'gravel'],[true,'sandstone']]){
    ctx.save();ctx.globalAlpha*=VISUAL.roadOpacity;
    clipRoadSurface(inside);
    drawSandstoneRoad(ctx,{x1,y1,x2,y2,bend:offset,id:road.id||identity,tone});
@@ -172,7 +185,16 @@ function drawKingdomRoads(ctx,{map,view,columns,rows,paint=true}){
   }
   roadCount++;
  }
-
+ // Blend only intersecting road strips; never draw circle-shaped joint caps.
+ if(paint)for(const [id,{point,arms}] of junctions){
+  if(arms.length<2)continue;
+  const x=(point.x-left+.5)*TILE,y=(point.y-top+.5)*TILE;
+  if(x<-TILE||y<-TILE||x>width+TILE||y>height+TILE)continue;
+  for(const [inside,tone] of [[false,'gravel'],[true,'sandstone']]){
+   ctx.save();clipRoadSurface(inside);
+   drawRoadJunction(ctx,{x,y,tone,id,arms});ctx.restore();
+  }
+ }
  return roadCount;
 }
 

@@ -44,8 +44,18 @@ async function dragKing(page,id){
    };
  },{x:handle.x+handle.width/2,y:handle.y+handle.height/2});
  await page.mouse.down();
- assert.equal(await page.locator('.km-king-drag-aura.is-active').count(),1,
-  'the green reusable check aura follows the king during drag');
+ const dragAuraCount=await page.locator('.km-king-drag-aura.is-active').count();
+ if(dragAuraCount!==1){
+  const diag=await page.evaluate(()=>({
+   hit:window.__kingStartHit,events:window.__kingDragEvents,
+   kingHandle:document.querySelector('[data-kingdom-king-handle]')?.outerHTML.slice(0,500),
+   mapMode:document.querySelector('[data-kingdom-world]')?.dataset.kingdomMotion,
+   auraCount:document.querySelectorAll('.km-king-drag-aura').length,
+   dialogs:[...document.querySelectorAll('[role="dialog"]')].filter(n=>!n.hidden).map(n=>n.outerHTML.slice(0,500)),
+   scroll:window.scrollY,viewport:[innerWidth,innerHeight]
+  }));
+  assert.equal(dragAuraCount,1,'the green reusable check aura follows the king during drag '+JSON.stringify(diag));
+ }
  await page.mouse.move(tile.x+tile.width/2,tile.y+tile.height/2,{steps:9});
  await page.mouse.up();
 }
@@ -548,13 +558,15 @@ async function assertTileImage(page,cellId){
       return [id,isOwned(map,point)||visibleThroughFog(map,point)];
     }));
   },before.kingdomMap);
-  for(const [id] of scoutedEvents){
+  for(const [id,cell] of scoutedEvents){
     if(!await page.locator('[data-kingdom-cell="'+id+'"]').count())continue;
     // A stored route is not itself visible. Its center must be cleared by
     // the same fog mask used to paint the parchment, or sovereign land.
     const site=page.locator('[data-kingdom-cell="'+id+'"] img.km-object--site');
-    assert.equal(await site.count(),fogVisibility[id]?1:0,
-      'site visibility must follow fog center rather than physical entry: '+id);
+    // Skirmishes stay hidden bandit ambushes until the King arrives.
+    const known=fogVisibility[id]&&(cell.selectedEncounter.type!=='skirmish'||cell.explored===true);
+    assert.equal(await site.count(),known?1:0,
+      'site visibility must follow fog for events and conceal unvisited Skirmishes: '+id);
     if(!fogVisibility[id])
       assert.equal(await page.locator('[data-kingdom-cell="'+id+'"] .km-object--defender').count(),0,
         'concealed defender never leaks from a pre-generated route: '+id);
@@ -786,8 +798,10 @@ async function assertTileImage(page,cellId){
   assert.equal(await page.locator('[data-kingdom-glory]').textContent(),'0',
     'current Glory uses the Chronicle formula, not an invented currency');
   assert.equal(await page.locator('[data-kingdom-day]').textContent(),'День 1',
-    'the left header contains only the new Day counter');
-  assert.equal(await page.locator('.km-heading').innerText(),'День 1');
+    'the lower line preserves the exact Day counter');
+  assert.equal(await page.locator('[data-kingdom-player-name]').textContent(),'Kingdom Explorer');
+  assert.equal(await page.locator('.km-heading').innerText(),'Kingdom Explorer\nДень 1',
+    'Kingdom HUD stacks the player name above the current day');
   assert.equal(await page.locator('[data-kingdom-shards]').textContent(),'37',
     'Honor shards reflect the persistent Arena ledger, not current run data');
   assert.equal(await page.locator('[data-kingdom-points]').textContent(),'6',
@@ -1000,8 +1014,11 @@ async function assertTileImage(page,cellId){
   assert.equal(started.activeTravelChoice.id,encounter.id);
   assert.equal(started.supplies,moved.supplies,'the encounter cannot bill an already paid step twice');
   assert.equal(started.kingdomMap.cells['1,0'].selectedEncounter.id,encounter.id);
-  assert.equal(await page.locator('[data-kingdom-map-screen]:not([hidden])').count(),0,
-   'the player is routed into an existing encounter owner');
+  await page.locator('[data-mercenary-hire-overlay]:not([hidden])').waitFor({state:'visible',timeout:15000});
+  assert.equal(await page.locator('[data-kingdom-map-screen]:not([hidden])').count(),1,
+   'Kingdom Journey must remain visible behind mercenary consent');
+  assert.equal(await page.locator('[data-kingdom-map-screen] > [data-mercenary-hire-overlay]:not([hidden])').count(),1,
+   'hire dialog must be mounted over the Kingdom Journey, not a blank body');
   assert.deepEqual(errors,[],'map bootstrap/transition must not emit JavaScript errors');
   // A saved return from a failed fight must rewind the king and preserve the
   // original encounter. Emulate the existing owner result without replacing it.
@@ -1905,7 +1922,8 @@ async function assertTileImage(page,cellId){
   assert(redStats.red>=2&&redStats.red<=13,'Battle province must have ELO/200 cells');
   assert(redStats.colors.every(Number.isInteger)&&new Set(redStats.colors).size===2,
     'neighboring Battles must render with distinct persistent colors');
-  assert.equal(redStats.provinces,'2','both colored enemy borders render separately');
+  assert(Number(redStats.provinces)>=2,
+    'both tested colored Battle provinces must be visible; seeded world may reveal additional provinces');
   assert.equal(redStats.counter,String(redStats.owned),
     'territory HUD counts the actual unique owned area, excluding enemy provinces');
   assert.deepEqual(redStats.blueOverlap,[],'blue and red provinces must not overlap');

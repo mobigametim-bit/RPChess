@@ -687,3 +687,94 @@ body.arena-active .resource-hud{display:none!important}
   width:21px;height:21px
  }
 }
+
+/* Solo-King bandit encounter follows the same dark-gold tutorial language. */
+.kingdom-map-screen .km-bandit-overlay{
+ position:fixed;inset:0;z-index:120;display:grid;place-items:center;
+ padding:15px;background:rgba(2,5,9,.78);backdrop-filter:blur(2px)
+}
+.kingdom-map-screen .km-bandit-card{
+ width:min(730px,calc(100vw - 28px));min-height:220px;
+ display:flex;flex-direction:column;gap:18px;
+ padding:clamp(16px,2.4vw,28px);border:1px solid rgba(224,181,85,.75);
+ border-radius:22px;background:linear-gradient(145deg,rgba(34,27,20,.985),rgba(8,11,15,.99) 61%);
+ box-shadow:0 22px 72px #000b,inset 0 1px #f0cc801f
+}
+.kingdom-map-screen .km-bandit-card h2{
+ margin:0;color:#f7e9c9;font:700 clamp(20px,2.3vw,29px)/1.25 'GoznakUI',Georgia,serif
+}
+.kingdom-map-screen .km-bandit-tip{
+ display:flex;align-items:flex-start;gap:13px;padding:14px;
+ border:1px solid rgba(222,187,92,.26);border-radius:12px;
+ background:rgba(239,201,125,.07);color:#ded3be;
+ font:500 clamp(14px,1.5vw,18px)/1.45 'GoznakUI',Georgia,serif
+}
+.kingdom-map-screen .km-bandit-tip-dot{
+ width:9px;height:9px;flex:none;margin-top:7px;border-radius:50%;
+ background:#d8b15d;box-shadow:0 0 0 5px rgba(216,177,93,.13)
+}
+.kingdom-map-screen .km-bandit-card button{
+ align-self:flex-end;min-width:140px;width:auto;min-height:44px;
+ background:linear-gradient(#4a3b26,#151719);border:1px solid #d8b15d;
+ color:#fff4c9;padding:8px 19px
+}
+/* Scouted event marker: top-right without overlapping a route sprite. */
+.kingdom-map-screen .km-scout-question{
+ position:absolute;right:8px;top:4px;z-index:8;
+ display:grid;place-items:center;width:24px;height:26px;line-height:1;
+ border:1px solid rgba(230,188,92,.77);border-radius:6px;
+ background:rgba(8,12,16,.92);color:#ffe0a3;
+ font:800 21px/1 'GoznakUI',Georgia,serif;
+ text-shadow:0 1px 3px #000;pointer-events:none;
+ box-shadow:0 2px 6px #0008
+}
+@media(max-width:790px){.kingdom-map-screen .km-scout-question{width:21px;height:23px;font-size:18px;right:5px;top:3px}}
+/* Approved 10-part polish: name over calendar and narrow square recruit tiles. */
+.kingdom-map-screen .km-heading{gap:1px}
+.kingdom-map-screen .km-heading-lines{display:flex;flex-direction:column;justify-content:center;gap:2px;width:100%;min-width:0}
+.kingdom-map-screen .km-player-name{
+ display:block;width:100%;min-width:0;overflow:hidden;white-space:nowrap;
+ font:400 clamp(17px,2vw,28px)/1.05 'GoznakUI',Georgia,serif;color:#f5e7bd;
+ text-shadow:0 3px 12px #000a;
+}
+.kingdom-map-screen .km-heading-lines h1{
+ display:block;margin:0;width:100%;min-width:0;overflow:hidden;
+ font:400 clamp(17px,2vw,29px)/1.05 'GoznakUI',Georgia,serif
+}
+.kingdom-map-screen .km-castle-recruits{
+ grid-template-columns:repeat(5,minmax(0,1fr));column-gap:5px;row-gap:5px
+}
+.kingdom-map-screen .km-castle-recruit:last-child:nth-child(even){
+ grid-column:auto;width:auto;justify-self:stretch
+}
+.kingdom-map-screen .km-castle-recruit button{
+ position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;
+ grid-template-rows:minmax(0,1fr) 17px;gap:0 2px;
+ width:100%;aspect-ratio:1/1;min-width:0;min-height:0;padding:3px 3px 4px;
+ border-radius:4px;
+}
+.kingdom-map-screen .km-castle-recruit__piece{
+ width:min(100%,36px);height:100%;max-height:38px;grid-column:1/-1;grid-row:1;
+ justify-self:center;align-self:center
+}
+.kingdom-map-screen .km-castle-recruit__count{
+ position:absolute;top:2px;right:2px;z-index:1;font-size:10px;line-height:1;
+ padding:1px 2px;border-radius:3px;background:#101318b3
+}
+.kingdom-map-screen .km-castle-recruit button strong{
+ grid-column:1;grid-row:2;align-self:center;justify-self:end;font-size:12px
+}
+.kingdom-map-screen .km-castle-recruit__gold{
+ grid-column:2;grid-row:2;align-self:center;justify-self:start;
+ width:15px;height:15px
+}
+@media(max-width:790px){
+ .kingdom-map-screen .km-castle-recruits{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .kingdom-map-screen .km-castle-recruit button{min-height:0;grid-template-columns:minmax(0,1fr) auto}
+ .kingdom-map-screen .km-castle-recruit__piece{width:min(100%,32px);height:100%;max-height:34px}
+ .kingdom-map-screen .km-castle-recruit__count{font-size:10px}
+ .kingdom-map-screen .km-castle-recruit button strong{font-size:11px}
+ .kingdom-map-screen .km-castle-recruit__gold{width:14px;height:14px}
+ .kingdom-map-screen .km-player-name{font-size:17px}
+ .kingdom-map-screen .km-heading-lines h1{font-size:18px}
+}

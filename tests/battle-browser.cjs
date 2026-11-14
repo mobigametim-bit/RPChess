@@ -1,3 +1,4 @@
+const {acceptMercenariesBeforeArtifact}=require('./browser-test-helpers.cjs');
 const assert = require('assert');
 const { chromium } = require('playwright');
 const { startNewRun } = require('./browser-test-helpers.cjs');
@@ -57,6 +58,7 @@ async function enter(page) {
   const card = page.locator('[data-travel-type="battle"]').first();
   assert.strictEqual(await card.count(), 1);
   await card.click();
+  await acceptMercenariesBeforeArtifact(page);
   await page.locator('[data-artifact-choice-modal]').waitFor();
   assert.strictEqual(await page.locator('[data-battle-screen]').isHidden(),true,'Battle preparation is skipped');
 }
@@ -152,7 +154,8 @@ async function assertResponsiveStars(page, selector, cardSelector) {
       generic: document.querySelector(`[data-square="${genericSquare}"] .classic-piece`)?.getAttribute('src') || '',
       enemy: document.querySelector(`[data-square="${enemySquare}"] .classic-piece`)?.getAttribute('src') || ''
     }), { genericSquare: generic.square, enemySquare: enemyQueen.square });
-    assert(art.generic.includes('assets/races/humans/pieces/board/white/'));
+    assert(art.generic.includes('assets/races/orcs/pieces/board/white/'),
+      'temporary hired pieces must use Orc race sprites, not generic human pieces');
     assert(art.enemy.includes('assets/races/orcs/pieces/board/black/queen.png'));
     // The Power badge must display the player's selected King, not a blank
     // rectangle or a hardcoded Oathkeeper in an Ash Regent run.
@@ -230,7 +233,8 @@ async function assertResponsiveStars(page, selector, cardSelector) {
       mode: document.querySelector('[data-game-mode]')?.textContent || '',
       firstSquare: document.querySelector('[data-chess-board] [data-square]')?.dataset.square || ''
     }), { genericSquare: blackGeneric.square, enemySquare: darkEnemy.square });
-    assert(blackArt.generic.includes('assets/races/humans/pieces/board/black/'));
+    assert(blackArt.generic.includes(`assets/races/orcs/pieces/board/black/${blackGeneric.pieceType}.png`),
+      'Black-side hired pieces must use their Orc race sprite, not the old human fallback');
     assert(blackArt.enemy.includes('assets/races/dark_elves/pieces/board/white/rook.png'),
       'Black-side encounter must show the enemy white-color race board rook');
     assert.strictEqual(blackArt.firstSquare, 'h1', 'Black-side Battle must render the board from Black perspective');
