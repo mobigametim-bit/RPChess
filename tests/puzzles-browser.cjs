@@ -392,8 +392,10 @@ async function clickMove(page,from,to,promotion=null){
     'weekly payout uses the canonical Honor shard icon');
   assert(await shardReward.locator('img').evaluate(img=>img.complete&&img.naturalWidth>0),
     'Honor shard reward icon must load');
-  assert.equal(await weeklyPage.locator('[data-puzzle-outcome-text]').isVisible(),false,
-    'weekly results omit the misleading accuracy-based reward copy');
+  const outcomeCopy=await weeklyPage.locator('[data-puzzle-outcome-text]').innerText();
+  assert(outcomeCopy.includes('Ошибок: 1.')&&
+    !outcomeCopy.includes('Награда рассчитана по точности решения'),
+    'weekly result keeps the mistakes count but removes only the inaccurate accuracy-based payout claim');
   assert.equal(await balance(),initialBalance+1,'successful weekly task adds exactly the full Honor shard payout');
   assert.equal((await weeklyPage.evaluate(key=>JSON.parse(localStorage.getItem(key)),RUN_KEY)).gold,initialGold,
     'weekly payout must never add normal Puzzle gold');
