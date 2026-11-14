@@ -483,8 +483,24 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   assert.strictEqual(mapCore.territoryCapacity(outpost.map),mapCore.territoryCapacity(startMap),
     'remote outpost does not spend or inflate main-castle land capacity');
   const across={...remoteMap,royalRoads:[{id:'crossing',from:(remote.x-1)+','+remote.y,to:(remote.x+1)+','+remote.y,bend:0}]};
-   assert(!mapCore.canBuildOutpost(across,remote),
-     'cannot build on a paved road crossing the tile interior');
+  const industryCore=await import(pathToFileURL(path.join(game,'js/kingdom-industry-core.mjs')).href);
+  assert(industryCore.siteHasGeographyConflict(across,remote.x,remote.y),
+    'the crossing still blocks automated production buildings');
+  assert(mapCore.canBuildOutpost(across,remote),
+    'manually built Outposts may overlap paved roads');
+  const clearedRoute={...across,cells:{...across.cells,[remoteId]:{
+    status:'completed',explored:true,completedOnce:true,
+    selectedEncounter:{id:'finished-road-event',type:'event',stars:2}}}};
+  assert(mapCore.canBuildOutpost(clearedRoute,remote)&&
+    !mapCore.canBuildOutpost({...clearedRoute,cells:{...clearedRoute.cells,
+      [remoteId]:{...clearedRoute.cells[remoteId],completedOnce:false,status:'revealed'}}},remote),
+    'Outposts accept completed visited encounters, never merely discovered ones');
+  const onRoute=mapCore.buildOutpost(clearedRoute,remote,'kingdom:outpost:completed-road');
+  assert(onRoute.ok&&onRoute.map.cells[remoteId].selectedEncounter.id==='finished-road-event',
+    'building on a cleared event must preserve that event and create a real Outpost');
+  assert(!mapCore.canBuildOutpost({...clearedRoute,builtSettlements:[{
+    id:remoteId,transactionId:'occupancy',gold:160,shards:30,ownedAtBuild:false}]},remote),
+    'Outposts must still reject another player building in the selected tile');
    assert(!mapCore.buildOutpost(outpost.map,remote,'kingdom:outpost:fixture').ok,
     'same outpost can never be paid for twice');
   assert.strictEqual(mapCore.migrateKingdomMap(outpost.map),outpost.map,
@@ -905,8 +921,22 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
     if(mapCore.canBuildSettlement(customMap,{x,y})){sitePoint={x,y};siteId=id;}
     else delete customMap.cells[id];
   }
-  assert(sitePoint,'a safe unoccupied foreign tile can host a Settlement');
-  const built=mapCore.buildSettlement(customMap,sitePoint,'settlement-regression',
+  assert(sitePoint,'a visited free foreign tile can host a Settlement');
+  const pavedSettlement={...customMap,royalRoads:[{id:'settlement-road',
+    from:(sitePoint.x-1)+','+sitePoint.y,to:(sitePoint.x+1)+','+sitePoint.y,bend:0}]};
+  assert(industryCore.siteHasGeographyConflict(pavedSettlement,sitePoint.x,sitePoint.y)&&
+    mapCore.canBuildSettlement(pavedSettlement,sitePoint),
+    'natural and paved roads block industry only, not a foreign Settlement');
+  const ownedVacant=startMap.centralOwnedCells.filter(id=>id!=='0,0')
+    .map(id=>{const [x,y]=id.split(',').map(Number);return {x,y,id};})[0];
+  const ownedSettlement={...startMap,cells:{...startMap.cells,[ownedVacant.id]:{
+    status:'completed',type:'empty',explored:true}}};
+  assert(mapCore.canBuildSettlement(ownedSettlement,ownedVacant)&&
+    !mapCore.canBuildSettlement({...ownedSettlement,cells:{...ownedSettlement.cells,
+      [ownedVacant.id]:{status:'completed',explored:true,completedOnce:true,
+        selectedEncounter:{id:'already-existing',type:'event'}}}},ownedVacant),
+    'owned empty land allows Settlements but a completed event cannot be overwritten');
+  const built=mapCore.buildSettlement(pavedSettlement,sitePoint,'settlement-regression',
     {gold:160,shards:30,raceTag:'humans'});
   assert(built.ok&&!mapCore.isOwned(built.map,sitePoint)&&
     !mapCore.canBuildSettlement(built.map,sitePoint),
