@@ -16,6 +16,7 @@ async function seedEvent(page,eventId=null,runId='events-browser'){await page.ev
     Object.defineProperty(window,'SpeechSynthesisUtterance',{configurable:true,
       value:class SpeechSynthesisUtteranceStub{constructor(text){this.text=text;}}});
   });
+  await page.evaluate(()=>globalThis.RPChessEvents.render());
   const readButton=page.locator('[data-events-speech]');
   await readButton.click();
   const said=await page.evaluate(()=>window.__eventSpoken[0]);
