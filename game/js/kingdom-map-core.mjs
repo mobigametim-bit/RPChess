@@ -261,11 +261,17 @@ function acknowledgeReturn(map,id){
  next.cells[id]={...cell,production:null}; // Defender sprite stays visible.
  return {ok:true,map:next};
 }
-function collectProduction(map,id){
+function collectProduction(map,id,{weeklyPuzzleResult=null}={}){
  const cell=map?.cells?.[id],item=cell?.production;
  if(!cell||!item||!['gold','supplies','shards','recruits'].includes(item.kind)||
     !(isOwned(map,id)||(map.builtSettlements||[]).some(p=>p.id===id))||cell.status!=='completed'||
     (map.productionClaims||[]).includes(item.id))return {ok:false,map};
+ // Honor shards from a Puzzle site require a solved/failed weekly attempt.
+ if(item.kind==='shards'&&cell.selectedEncounter?.type==='puzzle'&&
+   (weeklyPuzzleResult?.productionId!==item.id||
+    !['solved','failed'].includes(weeklyPuzzleResult.result)||
+    typeof weeklyPuzzleResult.puzzleId!=='string'||!weeklyPuzzleResult.puzzleId))
+   return {ok:false,map};
  const next=copyMap(map);
  next.cells[id]={...cell,production:null};
  next.productionClaims=[...(map.productionClaims||[]),item.id];
