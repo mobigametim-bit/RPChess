@@ -649,3 +649,17 @@ html body .puzzle-square:has(.puzzle-piece--new-race) .puzzle-piece-marker {
 .puzzle-screen .puzzle-board-wrap .puzzle-promotion button{
  position:relative;z-index:1;pointer-events:auto;
 }
+
+
+/* Weekly Puzzle result: keep the original result slot and button geometry,
+   replacing the lengthy shard name with the game's canonical currency icon. */
+.puzzle-outcome>.puzzle-outcome__gold.is-weekly-shards{
+ display:flex!important;align-items:center!important;gap:.26em!important;
+ min-width:0!important;white-space:nowrap!important;
+}
+.puzzle-outcome>.puzzle-outcome__gold.is-weekly-shards>span{
+ display:inline-block;flex:0 0 auto;
+}
+.puzzle-outcome>.puzzle-outcome__gold.is-weekly-shards>img{
+ display:block;flex:0 0 auto;width:1em;height:1em;object-fit:contain;
+}
