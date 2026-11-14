@@ -106,11 +106,11 @@ function settlePlayerRating({ receiptId, opponentElo, result, gainDivisor = 1, f
   const normalizedOpponent = Math.max(0, Math.round(Number(opponentElo) || 0));
   const normalizedResult = normalizeResult(result) >= 0.75 ? 1 : normalizeResult(result) >= 0.25 ? 0.5 : 0;
   const rawDelta = ratingDelta(before, normalizedOpponent, normalizedResult);
-  // Completed weekly Puzzle sites earn precisely one Power per star, rather
-  // than the ordinary Journey Puzzle's Elo-based (K / 3) win gain.
+  // Completed weekly Puzzle sites award exactly their displayed I–V site
+  // level as Power. Stars remain the separate 1–12 chess difficulty scale.
   if(fixedWinGain!==null&&(!Number.isInteger(fixedWinGain)||
-      fixedWinGain<1||fixedWinGain>12||normalizedResult!==1))
-    throw new Error('Fixed weekly Puzzle Power requires a win and 1..12 stars');
+      fixedWinGain<1||fixedWinGain>5||normalizedResult!==1))
+    throw new Error('Fixed weekly Puzzle Power requires a win and site level I–V');
   const delta = fixedWinGain===null?
     scaledPositiveRatingDelta(rawDelta,gainDivisor):fixedWinGain;
   const after = Math.max(0, before + delta);
