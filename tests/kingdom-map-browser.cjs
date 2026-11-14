@@ -788,8 +788,10 @@ async function assertTileImage(page,cellId){
   assert.equal(await page.locator('[data-kingdom-glory]').textContent(),'0',
     'current Glory uses the Chronicle formula, not an invented currency');
   assert.equal(await page.locator('[data-kingdom-day]').textContent(),'День 1',
-    'the left header contains only the new Day counter');
-  assert.equal(await page.locator('.km-heading').innerText(),'День 1');
+    'the lower line preserves the exact Day counter');
+  assert.equal(await page.locator('[data-kingdom-player-name]').textContent(),'Kingdom Explorer');
+  assert.equal(await page.locator('.km-heading').innerText(),'Kingdom Explorer\nДень 1',
+    'Kingdom HUD stacks the player name above the current day');
   assert.equal(await page.locator('[data-kingdom-shards]').textContent(),'37',
     'Honor shards reflect the persistent Arena ledger, not current run data');
   assert.equal(await page.locator('[data-kingdom-points]').textContent(),'6',
