@@ -1,3 +1,4 @@
+const {acceptMercenariesBeforeArtifact}=require('./browser-test-helpers.cjs');
 const assert = require('assert');
 require('./onboarding-disabled-preload.cjs');
 const { chromium } = require('playwright');
@@ -130,7 +131,8 @@ async function seed(page, type, index = 0, eventId = null) {
       await seed(page,type);
       const api=type==='skirmish'?'RPChessSkirmish':'RPChessBattle';
       const prefix=type==='skirmish'?'skirmish':'battle';
-      await page.locator('[data-artifact-choice-modal]').waitFor();
+      await acceptMercenariesBeforeArtifact(page);
+  await page.locator('[data-artifact-choice-modal]').waitFor();
       assert.strictEqual(await page.locator(`[data-${prefix}-screen]`).isHidden(),true,`${type} must skip preparation`);
       const chosen=await page.evaluate(name=>globalThis[name].selectedIds,api);
       assert(chosen.includes('king.oathkeeper'),`${type} automatic roster selection must keep the King`);

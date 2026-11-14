@@ -1,3 +1,4 @@
+const {acceptMercenariesBeforeArtifact}=require('./browser-test-helpers.cjs');
 const assert=require('assert');
 const {chromium}=require('playwright');
 const {startNewRun}=require('./browser-test-helpers.cjs');
@@ -33,6 +34,7 @@ async function fresh(page,type,playerColor,race){
   await page.locator('[data-roster-travel]').click();
   await page.locator('[data-travel-choice-screen]:not([hidden])').waitFor();
   await page.locator(`[data-travel-type="${type}"]`).first().click();
+  await acceptMercenariesBeforeArtifact(page);
   await page.locator('[data-artifact-choice-modal]').waitFor();
   assert.strictEqual(await page.locator(`[data-${type}-screen]`).isHidden(),true,'combat preparation is skipped');
   await page.waitForTimeout(60);

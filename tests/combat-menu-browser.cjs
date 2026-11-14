@@ -1,3 +1,4 @@
+const {acceptMercenariesBeforeArtifact}=require('./browser-test-helpers.cjs');
 const assert = require('assert');
 const { chromium } = require('playwright');
 const { startNewRun } = require('./browser-test-helpers.cjs');
@@ -36,6 +37,7 @@ async function openEncounter(page, type) {
   await page.locator('[data-continue-run]').click();await page.locator('[data-journey-choice-modal]:not([hidden]) [data-journey-continue]').click();
   await page.locator('[data-roster-travel]').click();
   await page.locator(`[data-travel-type="${type}"]`).first().click();
+  await acceptMercenariesBeforeArtifact(page);
   await page.locator('[data-artifact-choice-modal]').waitFor();
   assert.strictEqual(await page.locator(type==='skirmish'?'[data-skirmish-screen]':'[data-battle-screen]').isHidden(),true);
 

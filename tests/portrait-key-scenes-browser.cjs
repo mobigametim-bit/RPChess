@@ -1,3 +1,4 @@
+const {acceptMercenariesBeforeArtifact}=require('./browser-test-helpers.cjs');
 /* Real Chromium portrait capture of actual RPChess scenes, not generated images.
    Input and navigation use the same runtime and saved-run fixtures as existing QA. */
 const assert=require('node:assert/strict');
@@ -278,7 +279,8 @@ async function capturePhoneOrTablet(browser,width,height){
     await page.locator('[data-roster-travel]').click();
     await page.locator('[data-travel-choice-screen]:not([hidden])').waitFor();
     await page.locator('[data-travel-type="battle"]').first().click();
-    await page.locator('[data-artifact-choice-modal]:not([hidden])').waitFor();
+    await acceptMercenariesBeforeArtifact(page);
+  await page.locator('[data-artifact-choice-modal]:not([hidden])').waitFor();
     await page.locator('[data-artifact-choice="none"]').click();
     await page.locator('[data-classic-screen]:not([hidden])').waitFor();
     await capture(page,'10-battle-chess');

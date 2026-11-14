@@ -1,3 +1,4 @@
+const {acceptMercenariesBeforeArtifact}=require('./browser-test-helpers.cjs');
 const assert=require('assert');
 const {chromium}=require('playwright');
 const {startNewRun}=require('./browser-test-helpers.cjs');
@@ -16,6 +17,7 @@ async function fresh(page){
 async function assertThemedBoard(page,kind){
   const api=kind==='battle'?'RPChessBattle':'RPChessSkirmish';
   await page.evaluate((kind)=>dispatchEvent(new CustomEvent(kind==='battle'?'rpchess:battle-open':'rpchess:skirmish-open')),kind);
+  await acceptMercenariesBeforeArtifact(page);
   await page.locator('[data-artifact-choice-modal]').waitFor();
   assert.strictEqual(await page.locator(kind==='battle'?'[data-battle-screen]':'[data-skirmish-screen]').isHidden(),true);
   await page.locator('[data-artifact-choice="none"]').click();
