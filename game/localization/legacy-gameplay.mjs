@@ -56,6 +56,7 @@ export const GAMEPLAY_EN_EXACT = Object.freeze({
   'Смешанные': 'Mixed',
   'Нейтральные': 'Neutral',
 
+  'Убит разбойниками мучительной смертью': 'Tortured to death by bandits',
   'СТЫЧКА': 'SKIRMISH',
   'БИТВА': 'BATTLE',
   'СОБЫТИЕ': 'EVENT',
