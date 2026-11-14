@@ -1308,8 +1308,10 @@ async function assertTileImage(page,cellId){
     let id=null;
     for(const {x,y} of candidates){
       const candidate=x+','+y;
+      // Actual player case: a visited, completed event on a foreign road.
       const candidateMap={...normalized,cells:{...normalized.cells,
-        [candidate]:{status:'completed',type:'empty',explored:true}}};
+        [candidate]:{status:'completed',explored:true,completedOnce:true,
+          selectedEncounter:{id:'qa.completed-road-event',type:'event',stars:2}}}};
       const stable=core.revealAround(core.migrateKingdomMap(candidateMap,run),run,power);
       if(!core.canBuildOutpost(stable,{x,y}))continue;
       run.kingdomMap=stable;id=candidate;break;
@@ -1336,8 +1338,9 @@ async function assertTileImage(page,cellId){
     return {canBuild:canBuildOutpost(map,{x,y}),owned:isOwned(map,{x,y}),
       pending:map.pendingCell,cell:map.cells[id]};
   },{storage:key,id:firstOutpost});
-  assert(outpostEligibility.canBuild,
-    'outpost fixture must be safe and eligible before UI interaction: '+
+  assert(outpostEligibility.canBuild&&outpostEligibility.cell.completedOnce&&
+    outpostEligibility.cell.selectedEncounter?.id==='qa.completed-road-event',
+    'outpost fixture must remain a completed road encounter: '+
     JSON.stringify(outpostEligibility));
   await walking.waitForTimeout(690);
   await walking.locator('[data-kingdom-cell="'+firstOutpost+'"]').dispatchEvent('click');
