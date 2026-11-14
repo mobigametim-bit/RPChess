@@ -14,6 +14,55 @@ const GRAY_STONE=Object.freeze({
  joint:'#555c5d',edge:'#55595b'
 });
 const BRICK_LENGTH=22,BRICK_STEP=24,ROWS=3;
+/* Forest-path gravel: a continuous compacted-earth ribbon, not gray bricks.
+ * Deterministic pebbles and rounded caps avoid apparent segment brush strokes. */
+function drawGravelRoad(ctx,{x1,y1,x2,y2,bend=0,id=''}) {
+ const dx=x2-x1,dy=y2-y1,len=Math.hypot(dx,dy);
+ if(!len)return false;
+ const nx=-dy/len,ny=dx/len;
+ const c1x=x1+dx*.32+nx*bend,c1y=y1+dy*.32+ny*bend;
+ const c2x=x1+dx*.68-nx*bend*.45,c2y=y1+dy*.68-ny*bend*.45;
+ const path=()=>{ctx.beginPath();ctx.moveTo(x1,y1);ctx.bezierCurveTo(c1x,c1y,c2x,c2y,x2,y2);};
+ ctx.save();ctx.lineJoin='round';ctx.lineCap='round';
+ path();ctx.lineWidth=22;ctx.strokeStyle='#6b6555';ctx.stroke();
+ path();ctx.lineWidth=18;ctx.strokeStyle='#958a72';ctx.stroke();
+ path();ctx.lineWidth=13;ctx.strokeStyle='#a9a18b';ctx.stroke();
+ const total=Math.max(12,Math.ceil((len+Math.abs(bend))/6));
+ const colors=['#d3c9ac','#c1b8a1','#736b5e','#e0d6ba','#8b8071'];
+ const salt=hash32(String(id));
+ for(let i=1;i<total;i++){
+  const t=i/total,u=1-t,x=u*u*u*x1+3*u*u*t*c1x+3*u*t*t*c2x+t*t*t*x2,
+    y=u*u*u*y1+3*u*u*t*c1y+3*u*t*t*c2y+t*t*t*y2;
+  const tx=3*u*u*(c1x-x1)+6*u*t*(c2x-c1x)+3*t*t*(x2-c2x);
+  const ty=3*u*u*(c1y-y1)+6*u*t*(c2y-c1y)+3*t*t*(y2-c2y);
+  const norm=Math.max(1e-8,Math.hypot(tx,ty)),sideX=-ty/norm,sideY=tx/norm;
+  for(let j=0;j<3;j++){
+   const seed=hash32(salt+':'+i+':'+j),lateral=((seed%170)/170-.5)*13,
+    forward=((seed>>>13)%37)/37*3-1.5,size=.75+(seed>>>21)%17/12;
+   ctx.beginPath();ctx.ellipse(x+sideX*lateral+tx/norm*forward,
+    y+sideY*lateral+ty/norm*forward,size,size*.53,(seed%31)/30*Math.PI,0,Math.PI*2);
+   ctx.fillStyle=colors[(seed>>>5)%colors.length];ctx.fill();
+  }
+ }
+ ctx.restore();
+ return true;
+}
+function drawRoadJunction(ctx,{x,y,tone='sandstone',id=''}) {
+ const gravel=tone==='gravel',fill=gravel?'#a59b82':'#e4bd54';
+ const edge=gravel?'#706858':'#9b7938';
+ ctx.save();ctx.beginPath();ctx.arc(x,y,12,0,2*Math.PI);
+ ctx.fillStyle=edge;ctx.fill();
+ ctx.beginPath();ctx.arc(x,y,9.5,0,2*Math.PI);ctx.fillStyle=fill;ctx.fill();
+ const salt=hash32(id);
+ for(let i=0;i<9;i++){
+  const h=hash32(salt+':cap:'+i),r=(h%75)/100*9,a=(h>>>9)%628/100;
+  ctx.beginPath();ctx.arc(x+Math.cos(a)*r,y+Math.sin(a)*r,1+(h>>>16)%3*.3,0,Math.PI*2);
+  ctx.fillStyle=gravel?(i%2?'#e0d6ba':'#766d5f'):(i%2?'#f3d47a':'#ba9238');
+  ctx.fill();
+ }
+ ctx.restore();
+}
+
 function hash32(value){
  let h=2166136261;
  for(let i=0;i<value.length;i++){h^=value.charCodeAt(i);h=Math.imul(h,16777619);}
@@ -21,6 +70,7 @@ function hash32(value){
 }
 function drawSandstoneRoad(ctx,{x1,y1,x2,y2,bend=0,id='',tone='sandstone'}) {
  if(!ctx||![x1,y1,x2,y2,bend].every(Number.isFinite))return false;
+ if(tone==='gravel')return drawGravelRoad(ctx,{x1,y1,x2,y2,bend,id});
  const palette=tone==='gray'?GRAY_STONE:PALETTE;
  const dx=x2-x1,dy=y2-y1,length=Math.hypot(dx,dy);
  if(length<1)return false;
@@ -112,4 +162,4 @@ function drawSandstoneRoad(ctx,{x1,y1,x2,y2,bend=0,id='',tone='sandstone'}) {
  ctx.restore();
  return true;
 }
-export {SANDSTONE_WIDTH,drawSandstoneRoad};
+export {SANDSTONE_WIDTH,drawSandstoneRoad,drawRoadJunction};
