@@ -292,6 +292,41 @@ function ownedIds(map){
  for(const id of map?.battleConqueredCells||[])ids.add(id);
  return ids;
 }
+// Use the SAME radial stops as drawFog() when deciding whether an encounter's
+// cell center is readable. This is a visual test only: it never changes
+// explored (visited), encounter status, the calendar or the saved world seed.
+const FOG_SHOULDER=.68,FOG_SHOULDER_ALPHA=.98;
+const FOG_EVENT_CLEARANCE=.75;
+function fogRevealAtDistance(distance){
+ const radius=VISUAL.fogRadius;
+ if(!(radius>0)||distance>=radius)return 0;
+ const inner=Math.min(radius*.9,VISUAL.fogInner);
+ if(distance<=inner)return 1;
+ const shoulder=radius*FOG_SHOULDER;
+ if(distance<shoulder)return 1-(1-FOG_SHOULDER_ALPHA)*(distance-inner)/(shoulder-inner);
+ return FOG_SHOULDER_ALPHA*(radius-distance)/(radius-shoulder);
+}
+// A tile is visibly scouted once its CENTER has at least 75% of the fog
+// cleared by existing visited centers. Several overlapping gradients combine
+// exactly like Canvas destination-out. Red Battle provinces do NOT count as
+// scouting centers even though their political silhouette is visible.
+function visibleThroughFog(map,point){
+ if(!map||!point||!Number.isSafeInteger(point.x)||!Number.isSafeInteger(point.y))return false;
+ const {x,y}=point,id=x+','+y;
+ if(map.cells?.[id]?.explored===true||map.castle?.x===x&&map.castle?.y===y)return true;
+ const range=Math.ceil(VISUAL.fogRadius);
+ let remaining=1;
+ for(let dy=-range;dy<=range;dy++)for(let dx=-range;dx<=range;dx++){
+  const cx=x+dx,cy=y+dy;
+  if(!(map.castle?.x===cx&&map.castle?.y===cy) &&
+     map.cells?.[cx+','+cy]?.explored!==true)continue;
+  const reveal=fogRevealAtDistance(Math.hypot(dx,dy));
+  if(!reveal)continue;
+  remaining*=1-reveal;
+  if(1-remaining>=FOG_EVENT_CLEARANCE)return true;
+ }
+ return false;
+}
 function drawFog(ctx,map,left,top,width,height,resolution=1){
  const fog=document.createElement('canvas');fog.width=Math.round(width*PARCHMENT_TILE*resolution);
  fog.height=Math.round(height*PARCHMENT_TILE*resolution);
@@ -309,7 +344,7 @@ function drawFog(ctx,map,left,top,width,height,resolution=1){
   const radius=PARCHMENT_TILE*VISUAL.fogRadius;
   const gradient=f.createRadialGradient(cx,cy,Math.min(radius*.9,PARCHMENT_TILE*VISUAL.fogInner),cx,cy,radius);
   gradient.addColorStop(0,'rgba(0,0,0,1)');
-  gradient.addColorStop(.68,'rgba(0,0,0,.98)');
+  gradient.addColorStop(FOG_SHOULDER,'rgba(0,0,0,'+FOG_SHOULDER_ALPHA+')');
   gradient.addColorStop(1,'rgba(0,0,0,0)');
   f.fillStyle=gradient;f.fillRect(cx-radius,cy-radius,2*radius,2*radius);
  }
@@ -386,4 +421,4 @@ function parchmentAssetsSettled(canvas){
   canvas.dataset.parchmentTexture === 'loaded' && !redrawQueued &&
   [...spriteCache.values()].every(entry=>entry.ready||entry.failed));
 }
-export {renderParchment,renderParchmentFog,drawWaterRoads,parchmentAssetsSettled};
+export {renderParchment,renderParchmentFog,drawWaterRoads,parchmentAssetsSettled,visibleThroughFog};
