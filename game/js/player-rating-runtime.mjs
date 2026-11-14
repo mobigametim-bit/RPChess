@@ -1,4 +1,5 @@
 import { readRun } from './run-persistence.mjs';
+import { siteLevelForStars } from './kingdom-map-core.mjs';
 import { commanderPortrait } from './commander-portraits.mjs';
 import { starsText } from './encounter-difficulty.mjs';
 import { currentLanguage, subscribe } from './i18n.mjs';
@@ -53,11 +54,17 @@ function settlePuzzle(run) {
   const receiptId = puzzleReceiptId(run);
   if (!receiptId || !state) return null;
   if(state.weekly&&(!state.rewardSettled||state.result!=='solved'))return null;
+  // Read the level of the *map site* (the badge I–V), not the
+  // 1–12-star difficulty of this particular chess problem.
+  const site=state.weekly?run?.kingdomMap?.cells?.[state.weekly.cellId]:null;
+  if(state.weekly&&(site?.selectedEncounter?.type!=='puzzle'||
+    !Number.isInteger(site.selectedEncounter.stars)))return null;
+  const siteLevel=state.weekly?siteLevelForStars(site.selectedEncounter.stars):null;
   return settlePlayerRating({ receiptId,
     opponentElo:opponentEloForStars(state.stars),
     result:state.result === 'solved' ? 1 : 0,
     gainDivisor:PUZZLE_WIN_GAIN_DIVISOR,
-    fixedWinGain:state.weekly?state.stars:null }).receipt;
+    fixedWinGain:siteLevel }).receipt;
 }
 
 function settleCurrentRatedOutcome(run = readRun()) {
