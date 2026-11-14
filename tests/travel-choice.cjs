@@ -23,8 +23,8 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   assert(overlaySource.includes('ctx.globalAlpha*=VISUAL.roadOpacity'),
     'Royal-road paving opacity must match naturally generated roads');
   assert(overlaySource.includes("clipRoadSurface(inside)")&&
-     overlaySource.includes("for(const [inside,tone] of [[false,'gray'],[true,'sandstone']]"),
-    'paved roads switch from yellow to gray exactly at owned-cell boundaries');
+     overlaySource.includes("for(const [inside,tone] of [[false,'gravel'],[true,'sandstone']]"),
+    'paved roads switch from sandstone to gravel exactly at owned-cell boundaries');
   assert(overlaySource.includes('visibleTravelRoads(map)'),
     'historic roads remain an independent visible layer');
   const rendererSource=fs.readFileSync(path.join(game,'js/kingdom-traveler-renderer.mjs'),'utf8');
