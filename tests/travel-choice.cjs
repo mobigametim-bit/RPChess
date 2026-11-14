@@ -290,6 +290,21 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   assert.deepStrictEqual([worldConfig.VISUAL.forestDensity,worldConfig.VISUAL.stampSize,worldConfig.VISUAL.sizeVariation],[3,2,0.5]);
   assert.strictEqual(worldConfig.VISUAL.fogOpacity,0.98,'fog remains translucent on purpose');
   assert.strictEqual(worldConfig.VISUAL.fogRadius,2);
+  // Existing visited cells carve the same radial mask that reveals an
+  // encounter. Merely knowing its deterministic route is never a visit.
+  const {visibleThroughFog}=await import(pathToFileURL(
+    path.join(game,'js/kingdom-parchment-app.mjs')).href);
+  const fogFixture={castle:{x:0,y:0},cells:{
+    '0,0':{status:'completed',explored:true},
+    '1,1':{status:'revealed',explored:false,selectedEncounter:{id:'fog-visible',type:'event'}},
+    '2,0':{status:'revealed',explored:false,selectedEncounter:{id:'fog-hidden',type:'battle'}}
+   },battleTerritories:[{id:'2,0',cells:['2,0','2,1']}]};
+  assert(visibleThroughFog(fogFixture,{x:1,y:1})&&
+    !visibleThroughFog(fogFixture,{x:2,y:0})&&
+    !visibleThroughFog(fogFixture,{x:2,y:1}),
+    'fog-cleared diagonals expose unvisited encounters but merely registered enemy provinces do not');
+  assert.strictEqual(fogFixture.cells['1,1'].explored,false,
+    'visibility lookup never marks a tile as visited or alters the saved world');
   assert.strictEqual(worldConfig.VISUAL.fogInner,0.32);
   assert.strictEqual(worldConfig.VISUAL.fogInkOpacity,0.2);
   assert.strictEqual(worldConfig.VISUAL.wastelandDensity,1.75,
