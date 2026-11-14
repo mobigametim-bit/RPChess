@@ -26,6 +26,18 @@ const dialog = document.querySelector('[data-arena-dialog]');
 const adapter = new ChessAIAdapter();
 let state=emptyArena(),engine=null,section=0,selected=null,thinking=false,animating=false,animationDestination=null,moveAnimation=null,moveFlyer=null,captureGhost=null,searchId=0,adBusy=false,dialogType=null,promotion=null,notice='';
 let historyKey=null,historyEntries=[],capturedByWhite=[],capturedByBlack=[];
+let mateCeremonyTimer=null;
+function cancelMateCeremony(){clearTimeout(mateCeremonyTimer);mateCeremonyTimer=null;}
+function finishAfterMate(status){
+ cancelMateCeremony();
+ if(status?.type!=='checkmate')return settle(status);
+ const matchId=state.match?.id;
+ renderBoard();
+ mateCeremonyTimer=setTimeout(()=>{
+  mateCeremonyTimer=null;
+  if(engine&&state.match?.id===matchId&&state.match.phase==='playing'&&engine.status().type==='checkmate')settle(engine.status());
+ },3000);
+}
 function audio(){return globalThis.RPChessRebootAudio;}
 function l(key){return (copy[currentLanguage()]||copy.ru)[key]||key;}
 function raceLabel(race){return currentLanguage()==='en'?raceEn[RACE_TAGS.indexOf(race)]||race:(RACE_LABELS[race]||race);}
@@ -106,6 +118,8 @@ function renderBoard(){
     if(legal.some(move=>(move.uciTo||move.to)===square))cell.classList.add('classic-square--legal');
     if(snapshot.lastMove && [snapshot.lastMove.from,snapshot.lastMove.to].includes(square))cell.classList.add('classic-square--last');
     if(index===checkedKing)cell.classList.add('classic-square--check');
+    if(snapshot.status.type==='checkmate'&&piece?.type==='k')cell.classList.add(
+      piece.color===snapshot.status.winner?'rpchess-king-victorious':'rpchess-king-defeated');
     if(piece){
       const race=piece.color===state.match.playerColor?state.match.squad:foe.race;
       const pieceArt=boardRacePiecePath(race,({p:'pawn',n:'knight',b:'bishop',r:'rook',q:'queen',k:'king'})[piece.type],piece.color);
@@ -249,18 +263,18 @@ function restoreMatch(){
     }
   }
   engine=next;selected=null;thinking=false;
-  if(next.status().over)settle(next.status());
+  if(next.status().over)finishAfterMate(next.status());
   else {render();void aiTurn();}
 }
 function settle(status){
   if(!status.over||state.match?.phase!=='playing')return;
   const outcome=status.type==='checkmate'?(status.winner===state.match.playerColor?'win':'loss'):'draw';
-  stopMoveAnimation();engine=null;selected=null;adapter.stop();searchId++;notice='';
+  cancelMateCeremony();stopMoveAnimation();engine=null;selected=null;adapter.stop();searchId++;notice='';
   save(finishMatch(state,outcome));dialogType='result';render();
 }
 function startBattle(){
   if(state.match?.phase!=='playing')return;
-  closeDialog();engine=new ClassicChessEngine();selected=null;render();globalThis.RPChessLoading?.requestVisibleAssets?.();globalThis.dispatchEvent?.(new CustomEvent('rpchess:arena-battle-shown'));void aiTurn();
+  cancelMateCeremony();closeDialog();engine=new ClassicChessEngine();selected=null;render();globalThis.RPChessLoading?.requestVisibleAssets?.();globalThis.dispatchEvent?.(new CustomEvent('rpchess:arena-battle-shown'));void aiTurn();
 }
 function commit(from,to,promo=null){
   if(!engine||animating||thinking||state.match?.phase!=='playing')return;
@@ -276,7 +290,7 @@ function commit(from,to,promo=null){
   animating=Boolean(geometry);animationDestination=animating?to:null;
   const moves=[...state.match.moves,from+to+(promo||'')];
   save({...state,match:{...state.match,moves},updatedAt:Date.now()});
-  const afterMove=()=>{if(result.status.over)settle(result.status);else void aiTurn();};
+  const afterMove=()=>{if(result.status.over)finishAfterMate(result.status);else void aiTurn();};
   if(geometry)animateCommittedMove(geometry,to,afterMove);
   else afterMove();
 }
@@ -293,7 +307,7 @@ async function aiTurn(){
   commit(uci.slice(0,2),uci.slice(2,4),uci.slice(4)||null);
 }
 function enter(){state=read();engine=null;selected=null;section=Math.floor((OPPONENT_BY_ID.get(state.match?.foe)?.index??arenaSummary(state).highest)/7);notice='';visible(true);if(state.match?.phase==='result')dialogType='result';else if(state.match?.phase==='offer')dialogType='offer';else restoreMatch();render();globalThis.RPChessLoading?.requestVisibleAssets?.();if(!root.querySelector('[data-arena-catalog]')?.hidden)globalThis.dispatchEvent?.(new CustomEvent('rpchess:arena-catalog-shown'));}
-function leave(){adapter.stop();searchId++;thinking=false;stopMoveAnimation();engine=null;closeDialog();visible(false);}
+function leave(){cancelMateCeremony();adapter.stop();searchId++;thinking=false;stopMoveAnimation();engine=null;closeDialog();visible(false);}
 
 attachPieceDrag(board, {
   canPick: square => Boolean(!root?.hidden && !dialogType && engine && state.match?.phase === 'playing' && !animating && !thinking &&
