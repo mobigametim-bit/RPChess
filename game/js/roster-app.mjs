@@ -254,6 +254,11 @@ function beginRun(event = null) {
   globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated', { detail: { source: 'run-new', runId: activeRun.id } }));
 }
 
+function openRoster(){
+ activeRun=readRun();
+ if(!activeRun||activeRun.ended)return false;
+ setScene('roster');renderRoster();return true;
+}
 function continueRun() {
   activeRun = readRun();
   if (!activeRun || activeRun.ended) {
@@ -406,6 +411,7 @@ globalThis.RPChessRoster = Object.freeze({
   render: renderRoster,
   beginRun,
   continueRun,
+  openRoster,
   beginJourney,
   returnToMenu,
   syncRun
