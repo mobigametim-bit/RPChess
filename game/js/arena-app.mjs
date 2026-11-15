@@ -73,8 +73,10 @@ function renderCatalog(){
     journeyNav.setAttribute('aria-label',journey);journeyNav.title=journey;
   }
   h.hidden=Boolean(state.match&&state.match.phase==='playing' && engine);
-  const journeyNav=root.querySelector('[data-arena-journey]');
-  if(journeyNav)journeyNav.hidden=h.hidden||!readRun()||readRun().ended;
+  if(journeyNav){
+    const activeJourney=readRun();
+    journeyNav.hidden=h.hidden||!activeJourney||activeJourney.ended;
+  }
   root.querySelector('[data-arena-shards]').innerHTML=img(SHARD_ICON,'arena-shard','')+' '+stats.balance+' · '+l('shards');
   const squads=root.querySelector('[data-arena-squads]');squads.replaceChildren();
   for(const race of RACE_TAGS){
