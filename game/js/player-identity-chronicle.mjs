@@ -24,6 +24,12 @@ function ensureCss() {
   link.href = 'css/player-identity-chronicle.css?v=20261104-profile-chronicle-1';
   link.dataset.playerIdentityChronicleCss = '';
   document.head.append(link);
+  if(!document.querySelector('[data-chronicle-v2-css]')){
+    const v2=document.createElement('link');
+    v2.rel='stylesheet';v2.href='css/chronicle-v2.css?v=20261115-glory2';
+    v2.setAttribute('data-chronicle-v2-css','');
+    document.head.append(v2);
+  }
 }
 
 function ensureIdentityModal() {
@@ -299,22 +305,62 @@ function renderChronicle() {
   const bestRoot = root.querySelector('[data-chronicle-best]');
 
   currentRoot?.replaceChildren();
-  if (currentRoot) {
-    if (current) {
+  if(currentRoot){
+    if(current){
+      const section=document.createElement('div');
+      section.className='chronicle-section-label';
+      section.textContent=l('chronicle.current');
       const profile=document.createElement('div');
-    profile.className='chronicle-current-profile';
-    const avatar=document.createElement('img');avatar.src=commanderPortrait(current.commanderId);
-    avatar.alt=commanderTitle(current.commanderId,currentLanguage());avatar.loading='lazy';
-    const label=document.createElement('div');label.append(sectionTitle(l('chronicle.current'),current.playerName));
-    profile.append(avatar,label);currentRoot.append(profile);
-      currentRoot.append(metric(l('chronicle.power'), current.power, 'assets/doctrines/royal_court/emblem.png'), metric(l('chronicle.week'), current.week, 'generated_assets/node_story.png'), metric(l('chronicle.heroes'), current.heroes, 'generated_assets/reward_recruit.png'));
-    } else {
-      currentRoot.append(sectionTitle(l('chronicle.current'), l('chronicle.noActive')));
-    }
+      profile.className='chronicle-current-profile chronicle-v2-profile';
+      const portrait=document.createElement('img');
+      portrait.src=commanderPortrait(current.commanderId);portrait.alt='';
+      const description=document.createElement('div');
+      description.className='chronicle-v2-profile-copy';
+      const name=document.createElement('strong');name.textContent=current.playerName;
+      const info=document.createElement('small');
+      info.textContent=l('chronicle.day')+' '+current.day+' · '+current.heroes+' '+l('chronicle.heroes');
+      description.append(name,info);profile.append(portrait,description);
+      const quick=document.createElement('div');
+      quick.className='chronicle-v2-quick';
+      for(const [key,value] of [
+        ['chronicle.glory',current.glory],
+        ['chronicle.power',current.power],
+        ['chronicle.lands',current.territories]
+      ]){
+        const item=document.createElement('div');
+        const caption=document.createElement('span');caption.textContent=l(key);
+        const number=document.createElement('strong');number.textContent=String(value);
+        item.append(caption,number);quick.append(item);
+      }
+      currentRoot.append(section,profile,quick);
+    } else currentRoot.append(sectionTitle(l('chronicle.current'),l('chronicle.noActive')));
   }
 
   bestRoot?.replaceChildren();
   if (bestRoot) {
+    const best=bestChronicleRun(readChronicle());
+    const bestLabel=document.createElement('div');
+    bestLabel.className='chronicle-section-label';
+    bestLabel.textContent=l('chronicle.best');
+    bestRoot.append(bestLabel);
+    if(best){
+      const bestEntry=document.createElement('div');
+      bestEntry.className='chronicle-v2-personal-best';
+      const image=document.createElement('img');
+      image.src=commanderPortrait(best.commanderId);image.alt='';
+      const copy=document.createElement('div');
+      const name=document.createElement('strong');name.textContent=best.playerName;
+      const detail=document.createElement('small');
+      detail.textContent=l('chronicle.day')+' '+best.day+' · '+l('chronicle.power')+' '+best.power;
+      copy.append(name,detail);
+      const score=document.createElement('strong');score.className='chronicle-v2-personal-score';
+      score.textContent=String(best.glory);
+      bestEntry.append(image,copy,score);bestRoot.append(bestEntry);
+    }else{
+      const empty=document.createElement('p');
+      empty.className='chronicle-empty-copy';empty.textContent=l('chronicle.emptyCopy');
+      bestRoot.append(empty);
+    }
     const title=document.createElement('h3');
     title.className='chronicle-commanders-title';
     title.textContent=l('chronicle.commanders');
@@ -329,7 +375,6 @@ function renderChronicle() {
       ? '#'+leaderboard.me.rank+' · '+leaderboard.me.glory+' '+l('chronicle.glory')
       : leaderboard.status!=='ready' ? '—'
       : l(leaderboard.viewerAuthenticated?'leaderboard.notRanked':'leaderboard.notAuthenticated');
-    const best=bestChronicleRun(readChronicle());
     if(leaderboard.me||best){
       const avatar=document.createElement('img');
       avatar.src=commanderPortrait(leaderboard.me?.commanderId||best?.commanderId);
