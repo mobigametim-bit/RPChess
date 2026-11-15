@@ -5,6 +5,7 @@ import {weekForDay} from './kingdom-map-core.mjs';
 import {threatRank,decorateThreat,normalizeHeroMastery} from './hero-threat.mjs';
 import {ClassicChessEngine} from './classic-chess-engine.mjs';
 import {ChessAIAdapter} from './chess-ai-adapter.mjs';
+import {trainingMoveQualityWinChance} from './mentor-training-history.mjs';
 import {currentLanguage} from './i18n.mjs';
 
 const C={
@@ -241,10 +242,20 @@ function manualSquare(sq){
 }
 async function playMove(uci){
  const run=readRun(),active=weeklyState(run).active;if(!active||!engine)return;
+ const stamp=session;
+ // Two genuine Stockfish position scores feed the Mentor win-probability grader.
+ // Failed analysis yields no badge, never a fabricated move assessment.
+ const before=await adapter.analyzePosition({fen:engine.fen(),depth:8});
+ if(stamp!==session)return;
  const move=engine.move(uci.slice(0,2),uci.slice(2,4),uci[4]||null);
  if(!move.ok)return;
- // The move is persisted before any animation or next engine request.
- const saved=recordWeeklyMove(run,uci);
+ const after=await adapter.analyzePosition({fen:engine.fen(),depth:8});
+ if(stamp!==session)return;
+ const quality=trainingMoveQualityWinChance(before,after,uci);
+ const symbols={blunder:'??',mistake:'?',inaccuracy:'?!'};
+ const grade=quality?symbols[quality.kind]||((before?.bestMove===uci)?'!':'✓'):null;
+ // Persist move plus its measured score classification before the next turn.
+ const saved=recordWeeklyMove(run,uci,grade);
  if(!saved.ok)return;
  writeRun(saved.run);
  const restored=newEngine(weeklyState(saved.run).active);
