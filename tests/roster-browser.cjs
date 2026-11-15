@@ -73,19 +73,32 @@ async function assertOneScreen(page,label){
     assert.strictEqual((await page.evaluate(()=>globalThis.RPChessSkirmish.selectedIds)).length,5,'Skirmish respects player reserves');
     assert.strictEqual((await page.evaluate(()=>globalThis.RPChessSkirmish.selectedIds.includes('hero.mara_chain'))),false);
 
-    await page.evaluate(()=>{
+    await page.evaluate(async()=>{
+      // This test aborts the *unstarted* artifact chooser after checking the
+      // combat selection. Close its fixture checkpoint explicitly, then open
+      // the squad with the same owner API as the in-game Roster button.
       document.querySelector('[data-artifact-choice-modal]')?.remove();
       document.body.classList.remove('reboot-modal-open');
-      dispatchEvent(new CustomEvent('rpchess:run-continue'));
+      const {readRun,writeRun}=await import('./js/run-persistence.mjs');
+      const run=readRun();
+      writeRun({...run,currentCombat:null,activeTravelChoice:null,
+        currentTravelChoices:null,combatArtifactChoice:null});
+      sessionStorage.removeItem('rpchess.test.legacyTravel');
+      if(!globalThis.RPChessRoster?.openRoster?.())
+        throw new Error('Roster button owner did not open squad');
     });
-    await waitForVisible(page,'[data-roster-screen]:not([hidden])','Roster after encounter return');
+    await waitForVisible(page,'[data-roster-screen]:not([hidden])','Roster after leaving artifact choice');
     await page.locator('[data-roster-menu]').click();
     const menu=await waitForVisible(page,'[data-reboot-foundation]:not([hidden])','Menu before reload');
     await page.reload({waitUntil:'networkidle'});
     const reloadedMenu=await waitForVisible(page,'[data-reboot-foundation]:not([hidden])','Menu after reload');
     await reloadedMenu.locator('[data-continue-run]').click();
     await page.locator('[data-journey-choice-modal]:not([hidden]) [data-journey-continue]').click();
-    await waitForVisible(page,'[data-roster-screen]:not([hidden])','Roster after Continue');
+    await waitForVisible(page,'[data-kingdom-map-screen]:not([hidden])','Kingdom directly after Continue');
+    assert.equal(await page.locator('[data-roster-screen]:not([hidden])').count(),0,
+      'Continue Journey must not open the squad instead of the map');
+    await page.locator('[data-kingdom-roster]').click();
+    await waitForVisible(page,'[data-roster-screen]:not([hidden])','Roster via the explicit map icon');
     assert((await page.locator('[data-roster-detail]').innerText()).includes('Альдрик Стена'));
     assert.strictEqual(await page.locator('[data-roster-slot="h2"] [data-roster-piece="hero.aldric_wall"]').count(),1,'formation survives save/reload');
     assert.strictEqual(await page.locator('[data-roster-group="reserve"] [data-roster-piece="hero.mara_chain"]').count(),1,'reserves survive save/reload');
@@ -99,7 +112,9 @@ async function assertOneScreen(page,label){
     const mobileMenu=await waitForVisible(mobile,'[data-reboot-foundation]:not([hidden])','Landscape phone menu');
     await mobileMenu.locator('[data-continue-run]').click();
     await mobile.locator('[data-journey-choice-modal]:not([hidden]) [data-journey-continue]').click();
-    await waitForVisible(mobile,'[data-roster-screen]:not([hidden])','Landscape phone Roster');
+    await waitForVisible(mobile,'[data-kingdom-map-screen]:not([hidden])','Landscape phone Kingdom');
+    await mobile.locator('[data-kingdom-roster]').click();
+    await waitForVisible(mobile,'[data-roster-screen]:not([hidden])','Landscape phone Roster via squad icon');
     await assertOneScreen(mobile,'landscape phone Roster');
     const frame=await mobile.locator('.roster-catalog').evaluate((element)=>{
       const r=element.getBoundingClientRect();const s=getComputedStyle(element);
