@@ -449,7 +449,8 @@ function finishBattle(){
   const afterStars=h('span','wd-result-stars');
   decorateThreat(afterStars,lastResult.afterLevel,{language:currentLanguage(),xp:lastResult.afterXp});
   const change=(lastResult.beforeLevel!==lastResult.afterLevel);
-  transition.append(fromStars,h('span','wd-result-arrow',change?'➜':'·'),afterStars);
+  if(change)transition.append(fromStars,h('span','wd-result-arrow','➜'));
+  transition.append(afterStars);
   const nextLabel=h('div','wd-progress-caption');
   nextLabel.append(h('span','',english?to.en:to.ru),
    h('span','',(lastResult.afterXp||0)+' / 100 XP'));
