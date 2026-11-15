@@ -172,6 +172,16 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     const combatBoard=await page.locator('[data-arena-board]').boundingBox();
     assert(Math.abs(combatBoard.x+combatBoard.width/2-950)<=2 && Math.abs(combatBoard.y+combatBoard.height/2-454.5)<=2 && Math.abs(combatBoard.width-909)<=2 && Math.abs(combatBoard.height-909)<=2,'Arena board must center on the full landscape viewport');
     assert.strictEqual(await page.locator('.arena-nav-actions button').first().getAttribute('data-arena-rivals'),'','opponents button must precede main menu');
+    const rivalsIcon=await page.locator('[data-arena-rivals]').evaluate(button=>{
+      const css=getComputedStyle(button);
+      return {src:button.querySelector('img')?.getAttribute('src'),
+        bg:css.backgroundImage,bgColor:css.backgroundColor,visible:!button.hidden};
+    });
+    assert(rivalsIcon.visible && rivalsIcon.src==='assets/ui/main-menu-arena.png',
+      'Return to rivals must use exactly the main-menu Arena icon');
+    assert.equal(rivalsIcon.bg,'none','Arena icon must not receive text-button background artwork');
+    assert.equal(rivalsIcon.bgColor,'rgba(0, 0, 0, 0)','Arena icon background must remain transparent');
+
     assert(await page.locator('[data-arena-battle-title]').isVisible() && await page.locator('[data-arena-moves]').isVisible(),'battle summary and move journal must both be visible');
     const railBackground=await page.locator('.arena-shell').evaluate(element=>getComputedStyle(element).backgroundImage);
     assert(railBackground.includes('ashen_dominion/boss_arena.webp'),'Arena combat should use the repository arena backdrop');
