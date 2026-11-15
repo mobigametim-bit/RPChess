@@ -65,37 +65,40 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(k){return this.map.
 
   assert.strictEqual(chronicle.gloryForRun(35,900),17);
   assert.strictEqual(chronicle.gloryForRun(0,900),0);
-  const completed={...persistence.createRun({now:2000,id:'completed-run',playerName:'Рагнар',commanderId:'ash_regent'}),journeyStep:35,ended:true,endReason:'starvation_king',updatedAt:2500};
+  const completed={...persistence.createRun({now:2000,id:'completed-run',playerName:'Рагнар',commanderId:'ash_regent'}),journeyStep:35,ended:true,endReason:'starvation_king',updatedAt:2500,gloryV2:{version:2,events:[['battle','b1',5]]}};
   let result=chronicle.recordCompletedRun(completed,{power:900,storage,completedAt:2500});
   assert.strictEqual(result.changed,true);
-  assert.strictEqual(result.record.glory,17);
+  assert.strictEqual(result.record.glory,Math.floor(45*Math.sqrt(900/500)));
+  assert.strictEqual(result.record.scoreVersion,2);
   assert.strictEqual(result.record.playerName,'Рагнар');
   assert.strictEqual(result.record.commanderId,'ash_regent');
   assert.strictEqual(chronicle.readChronicle(storage).history[0].commanderId,'ash_regent');
-  assert(!Object.prototype.hasOwnProperty.call(result.record,'endReason'),'Chronicle must not store/display the run-end reason');
+  assert.strictEqual(result.record.endReason,'starvation_king','new Chronicle entries preserve the final outcome');
   result=chronicle.recordCompletedRun(completed,{power:900,storage,completedAt:2600});
   assert.strictEqual(result.changed,false,'same completed run must be idempotent');
   result=chronicle.recordCompletedRun(completed,{power:1000,storage,completedAt:2700});
-  assert.strictEqual(result.changed,true,'same run may refresh its final Power if rating settlement lands later');
-  assert.strictEqual(result.record.power,1000);
+  assert.strictEqual(result.changed,false,'completed Glory and Power stay frozen after run end');
+  assert.strictEqual(result.record.power,900);
 
   const second={...completed,id:'second-run',playerName:'Эдрик',journeyStep:40,updatedAt:3000};
   chronicle.recordCompletedRun(second,{power:640,storage,completedAt:3000});
   const best=chronicle.bestChronicleRun(chronicle.readChronicle(storage));
-  assert(best&&best.runId==='completed-run','best run must use Glory, then week, then Power ordering');
+  assert(best&&best.runId==='completed-run','best v2 run is selected without legacy Glory');
 
-  const active={...persistence.createRun({id:'active-run',playerName:'Алёна'}),journeyStep:12,roster:persistence.createRun({id:'roster-copy'}).roster.map((hero,index)=>index===1?{...hero,status:'dead'}:hero)};
+  const active={...persistence.createRun({id:'active-run',playerName:'Алёна'}),gloryV2:{version:2,events:[['skirmish','s1',1]]},journeyStep:12,roster:persistence.createRun({id:'roster-copy'}).roster.map((hero,index)=>index===1?{...hero,status:'dead'}:hero)};
   const snapshot=chronicle.activeRunSnapshot(active,{power:777});
   assert.strictEqual(snapshot.playerName,'Алёна');
   assert.strictEqual(snapshot.commanderId,'oathkeeper');
   assert.strictEqual(snapshot.week,12);
   assert.strictEqual(snapshot.power,777);
   assert.strictEqual(snapshot.heroes,active.roster.length-1);
-  assert.strictEqual(chronicle.activeLeaderboardRecord(active,{power:900}).glory,10,
-    'ongoing Journey earns Glory before ending');
+  assert.strictEqual(chronicle.activeLeaderboardRecord(active,{power:900}).glory,Math.floor(12*Math.sqrt(900/500)),
+    'ongoing Journey earns Glory on achievements, not weeks');
   assert.strictEqual(chronicle.bestLeaderboardRecord(chronicle.readChronicle(storage),active,{power:900}).runId,'completed-run',
     'completed record stays on top if its Glory is higher');
-  const improving={...active,journeyStep:50};
+  const improving={...active,journeyStep:50,gloryV2:{version:2,events:[
+    ['battle','b1',5],['battle','b2',5],['battle','b3',5]
+  ]}};
   assert.strictEqual(chronicle.bestLeaderboardRecord(chronicle.readChronicle(storage),improving,{power:1600}).runId,'active-run',
     'an unfinished Journey can overtake the completed personal best');
   assert.strictEqual(chronicle.readChronicle(storage).history.length,2,
