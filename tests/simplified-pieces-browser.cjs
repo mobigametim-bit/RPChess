@@ -52,7 +52,8 @@ async function drag(page,from,to){
   try{
     const page=await browser.newPage({viewport:{width:1440,height:900}});
     const errors=[];page.on('pageerror',e=>errors.push(e.message));
-    await page.goto(url,{waitUntil:'networkidle'});
+    await page.goto(url,{waitUntil:'domcontentloaded'});
+    await page.locator('[data-game-loading]').waitFor({state:'hidden',timeout:45000});
     assert.notEqual(await page.locator('html').getAttribute('data-simple-pieces'),'1','Detailed art default');
     // Pin all twelve MIT-licensed Fantasy SVGs; no race-specific simplified art.
     const assets=await page.evaluate(async()=>{
@@ -144,7 +145,8 @@ async function drag(page,from,to){
       'Promotion must animate the moving pawn before displaying the promoted piece');
     await page.waitForFunction(() => !RPChessChessAI.snapshot().animating);
     assert.equal(await page.locator('[data-chess-board] [data-square="a8"] .rpchess-fantasy-piece').getAttribute('src'),'assets/pieces/fantasy/wQ.svg');
-    await page.reload({waitUntil:'networkidle'});
+    await page.reload({waitUntil:'domcontentloaded'});
+    await page.locator('[data-game-loading]').waitFor({state:'hidden',timeout:45000});
     assert.equal(await page.locator('html').getAttribute('data-simple-pieces'),'1','Mode survives reload');
     await page.locator('[data-arena-open]').click();
     assert.equal(await page.locator('[data-arena-foes] button:not([disabled])').count(),1,'Only the first opponent is open before a win');
@@ -200,9 +202,11 @@ async function drag(page,from,to){
 
     const puzzle=await browser.newPage({viewport:{width:667,height:375}});
     const puzzleErrors=[];puzzle.on('pageerror',e=>puzzleErrors.push(e.message));
-    await puzzle.goto(url,{waitUntil:'networkidle'});
+    await puzzle.goto(url,{waitUntil:'domcontentloaded'});
+    await puzzle.locator('[data-game-loading]').waitFor({state:'hidden',timeout:45000});
     await puzzle.evaluate(()=>localStorage.setItem('rpchess.reboot.v1.settings',JSON.stringify({language:'ru',simplePieces:true,reducedMotion:false,music:20,sfx:80})));
-    await puzzle.reload({waitUntil:'networkidle'});
+    await puzzle.reload({waitUntil:'domcontentloaded'});
+    await puzzle.locator('[data-game-loading]').waitFor({state:'hidden',timeout:45000});
     await startNewRun(puzzle);
     // Reuse the working Training acceptance fixture: open a concrete puzzle
     // route from the roster instead of generating random travel choices.
