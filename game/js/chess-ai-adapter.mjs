@@ -125,10 +125,15 @@ class ChessAIAdapter {
         const cpMatch=line.match(/\bscore\s+cp\s+(-?\d+)/);
         const mateMatch=line.match(/\bscore\s+mate\s+(-?\d+)/);
         const pv=line.match(/\bpv\s+([a-h][1-8][a-h][1-8][qrbn]?)/i)?.[1]?.toLowerCase()||null;
+        if(multipv===2&&depth>=5&&(cpMatch||mateMatch)&&depth>=(search.second?.depth||0)){
+          const mate=mateMatch?Number(mateMatch[1]):null;
+          search.second={depth,cp:cpMatch?Number(cpMatch[1]):mate>0?1200:-1200,mate};
+          if(search.score){search.score.secondCp=search.second.cp;search.score.secondDepth=search.second.depth;}
+        }
         if(multipv===1&&depth>=5&&(cpMatch||mateMatch)&&depth>=(search.score?.depth||0)){
           const mate=mateMatch?Number(mateMatch[1]):null;
           search.score={depth,cp:cpMatch?Number(cpMatch[1]):mate>0?1200:-1200,
-            mate,bestMove:pv};
+            mate,bestMove:pv,secondCp:search.second?.cp??null,secondDepth:search.second?.depth||0};
         }
         return;
       }
@@ -289,13 +294,13 @@ class ChessAIAdapter {
       if(epoch!==this.operationEpoch)return null;
       this._stopActiveSearch();
       this._send('setoption name UCI_Chess960 value false');
-      this._send('setoption name MultiPV value 1');
+      this._send('setoption name MultiPV value 2');
       this._send('setoption name UCI_LimitStrength value false');
       await this._ready();
       if(epoch!==this.operationEpoch)return null;
       this._send('position fen '+fen);
       return await new Promise((resolve,reject)=>{
-        const search={evaluateOnly:true,score:null,resolve,reject,timer:null};
+        const search={evaluateOnly:true,score:null,second:null,resolve,reject,timer:null};
         search.timer=setTimeout(()=>{
           if(this.activeSearch!==search)return;
           this.activeSearch=null;this._send('stop');resolve(search.score||null);
