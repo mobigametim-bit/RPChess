@@ -277,7 +277,7 @@ function continueRun() {
     try{
       const id=activeRun.id;
       if(!activeRun.kingdomMap){await beginJourney();return;}
-      const {openMap}=await import('./kingdom-map-app.mjs?v=20261115-polish-v1');
+      const {openMap}=await import('./kingdom-map-app.mjs?v=20261112-province-colors-v2');
       if(readRun()?.id!==id)return;
       openMap({detail:{source:'run-continue',runId:id}});
       if(document.querySelector('[data-kingdom-map-screen]')?.hidden!==false)
