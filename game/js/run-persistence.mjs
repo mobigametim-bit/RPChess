@@ -1,4 +1,5 @@
-import {normalizeHeroMastery} from './hero-threat.mjs';
+import {normalizeHeroMastery,rollHeroThreat} from './hero-threat.mjs';
+import {readPlayerRating,threatStarsForPower} from './player-rating.mjs';
 import { isCaravanState } from './caravan-core.mjs';
 import { createStarterRoster } from './roster-data.mjs';
 import { platform } from './platform.mjs';
@@ -84,7 +85,15 @@ function hydrateCurrentRosterCopy(run) {
   {...character,raceTag:recruitProfile(character.id).raceTag}:character));})};
 }
 function createRun({ now = Date.now(), id = null, playerName = 'Воин', commanderId = 'oathkeeper' } = {}) {
-  const roster=createStarterRoster().map(normalizeHeroMastery); const commander=commanderById(commanderId); Object.assign(roster[0],{raceTag:commander.raceTag,name:commander.titleRu,portrait:commander.portrait,pieceArt:commanderPieceArt(commander.id,'w'),commanderId:commander.id,description:commander.descriptionRu}); return {schemaVersion:RUN_SCHEMA_VERSION,id:id||runId(now),commanderId:commander.id,playerName:normalizePlayerName(playerName,'Воин'),createdAt:Number(now),updatedAt:Number(now),selectedCharacterId:roster[0].id,roster,army:[],armyReceipts:[],armyCasualtyReceipts:[],gold:STARTING_GOLD,supplies:STARTING_SUPPLIES,runStats:emptyRunStats(),resourceRewards:{skirmishCount:0,battleCount:0},ended:false,endReason:null,skirmishCount:0,lastSkirmish:null,battleCount:0,lastBattle:null,caravanCount:0,currentCaravan:null,currentCombat:null,lastCaravan:null,lastPuzzle:null,puzzleHistory:[],journeyStep:0,kingdomMap:null,currentTravelChoices:null,activeTravelChoice:null,currentSettlement:null,currentPuzzle:null,artifacts:{},combatArtifactChoice:null};
+  const newId=id||runId(now);
+  const powerCap=threatStarsForPower(readPlayerRating().power);
+  // Rolled ONCE on run creation, stored in each hero. The king is only
+  // a manual commander and never gains automatic chess mastery.
+  const roster=createStarterRoster().map(hero=>normalizeHeroMastery(
+   hero.isRunKing?hero:{...hero,
+    threatLevel:rollHeroThreat(newId+':starter:'+hero.id,powerCap),
+    threatSource:'power-roll-v1'}));
+  const commander=commanderById(commanderId); Object.assign(roster[0],{raceTag:commander.raceTag,name:commander.titleRu,portrait:commander.portrait,pieceArt:commanderPieceArt(commander.id,'w'),commanderId:commander.id,description:commander.descriptionRu}); return {schemaVersion:RUN_SCHEMA_VERSION,id:newId,commanderId:commander.id,playerName:normalizePlayerName(playerName,'Воин'),createdAt:Number(now),updatedAt:Number(now),selectedCharacterId:roster[0].id,roster,army:[],armyReceipts:[],armyCasualtyReceipts:[],gold:STARTING_GOLD,supplies:STARTING_SUPPLIES,runStats:emptyRunStats(),resourceRewards:{skirmishCount:0,battleCount:0},ended:false,endReason:null,skirmishCount:0,lastSkirmish:null,battleCount:0,lastBattle:null,caravanCount:0,currentCaravan:null,currentCombat:null,lastCaravan:null,lastPuzzle:null,puzzleHistory:[],journeyStep:0,kingdomMap:null,currentTravelChoices:null,activeTravelChoice:null,currentSettlement:null,currentPuzzle:null,artifacts:{},combatArtifactChoice:null};
 }
 function readRun(storage = null) { const target=resolveStorage(storage); if(!target)return null; try{const parsed=JSON.parse(target.getItem(RUN_STORAGE_KEY)||'null');if(!parsed||typeof parsed!=='object')return null;if(parsed.schemaVersion!==RUN_SCHEMA_VERSION){target.removeItem(RUN_STORAGE_KEY);return null;}const hydrated=hydrateCurrentRosterCopy(parsed);return isValidRun(hydrated)?hydrated:null;}catch{return null;} }
 function previousStoredRun(target) { if(!target)return null;try{const parsed=JSON.parse(target.getItem(RUN_STORAGE_KEY)||'null');if(!parsed||typeof parsed!=='object'||parsed.schemaVersion!==RUN_SCHEMA_VERSION)return null;const hydrated=hydrateCurrentRosterCopy(parsed);return isValidRun(hydrated)?hydrated:null;}catch{return null;} }
