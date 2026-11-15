@@ -12,6 +12,7 @@ import {fantasyPiecePath} from './fantasy-piece.mjs';
 import {makeToggle,syncToggles} from './board-view-toggle.mjs';
 import {classifyStrongMove} from './finished-game-review.mjs';
 import {combatGoldReward} from './resources-core.mjs';
+import {armyCandidates} from './kingdom-army-core.mjs';
 import {currentLanguage} from './i18n.mjs';
 
 const C={
@@ -68,14 +69,18 @@ function ensure(){
   '<div class="wd-buttons"><button data-wd-action="close" class="wd-button"></button>'+
   '<button data-wd-action="start" class="wd-button wd-primary"></button></div></div></div>'+
   '<section class="wd-payment" data-wd-payment hidden></section>'+
-  '<section class="wd-play" data-wd-play hidden><div class="wd-play-layout"><aside class="wd-sidebar">'+
-  '<h3 data-wd-battle-title></h3><p data-wd-battle-info></p><div class="wd-move-history" data-wd-moves></div>'+
+  '<section class="wd-play" data-wd-play hidden><div class="wd-play-layout">'+
+  '<div class="wd-chess-stage"><div class="classic-board wd-chess-board" data-wd-board></div></div>'+
+  '<aside class="wd-sidebar"><h3 data-wd-battle-title></h3><p data-wd-battle-info></p>'+
+  '<div class="wd-view-toggle" data-wd-view-toggle></div>'+
+  '<div class="wd-move-history" data-wd-moves></div>'+
   '<div class="wd-play-controls"><button class="wd-button" data-wd-action="pause"></button>'+
   '<button class="wd-button" data-wd-action="speed">×1</button>'+
-  '<button class="wd-button" data-wd-action="skip"></button></div></aside>'+
-  '<div class="wd-chess-board" data-wd-board></div></div></section>'+
+  '<button class="wd-button" data-wd-action="skip"></button></div></aside></div></section>'+
   '<section class="wd-results" data-wd-results hidden></section></section>';
  document.body.append(root);
+ root.querySelector('[data-wd-view-toggle]').append(makeToggle());
+ syncToggles();
  root.addEventListener('click',onAction);
  root.addEventListener('dragover',e=>{if(e.target.closest('.wd-drop'))e.preventDefault()});
  root.addEventListener('drop',e=>{if(!e.target.closest('.wd-drop'))return;e.preventDefault();selectHero(e.dataTransfer?.getData('text/plain'))});
@@ -241,7 +246,7 @@ function commitStart(accepted){
  writeRun(started.run);resumeWeekly();
 }
 function newEngine(active){
- const chess=new ClassicChessEngine();
+ const chess=new ClassicChessEngine(active.fen||null);
  const map=new Map(active.formation.filter(p=>p.id).map(p=>[p.square,p.id]));
  const lost=new Set();
  for(const entry of active.moves){
@@ -274,18 +279,51 @@ function resumeWeekly(){
 }
 function renderBoard(){
  const board=root.querySelector('[data-wd-board]');board.replaceChildren();
- const active=weeklyState(readRun()).active;if(!active)return;
- const snap=engine.snapshot(),ranks=active.playerColor==='w'?[7,6,5,4,3,2,1,0]:[0,1,2,3,4,5,6,7];
+ const run=readRun(),active=weeklyState(run).active;if(!active)return;
+ const battlefield=active.encounter||run.kingdomMap?.cells?.[active.cellId]?.selectedEncounter||{};
+ const tiles=raceBoardTiles(battlefield.enemyRaceTag||battlefield.raceTag||'humans');
+ if(tiles){
+  board.dataset.boardRace=tiles.raceTag;
+  board.style.setProperty('--board-light-tile','url("'+new URL(tiles.light,document.baseURI).href+'")');
+  board.style.setProperty('--board-dark-tile','url("'+new URL(tiles.dark,document.baseURI).href+'")');
+ }
+ const allies=new Map(armyCandidates(run).map(c=>[c.id,c]));
+ const ranks=active.playerColor==='w'?[7,6,5,4,3,2,1,0]:[0,1,2,3,4,5,6,7];
  const files=active.playerColor==='w'?[0,1,2,3,4,5,6,7]:[7,6,5,4,3,2,1,0];
+ const snap=engine.snapshot();
+ const roles={k:'king',q:'queen',r:'rook',b:'bishop',n:'knight',p:'pawn'};
+ const last=active.moves.at(-1);
+ const badgeMarks={inaccuracy:'?!',mistake:'?',blunder:'??',good:'!',excellent:'!!'};
  for(const rank of ranks)for(const file of files){
-  const sq='abcdefgh'[file]+(rank+1),piece=snap.board[rank*8+file],button=h('button','wd-square '+((rank+file)%2?'wd-light':'wd-dark')+(sq===selectedSquare?' is-selected':''));
-  button.type='button';button.dataset.square=sq;
-  if(piece){button.append(image('assets/pieces/fantasy/'+piece.color+typeToCode[{k:'king',q:'queen',r:'rook',b:'bishop',n:'knight',p:'pawn'}[piece.type]]+'.svg','wd-piece'));}
-  const last=active.moves.at(-1);
-  if(last?.uci.slice(2,4)===sq&&last.grade)button.append(h('span','wd-grade',last.grade));
+  const sq='abcdefgh'[file]+(rank+1),piece=snap.board[rank*8+file];
+  const light=(rank+file)%2!==0;
+  const button=h('button','wd-square classic-square '+(light?'classic-square--light':'classic-square--dark')+
+   (sq===selectedSquare?' is-selected':'')+(last&&(last.uci.slice(0,2)===sq||last.uci.slice(2,4)===sq)?' wd-last':''));
+  button.type='button';button.dataset.square=sq;button.setAttribute('aria-label',sq);
+  if(piece){
+   const role=roles[piece.type];let art;
+   if(piece.color===active.playerColor){
+    const id=identities.get(sq),recruit=allies.get(id);
+    art=id==='weekly:free-king'?boardRacePiecePath('humans','king',piece.color):
+      recruit?boardPieceArtForCharacter(recruit,piece.color,role):
+      boardRacePiecePath('orcs',role,piece.color);
+   }else art=boardPieceArtForTheme(battlefield,role,piece.color);
+   button.append(image(art,'wd-battle-unit classic-piece',''));
+   button.append(image(fantasyPiecePath(piece.type,piece.color),'wd-battle-simple rpchess-fantasy-piece',''));
+  }
+  if(last?.uci.slice(2,4)===sq&&badgeMarks[last.grade]){
+   const grade=h('span','mentor-square-grade'+(['good','excellent'].includes(last.grade)?' mentor-square-grade--good':''),
+    badgeMarks[last.grade]);grade.title=gradeLabel(last.grade);
+   button.append(grade);
+  }
   button.addEventListener('click',()=>manualSquare(sq));board.append(button);
  }
 }
+const GRADE_LABELS={
+ ru:{good:'Хороший ход',excellent:'Блестящий ход',inaccuracy:'Неточность',mistake:'Ошибка',blunder:'Зевок'},
+ en:{good:'Good move',excellent:'Brilliant move',inaccuracy:'Inaccuracy',mistake:'Mistake',blunder:'Blunder'}
+};
+function gradeLabel(kind){return GRADE_LABELS[currentLanguage()==='en'?'en':'ru'][kind]||'';}
 function renderBattle(){
  const active=weeklyState(readRun()).active;if(!active)return;
  setText('[data-wd-battle-info]',active.mode==='auto'?t('battleAuto'):(engine.turn()===active.playerColor?t('battleManual'):t('thinking')));
