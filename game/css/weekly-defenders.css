@@ -237,3 +237,10 @@ html[data-simple-pieces="1"] .wd-overlay .wd-battle-simple{
  .wd-result-reward{padding:5px 2px}
  .wd-result-reward small{font-size:9px}
 }
+
+/* Mentor's semantic grade symbols, not generic ✓ / ? glyphs. */
+.wd-grade-legend{display:flex;flex-wrap:wrap;gap:6px 9px;align-items:center}
+.wd-grade-caption{display:inline-flex;align-items:center;gap:3px;white-space:nowrap;
+ font-size:10px;color:#ccbfa4}
+.wd-grade-caption em{font-size:13px!important;font-style:normal}
+.wd-overlay button[hidden]{display:none!important}
