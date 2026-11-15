@@ -38,7 +38,7 @@ function t(k){return C[currentLanguage()==='en'?'en':'ru'][k]||k;}
 const typeToCode={king:'K',queen:'Q',rook:'R',bishop:'B',knight:'N',pawn:'P'};
 let root=null,selectedHeroId=null,cellId=null,engine=null,adapter=null;
 let identities=new Map(),capturedIds=new Set(),selectedSquare=null,paused=false,speed=1,skip=false,thinking=false;
-let turnTimer=null,session=0,lastResult=null;
+let turnTimer=null,session=0,lastResult=null,movePending=false;
 function h(tag,cls='',text=''){
  const e=document.createElement(tag);if(cls)e.className=cls;if(text)e.textContent=text;return e;
 }
@@ -207,7 +207,7 @@ function resumeWeekly(){
   const recreated=newEngine(active);engine=recreated.chess;identities=recreated.identities;capturedIds=recreated.lost;
  }catch(e){console.error(e);return false;}
  session++;paused=false;speed=1;skip=false;thinking=false;lastResult=null;
- adapter?.destroy?.();adapter=new ChessAIAdapter();
+ adapter?.destroy?.();adapter=new ChessAIAdapter();movePending=false;
  showPane('play');setText('[data-wd-title]',t('battle'));setText('[data-wd-week]',t('week')+' '+active.week);
  setText('[data-wd-battle-title]',active.heroName+' · '+t('enemy'));
  renderBattle();scheduleTurn();return true;
@@ -238,7 +238,7 @@ function renderBattle(){
 }
 function manualSquare(sq){
  const active=weeklyState(readRun()).active;
- if(!active||active.mode!=='manual'||engine.turn()!==active.playerColor||thinking)return;
+ if(!active||active.mode!=='manual'||engine.turn()!==active.playerColor||thinking||movePending)return;
  if(!selectedSquare){if(engine.pieceAt(sq)?.color===active.playerColor){selectedSquare=sq;renderBoard();}return;}
  if(sq===selectedSquare){selectedSquare=null;renderBoard();return;}
  const choices=engine.legalMoves(selectedSquare).filter(m=>(m.uciTo||m.to)===sq);
@@ -247,7 +247,10 @@ function manualSquare(sq){
  const uci=selectedSquare+sq+promotion;selectedSquare=null;void playMove(uci);
 }
 async function playMove(uci){
+ if(movePending)return;
  const run=readRun(),active=weeklyState(run).active;if(!active||!engine)return;
+ movePending=true;
+ try{
  const stamp=session;
  // Two genuine Stockfish position scores feed the Mentor win-probability grader.
  // Failed analysis yields no badge, never a fabricated move assessment.
@@ -269,6 +272,7 @@ async function playMove(uci){
  renderBattle();
  if(engine.status().over||weeklyState(saved.run).active.moves.length>=400){finishBattle();return;}
  scheduleTurn();
+ }finally{movePending=false;}
 }
 function scheduleTurn(){
  clearTimeout(turnTimer);
