@@ -107,6 +107,25 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(key){return this.ma
   assert.strictEqual(threat.normalizeHeroMastery({pieceType:'queen'}).threatLevel,1);
   assert.strictEqual(threat.normalizeHeroMastery({pieceType:'rook',threatLevel:7,threatXp:56}).threatXp,56);
   const rating=await import(pathToFileURL(path.join(game,'js/player-rating.mjs')).href);
+
+  // Saves created under the now-cancelled role-price mapping migrate only
+  // untrained heroes. Experienced heroes keep their earned level and XP.
+  const legacy=persistence.createRun({id:'legacy-mastery-save'});
+  const untrained=legacy.roster.find(c=>c.id==='hero.aldric_wall');
+  const veteran=legacy.roster.find(c=>c.id==='hero.brother_orell');
+  delete untrained.threatSource;untrained.threatLevel=5;
+  delete veteran.threatSource;veteran.threatLevel=7;veteran.threatXp=41;
+  const storage=new MemoryStorage();
+  storage.setItem(persistence.RUN_STORAGE_KEY,JSON.stringify(legacy));
+  const migrated=persistence.readRun(storage);
+  const rolled=migrated.roster.find(c=>c.id===untrained.id);
+  const savedVeteran=migrated.roster.find(c=>c.id===veteran.id);
+  assert.strictEqual(rolled.threatSource,'power-roll-v1');
+  assert(rolled.threatLevel>=1&&rolled.threatLevel<=
+   rating.threatStarsForPower(rating.readPlayerRating().power));
+  assert.strictEqual(savedVeteran.threatLevel,7);
+  assert.strictEqual(savedVeteran.threatXp,41);
+
   for(const power of [400,600,1000,1800,2400,2600]){
    const level=rating.threatStarsForPower(power);
    for(let i=0;i<40;i++){
