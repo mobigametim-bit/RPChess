@@ -4,6 +4,7 @@ import {readPlayerRating} from './player-rating.mjs';
 import {commanderPieceArt,commanderById} from './commander-portraits.mjs';
 import {raceBoardTiles,boardRacePiecePath,hashString,RACE_TAGS} from './race-assets.mjs';
 import {difficultyForStars,starsText} from './encounter-difficulty.mjs';
+import {decorateThreat} from './hero-threat.mjs';
 import {TRAVEL_SUPPLY_COST,combatGoldReward,applyTravelSupplyCost} from './resources-core.mjs';
 import {puzzleBaseGold} from './puzzles/puzzle-core.mjs';
 import {gloryForRun} from './chronicle-core.mjs';
@@ -361,7 +362,7 @@ function routeCard(choice,run,cell,canVisitSettlement=false){
  const stats=document.createElement('div');stats.className='km-route-card__stats';
  if(['battle','skirmish','caravan','puzzle'].includes(choice.type)){
   const stars=document.createElement('span');stars.className='km-route-card__stars';
-  stars.textContent=starsText(choice.stars);
+  decorateThreat(stars,choice.stars,{language:currentLanguage()});
   stars.setAttribute('aria-label',t('travel.threatAria',{stars:choice.stars}));
   stats.append(stars);
  }
@@ -504,6 +505,8 @@ function showMap(){
  screen.hidden=false;document.body.classList.add('kingdom-map-active');
  window.scrollTo({top:0,behavior:'auto'});
  globalThis.RPChessResources?.render?.();
+ const current=readRun();
+ if(current?.weeklyDefenders?.active)void import('./weekly-defenders-app.mjs').then(m=>m.resumeWeekly());
 }
 function ensureMap(run){
  const power=readPlayerRating().power;
@@ -865,7 +868,9 @@ function render(){
     const amount=document.createElement('strong');
     amount.textContent=['battle','recruits'].includes(item.kind)?'!':String(item.amount);
     marker.append(icon,amount);
-    marker.setAttribute('aria-label',tr('collect')+': '+item.kind+' '+item.amount);
+    marker.setAttribute('aria-label',item.kind==='battle'?
+     (currentLanguage()==='en'?'Returned defender: assign commander':'Возрождённый защитник: назначить героя'):
+     tr('collect')+': '+item.kind+' '+item.amount);
     productions.append(marker);
    }
    if(flavorBurst?.id===id){
@@ -1106,10 +1111,9 @@ function claimWeekly(id){
   void beginWeeklyPuzzle(id,item);return;
  }
  if(item.kind==='battle'){
-  const acknowledged=acknowledgeReturn(run.kingdomMap,id);
-  if(!acknowledged.ok)return;
-  writeRun({...run,kingdomMap:acknowledged.map});
-  selected=id;render();return; // The already visible defender is the notification.
+  // Direct assignment from this marker: no extra notification or king movement.
+  void import('./weekly-defenders-app.mjs').then(mod=>mod.openWeekly(id));
+  return;
  }
  const result=collectProduction(run.kingdomMap,id);if(!result.ok)return;
  if(result.kind==='recruits'){
