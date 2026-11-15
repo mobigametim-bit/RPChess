@@ -1,0 +1,87 @@
+/* Presentation-only Glory v2 on the ORIGINAL royal_run_flag.png.
+   The run result keeps the game's defeated battlefield, logo and cut-corner buttons.
+   GoznakUI is supplied by the installed font-goznak.css cascade. */
+body.endless-run-active .endless-run-flag-content{
+  display:flex;flex-direction:column;min-width:0;min-height:0;
+  inset:15% 21% 24%;gap:clamp(2px,.65vh,6px);
+  overflow-y:auto;overflow-x:hidden;text-align:center;
+  scrollbar-width:thin;scrollbar-color:#bf9554 transparent
+}
+body.endless-run-active .endless-run-flag-content h1{
+  font-size:clamp(21px,2.2vw,33px);font-weight:800;line-height:1.06;
+  margin:0;color:#ffdf93
+}
+body.endless-run-active .endless-run-flag-content .endless-run-reason{
+  font-size:clamp(10px,.92vw,13px);line-height:1.12;
+  margin:0;color:#f1dcb2
+}
+.endless-v2-hero{
+  display:flex;gap:6px;min-width:0;align-items:center;justify-content:center;
+  padding:4px 0;border-bottom:1px solid rgba(231,179,80,.55)
+}
+.endless-v2-hero>img{
+  display:block;flex:none;width:clamp(26px,3vw,39px);height:clamp(26px,3vw,39px);
+  object-fit:cover;object-position:center 20%;border:1px solid #cfaf66;
+  background:#10273f
+}
+.endless-v2-hero-copy{min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left}
+.endless-v2-hero-copy strong{
+  display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap;font-size:clamp(11px,1vw,14px);line-height:1.1;color:#fff3d2
+}
+.endless-v2-hero-copy small{font-size:clamp(9px,.7vw,11px);color:#e5cea1;white-space:nowrap}
+.endless-v2-headline{
+  display:grid;grid-template-columns:1fr 1fr;gap:6px;align-items:center;
+  padding:3px 0 4px;border-bottom:1px solid rgba(231,179,80,.55)
+}
+.endless-v2-headline>div{display:grid;gap:1px;justify-items:center;min-width:0}
+.endless-v2-headline span{font-size:clamp(10px,.87vw,12px);text-transform:uppercase;color:#ffe0a3;letter-spacing:.04em}
+.endless-v2-headline strong{font-size:clamp(28px,3.7vw,50px);font-weight:800;line-height:1;color:#fff3cf;font-variant-numeric:tabular-nums}
+.endless-v2-headline small{font-size:clamp(8px,.7vw,10px);line-height:1.1;color:#e6c995;min-height:1em}
+.endless-v2-section{display:flex;gap:7px;align-items:center;justify-content:center;font-weight:800;font-size:clamp(10px,.83vw,13px);color:#ffdf9e;text-transform:uppercase}
+.endless-v2-section:before,.endless-v2-section:after{content:'';flex:1;height:1px;background:linear-gradient(90deg,transparent,#c79855)}
+.endless-v2-section:after{transform:rotate(180deg)}
+body.endless-run-active .endless-run-flag-content .endless-run-metrics{
+  flex:1 1 auto;display:grid;min-height:0!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  grid-template-rows:repeat(5,minmax(30px,1fr))!important;
+  gap:1px 5px!important
+}
+body.endless-run-active .endless-run-flag-content .endless-run-metric{
+  display:grid;grid-template-columns:clamp(19px,2.5vw,33px) minmax(0,1fr)!important;
+  grid-template-rows:1fr 1fr!important;align-items:center;
+  min-height:0!important;gap:0 5px;border-bottom:1px solid rgba(231,179,80,.38);
+  text-align:left
+}
+body.endless-run-active .endless-run-flag-content .endless-run-metric img{
+  grid-row:1/3;width:100%;height:100%;max-height:36px;object-fit:contain
+}
+body.endless-run-active .endless-run-flag-content .endless-run-metric span{
+  align-self:end;font-size:clamp(9px,.82vw,12px)!important;
+  line-height:1.05!important;font-weight:800;color:#ffdc98
+}
+body.endless-run-active .endless-run-flag-content .endless-run-metric strong{
+  align-self:start;font-size:clamp(14px,1.6vw,23px)!important;
+  line-height:1.08!important;font-weight:800;color:#fff5d8
+}
+@media(orientation:landscape) and (max-height:600px){
+  html[data-landscape-ui='1'] body.endless-run-active .endless-run-flag-content{
+    inset:14% 20% 24%!important;gap:2px!important;overflow-y:auto!important
+  }
+  html[data-landscape-ui='1'] body.endless-run-active .endless-run-flag-content h1{
+    font-size:clamp(17px,4.2vh,23px)!important
+  }
+  html[data-landscape-ui='1'] body.endless-run-active .endless-v2-hero{padding:1px 0}
+  html[data-landscape-ui='1'] body.endless-run-active .endless-v2-hero>img{width:24px;height:24px}
+  html[data-landscape-ui='1'] body.endless-run-active .endless-v2-headline strong{font-size:clamp(19px,5vh,28px)}
+  html[data-landscape-ui='1'] body.endless-run-active .endless-run-flag-content .endless-run-metrics{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    grid-template-rows:repeat(5,minmax(27px,1fr))!important;height:auto!important;
+    flex:1 0 146px!important;overflow:visible!important
+  }
+  html[data-landscape-ui='1'] body.endless-run-active .endless-run-flag-content .endless-run-metric{
+    grid-template-columns:clamp(16px,3vh,25px) minmax(0,1fr)!important
+  }
+  html[data-landscape-ui='1'] body.endless-run-active .endless-run-flag-content .endless-run-metric span{font-size:clamp(8px,1.8vh,10px)!important}
+  html[data-landscape-ui='1'] body.endless-run-active .endless-run-flag-content .endless-run-metric strong{font-size:clamp(11px,2.9vh,16px)!important}
+}
