@@ -7,7 +7,7 @@ for(const key of ['data-journey-choice-modal','data-journey-new','data-journey-c
 assert(html.includes('role="dialog"')&&js.includes("const active=Boolean(readRun()&&!readRun().ended)"),
  'Journey picker must use an accessible dialog and live saved-run status');
 assert(!html.includes('class="reboot-wordmark"'),'Main-menu brand logo must be absent');
-assert(html.includes('css/hud-nav-icons.css?v=20261115-arena-journey-v1'),
+assert(html.includes('css/hud-nav-icons.css?v=20261116-rival-button-v2'),
  'The shared top-HUD pictograms must be included after scene styling');
 const hudNavCss=fs.readFileSync(path.join(game,'css/hud-nav-icons.css'),'utf8');
 for(const relative of ['assets/ui/hud-main-menu.png','assets/ui/hud-squad.png','assets/ui/main-menu-settings.png'])
