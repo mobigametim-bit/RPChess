@@ -159,7 +159,7 @@ function openTravel(event){routing=false;activeRun=readRun();if(!activeRun)retur
     globalThis.sessionStorage?.getItem('rpchess.test.legacyTravel')==='1'){
   activeRun=ensureChoices(activeRun);renderChoices();showTravel();return;
  }
- void import('./kingdom-map-app.mjs?v=20261112-province-colors-v2').then(mod=>mod.openMap(event))
+ void import('./kingdom-map-app.mjs?v=20261116-trade-ui-v3').then(mod=>mod.openMap(event))
   .catch(error=>{console.error('[RPChess] Kingdom map could not load',error);
    activeRun=ensureChoices(activeRun);renderChoices();showTravel();});
 }
