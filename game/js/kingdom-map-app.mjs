@@ -478,7 +478,7 @@ function screenReady(){
  screen.style.setProperty('--km-king-px',MAP_LAYOUT.kingPx+'px');
  screen.style.setProperty('--km-inspector-width',MAP_LAYOUT.inspectorWidthPercent+'%');
  (document.querySelector('#app')||document.body).append(screen);
- screen.querySelector('[data-kingdom-roster]').addEventListener('click',()=>{hideMap();globalThis.dispatchEvent(new CustomEvent('rpchess:run-continue'));});
+ screen.querySelector('[data-kingdom-roster]').addEventListener('click',()=>{if(globalThis.RPChessRoster?.openRoster?.())hideMap();});
  screen.querySelector('[data-kingdom-settings]').addEventListener('click',()=>globalThis.RPChessOpenSettings?.());
  screen.querySelector('[data-kingdom-menu]').addEventListener('click',()=>{hideMap();globalThis.RPChessRoster?.returnToMenu?.();});
  // No manual annex clicks: the growing border follows persistent Power and wins.
