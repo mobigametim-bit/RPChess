@@ -254,7 +254,7 @@ function drawWaterRoads(ctx,seed,left,top,width,height,map=null){
  }
  ctx.restore();
 }
-function drawTerrainSymbols(ctx,seed,left,top,width,height,repaint,map=null){
+function drawTerrainSymbols(ctx,seed,left,top,width,height,repaint,map=null,layer='all'){
  // Mirror Atlas Lab v6 drawNature(), including multiple stamps per node,
  // independent shifts, sprite salts, scale variation and biome mapping.
  const step=VISUAL.stampSpacing;
@@ -266,6 +266,10 @@ function drawTerrainSymbols(ctx,seed,left,top,width,height,repaint,map=null){
   const t=terrainAt(seed,gx,gy);
   const semantic=(map?.worldGeneratorVersion||5)>=6?
    biomeAt(seed,Math.floor(gx),Math.floor(gy)):t.kind;
+  // Render foliage last so forests and trees never sit under dry land, hills,
+  // cracked wasteland or marsh decals, regardless of world coordinate order.
+  if(layer==='forest'&&semantic!=='forest')continue;
+  if(layer==='background'&&semantic==='forest')continue;
   const kind=semantic==='forest'?'forest_clusters':
    semantic==='mountain'?'mountain_clusters':'hills_rocks';
   const density=semantic==='marsh'||semantic==='wasteland'?0:
@@ -368,9 +372,12 @@ function renderParchment(canvas,{seed,view,columns,rows,map,resolution=1,detailC
  drawWaterRoads(detailCtx,seed,left,top,columns,rows,map);
  canvas.dataset.playerRoadSegments=String(drawKingdomRoads(detailCtx,{map,view,columns,rows}));
  canvas.dataset.roadLayer=detailCanvas?'terrain-details':'terrain';
- // Marshes belong UNDER forests; keep landmarks on the original upper layer.
+ // Ground and dry/barren terrain come first. Marshes/wasteland are the
+ // next ground layer; forests and all trees are painted above BOTH groups.
+ // Landmarks (e.g. bridges) stay on top of vegetation.
+ drawTerrainSymbols(detailCtx,seed,left,top,columns,rows,repaint,map,'background');
  drawOptionalNature(detailCtx,seed,left,top,columns,rows,map,repaint,'marsh');
- drawTerrainSymbols(detailCtx,seed,left,top,columns,rows,repaint,map);
+ drawTerrainSymbols(detailCtx,seed,left,top,columns,rows,repaint,map,'forest');
  drawOptionalNature(detailCtx,seed,left,top,columns,rows,map,repaint,'landmarks');
  drawFogInk(detailCtx,seed,left,top,columns,rows,map,repaint);
  // Opaque fog still lives in its own upper canvas, above concealed site sprites.
