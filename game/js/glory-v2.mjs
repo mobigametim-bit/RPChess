@@ -45,10 +45,20 @@ function scoreForAchievements(glory){
 function kingdomAchievements(map){
   if(!map||typeof map!=='object')return {territories:0,outposts:0,settlements:0,kingdom:0};
   const validCell=id=>typeof id==='string'&&/^-?\d+,-?\d+$/.test(id);
-  const territories=new Set((Array.isArray(map.battleConqueredCells)?map.battleConqueredCells:[]).filter(validCell)).size;
+  // The Chronicle must report the SAME sovereignty count as the Kingdom HUD:
+  // Castle + central territory + outposts + Battle conquests + annexed tiles.
+  const conquests=new Set((Array.isArray(map.battleConqueredCells)?map.battleConqueredCells:[]).filter(validCell));
+  const territories=new Set([
+    ...(Number.isSafeInteger(map.castle?.x)&&Number.isSafeInteger(map.castle?.y)
+      ?[map.castle.x+','+map.castle.y]:[]),
+    ...(Array.isArray(map.centralOwnedCells)?map.centralOwnedCells:[]),
+    ...(Array.isArray(map.outposts)?map.outposts:[]).flatMap(p=>Array.isArray(p?.cells)?p.cells:[]),
+    ...conquests,
+    ...Object.entries(map.cells||{}).filter(([,cell])=>cell?.annexed).map(([id])=>id)
+  ].filter(validCell)).size;
   const outposts=new Set((Array.isArray(map.outposts)?map.outposts:[]).map(p=>p?.id).filter(validCell)).size;
   const settlements=new Set((Array.isArray(map.builtSettlements)?map.builtSettlements:[]).map(p=>p?.id).filter(validCell)).size;
-  return {territories,outposts,settlements,kingdom:territories*2+outposts*12+settlements*10};
+  return {territories,outposts,settlements,kingdom:conquests.size*2+outposts*12+settlements*10};
 }
 function powerMultiplier(power){
   const p=Math.max(0,Math.min(1000000,safeNumber(power)));
