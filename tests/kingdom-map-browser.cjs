@@ -1775,16 +1775,14 @@ async function assertTileImage(page,cellId){
   await servicesPage.locator('[data-reboot-foundation]:not([hidden])').waitFor();
   await servicesPage.locator('[data-new-game]').click();
   await servicesPage.locator('[data-journey-continue]').click();
-  await servicesPage.locator('[data-roster-screen]:not([hidden])').waitFor();
-  await servicesPage.locator('[data-roster-travel]').click();
-  await servicesPage.locator('[data-settlement-screen]:not([hidden])').waitFor({timeout:18000});
-  assert.equal((await read(servicesPage)).supplies,provisionsBefore,
-    'Resuming a cleared Settlement must not charge Supplies again');
-  await servicesPage.locator('[data-settlement-continue]').click();
+  // The owner-approved Continue Journey now opens the Kingdom immediately,
+  // without the formerly mandatory roster -> travel screen.
   await servicesPage.locator('[data-kingdom-map-screen]:not([hidden])').waitFor({timeout:18000});
+  assert.equal(await servicesPage.locator('[data-roster-screen]:not([hidden])').count(),0,
+    'Continue Journey must not detour through the roster');
+  assert.equal((await read(servicesPage)).supplies,provisionsBefore,
+    'Returning directly to Kingdom from a cleared Settlement must not charge again');
   const finishedServices=await read(servicesPage);
-  assert.equal(finishedServices.activeTravelChoice,null,
-    'Settlement exit must clear the saved active choice');
   assert.equal(finishedServices.supplies,provisionsBefore,
     'Settlement exit must preserve provisions after reload');
   assert.equal(finishedServices.kingdomMap.cells['1,0'].status,'completed');
