@@ -7,7 +7,7 @@ import {difficultyForStars,starsText} from './encounter-difficulty.mjs';
 import {decorateThreat} from './hero-threat.mjs';
 import {TRAVEL_SUPPLY_COST,combatGoldReward,applyTravelSupplyCost} from './resources-core.mjs';
 import {puzzleBaseGold} from './puzzles/puzzle-core.mjs';
-import {gloryForRun} from './chronicle-core.mjs';
+import {calculateGloryV2} from './glory-v2.mjs';
 import {ARENA_KEY,SHARD_ICON,normalizeArena,arenaSummary,addEvent,spendingTime,
  KINGDOM_OUTPOST_SHARD_COST} from './arena-core.mjs?v=20261109-kingdom-economy-v7';
 import {platform} from './platform.mjs';
@@ -719,7 +719,7 @@ function render(){
   ['.km-resource--points',tr('lands')],
   ['.km-resource--shards',tr('shards')]
  ]){const item=screen.querySelector(selector);item.title=label;item.setAttribute('aria-label',label);}
- const glory=String(gloryForRun(run.journeyStep,power));
+ const glory=String(calculateGloryV2(run,power).glory);
  screen.querySelector('[data-kingdom-glory]').textContent=glory;
  screen.querySelector('[data-kingdom-heading-glory-value]').textContent=glory;
  const gloryLabel=runtimeT(currentLanguage(),'chronicle.glory');
