@@ -121,6 +121,7 @@ function candidateCells(map,industry=map?.industry){
   ...Object.keys(map.cells||{}).filter(id=>map.cells[id]?.annexed)]);
  const occupied=occupiedRoadCells(map);
  for(const id of (industry?.buildings||[]).map(b=>b.id))occupied.add(id);
+ for(const site of map.tradePosts||[])occupied.add(site.id);
  for(const post of map.outposts||[])occupied.add(post.id);
  for(const settlement of map.builtSettlements||[])occupied.add(settlement.id);
  for(const [id,cell] of Object.entries(map.cells||{}))
