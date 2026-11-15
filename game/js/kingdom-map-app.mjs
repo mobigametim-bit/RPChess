@@ -860,6 +860,28 @@ function render(){
     tower.src='assets/kingdom-parchment/decor_minor_landmarks/04_watchtower.png';
     tower.alt='';tower.loading='lazy';btn.append(tower);
    }
+   const tradeSite=tradeSites.get(id);
+   if(visible&&tradeSite){
+    const tent=document.createElement('img');
+    tent.src=TRADING_TENT_ICON;tent.alt='';
+    tent.className='km-object km-object--trade';
+    btn.append(tent);
+    btn.setAttribute('aria-label',tr('tradeTent'));
+    const level=document.createElement('small');level.className='km-industry-level';
+    level.textContent=['','I','II','III','IV','V'][tradeSite.level]||'I';
+    btn.append(level);
+    const amount=pendingTradeGold(map,id);
+    if(owned&&amount>0){
+     const pickup=document.createElement('button');pickup.type='button';
+     pickup.className='km-production-marker';pickup.dataset.kingdomCollect=id;
+     pickup.dataset.kingdomTradeCollect=id;pickup.dataset.productionKind='gold';
+     pickup.style.left=((col+CENTER_X+.62)*100/WIDTH)+'%';
+     pickup.style.top=((row+CENTER_Y+.13)*100/HEIGHT)+'%';
+     const icon=document.createElement('img');icon.src=GOLD_ICON;icon.alt='';
+     const label=document.createElement('strong');label.textContent=String(amount);
+     pickup.append(icon,label);productions.append(pickup);
+    }
+   }
    const industrySite=industrySites.get(id);
    if(visible&&industrySite){
     const building=document.createElement('span');
@@ -1006,6 +1028,7 @@ function render(){
    knownChosen.status==='completed'&&knownChosen.selectedEncounter?.type==='settlement')));
  else{
   slot.replaceChildren();
+  const tradeSite=tradeSites.get(selectedId);
   const industrySite=industrySites.get(selectedId);
   const industryBuilding=industrySite&&BUILDING_TYPES[industrySite.kind];
   const industryActive=Boolean(industryBuilding&&industrySite.builtWeek<industryWeek);
@@ -1020,8 +1043,10 @@ function render(){
    info?.type==='empty'?'':
    info?.status==='completed'?tr('complete'):tr('discover');
   screen.querySelector('[data-kingdom-inspector-title]').textContent=
-   industrySite?industryName(industrySite.kind):header;
-  screen.querySelector('[data-kingdom-inspector-text]').textContent=industryDetail??description;
+   tradeSite?tr('tradeTent'):industrySite?industryName(industrySite.kind):header;
+  screen.querySelector('[data-kingdom-inspector-text]').textContent=tradeSite?
+    tr('level')+' '+['','I','II','III','IV','V'][tradeSite.level]+' · +'+
+    (tradeSite.level*3)+' '+tr('tradeWeekly'):industryDetail??description;
  }
  const ann=screen.querySelector('[data-kingdom-annex]'),outpost=screen.querySelector('[data-kingdom-outpost]'),earn=screen.querySelector('[data-kingdom-earn-shards]'),settlementBuild=screen.querySelector('[data-kingdom-build-settlement]');
  const id=selectedId;
@@ -1051,6 +1076,24 @@ function render(){
  earn.replaceChildren(actionArtwork(ARENA_ACTION_ICON,true));
  earn.title=tr('earn')+' '+tr('shards')+' '+tr('onArena');
  earn.setAttribute('aria-label',earn.title);
+ const buildTrade=screen.querySelector('[data-kingdom-build-trade]');
+ buildTrade.hidden=!selectedPoint||!canBuildTradePost(map,selectedPoint);
+ buildTrade.replaceChildren(actionArtwork(TRADING_TENT_ICON));
+ buildTrade.title=tr('buildTrade');
+ buildTrade.setAttribute('aria-label',buildTrade.title);
+ const controls=screen.querySelector('[data-kingdom-trade-controls]');
+ const limits=tradeLimits(run,selectedId);
+ controls.hidden=!limits.available;
+ if(limits.available){
+  for(const [direction,max] of [['buy',limits.buySupplies],['sell',limits.sellSupplies]]){
+   const slider=screen.querySelector('[data-kingdom-trade-'+direction+']');
+   slider.max=String(max);slider.value='0';
+   screen.querySelector('[data-kingdom-trade-'+direction+'-label]').textContent=
+     tr(direction==='buy'?'tradeBuy':'tradeSell');
+   screen.querySelector('[data-kingdom-trade-'+direction+'-apply]').textContent=tr('tradeExchange');
+   updateTradeSlider(direction);
+  }
+ }
   const hint=screen.querySelector('[data-kingdom-hint]');
  hint.hidden=!map.pendingCell;
  hint.textContent=map.pendingCell?tr('pending'):'';
@@ -1138,6 +1181,13 @@ function expireWeeklyPuzzleOnReturn(){
 function claimWeekly(id){
  const run=readRun();
  if(!run||run.ended||run.activeTravelChoice||run.kingdomMap?.pendingCell)return;
+ const trade=collectTradeGold(run.kingdomMap,id);
+ if(trade.ok){
+  writeRun({...run,kingdomMap:trade.map,gold:run.gold+trade.amount});
+  selected=id;showEconomyBurst(id,'gold',trade.amount);render();
+  globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated',{detail:{source:'kingdom-trade-income'}}));
+  return;
+ }
  const industry=collectIndustry(run.kingdomMap,id);
  if(industry.ok){
   const next={...run,kingdomMap:industry.map,
@@ -1271,6 +1321,35 @@ function refreshEconomyControls(){
   outpost.setAttribute('aria-label',outpost.title);
   if(earn)earn.hidden=!place||!needs;
  }
+}
+function updateTradeSlider(direction){
+ const slider=screen?.querySelector('[data-kingdom-trade-'+direction+']');
+ const output=screen?.querySelector('[data-kingdom-trade-'+direction+'-count]');
+ const button=screen?.querySelector('[data-kingdom-trade-'+direction+'-apply]');
+ if(!slider||!output||!button)return;
+ const value=Math.max(0,Number(slider.value)||0);
+ const cost=direction==='buy'?value*GOLD_TO_SUPPLY:value*SUPPLY_TO_GOLD;
+ output.textContent=value+' / '+cost+' '+(lang()==='en'?'Gold':'золота');
+ button.disabled=value<1;
+}
+function applyTradeExchange(direction){
+ const run=readRun(),id=selected||'';
+ const value=Number(screen?.querySelector('[data-kingdom-trade-'+direction+']')?.value);
+ const result=exchangeAtTradePost(run,id,direction,value);
+ if(!result.ok)return;
+ writeRun(result.run);render();
+ globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated',{detail:{source:'kingdom-trade-exchange'}}));
+}
+function constructTradePost(){
+ const run=readRun(),point=parsePoint(selected);
+ if(!run||run.ended||!point)return;
+ const result=buildTradePost(run.kingdomMap,point);
+ if(!result.ok)return;
+ const id=keyOf(point.x,point.y);
+ const map=advanceDay(result.map,'build-trade:'+id);
+ writeRun({...run,kingdomMap:map});selected=id;render();
+ report(tr('tradeTent')+' · '+tr('level')+' '+['','I','II','III','IV','V'][result.post.level]);
+ globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated',{detail:{source:'kingdom-trading-tent'}}));
 }
 function constructSettlement(){
  const run=readRun(),map=run?.kingdomMap,point=parsePoint(selected);
