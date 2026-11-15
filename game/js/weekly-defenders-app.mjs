@@ -6,6 +6,12 @@ import {threatRank,decorateThreat,normalizeHeroMastery} from './hero-threat.mjs'
 import {ClassicChessEngine} from './classic-chess-engine.mjs';
 import {ChessAIAdapter} from './chess-ai-adapter.mjs';
 import {trainingMoveQualityWinChance} from './mentor-training-history.mjs';
+import {kingdomEncounterSprite} from './kingdom-map-assets.mjs';
+import {boardRacePiecePath,boardPieceArtForTheme,boardPieceArtForCharacter,heroPortraitArt,raceBoardTiles} from './race-assets.mjs';
+import {fantasyPiecePath} from './fantasy-piece.mjs';
+import {makeToggle,syncToggles} from './board-view-toggle.mjs';
+import {classifyStrongMove} from './finished-game-review.mjs';
+import {combatGoldReward} from './resources-core.mjs';
 import {currentLanguage} from './i18n.mjs';
 
 const C={
@@ -38,7 +44,7 @@ function t(k){return C[currentLanguage()==='en'?'en':'ru'][k]||k;}
 const typeToCode={king:'K',queen:'Q',rook:'R',bishop:'B',knight:'N',pawn:'P'};
 let root=null,selectedHeroId=null,cellId=null,engine=null,adapter=null;
 let identities=new Map(),capturedIds=new Set(),selectedSquare=null,paused=false,speed=1,skip=false,thinking=false;
-let turnTimer=null,session=0,lastResult=null,movePending=false;
+let turnTimer=null,session=0,lastResult=null,movePending=false,paymentModal=null,beforeFenForMove=null;
 function h(tag,cls='',text=''){
  const e=document.createElement(tag);if(cls)e.className=cls;if(text)e.textContent=text;return e;
 }
@@ -122,7 +128,7 @@ function renderHeroes(){
   button.type='button';button.disabled=!eligible;
   button.draggable=eligible;button.addEventListener('dragstart',e=>e.dataTransfer?.setData('text/plain',hero.id));
   button.addEventListener('click',()=>selectHero(hero.id));
-  button.append(image(hero.portrait||'generated_assets/unit_king_player.png','wd-hero-art'),h('b','',hero.name));
+  button.append(image(heroPortraitArt(hero),'wd-hero-art'),h('b','',hero.name));
   button.append(h('small','',hero.isRunKing?t('fight'):(!eligible?(hero.status==='healthy'?t('used'):t('wounded')):t('auto'))));
   if(!hero.isRunKing){const stars=h('div','wd-stars');decorateThreat(stars,hero.threatLevel,{language:currentLanguage()});button.append(stars);
    const progress=h('div','wd-progress'),fill=h('div');fill.style.width=(hero.threatXp||0)+'%';progress.append(fill);button.append(progress);}
@@ -136,11 +142,12 @@ function renderSetup(){
  setText('[data-wd-title]',t('title'));
  setText('[data-wd-available]',t('available'));setText('[data-wd-tip]',t('tutorial'));
  setText('[data-wd-gold-label]',t('gold'));
- const gold=Math.floor((36+9*cell.selectedEncounter.stars)/2);
+ const gold=Math.floor(combatGoldReward({encounterType:'battle',stars:cell.selectedEncounter.stars,playerColor:'w',status:{over:true,type:'checkmate',winner:'w'}})/2);
  setText('[data-wd-gold]',gold.toString());
  const opponent=root.querySelector('[data-wd-enemy]');opponent.replaceChildren();
- const race=cell.selectedEncounter.enemyRaceTag||cell.selectedEncounter.raceTag||'orcs';
- opponent.append(image('assets/kingdom-map/'+race+'/'+race+'_battle_128.svg','wd-art'),h('b','',t('enemy')));
+ // Same level-aware pawn→knight→bishop→rook→queen→king threat figure as the map.
+ const art=kingdomEncounterSprite(cell.selectedEncounter);
+ opponent.append(image(art||boardRacePiecePath('orcs','pawn','b'),'wd-art'),h('b','',t('enemy')));
  const stars=h('div','wd-stars');decorateThreat(stars,cell.selectedEncounter.stars,{language:currentLanguage()});
  opponent.append(stars,h('small','',t('army')));
  root.querySelector('.wd-foot [data-wd-action="close"]').textContent=t('cancel');
