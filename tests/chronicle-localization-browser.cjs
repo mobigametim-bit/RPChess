@@ -55,7 +55,7 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
       const {readRun,writeRun}=await import('./js/run-persistence.mjs');
       const {writePlayerRating}=await import('./js/player-rating.mjs');
       const current=readRun();
-      writeRun({...current,gloryV2:{version:2,events:[['battle','battle-a',5]]},journeyStep:50});
+      writeRun({...current,gloryV2:{version:2,events:[['battle','ba11e',5]]},journeyStep:50});
       writePlayerRating({power:1600,receipts:[]});
       window.RPChessChronicle.render();
     });
