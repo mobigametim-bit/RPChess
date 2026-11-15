@@ -202,6 +202,8 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
       assert(Math.abs(frame.board.width-frame.board.height)<=2,`Arena board remains square ${tag}`);
       assert(frame.pageWidth<=width+1,`Arena does not create page horizontal overflow ${tag}`);
       assert(frame.rivals.right<=frame.back.left+1 && frame.back.right<=frame.board.left+1,`Arena navigation stays in left rail ${tag}`);
+      assert(frame.rivals.left<=frame.head.left+24,
+        `Arena rival/Home icons must dock at the left edge, not the right of the info rail ${tag}`);
       assert(frame.head.left>=-1 && frame.head.right<=frame.board.left+1 && frame.head.top>=-1,`Arena summary stays in left rail ${tag}`);
       assert(Math.abs(frame.journal.top-frame.head.bottom)<=3,`Arena journal immediately follows the summary ${tag}`);
       assert(frame.journal.left>=-1 && frame.journal.right<=frame.board.left+1 && frame.journal.bottom<=height+1 && frame.journal.height>38,`Arena journal fits remaining height ${tag}`);
