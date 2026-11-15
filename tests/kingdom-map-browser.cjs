@@ -2034,6 +2034,68 @@ async function assertTileImage(page,cellId){
   assert.equal((await atlasResponse.body()).subarray(0,8).toString('hex'),'89504e470d0a1a0a',
     'production atlas must be a genuine PNG');
   await productionPage.close();
+  // Reuse the Kingdom browser regression to exercise a REAL completed
+  // Auto Battle. Its board must freeze with the shared mate aura/fall,
+  // then open the outcome only AFTER the 3-second ceremony.
+  const matePage=await browser.newPage({viewport:{width:1280,height:720}});
+  await matePage.goto(url,{waitUntil:'networkidle'});
+  await startNewRun(matePage,{legacyTravel:false});
+  await matePage.evaluate(async()=>{
+    const {ClassicChessEngine}=await import('./js/classic-chess-engine.mjs');
+    const fen='7k/6Q1/5K2/8/8/8/8/8 b - - 0 1';
+    if(new ClassicChessEngine(fen).status().type!=='checkmate')
+      throw new Error('Weekly ceremony regression must start from true checkmate');
+    const {readRun,writeRun}=await import('./js/run-persistence.mjs');
+    const {createKingdomMap}=await import('./js/kingdom-map-core.mjs');
+    const original=readRun(),hero=original.roster.find(c=>!c.isRunKing);
+    const map=original.kingdomMap||createKingdomMap(original,400);
+    if(!hero||!map)throw new Error('Weekly Auto Battle regression fixture incomplete');
+    const active={
+      receiptId:'weekly:checkmate-ceremony:'+original.id,week:1,
+      cellId:'1,0',heroId:hero.id,heroName:hero.name,
+      mode:'auto',playerColor:'w',enemyLevel:1,heroLevel:1,heroXp:0,
+      paid:{chargedGold:0,chargedSupplies:0,unpaidValue:0},
+      selectionIds:['weekly:free-king'],formation:[{id:'weekly:free-king',square:'f6'}],
+      enemyFormation:[{id:'test:enemy-king',square:'h8'}],
+      encounter:{raceTag:'humans',enemyRaceTag:'humans'},
+      fen,moves:[],status:'playing'
+    };
+    writeRun({...original,kingdomMap:map,weeklyDefenders:{active,receipts:[]}});
+    const {resumeWeekly}=await import('./js/weekly-defenders-app.mjs');
+    if(!resumeWeekly())throw new Error('Cannot open saved weekly checkmate');
+  });
+  await matePage.locator('.wd-battle-screen.wd-mate-ceremony:not([hidden])')
+    .waitFor({timeout:12000});
+  const ceremony=await matePage.evaluate(()=>{
+    const board=document.querySelector('[data-wd-board]');
+    const loser=board.querySelector('.rpchess-king-defeated');
+    const winner=board.querySelector('.rpchess-king-victorious');
+    return {
+      loser:!!loser,winner:!!winner,
+      aura:loser?getComputedStyle(loser,'::after').backgroundImage:'',
+      fall:loser?getComputedStyle(loser.querySelector('.classic-piece')).animationName:'',
+      freeze:getComputedStyle(board,'::before').animationName,
+      boardVisible:document.querySelector('.wd-battle-screen')?.hidden===false,
+      resultVisible:document.querySelector('[data-wd-results]')?.hidden===false
+    };
+  });
+  assert(ceremony.winner&&ceremony.loser&&ceremony.aura.includes('aura_red.png'),
+    'weekly Auto Battle must reuse green/red royal checkmate aura classes');
+  assert(ceremony.fall.includes('rpchess-mate-king-fall')&&
+    ceremony.freeze.includes('wd-checkmate-freeze'),
+    'losing King falls and board freezes in weekly Auto Battle');
+  assert(ceremony.boardVisible&&!ceremony.resultVisible,
+    'final mating position must stay visible before the outcome');
+  await matePage.waitForTimeout(1100);
+  assert.equal(await matePage.locator('.wd-battle-screen:not([hidden])').count(),1,
+    'Auto Battle must hold its frozen board longer than one second');
+  await matePage.locator('[data-wd-results]:not([hidden])').waitFor({timeout:9000});
+  const settled=await read(matePage);
+  assert.equal(settled.weeklyDefenders.active,null);
+  assert.equal(settled.weeklyDefenders.receipts.length,1,
+    'weekly Auto Battle settlement must occur once after checkmate ceremony');
+  await matePage.close();
+  console.log('WEEKLY AUTO MATE PASS — royal auras, loser fall, freeze, 3s result hold and single reward');
   console.log('KINGDOM PRODUCTION PASS — manual icon collection, reload persistence, atlas, scale, biome and Castle II');
   console.log('KINGDOM MAP PASS — click-inspect, king drag, shortest routes, event stop, map pan, step supplies, red provinces');
  }finally{await browser.close()}
