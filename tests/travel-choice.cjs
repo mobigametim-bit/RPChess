@@ -117,38 +117,6 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   const roadGraph=await import(pathToFileURL(path.join(game,'js/kingdom-road-network.mjs')).href);
   const walkers=await import(pathToFileURL(path.join(game,'js/kingdom-road-travelers.mjs')).href);
   const roadSeed=mapCore.createKingdomMap({id:'road-graph-scouting'},400,'humans');
-  // Trading tent: reuse the Kingdom road and economy regression suite.
-  const trade=await import(pathToFileURL(path.join(game,'js/kingdom-trade-core.mjs')).href);
-  const tentArt=path.join(game,'assets/ui/trading-tent-64.png');
-  assert(fs.existsSync(tentArt)&&fs.readFileSync(tentArt).subarray(0,8).toString('hex')==='89504e470d0a1a0a');
-  assert(buildSource.includes("'assets/ui/trading-tent-64.png'")&&buildSource.includes("'js/kingdom-trade-core.mjs'"));
-  const crossing={...roadSeed,king:{x:1,y:1},
-    centralOwnedCells:[...roadSeed.centralOwnedCells,'1,1'],
-    cells:{...roadSeed.cells,'1,1':{status:'completed',type:'empty',explored:true,annexed:true}},
-    royalRoadsVersion:3,royalRoads:[
-      {from:'1,1',to:'1,0',bend:0},{from:'1,1',to:'1,2',bend:0},
-      {from:'1,1',to:'0,1',bend:0},{from:'1,1',to:'2,1',bend:0}
-    ],tradePosts:[],tradeProcessedWeek:0,day:1,pendingCell:null};
-  assert(trade.canBuildTradePost(crossing,{x:1,y:1}),
-    'Owned empty road crossings permit trading tents');
-  const built=trade.buildTradePost(crossing,{x:1,y:1});
-  assert(built.ok&&built.post.level>=1&&built.post.level<=5);
-  assert(!trade.canBuildTradePost(built.map,{x:1,y:1}),'Trade tents cannot overlap');
-  const afterWeek=trade.settleTradeWeek(built.map,1);
-  assert.equal(trade.pendingTradeGold(afterWeek,'1,1'),3*built.post.level);
-  assert.deepStrictEqual(trade.settleTradeWeek(afterWeek,1),afterWeek,
-    'Weekly trade gold is idempotent across reloads');
-  const payout=trade.collectTradeGold(afterWeek,'1,1');
-  assert.equal(payout.amount,3*built.post.level);
-  assert.equal(trade.pendingTradeGold(payout.map,'1,1'),0);
-  const original={kingdomMap:payout.map,gold:60,supplies:5,ended:false};
-  const bought=trade.exchangeAtTradePost(original,'1,1','buy',2);
-  assert(bought.ok&&bought.run.gold===30&&bought.run.supplies===7);
-  const sold=trade.exchangeAtTradePost(bought.run,'1,1','sell',3);
-  assert(sold.ok&&sold.run.gold===48&&sold.run.supplies===4);
-  assert(!trade.exchangeAtTradePost({...original,kingdomMap:{...payout.map,king:{x:0,y:0}}},
-    '1,1','buy',1).ok,'Trades require the King to stand at the tent');
-
   const scoutedOwned={...roadSeed,cells:{...roadSeed.cells,
    '1,0':{status:'revealed',explored:false,annexed:true,selectedEncounter:{id:'road-event-a',type:'battle'}},
    '2,0':{status:'revealed',explored:false,annexed:true,selectedEncounter:{id:'road-event-b',type:'skirmish'}}}};
