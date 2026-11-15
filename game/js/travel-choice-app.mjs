@@ -163,7 +163,15 @@ function openTravel(event){routing=false;activeRun=readRun();if(!activeRun)retur
   .catch(error=>{console.error('[RPChess] Kingdom map could not load',error);
    activeRun=ensureChoices(activeRun);renderChoices();showTravel();});
 }
-function openRoster(){if(routing)return;audio()?.click?.();hideTravel();globalThis.dispatchEvent(new CustomEvent('rpchess:run-continue'));}
+function openRoster(){
+ if(routing)return;
+ // Roster icon is explicit navigation to the squad. rpchess:run-continue
+ // now resumes the Journey directly and must NOT be used for this button.
+ const roster=globalThis.RPChessRoster;
+ if(!roster?.openRoster?.())return;
+ audio()?.click?.();
+ hideTravel();
+}
 function activeChoiceCompleted(run){const choice=run?.activeTravelChoice;if(!isTravelChoice(choice)||!['skirmish','battle'].includes(choice.type)||!Number.isInteger(choice.combatCountAtSelection))return false;return combatCount(run,choice)>choice.combatCountAtSelection;}
 function applyAftermathTravelLabels(){const a=document.querySelector('[data-aftermath-continue]'),b=document.querySelector('[data-battle-continue]');if(a)a.textContent=t('travel.continue');if(b)b.textContent=t('travel.continue');}
 function syncCombatCompletion(){activeRun=readRun();if(!activeRun)return;if(activeChoiceCompleted(activeRun)){activeRun=writeRun({...activeRun,activeTravelChoice:null});queueMicrotask(applyAftermathTravelLabels);}}
