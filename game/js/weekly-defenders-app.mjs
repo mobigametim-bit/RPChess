@@ -137,7 +137,7 @@ function renderSetup(){
  opponent.append(image('assets/kingdom-map/'+race+'/'+race+'_battle_128.svg','wd-art'),h('b','',t('enemy')));
  const stars=h('div','wd-stars');decorateThreat(stars,cell.selectedEncounter.stars,{language:currentLanguage()});
  opponent.append(stars,h('small','',t('army')));
- root.querySelector('[data-wd-action="close"]').textContent=t('cancel');
+ root.querySelector('.wd-foot [data-wd-action="close"]').textContent=t('cancel');
  renderCommander();renderHeroes();
 }
 function openWeekly(id){
