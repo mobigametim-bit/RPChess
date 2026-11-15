@@ -151,7 +151,7 @@ function alreadyRanked(best) {
 async function submitBestChronicle(){
   // Profile mode refreshes server-side from the authenticated saved snapshot
   // via unifiedLeaderboard(). Anonymous clients cannot submit old VK scores.
-  return {status:platform.profileEnabled?'already-submitted':'unavailable'};
+  return {status:platform.profileEnabled&&board.status==='ready'?'already-submitted':'unavailable'};
 }
 
 export {currentLeaderboard,loadLeaderboard,submitBestChronicle,signedLaunchQuery};
