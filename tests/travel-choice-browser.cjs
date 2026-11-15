@@ -97,7 +97,7 @@ async function assertRouteLoopStability(page, travel) {
   assert.strictEqual(after.appMains, baseline.appMains, '12 route loops must not accumulate owner scene roots');
   assert.deepStrictEqual(after.singletons, baseline.singletons, '12 route loops must not duplicate HUD/style/runtime singleton nodes');
   assert.strictEqual(after.routeCards, 3, 'Travel render must still own exactly three route-card nodes after 12 loops');
-  assert.strictEqual(after.probe.eventCounts.runContinue - baseline.probe.eventCounts.runContinue, 12, 'each Travel→Roster loop must dispatch exactly one run-continue');
+  assert.strictEqual(after.probe.eventCounts.runContinue - baseline.probe.eventCounts.runContinue, 0, 'explicit Travel→Roster navigation must never resume the run');
   assert.strictEqual(after.probe.eventCounts.travelRendered - baseline.probe.eventCounts.travelRendered, 12, 'each Roster→Travel loop must render Travel exactly once');
   assert.strictEqual(after.probe.eventCounts.runUpdated - baseline.probe.eventCounts.runUpdated, 12, 'the 12 explicit no-op run updates must not trigger hidden producer loops');
 }
