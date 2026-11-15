@@ -115,9 +115,9 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(key){return this.ma
   const veteran=legacy.roster.find(c=>c.id==='hero.brother_orell');
   delete untrained.threatSource;untrained.threatLevel=5;
   delete veteran.threatSource;veteran.threatLevel=7;veteran.threatXp=41;
-  const storage=new MemoryStorage();
-  storage.setItem(persistence.RUN_STORAGE_KEY,JSON.stringify(legacy));
-  const migrated=persistence.readRun(storage);
+  const legacyStorage=new MemoryStorage();
+  legacyStorage.setItem(persistence.RUN_STORAGE_KEY,JSON.stringify(legacy));
+  const migrated=persistence.readRun(legacyStorage);
   const rolled=migrated.roster.find(c=>c.id===untrained.id);
   const savedVeteran=migrated.roster.find(c=>c.id===veteran.id);
   assert.strictEqual(rolled.threatSource,'power-roll-v1');
