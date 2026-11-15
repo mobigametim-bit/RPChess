@@ -111,7 +111,7 @@ function drawFogInk(ctx,seed,left,top,width,height,map,repaint){
    drawVector(ctx,pickSprite(seed,'fog_of_war_shapes',x,y),px,py,size,size,VISUAL.fogInkOpacity,repaint);
   }
 }
-function drawLegacyOptionalNature(ctx,seed,left,top,width,height,map,repaint){
+function drawLegacyOptionalNature(ctx,seed,left,top,width,height,map,repaint,layer='all'){
  // Exact Atlas Lab v6 distribution: 3.6-world-unit cells; independently
  // scattered marsh and decorative landmark SVGs. No scouting '?' markers.
  const step=3.6;
@@ -120,7 +120,7 @@ function drawLegacyOptionalNature(ctx,seed,left,top,width,height,map,repaint){
    const x=xi*step+randomAt(seed,xi,yi,'extra-x')*step;
    const y=yi*step+randomAt(seed,xi,yi,'extra-y')*step;
    const t=terrainAt(seed,x,y);
-   if(t.wet>VISUAL.marshWetThreshold&&t.elevation<.59){
+   if(layer!=='landmarks'&&t.wet>VISUAL.marshWetThreshold&&t.elevation<.59){
     const count=Math.min(3,Math.ceil(VISUAL.marshDensity));
     for(let i=0;i<count;i++){
      if(randomAt(seed,xi,yi,'marsh'+i)>=Math.min(1,VISUAL.marshDensity-i))continue;
@@ -132,7 +132,7 @@ function drawLegacyOptionalNature(ctx,seed,left,top,width,height,map,repaint){
       (y+dy-top)*PARCHMENT_TILE-size/2,size,size,VISUAL.marshOpacity,repaint);
     }
    }
-   if(randomAt(seed,xi,yi,'landmark')<VISUAL.landmarkDensity){
+   if(layer!=='marsh'&&randomAt(seed,xi,yi,'landmark')<VISUAL.landmarkDensity){
     const size=PARCHMENT_TILE*VISUAL.landmarkSize;
     const src=extraSprite(seed,'landmarks',xi,yi);
     drawVector(ctx,src,(x-left)*PARCHMENT_TILE-size/2,
@@ -148,9 +148,10 @@ function biomeExtraSprite(seed,biome,x,y,salt){
  const items=extraGroups.marsh.filter(src=>allowed.has(src.split('/').pop().slice(0,2)));
  return items.length?items[hash32(seed+':'+biome+':'+x+':'+y+':'+salt)%items.length]:null;
 }
-function drawOptionalNature(ctx,seed,left,top,width,height,map,repaint){
+function drawOptionalNature(ctx,seed,left,top,width,height,map,repaint,layer='all'){
  if((map?.worldGeneratorVersion||5)<=5)
-  return drawLegacyOptionalNature(ctx,seed,left,top,width,height,map,repaint);
+  return drawLegacyOptionalNature(ctx,seed,left,top,width,height,map,repaint,layer);
+ if(layer!=='landmarks'){
  const step=3.6;
  for(let yi=Math.floor(top/step)-1;yi<=Math.ceil((top+height)/step);yi++)
   for(let xi=Math.floor(left/step)-1;xi<=Math.ceil((left+width)/step);xi++){
@@ -169,6 +170,8 @@ function drawOptionalNature(ctx,seed,left,top,width,height,map,repaint){
      (y+dy-top)*PARCHMENT_TILE-size/2,size,size,VISUAL.marshOpacity,repaint);
    }
   }
+ }
+ if(layer==='marsh')return;
  for(let y=Math.floor(top)-1;y<=Math.ceil(top+height);y++)
   for(let x=Math.floor(left)-1;x<=Math.ceil(left+width);x++){
    const landmark=landmarkAt(seed,x,y,{worldGeneratorVersion:6});
@@ -365,8 +368,10 @@ function renderParchment(canvas,{seed,view,columns,rows,map,resolution=1,detailC
  drawWaterRoads(detailCtx,seed,left,top,columns,rows,map);
  canvas.dataset.playerRoadSegments=String(drawKingdomRoads(detailCtx,{map,view,columns,rows}));
  canvas.dataset.roadLayer=detailCanvas?'terrain-details':'terrain';
+ // Marshes belong UNDER forests; keep landmarks on the original upper layer.
+ drawOptionalNature(detailCtx,seed,left,top,columns,rows,map,repaint,'marsh');
  drawTerrainSymbols(detailCtx,seed,left,top,columns,rows,repaint,map);
- drawOptionalNature(detailCtx,seed,left,top,columns,rows,map,repaint);
+ drawOptionalNature(detailCtx,seed,left,top,columns,rows,map,repaint,'landmarks');
  drawFogInk(detailCtx,seed,left,top,columns,rows,map,repaint);
  // Opaque fog still lives in its own upper canvas, above concealed site sprites.
 
