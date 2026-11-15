@@ -1066,6 +1066,12 @@ async function assertTileImage(page,cellId){
     function assertReceipt(ok,message){if(!ok)throw new Error(message)}
    },{runKey:key,type:kind,choice:encounter});
    await page.locator('[data-kingdom-map-screen]:not([hidden])').waitFor({timeout:15000});
+   // Scene visibility can precede the asynchronous battle-aftermath save.
+   // Wait for the actual persisted outcome, not just the map becoming visible.
+   await page.waitForFunction(runKey=>{
+     const run=JSON.parse(localStorage.getItem(runKey)||'null');
+     return run?.kingdomMap?.cells?.['1,0']?.status==='failed';
+   },key,{timeout:15000});
    const lost=await read(page);
    assert.equal(lost.kingdomMap.cells['1,0'].status,'failed');
    // Scene visibility may precede the inspector's asynchronous final paint.
