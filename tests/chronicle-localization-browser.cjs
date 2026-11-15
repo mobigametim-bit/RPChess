@@ -98,7 +98,7 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
       return {loaded:document.fonts.check("400 32px GoznakUI","Строчные буквы Aa Бб 2026"),
         italic:document.fonts.check("italic 400 32px GoznakUI","Наклонные Aa Бб"),
         body:family('body'),title:family('.chronicle-header h2'),
-        subheading:family('.chronicle-current h3'),
+        subheading:family('.chronicle-v2-profile-copy strong'),
         button:family('.reboot-menu-actions .reboot-button'),
         label:family('.chronicle-section-label'),
         otherTitle:family('.reboot-menu-screen h1')};
@@ -210,7 +210,7 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     });
     await page.reload({waitUntil:'networkidle'});
     assert.strictEqual(await panel.locator('h2').innerText(),'Chronicle','persisted English applies at startup');
-    assert.strictEqual(await panel.locator('[data-chronicle-current] h3').innerText(),'Тимур');
+    assert.strictEqual(await panel.locator('[data-chronicle-current] .chronicle-v2-profile-copy strong').innerText(),'Тимур');
     // Reuse this existing real-browser acceptance to capture a visual preview
     // of the exact JPEG sent to VK Stories, not a schematic test placeholder.
     const previews=await page.evaluate(async()=>{
