@@ -27,7 +27,7 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     assert.strictEqual(await page.locator('[data-arena-foes] button').count(),84);
     // The Journey icon in the catalog must use the same transparent HUD
     // hitbox as the adjacent Castle exit, not its previous gold tile.
-    const nav=await page.evaluate(()=>{
+    const journeyIconStyling=await page.evaluate(()=>{
       const journey=document.querySelector('[data-arena-journey]');
       const castle=document.querySelector('[data-arena-back]');
       const a=getComputedStyle(journey),b=getComputedStyle(castle);
@@ -37,12 +37,12 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
         castleBorder:b.borderWidth,castleShadow:b.boxShadow,
         castleBackground:b.backgroundColor};
     });
-    assert.equal(nav.hasImage,false,'Journey icon uses the shared CSS HUD artwork');
-    assert(nav.bg.includes('main-menu-journey.png'),'Journey nav must show the real menu pictogram');
-    assert.equal(nav.border,nav.castleBorder,'Journey and Castle need identical borderless hitboxes');
-    assert.equal(nav.shadow,nav.castleShadow,'Journey and Castle need identical shadow treatment');
-    assert.equal(nav.background,nav.castleBackground,'Journey and Castle need identical transparent backing');
-    assert.equal(nav.width,nav.castleWidth,'Journey and Castle icons need identical sizing');
+    assert.equal(journeyIconStyling.hasImage,false,'Journey icon uses the shared CSS HUD artwork');
+    assert(journeyIconStyling.bg.includes('main-menu-journey.png'),'Journey nav must show the real menu pictogram');
+    assert.equal(journeyIconStyling.border,journeyIconStyling.castleBorder,'Journey and Castle need identical borderless hitboxes');
+    assert.equal(journeyIconStyling.shadow,journeyIconStyling.castleShadow,'Journey and Castle need identical shadow treatment');
+    assert.equal(journeyIconStyling.background,journeyIconStyling.castleBackground,'Journey and Castle need identical transparent backing');
+    assert.equal(journeyIconStyling.width,journeyIconStyling.castleWidth,'Journey and Castle icons need identical sizing');
 
     assert.strictEqual(await page.locator('[data-arena-prev], [data-arena-next]').count(),0,'section arrows are removed');
     assert.strictEqual(await page.locator('.arena-foe--section-start').count(),12,'12 section snap points');
