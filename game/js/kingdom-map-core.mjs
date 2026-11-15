@@ -401,7 +401,7 @@ function createKingdomMap(run,playerPower=400,raceTag='humans'){
   cells:{'0,0':{status:'completed',type:'castle',annexed:true}},pendingCell:null,
   peakKingPower:power,annexationPointsSpent:0,battlePointsEarned:0,legacyBonusLands:0,
   creditedBattleEncounterIds:[],uniqueFirstConquests:[],centralOwnedCells:[],
-  battleTerritories:[],battleConqueredCells:[],
+  battleTerritories:[],battleConqueredCells:[],provincePaletteVersion:2,
   day:1,calendarActions:[],processedThroughWeek:0,industry:initialIndustry(),tradePosts:[],tradeProcessedWeek:0,outposts:[],builtSettlements:[],productionClaims:[],
   completedRoads:[],lastCompletedRouteCell:null,outpostRoads:[],royalRoads:[],
   completedNewEncounterCount:0,productionCyclesResolved:0});
