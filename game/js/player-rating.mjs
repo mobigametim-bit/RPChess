@@ -151,6 +151,14 @@ function adaptiveEncounterStars(power, seed = 'rpchess-adaptive') {
   return clampStars(base + offset);
 }
 
+// Only new Battle encounters use the agreed symmetric ±2 difficulty band.
+// Sample *distinct available levels* at the edges, avoiding a 60% one-star
+// pile-up for brand-new 400-Power kings. Persisted sites never reroll.
+function adaptiveBattleStars(power, seed = 'rpchess-battle') {
+  const center=threatStarsForPower(power);
+  const lower=Math.max(1,center-2),upper=Math.min(12,center+2);
+  return lower+hashSeed(String(seed)+':battle-+-2')%(upper-lower+1);
+}
 function opponentEloForStars(stars) {
   return difficultyForStars(stars).elo;
 }
@@ -220,6 +228,7 @@ export {
   settlePlayerRating,
   importTournamentRatingReceipt,
   adaptiveEncounterStars,
+  adaptiveBattleStars,
   opponentEloForStars,
   combatResultScore,
   combatCountForKind,
