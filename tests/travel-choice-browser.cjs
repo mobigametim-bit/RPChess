@@ -147,14 +147,19 @@ async function assertResponsiveStars(page) {
     const rects = [...range.getClientRects()].map((rect) => ({ left:rect.left, right:rect.right, top:rect.top, bottom:rect.bottom }));
     return {
       text:(element.textContent || '').replace(/\u200B/g,''),
-      hasBreak:(element.textContent || '').includes('\u200B'),
+      rank:element.dataset.threatRank,
+      title:element.title,
       rects,
       bounds:{ left:bounds.left, right:bounds.right }
     };
   });
-  assert.strictEqual((layout.text.match(/★/g) || []).length, 12);
-  assert.strictEqual(layout.hasBreak, true);
-  assert(layout.rects.length >= 1 && layout.rects.length <= 2, `Travel 12-star label must occupy one or two lines, got ${layout.rects.length}`);
+  // Threat has 12 engine tiers represented by four metals × three stars.
+  // Tier 12 is three DIAMOND stars, not twelve bronze star glyphs.
+  assert.strictEqual((layout.text.match(/★/g) || []).length,3);
+  assert.strictEqual(layout.rank,'diamond');
+  assert(layout.title.includes('12/12'),'highest tier must remain accessible');
+  assert(layout.rects.length>=1 && layout.rects.length<=2,
+    `Diamond rank must occupy at most two lines, got ${layout.rects.length}`);
   for (const rect of layout.rects) {
     assert(rect.left >= layout.bounds.left - 1);
     assert(rect.right <= layout.bounds.right + 1);
