@@ -312,6 +312,10 @@ function renderBoard(){
   board.dataset.boardRace=tiles.raceTag;
   board.style.setProperty('--board-light-tile','url("'+new URL(tiles.light,document.baseURI).href+'")');
   board.style.setProperty('--board-dark-tile','url("'+new URL(tiles.dark,document.baseURI).href+'")');
+ }else{
+  delete board.dataset.boardRace;
+  board.style.removeProperty('--board-light-tile');
+  board.style.removeProperty('--board-dark-tile');
  }
  const allies=new Map(armyCandidates(run).map(c=>[c.id,c]));
  const ranks=active.playerColor==='w'?[7,6,5,4,3,2,1,0]:[0,1,2,3,4,5,6,7];
