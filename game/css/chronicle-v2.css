@@ -1,0 +1,67 @@
+/* Glory v2: presentation-only overlay on the game's ORIGINAL royal blue flag.
+   No replacement banner, font, logo or menu icons. GoznakUI from font-goznak.css. */
+.mm-menu-approved .chronicle-safe{gap:clamp(3px,.65vh,7px);padding-inline:2px}
+.mm-menu-approved .chronicle-header{padding:0 0 4px}
+.mm-menu-approved .chronicle-current,.mm-menu-approved .chronicle-best{padding-top:3px}
+.mm-menu-approved .chronicle-section-label{font-size:clamp(10px,.78vw,13px);line-height:1.15}
+.mm-menu-approved .chronicle-v2-profile{
+  display:flex;align-items:center;gap:7px;margin:5px 0 4px;min-width:0
+}
+.mm-menu-approved .chronicle-v2-profile img{
+  display:block;width:clamp(27px,2.9vw,38px);height:clamp(27px,2.9vw,38px);
+  object-fit:cover;object-position:center 20%;border:1px solid #c9ab6b;
+  background:#10273f;flex:none
+}
+.mm-menu-approved .chronicle-v2-profile-copy{min-width:0;display:flex;flex-direction:column;gap:3px}
+.mm-menu-approved .chronicle-v2-profile-copy strong{
+  min-width:0;max-width:100%;font-size:clamp(11px,1vw,15px);line-height:1.1;
+  color:#fff1cf;overflow:hidden;text-overflow:ellipsis;white-space:nowrap
+}
+.mm-menu-approved .chronicle-v2-profile-copy small{
+  min-width:0;font-size:clamp(9px,.75vw,11px);line-height:1.1;
+  color:#f2d9a4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap
+}
+.mm-menu-approved .chronicle-v2-quick{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;
+  padding:4px 0 5px;border-block:1px solid rgba(235,187,91,.38)
+}
+.mm-menu-approved .chronicle-v2-quick>div{min-width:0;display:grid;justify-items:center;gap:3px;text-align:center}
+.mm-menu-approved .chronicle-v2-quick span{
+  font-size:clamp(9px,.75vw,11px);font-weight:700;color:#ffdf9c;line-height:1.1
+}
+.mm-menu-approved .chronicle-v2-quick strong{
+  font-size:clamp(16px,1.55vw,24px);font-weight:800;color:#fff3d5;
+  font-variant-numeric:tabular-nums;line-height:1
+}
+.mm-menu-approved .chronicle-v2-personal-best{
+  display:grid;grid-template-columns:clamp(24px,2.3vw,32px) minmax(0,1fr) auto;
+  gap:5px;align-items:center;margin:4px 0 2px;padding:3px 0;
+  border-bottom:1px solid rgba(235,187,91,.38)
+}
+.mm-menu-approved .chronicle-v2-personal-best img{
+  width:100%;aspect-ratio:1;object-fit:cover;object-position:center 20%;
+  border:1px solid #c9ab6b;background:#10273f
+}
+.mm-menu-approved .chronicle-v2-personal-best>div{min-width:0}
+.mm-menu-approved .chronicle-v2-personal-best>div strong{
+  display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-size:clamp(10px,.91vw,13px);color:#fff2d1
+}
+.mm-menu-approved .chronicle-v2-personal-best small{
+  display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  color:#f0d9ad;font-size:clamp(8px,.75vw,11px);margin-top:3px
+}
+.mm-menu-approved .chronicle-v2-personal-score{
+  font-size:clamp(16px,1.55vw,24px);color:#ffde92;font-variant-numeric:tabular-nums
+}
+.mm-menu-approved .chronicle-commanders-title{margin:4px 0;font-size:clamp(14px,1.4vw,22px)}
+.mm-menu-approved .chronicle-leaderboard-row{min-height:clamp(19px,2.4vh,26px)}
+.mm-menu-approved .chronicle-leaderboard-avatar{width:clamp(18px,1.8vw,24px);height:clamp(18px,1.8vw,24px)}
+@media (orientation:landscape) and (max-height:600px){
+  html[data-landscape-ui='1'] .mm-menu-approved .chronicle-safe{gap:2px!important}
+  html[data-landscape-ui='1'] .mm-menu-approved .chronicle-v2-profile{margin:2px 0}
+  html[data-landscape-ui='1'] .mm-menu-approved .chronicle-v2-profile img{width:27px;height:27px}
+  html[data-landscape-ui='1'] .mm-menu-approved .chronicle-v2-quick{padding:2px 0}
+  html[data-landscape-ui='1'] .mm-menu-approved .chronicle-v2-personal-best{margin:2px 0;padding:1px 0}
+  html[data-landscape-ui='1'] .mm-menu-approved .chronicle-v2-quick strong{font-size:15px}
+}
