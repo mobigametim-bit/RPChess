@@ -248,3 +248,105 @@ html[data-simple-pieces="1"] .wd-overlay .wd-battle-simple{
 /* Shared Battle pointer-drag input requires touch gestures on the board surface. */
 .wd-overlay .wd-chess-board.rpchess-draggable-board{touch-action:none}
 .wd-overlay .wd-square.rpchess-drop-target{box-shadow:inset 0 0 0 4px #b7e4aa}
+
+
+/* 2026-11-15: The combat scene is now a REAL full-screen classic Battle
+   sibling, not a modal. Reuse ui-redesign-final compact-combat-active
+   placement. Scope these rules to the new scene without touching Battle. */
+.wd-battle-screen[hidden]{display:none!important}
+.wd-battle-screen{z-index:30;position:relative;box-sizing:border-box;color:#f1dfba;
+ font-family:'GoznakUI',Georgia,serif!important}
+.wd-battle-screen *{box-sizing:border-box}
+.wd-battle-screen .classic-topbar{display:flex;align-items:center;justify-content:space-between}
+.wd-battle-screen .wd-battle-topbar h1{margin:2px 0 0;
+ font:400 clamp(21px,2.4vw,32px)/1.05 'BrahmsGotischCyr','GoznakUI',Georgia,serif;
+ color:#f0d697}
+.wd-battle-screen .wd-battle-topbar .wd-eyebrow{font-size:11px}
+.wd-battle-screen .wd-battle-topbar .classic-mini-button{
+ min-width:37px;min-height:37px;padding:3px 10px;font-size:25px}
+.wd-battle-screen .classic-party-panel{display:flex;flex-direction:column;gap:9px}
+.wd-battle-screen .classic-party-panel>h2{font:400 clamp(20px,2.2vw,28px)/1.16 'BrahmsGotischCyr',Georgia,serif;margin:0}
+.wd-battle-screen .classic-party-panel .classic-opponent{font-size:13px;margin:0}
+.wd-battle-screen .wd-battle-journal{min-height:0;flex:1 1 auto;display:flex;
+ flex-direction:column;padding:10px 0 0;margin-top:5px!important;
+ border-top:1px solid rgba(216,177,93,.25)}
+.wd-battle-screen .wd-battle-journal>h3{margin:0 0 7px;font-size:20px}
+.wd-battle-screen .wd-view-toggle{min-height:31px;display:flex;justify-content:flex-start}
+.wd-battle-screen .wd-view-toggle .rpchess-board-view-toggle{margin:0;transform:none}
+.wd-battle-screen .wd-move-history{max-height:none!important;min-height:40px;
+ width:100%;overflow-y:auto;flex:1 1 auto;display:grid;
+ grid-template-columns:repeat(2,minmax(0,1fr));gap:3px;
+ align-content:start;align-items:start;padding-right:3px}
+.wd-battle-screen .wd-move-history .wd-move{font-size:12px;min-width:0;
+ background:rgba(40,58,62,.73);border:1px solid rgba(216,177,93,.15);
+ border-radius:3px;display:flex;gap:3px;align-items:center;min-height:28px;
+ padding:4px 6px;white-space:nowrap;overflow:hidden}
+.wd-battle-screen .wd-move-history .wd-move>span{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.wd-battle-screen .wd-move-history .mentor-grade{font-style:normal;font-weight:900;color:#ef9485}
+.wd-battle-screen .wd-move-history .mentor-grade--inaccuracy{color:#f1d884}
+.wd-battle-screen .wd-move-history .mentor-grade--good{color:#badf87}
+.wd-battle-screen .wd-move-history .mentor-grade--excellent{color:#eac574}
+.wd-battle-screen .wd-grade-legend{display:flex;flex-wrap:wrap;gap:4px 8px;margin-top:auto}
+.wd-battle-screen .wd-grade-caption{display:inline-flex;align-items:center;gap:3px;
+ color:#ccbd9f;font-size:10px}
+.wd-battle-screen .wd-grade-caption .mentor-grade{font-style:normal;font-weight:900}
+.wd-battle-screen .wd-play-controls{display:flex;flex-wrap:wrap;gap:4px;margin-top:3px}
+.wd-battle-screen .wd-play-controls .classic-mini-button{flex:1;min-width:0;
+ padding:7px 4px;min-height:38px;font-size:clamp(11px,1vw,14px)}
+.wd-battle-screen .wd-battle-status{min-height:35px;margin:0 0 8px;padding:5px 10px;
+ color:#f4d899;font-size:14px}
+.wd-battle-screen .wd-battle-main{width:100%;height:100%;min-width:0;min-height:0;
+ display:flex;flex-direction:column;align-items:center;justify-content:center}
+.wd-battle-screen .wd-chess-stage{display:block;position:relative;flex:0 1 auto;
+ max-height:none;aspect-ratio:1;margin:0 auto;width:100%;padding:8px}
+.wd-battle-screen .wd-chess-board{width:100%!important;height:100%!important;
+ max-width:100%!important;max-height:100%!important;aspect-ratio:1;
+ display:grid;grid-template-columns:repeat(8,minmax(0,1fr));
+ grid-template-rows:repeat(8,minmax(0,1fr));overflow:hidden}
+.wd-battle-screen .wd-square{height:100%;width:100%;min-height:0!important;min-width:0;
+ aspect-ratio:auto;overflow:hidden;position:relative;isolation:isolate;
+ padding:0!important;border:0;display:grid;place-items:center}
+.wd-battle-screen .wd-square.wd-last{box-shadow:inset 0 0 0 2px #f4d37165}
+.wd-battle-screen .wd-square.is-selected{box-shadow:inset 0 0 0 4px #f4de95}
+.wd-battle-screen .wd-battle-unit{display:block;width:92%;height:92%;
+ object-fit:contain;pointer-events:none}
+.wd-battle-screen .wd-battle-simple{display:none;pointer-events:none}
+html[data-simple-pieces="1"] .wd-battle-screen .wd-battle-unit{display:none!important}
+html[data-simple-pieces="1"] .wd-battle-screen .wd-battle-simple{
+ display:block!important;width:92%;height:92%;object-fit:contain}
+.wd-battle-screen .wd-square .mentor-square-grade{z-index:7;pointer-events:none;position:absolute;
+ right:1px;top:0;padding:0 3px;color:#ff817a;
+ font:bold clamp(15px,2.5vw,27px)/1 Arial,sans-serif;
+ text-shadow:0 1px 3px #000,0 0 6px #000}
+.wd-battle-screen .wd-square .mentor-square-grade--good{color:#b8e9a0}
+.wd-battle-screen .wd-chess-board.rpchess-draggable-board{touch-action:none}
+.wd-battle-screen .wd-square.rpchess-drop-target{box-shadow:inset 0 0 0 4px #b7e4aa}
+body.compact-combat-active .wd-battle-screen .classic-board-wrap{
+ width:min(calc(100svh - 66px),calc(100vw - 405px),940px)!important;
+ max-width:100%!important;min-width:0!important;aspect-ratio:1;
+ margin:0 auto!important;padding:8px!important}
+body.compact-combat-active .wd-battle-screen .classic-party-panel{
+ scrollbar-width:thin;scrollbar-color:#a68a53 #101b20}
+@media(max-width:900px){
+ .wd-battle-screen{min-height:100svh;height:auto;overflow-y:auto;padding:9px}
+ .wd-battle-screen .classic-shell{display:flex;flex-direction:column;
+  width:100%;max-width:100%;margin:0 auto;gap:8px}
+ .wd-battle-screen .classic-topbar{order:0}
+ .wd-battle-screen .wd-battle-main{order:1;height:auto;width:100%;flex:none}
+ .wd-battle-screen .wd-battle-party{order:2;width:100%;height:auto!important;overflow:visible!important;
+  min-height:0;max-width:100%;padding:12px}
+ .wd-battle-screen .wd-chess-stage{width:min(100%,calc(100svh - 145px),760px);
+  min-width:0;max-height:none}
+ .wd-battle-screen .wd-battle-journal{flex:none;max-height:170px}
+ .wd-battle-screen .wd-move-history{max-height:140px!important}
+ .wd-battle-screen .wd-grade-legend{margin-top:0}
+ body.compact-combat-active .wd-battle-screen .classic-board-wrap{
+  width:min(100%,calc(100svh - 145px),760px)!important}
+ body.compact-combat-active{overflow:auto!important}
+}
+@media(max-width:520px){
+ .wd-battle-screen .wd-battle-topbar h1{font-size:23px}
+ .wd-battle-screen .wd-battle-status{margin-bottom:4px}
+ .wd-battle-screen .wd-chess-stage{width:100%}
+ body.compact-combat-active .wd-battle-screen .classic-board-wrap{width:100%!important}
+}
