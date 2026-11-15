@@ -74,6 +74,7 @@ function ensure(){
   '<aside class="wd-sidebar"><h3 data-wd-battle-title></h3><p data-wd-battle-info></p>'+
   '<div class="wd-view-toggle" data-wd-view-toggle></div>'+
   '<div class="wd-move-history" data-wd-moves></div>'+
+  '<div class="wd-grade-legend" data-wd-grade-legend></div>'+
   '<div class="wd-play-controls"><button class="wd-button" data-wd-action="pause"></button>'+
   '<button class="wd-button" data-wd-action="speed">×1</button>'+
   '<button class="wd-button" data-wd-action="skip"></button></div></aside></div></section>'+
@@ -275,6 +276,14 @@ function resumeWeekly(){
  adapter?.destroy?.();adapter=new ChessAIAdapter();movePending=false;
  showPane('play');setText('[data-wd-title]',t('battle'));setText('[data-wd-week]',t('week')+' '+active.week);
  setText('[data-wd-battle-title]',active.heroName+' · '+t('enemy'));
+ const legend=root.querySelector('[data-wd-grade-legend]');legend.replaceChildren();
+ for(const grade of ['excellent','good','inaccuracy','mistake','blunder']){
+  const sym={excellent:'!!',good:'!',inaccuracy:'?!',mistake:'?',blunder:'??'}[grade];
+  const badge=h('span','wd-grade-caption');
+  badge.append(h('em','mentor-grade mentor-grade--'+grade,sym),
+   h('span','',gradeLabel(grade)));legend.append(badge);
+ }
+ root.querySelector('[data-wd-action="skip"]').hidden=active.mode==='manual';
  renderBattle();scheduleTurn();return true;
 }
 function renderBoard(){
@@ -366,11 +375,11 @@ async function playMove(uci){
  // Two genuine Stockfish position scores feed the Mentor win-probability grader.
  // Failed analysis yields no badge, never a fabricated move assessment.
  const beforeFen=engine.fen();
- const before=await adapter.analyzePosition({fen:beforeFen,depth:10});
+ const before=skip?null:await adapter.analyzePosition({fen:beforeFen,depth:10});
  if(stamp!==session)return;
  const move=engine.move(uci.slice(0,2),uci.slice(2,4),uci[4]||null);
  if(!move.ok)return;
- const after=await adapter.analyzePosition({fen:engine.fen(),depth:10});
+ const after=skip?null:await adapter.analyzePosition({fen:engine.fen(),depth:10});
  if(stamp!==session)return;
  const quality=trainingMoveQualityWinChance(before,after,uci);
  const centipawnLoss=Number.isFinite(before?.cp)&&Number.isFinite(after?.cp)?Math.max(0,before.cp+after.cp):null;
