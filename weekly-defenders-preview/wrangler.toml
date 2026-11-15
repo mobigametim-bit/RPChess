@@ -1,0 +1,7 @@
+name = "rpchess-weekly-defenders-preview"
+compatibility_date = "2026-11-14"
+
+# Standalone QA Worker for the accepted commander UX. Production is untouched.
+[assets]
+directory = "../dist"
+not_found_handling = "single-page-application"
