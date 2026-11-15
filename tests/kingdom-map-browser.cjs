@@ -135,6 +135,34 @@ async function assertTileImage(page,cellId){
     'reopening a v6 save must never downgrade or regenerate its world');
   assert.equal(reopened.kingdomMap.seed,before.kingdomMap.seed,
     'world seed and scouted events remain stable across reopen');
+  // The supplied Trading Tent sprite must decode; its original PNG was corrupt.
+  const tradeVisual=await page.evaluate(async()=>{
+    const tent=new Image();tent.src='assets/ui/trading-tent-64.png';
+    await tent.decode();
+    const controls=document.querySelector('[data-kingdom-trade-controls]');
+    return {width:tent.naturalWidth,height:tent.naturalHeight,
+      sliderCount:controls?.querySelectorAll('input[type="range"]').length,
+      priceTexts:[...controls.querySelectorAll('.km-trade-gold strong')].map(e=>e.textContent),
+      supplies:controls.querySelectorAll('.km-trade-supply img[src="generated_assets/reward_supplies.png"]').length,
+      coins:controls.querySelectorAll('.km-trade-gold img[src="generated_assets/reward_gold.png"]').length,
+      labels:[...controls.querySelectorAll('.km-trade-row')].map(e=>e.getAttribute('aria-label'))};
+  });
+  assert.deepEqual([tradeVisual.width,tradeVisual.height],[64,64],
+    'Trading Tent must decode from the supplied 64px PNG');
+  assert.equal(tradeVisual.sliderCount,0,'single-unit trades replace the old range sliders');
+  assert.deepEqual(tradeVisual.priceTexts,['15','6'],'both trade prices stay unchanged');
+  assert.equal(tradeVisual.supplies,2,'both trade directions use the supplies artwork');
+  assert.equal(tradeVisual.coins,2,'both trade directions use the gold artwork');
+  const parchmentCode=fs.readFileSync(path.join(__dirname,'../game/js/kingdom-parchment-app.mjs'),'utf8');
+  const terrainPasses=[
+    "drawTerrainSymbols(detailCtx,seed,left,top,columns,rows,repaint,map,'background')",
+    "drawOptionalNature(detailCtx,seed,left,top,columns,rows,map,repaint,'marsh')",
+    "drawTerrainSymbols(detailCtx,seed,left,top,columns,rows,repaint,map,'forest')",
+    "drawOptionalNature(detailCtx,seed,left,top,columns,rows,map,repaint,'landmarks')"
+  ].map(token=>parchmentCode.indexOf(token));
+  assert(terrainPasses.every(index=>index>=0) &&
+    terrainPasses.every((index,i)=>!i||terrainPasses[i-1]<index),
+    'Dry land and marshes must render beneath all forests and trees');
   // The castle hire list uses shipped race chess-piece art and the real Gold icon.
   const recruitArt=await page.locator('.km-castle-recruit').evaluateAll(async rows=>Promise.all(rows.map(async row=>{
     const piece=row.querySelector('.km-castle-recruit__piece'),coin=row.querySelector('.km-castle-recruit__gold');
