@@ -8,8 +8,17 @@ const THREAT_RANKS=Object.freeze([
  Object.freeze({id:'diamond',min:10,max:12,color:'#76def4',ru:'Алмаз',en:'Diamond'})
 ]);
 const MASTERY_XP_PER_LEVEL=100;
-const STARTING_THREAT_BY_PIECE=Object.freeze({pawn:1,knight:3,bishop:3,rook:5,queen:9,king:1});
-function initialHeroThreat(pieceType){return STARTING_THREAT_BY_PIECE[pieceType]||1;}
+// A hero's chess role no longer determines mastery. The only ceiling is
+// the player's current Power bracket (converted to the existing 1–12 tiers).
+function initialHeroThreat(){return 1;}
+function rollHeroThreat(seed,maxLevel=1){
+ const upper=threatLevel(maxLevel);
+ let hash=2166136261;
+ for(const char of String(seed||'rpchess-new-hero')){
+  hash^=char.charCodeAt(0);hash=Math.imul(hash,16777619);
+ }
+ return 1+((hash>>>0)%upper);
+}
 function threatLevel(value){return Number.isInteger(value)?Math.max(1,Math.min(12,value)):1;}
 function threatRank(value){
  const level=threatLevel(value),rank=THREAT_RANKS[Math.floor((level-1)/3)];
@@ -52,4 +61,4 @@ function decorateThreat(element,level,{language='ru',xp=null}={}){
   (Number.isSafeInteger(xp)&&rank.level<12?' · '+xp+'/'+MASTERY_XP_PER_LEVEL+' XP':'');
  element.setAttribute('aria-label',element.title);
 }
-export {THREAT_RANKS,MASTERY_XP_PER_LEVEL,STARTING_THREAT_BY_PIECE,initialHeroThreat,threatLevel,threatRank,threatStarsText,normalizeHeroMastery,awardMastery,decorateThreat};
+export {THREAT_RANKS,MASTERY_XP_PER_LEVEL,initialHeroThreat,rollHeroThreat,threatLevel,threatRank,threatStarsText,normalizeHeroMastery,awardMastery,decorateThreat};
