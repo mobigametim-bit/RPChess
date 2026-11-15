@@ -154,7 +154,11 @@ function renderSetup(){
  const opponent=root.querySelector('[data-wd-enemy]');opponent.replaceChildren();
  // Same level-aware pawn→knight→bishop→rook→queen→king threat figure as the map.
  const art=kingdomEncounterSprite(cell.selectedEncounter);
- opponent.append(image(art||boardRacePiecePath('orcs','pawn','b'),'wd-art'),h('b','',t('enemy')));
+ const role=['pawn','knight','bishop','rook','queen','king'][
+  Math.floor((Math.max(1,Math.min(12,Number(cell.selectedEncounter.stars)||1))-1)/2)];
+ const defenderArt=art?.includes('/pieces/board/')?art:
+  boardRacePiecePath('humans',role,'b');
+ opponent.append(image(defenderArt,'wd-art'),h('b','',t('enemy')));
  const stars=h('div','wd-stars');decorateThreat(stars,cell.selectedEncounter.stars,{language:currentLanguage()});
  opponent.append(stars,h('small','',t('army')));
  root.querySelector('.wd-foot [data-wd-action="close"]').textContent=t('cancel');
