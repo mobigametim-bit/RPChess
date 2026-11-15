@@ -527,14 +527,8 @@ function enterCell(map,point,encounter=null,now=Date.now()){
  let next=copyMap(map);
  next.king={...point};
  if(!existing||existing.explored===false)next=advanceDay(next,'explore:'+id);
- if(existing?.status==='completed'&&existing.selectedEncounter?.type==='battle'&&existing.respawnReady===true){
-  // Returning champion challenge: same stars and race, no repeated land bonus.
-  next.cells[id]={...existing,status:'revealed',completedOnce:true,production:null,respawnReady:false,
-   explored:true,lastEntryFrom:{...before}};
-  next.pendingCell=id;
-  next=synchronizeRoyalRoads(next);
-  return {ok:true,kind:'retry',map:next,cell:next.cells[id]};
- }
+ // Completed Battle rematches launch only from the floating weekly marker.
+ // Walking across an already conquered province never starts a new encounter.
  if(id===keyOf(map.castle.x,map.castle.y)||existing?.status==='completed'){
   if(existing)next.cells[id]={...existing,explored:true};
   next=synchronizeRoyalRoads(next);
