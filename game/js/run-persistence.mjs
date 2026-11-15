@@ -72,9 +72,22 @@ function recoverCompletedCombatChoice(choice, skirmishCount, battleCount) {
   if (choice.type === 'battle' && battleCount > choice.combatCountAtSelection) return null;
   return choice;
 }
+// One-time migration of the cancelled piece-value starting-star rule.
+// Preserve every hero who has earned XP or has a weekly result. Untouched
+// legacy heroes get a deterministic Power-bounded roll and are persisted on
+// their next normal run write; subsequent reads never reroll sourced heroes.
+function migrateLegacyThreat(hero,runId,powerCap){
+ if(hero?.isRunKing||hero?.threatSource)return hero;
+ const stats=hero.weeklyBattleStats||{};
+ const trained=hero.threatXp>0||hero.weeklyBattleHistory?.length>0||
+  (stats.wins||0)>0||(stats.draws||0)>0||(stats.losses||0)>0;
+ if(trained)return {...hero,threatSource:'legacy-trained'};
+ return {...hero,threatLevel:rollHeroThreat(runId+':legacy-hero:'+hero.id,powerCap),
+  threatXp:0,threatSource:'power-roll-v1'};
+}
 function hydrateCurrentRosterCopy(run) {
   const currentTemplates=new Map(createStarterRoster().map(character=>[character.id,character])),resources=hydrateResources(run),existingSkirmishes=Number.isInteger(run.skirmishCount)?run.skirmishCount:0,existingBattles=Number.isInteger(run.battleCount)?run.battleCount:0,storedActiveChoice=isStoredTravelChoice(run.activeTravelChoice)?run.activeTravelChoice:null,recoveredActiveChoice=recoverCompletedCombatChoice(storedActiveChoice,existingSkirmishes,existingBattles);
-  return {...hydrateArmy(resources),playerName:normalizePlayerName(run?.playerName,'Воин'),commanderId:normalizeCommanderId(run?.commanderId),runStats:hydrateRunStats(run),resourceRewards:{skirmishCount:Number.isInteger(run.resourceRewards?.skirmishCount)?run.resourceRewards.skirmishCount:existingSkirmishes,battleCount:Number.isInteger(run.resourceRewards?.battleCount)?run.resourceRewards.battleCount:existingBattles},ended:Boolean(run.ended),skirmishCount:existingSkirmishes,battleCount:existingBattles,lastSkirmish:run.lastSkirmish||null,lastBattle:run.lastBattle||null,lastPuzzle:run.lastPuzzle||null,puzzleHistory:hydratePuzzleHistory(run),journeyStep:Number.isInteger(run.journeyStep)?run.journeyStep:0,currentTravelChoices:Array.isArray(run.currentTravelChoices)?run.currentTravelChoices:null,activeTravelChoice:recoveredActiveChoice,currentSettlement:isSettlementState(run.currentSettlement)?run.currentSettlement:null,currentPuzzle:isPuzzleState(run.currentPuzzle)?run.currentPuzzle:null,kingdomMap:validateKingdomMap(run.kingdomMap)?run.kingdomMap:null,artifacts:normalizeArtifacts(run.artifacts),combatArtifactChoice:isCombatArtifactChoice(run.combatArtifactChoice)?run.combatArtifactChoice:null,currentCombat:isCombatCheckpoint(run.currentCombat)?run.currentCombat:null,roster:run.roster.map(character=>{const current=currentTemplates.get(character.id);return normalizeHeroMastery(current?{...character,...current,...(character.isRunKing?{
+  return {...hydrateArmy(resources),playerName:normalizePlayerName(run?.playerName,'Воин'),commanderId:normalizeCommanderId(run?.commanderId),runStats:hydrateRunStats(run),resourceRewards:{skirmishCount:Number.isInteger(run.resourceRewards?.skirmishCount)?run.resourceRewards.skirmishCount:existingSkirmishes,battleCount:Number.isInteger(run.resourceRewards?.battleCount)?run.resourceRewards.battleCount:existingBattles},ended:Boolean(run.ended),skirmishCount:existingSkirmishes,battleCount:existingBattles,lastSkirmish:run.lastSkirmish||null,lastBattle:run.lastBattle||null,lastPuzzle:run.lastPuzzle||null,puzzleHistory:hydratePuzzleHistory(run),journeyStep:Number.isInteger(run.journeyStep)?run.journeyStep:0,currentTravelChoices:Array.isArray(run.currentTravelChoices)?run.currentTravelChoices:null,activeTravelChoice:recoveredActiveChoice,currentSettlement:isSettlementState(run.currentSettlement)?run.currentSettlement:null,currentPuzzle:isPuzzleState(run.currentPuzzle)?run.currentPuzzle:null,kingdomMap:validateKingdomMap(run.kingdomMap)?run.kingdomMap:null,artifacts:normalizeArtifacts(run.artifacts),combatArtifactChoice:isCombatArtifactChoice(run.combatArtifactChoice)?run.combatArtifactChoice:null,currentCombat:isCombatCheckpoint(run.currentCombat)?run.currentCombat:null,roster:run.roster.map(character=>{const current=currentTemplates.get(character.id);return migrateLegacyThreat(normalizeHeroMastery(current?{...character,...current,...(character.isRunKing?{
   name:commanderById(run?.commanderId).titleRu,
   raceTag:commanderById(run?.commanderId).raceTag,
   portrait:commanderById(run?.commanderId).portrait,
@@ -82,7 +95,7 @@ function hydrateCurrentRosterCopy(run) {
   commanderId:normalizeCommanderId(run?.commanderId),
   description:commanderById(run?.commanderId).descriptionRu
 }:{ }),status:character.status}:(recruitProfile(character.id)?
-  {...character,raceTag:recruitProfile(character.id).raceTag}:character));})};
+  {...character,raceTag:recruitProfile(character.id).raceTag}:character)),run.id,threatStarsForPower(readPlayerRating().power));})};
 }
 function createRun({ now = Date.now(), id = null, playerName = 'Воин', commanderId = 'oathkeeper' } = {}) {
   const newId=id||runId(now);
