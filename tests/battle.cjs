@@ -80,5 +80,51 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(key){return this.ma
   const debtAfterBattle={...repeated.run,battleCount:1,roster:repeated.run.roster.map(e=>e.id==='hero.mara_chain'?{...e,status:'wounded'}:e),lastBattle:{result:'checkmate',winner:'w'}};const resolved=mercenaries.resolveBattleMercenaryDebt(debtAfterBattle);assert.strictEqual(resolved.resolved,true);assert.strictEqual(resolved.casualty.id,'hero.mara_chain','Wounded named non-King must die before any healthy hero');assert.strictEqual(resolved.run.roster.find(e=>e.id==='hero.mara_chain').status,'dead');assert.strictEqual(resolved.run.roster.find(e=>e.isRunKing).status,'healthy');assert.strictEqual(resolved.run.battleMercenaryContract,null);assert.strictEqual(resolved.run.lastBattle.mercenaryPayment.totalCost,52);
   const paidFinished=mercenaries.resolveBattleMercenaryDebt({...paid.run,battleCount:1,lastBattle:{result:'stalemate',winner:null}});assert.strictEqual(paidFinished.resolved,true);assert.strictEqual(paidFinished.casualty,null);assert.strictEqual(paidFinished.run.battleMercenaryContract,null);
   const ended=mercenaries.resolveBattleMercenaryDebt({...short.run,battleCount:1,ended:true,endReason:'king-death',lastBattle:{result:'checkmate',winner:'b'}});assert.strictEqual(ended.resolved,true);assert.strictEqual(ended.casualty,null,'Ended run must not receive an extra Mercenary casualty');assert.strictEqual(ended.run.roster.some(e=>!e.isRunKing&&e.status==='dead'),false);
+
+  // Weekly Battle commander contract: reuse existing recruit loss and Mercenary rules.
+  const weekly=await import(pathToFileURL(path.join(game,'js/weekly-defenders-core.mjs')).href);
+  const threat=await import(pathToFileURL(path.join(game,'js/hero-threat.mjs')).href);
+  assert.deepStrictEqual([1,3,4,6,7,9,10,12].map(n=>threat.threatRank(n).id),
+   ['bronze','bronze','silver','silver','gold','gold','diamond','diamond']);
+  assert.deepStrictEqual([1,3,4,12].map(n=>threat.threatRank(n).stars),[1,3,1,3]);
+  assert.deepStrictEqual([1,4,7,12].map(n=>threat.threatRank(n).elo),[400,1000,1600,2600]);
+  const site={status:'completed',completedOnce:true,selectedEncounter:{type:'battle',stars:4,
+   seed:'weekly-4',id:'kingdom.battle4',playerColor:'w'},production:{kind:'battle',week:1,amount:1},
+   respawnReady:true};
+  const weeklyMap={day:7,castle:{x:0,y:0},king:{x:0,y:0},cells:{'1,0':site},
+   centralOwnedCells:['0,0','1,0']};
+  const weeklyRun={...persistence.createRun({id:'weekly-qa',now:1000}),kingdomMap:weeklyMap};
+  assert(weekly.eligibleWeeklySite(weeklyMap,'1,0'));
+  assert.strictEqual(weekly.weeklyQuote(weeklyRun,'1,0','hero.mara_chain').mode,'auto');
+  const first=weekly.startWeeklyBattle(weeklyRun,'1,0','hero.mara_chain');
+  assert(first.ok,'healthy commander must start a weekly defender Battle');
+  assert.strictEqual(first.active.mode,'auto');
+  assert.strictEqual(first.active.formation.length,16,'weekly Battle must have ordinary full army');
+  assert(first.active.formation.every(p=>!p.id||p.id==='weekly:free-king'||p.id.startsWith('army:')),
+   'no named hero can appear on the weekly chessboard');
+  assert(!first.run.kingdomMap.cells['1,0'].respawnReady,'marker consumed when the match is committed');
+  assert.strictEqual(weekly.canCommand(first.run,'1,0','hero.mara_chain').ok,false);
+  const updated=weekly.recordWeeklyMove(first.run,'e2e4');
+  assert(updated.ok&&updated.run.weeklyDefenders.active.moves.length===1);
+  const won=weekly.settleWeeklyBattle(updated.run,{result:'win',capturedIds:[]});
+  assert(won.ok);
+  assert.strictEqual(won.results.gold,Math.floor((36+9*4)/2));
+  assert(won.run.roster.find(c=>c.id==='hero.mara_chain').threatXp>0);
+  assert.strictEqual(won.run.roster.find(c=>c.id==='hero.mara_chain').weeklyBattleStats.wins,1);
+  assert.strictEqual(won.run.kingdomMap.cells['1,0'].status,'completed','repeated Battle must not lose conquered land');
+  assert(!weekly.settleWeeklyBattle(won.run,{result:'win'}).ok,'no duplicate weekly reward');
+  const broke={...weeklyRun,gold:0,supplies:0};
+  assert.strictEqual(weekly.startWeeklyBattle(broke,'1,0','hero.mara_chain').reason,'debt-confirm');
+  const debtStart=weekly.startWeeklyBattle(broke,'1,0','hero.mara_chain',{acceptDebt:true});
+  assert(debtStart.ok&&debtStart.active.paid.unpaidValue>0);
+  const debtEnd=weekly.settleWeeklyBattle(debtStart.run,{result:'loss'});
+  assert(debtEnd.ok&&debtEnd.run.roster.find(c=>c.id==='hero.mara_chain').status==='dead');
+  assert(!debtEnd.run.ended,'non-king debt casualty must not end run');
+  const kingStart=weekly.startWeeklyBattle(broke,'1,0','king.oathkeeper',{acceptDebt:true});
+  assert(kingStart.ok&&kingStart.active.mode==='manual');
+  const kingEnd=weekly.settleWeeklyBattle(kingStart.run,{result:'loss'});
+  assert(kingEnd.ok&&kingEnd.run.ended&&kingEnd.results.kingDied,'King debt ends run');
+  assert(!weekly.eligibleWeeklySite({...weeklyMap,centralOwnedCells:['0,0']},'1,0'),
+   'unowned sites cannot offer weekly defender battles');
   console.log('Battle standard army, owner-styled compact prep/aftermath and stable Start CTA, imports-only route, owner-loaded CSS, solo-King consequence, healthy-reserve Mercenary pricing, economy/debt and 12-star Black-side: PASS');
 })().catch(error=>{console.error(error.stack||error);process.exitCode=1});
