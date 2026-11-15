@@ -8,6 +8,8 @@ const THREAT_RANKS=Object.freeze([
  Object.freeze({id:'diamond',min:10,max:12,color:'#76def4',ru:'Алмаз',en:'Diamond'})
 ]);
 const MASTERY_XP_PER_LEVEL=100;
+const STARTING_THREAT_BY_PIECE=Object.freeze({pawn:1,knight:3,bishop:3,rook:5,queen:9,king:1});
+function initialHeroThreat(pieceType){return STARTING_THREAT_BY_PIECE[pieceType]||1;}
 function threatLevel(value){return Number.isInteger(value)?Math.max(1,Math.min(12,value)):1;}
 function threatRank(value){
  const level=threatLevel(value),rank=THREAT_RANKS[Math.floor((level-1)/3)];
@@ -15,7 +17,7 @@ function threatRank(value){
 }
 function threatStarsText(level){return '★'.repeat(threatRank(level).stars);}
 function normalizeHeroMastery(hero){
- const level=threatLevel(hero?.threatLevel);
+ const level=Number.isInteger(hero?.threatLevel)?threatLevel(hero.threatLevel):initialHeroThreat(hero?.pieceType);
  const xp=Number.isSafeInteger(hero?.threatXp)&&hero.threatXp>=0
   ?Math.min(MASTERY_XP_PER_LEVEL-1,hero.threatXp):0;
  const previous=hero?.weeklyBattleStats||{};
@@ -50,4 +52,4 @@ function decorateThreat(element,level,{language='ru',xp=null}={}){
   (Number.isSafeInteger(xp)&&rank.level<12?' · '+xp+'/'+MASTERY_XP_PER_LEVEL+' XP':'');
  element.setAttribute('aria-label',element.title);
 }
-export {THREAT_RANKS,MASTERY_XP_PER_LEVEL,threatLevel,threatRank,threatStarsText,normalizeHeroMastery,awardMastery,decorateThreat};
+export {THREAT_RANKS,MASTERY_XP_PER_LEVEL,STARTING_THREAT_BY_PIECE,initialHeroThreat,threatLevel,threatRank,threatStarsText,normalizeHeroMastery,awardMastery,decorateThreat};
