@@ -286,6 +286,58 @@ async function assertResponsiveStars(page, selector, cardSelector) {
     await mobile.locator('[data-artifact-choice="none"]').click();
     await mobile.locator('[data-classic-screen]:not([hidden])').waitFor();
 
+    // The weekly Battle now uses the SAME full-screen compact classic-shell
+    // layout as the ordinary Battle. Verify layout with real browser geometry,
+    // not a CSS/source-string assertion.
+    const weekly = await browser.newPage({viewport:{width:1440,height:900}});
+    const weeklyErrors=[];
+    weekly.on('pageerror',error=>weeklyErrors.push(String(error.message||error)));
+    await weekly.goto(url,{waitUntil:'networkidle'});
+    await startNewRun(weekly);
+    await weekly.evaluate(async key=>{
+      const persistence=await import('/js/run-persistence.mjs');
+      const mapCore=await import('/js/kingdom-map-core.mjs');
+      const run=persistence.readRun();
+      const map=run.kingdomMap||mapCore.createKingdomMap(run,500,'humans');
+      const id='1,0';
+      const point={status:'completed',completedOnce:true,explored:true,annexed:true,
+        selectedEncounter:{id:'weekly.qa',seed:'weekly.qa',type:'battle',stars:3,
+          enemyRaceTag:'elves',raceTag:'elves',playerColor:'w'},
+        production:{kind:'battle',id:'weekly.qa:production',week:1,amount:1},
+        respawnReady:true};
+      const next={...map,day:7,cells:{...map.cells,[id]:point},
+        centralOwnedCells:[...new Set([...(map.centralOwnedCells||[]),id])]};
+      persistence.writeRun({...run,kingdomMap:next,gold:500,supplies:200});
+      globalThis.RPChessKingdomMap.open();
+      (await import('/js/weekly-defenders-app.mjs')).openWeekly(id);
+    },RUN_KEY);
+    await weekly.locator('[data-weekly-defenders]:not([hidden])').waitFor();
+    assert.equal(await weekly.locator('.wd-opponent b,.wd-opponent small').count(),0,
+      'no truncated enemy text can poke through the stars');
+    assert.equal(await weekly.locator('.wd-gold-icon').count(),1,
+      'reward uses the actual gold asset instead of a long text label');
+    await weekly.locator('[data-wd-carousel] .wd-hero').nth(2).click();
+    await weekly.locator('[data-wd-action="start"]').click();
+    await weekly.locator('[data-wd-hire-action="yes"]').click();
+    await weekly.locator('[data-weekly-battle-screen]:not([hidden])').waitFor();
+    const placement=await weekly.locator('[data-weekly-battle-screen]').evaluate(screen=>{
+      const board=screen.querySelector('.wd-chess-board')?.getBoundingClientRect();
+      const left=screen.querySelector('.classic-party-panel')?.getBoundingClientRect();
+      return {board:board&&{x:board.x,y:board.y,right:board.right,bottom:board.bottom,
+        width:board.width,height:board.height},left:left&&{right:left.right,bottom:left.bottom},
+        viewport:{width:innerWidth,height:innerHeight},
+        modalHidden:document.querySelector('[data-weekly-defenders]')?.hidden};
+    });
+    assert(placement.board&&placement.left&&placement.modalHidden,
+      'weekly combat must be a normal full-screen scene, not a modal');
+    assert(placement.left.right<=placement.board.x+3&&placement.board.y>=0&&
+      placement.board.right<=placement.viewport.width+2&&
+      placement.board.bottom<=placement.viewport.height+2,
+      'native Battle board must fit viewport with party panel on the left: '+
+      JSON.stringify(placement));
+    await weekly.locator('[data-wd-action="pause"]').click();
+    assert.deepStrictEqual(weeklyErrors,[]);
+
     assert.deepStrictEqual(errors, []);
     assert.deepStrictEqual(blackErrors, []);
     assert.deepStrictEqual(woundedErrors, []);
