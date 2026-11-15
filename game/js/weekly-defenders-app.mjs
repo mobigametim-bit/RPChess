@@ -10,7 +10,7 @@ import {kingdomEncounterSprite} from './kingdom-map-assets.mjs';
 import {boardRacePiecePath,boardPieceArtForTheme,boardPieceArtForCharacter,heroPortraitArt,raceBoardTiles} from './race-assets.mjs';
 import {fantasyPiecePath} from './fantasy-piece.mjs';
 import {makeToggle,syncToggles} from './board-view-toggle.mjs';
-import {classifyStrongMove} from './finished-game-review.mjs';
+import {classifyStrongMove,reviewMoveJournal} from './finished-game-review.mjs';
 import {combatGoldReward} from './resources-core.mjs';
 import {armyCandidates} from './kingdom-army-core.mjs';
 import {currentLanguage} from './i18n.mjs';
@@ -328,7 +328,20 @@ function renderBattle(){
  const active=weeklyState(readRun()).active;if(!active)return;
  setText('[data-wd-battle-info]',active.mode==='auto'?t('battleAuto'):(engine.turn()===active.playerColor?t('battleManual'):t('thinking')));
  const moves=root.querySelector('[data-wd-moves]');moves.replaceChildren();
- active.moves.slice(-24).forEach((m,i)=>moves.append(h('span','',String(active.moves.length-Math.min(24,active.moves.length)+i+1)+'. '+m.uci+(m.grade?' '+m.grade:''))));
+ let journal=[];
+ try{journal=reviewMoveJournal(active.moves.map(m=>m.uci),{startFen:active.fen||undefined});}
+ catch{journal=active.moves.map((m,i)=>({ply:i+1,san:m.uci}));}
+ const marks={good:'!',excellent:'!!',inaccuracy:'?!',mistake:'?',blunder:'??'};
+ journal.slice(-32).forEach((move,i)=>{
+  const saved=active.moves[move.ply-1],item=h('span','wd-move');
+  item.append(h('span','',Math.floor((move.ply-1)/2)+1+(move.ply%2?'...':'.')+' '+move.san));
+  if(saved?.grade&&marks[saved.grade]){
+   const mark=h('em','mentor-grade mentor-grade--'+saved.grade,marks[saved.grade]);
+   mark.title=gradeLabel(saved.grade);mark.setAttribute('aria-label',mark.title);item.append(mark);
+  }
+  moves.append(item);
+ });
+ moves.scrollTop=moves.scrollHeight;
  root.querySelector('[data-wd-action="pause"]').textContent=paused?t('resume'):t('pause');
  root.querySelector('[data-wd-action="speed"]').textContent='×'+speed;
  root.querySelector('[data-wd-action="skip"]').textContent=t('result');
@@ -352,15 +365,21 @@ async function playMove(uci){
  const stamp=session;
  // Two genuine Stockfish position scores feed the Mentor win-probability grader.
  // Failed analysis yields no badge, never a fabricated move assessment.
- const before=await adapter.analyzePosition({fen:engine.fen(),depth:8});
+ const beforeFen=engine.fen();
+ const before=await adapter.analyzePosition({fen:beforeFen,depth:10});
  if(stamp!==session)return;
  const move=engine.move(uci.slice(0,2),uci.slice(2,4),uci[4]||null);
  if(!move.ok)return;
- const after=await adapter.analyzePosition({fen:engine.fen(),depth:8});
+ const after=await adapter.analyzePosition({fen:engine.fen(),depth:10});
  if(stamp!==session)return;
  const quality=trainingMoveQualityWinChance(before,after,uci);
- const symbols={blunder:'??',mistake:'?',inaccuracy:'?!'};
- const grade=quality?symbols[quality.kind]||((before?.bestMove===uci)?'!':'✓'):null;
+ const centipawnLoss=Number.isFinite(before?.cp)&&Number.isFinite(after?.cp)?Math.max(0,before.cp+after.cp):null;
+ const strong=Number.isFinite(centipawnLoss)?
+  classifyStrongMove({uci,beforeFen},before,centipawnLoss):null;
+ const grade=quality?.kind||strong||
+  (before?.depth>=9&&after?.depth>=9&&before.bestMove===uci&&
+   centipawnLoss!==null&&centipawnLoss<=40?'good':null);
+ // Symbols are render-only; persisted grades retain mentor-compatible semantic keys.
  // Persist move plus its measured score classification before the next turn.
  const saved=recordWeeklyMove(run,uci,grade);
  if(!saved.ok)return;
