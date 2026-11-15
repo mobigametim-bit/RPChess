@@ -2002,9 +2002,9 @@ async function assertTileImage(page,cellId){
   await productionPage.locator('[data-reboot-foundation]:not([hidden])').waitFor();
   await productionPage.locator('[data-new-game]').click();
   await productionPage.locator('[data-journey-continue]').click();
-  await productionPage.locator('[data-roster-screen]:not([hidden])').waitFor();
-  await productionPage.locator('[data-roster-travel]').click();
   await productionPage.locator('[data-kingdom-map-screen]:not([hidden])').waitFor();
+  assert.equal(await productionPage.locator('[data-roster-screen]:not([hidden])').count(),0,
+    'reloaded Journey must open the map directly, retaining collectible production');
   const restored=productionPage.locator('[data-kingdom-industry-collect="'+industryResult.id+'"]');
   await restored.waitFor({state:'visible'});
   const beforePickup=await read(productionPage);
