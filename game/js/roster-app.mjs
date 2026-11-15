@@ -193,30 +193,31 @@ function ensureRosterTabs(){
 }
 function renderArmyRoster(){
   const english=currentLanguage()==='en',army=normalizeArmy(activeRun?.army),total=army.reduce((n,u)=>n+u.count,0);
-  rosterList.replaceChildren();rosterList.className='roster-army-list';
-  rosterDetail.replaceChildren();
-  const title=document.createElement('h2');title.textContent=english?'Army reserves':'Запас Армии';rosterDetail.append(title);
-  const intro=document.createElement('p');intro.textContent=english?
-    'Permanent recruits grouped by race and chess role. Captured recruits are lost permanently; temporary mercenaries are not stored.':
-    'Постоянные рекруты по расам и типам. Взятые фигуры погибают безвозвратно; временные наёмники не сохраняются.';
-  rosterDetail.append(intro);
-  const summary=document.createElement('p');summary.textContent=(english?'Total recruits: ':'Всего рекрутов: ')+total;rosterDetail.append(summary);
+  rosterList.replaceChildren();
   if(rosterCount)rosterCount.textContent=String(total);
-  if(!army.length){const empty=document.createElement('p');empty.className='roster-army-empty';empty.textContent=english?'No recruits yet. Hire them in the Castle or collect them from friendly cleared Skirmishes.':'Рекрутов пока нет. Нанимай в Замке или собирай в освоенных своих Стычках.';rosterList.append(empty);return;}
-  for(const raceTag of [...new Set(army.map(entry=>entry.raceTag))]){
-    const group=document.createElement('section');group.className='roster-army-race';
-    const h=document.createElement('h3');h.textContent=english?raceTag.replaceAll('_',' '):RACE_LABELS[raceTag]||raceTag;group.append(h);
-    const grid=document.createElement('div');grid.className='roster-army-grid';
-    for(const pieceType of PIECE_TYPES){
-      const count=army.find(x=>x.raceTag===raceTag&&x.pieceType===pieceType)?.count||0;
-      const item=document.createElement('article');item.className='roster-army-tile';
-      const image=document.createElement('img');image.src=boardRacePiecePath(raceTag,pieceType,'w');
-      image.alt='';image.loading='lazy';
-      const name=document.createElement('span');name.textContent=english?armyEnglishType(pieceType):PIECE_LABELS[pieceType];
-      const number=document.createElement('strong');number.textContent='×'+count;
-      item.append(image,name,number);grid.append(item);
+  if(!total){
+    const empty=document.createElement('p');empty.className='roster-army-empty';
+    empty.textContent=english?'No recruits yet. Hire them in the Castle or collect them from friendly cleared Skirmishes.':
+      'Рекрутов пока нет. Нанимай в Замке или собирай в освоенных своих Стычках.';
+    rosterList.append(empty);return;
+  }
+  // Render each owned recruit once, with no empty slots or racial sections.
+  // PIECE_TYPES defines chess order: pawns, knights, bishops, rooks, queens.
+  for(const pieceType of PIECE_TYPES){
+    const recruits=army.filter(entry=>entry.pieceType===pieceType&&entry.count>0)
+      .sort((a,b)=>a.raceTag.localeCompare(b.raceTag));
+    for(const recruit of recruits){
+      const role=english?armyEnglishType(pieceType):PIECE_LABELS[pieceType];
+      const race=english?recruit.raceTag.replaceAll('_',' '):(RACE_LABELS[recruit.raceTag]||recruit.raceTag);
+      for(let index=0;index<recruit.count;index++){
+        const item=document.createElement('article');item.className='roster-army-tile';
+        item.setAttribute('aria-label',role+' · '+race);item.title=role+' · '+race;
+        const art=document.createElement('img');art.src=boardRacePiecePath(recruit.raceTag,pieceType,'w');
+        art.alt='';art.loading='lazy';
+        const name=document.createElement('span');name.textContent=role;
+        item.append(art,name);rosterList.append(item);
+      }
     }
-    group.append(grid);rosterList.append(group);
   }
 }
 function renderRoster() {
@@ -224,7 +225,12 @@ function renderRoster() {
   applyStaticCopy();
   updateJourneyLabel();
   ensureRosterTabs();
-  if(activeRosterTab==='army'){renderArmyRoster();return;}
+  const armyView=activeRosterTab==='army';
+  rosterScreen.classList.toggle('is-army-view',armyView);
+  rosterList.className=armyView?'roster-army-list':'roster-formation-ui';
+  const catalogTitle=rosterScreen.querySelector('.roster-catalog__head h2');
+  if(catalogTitle)catalogTitle.textContent=armyView?(currentLanguage()==='en'?'Army':'Армия'):t('roster.catalogTitle');
+  if(armyView){renderArmyRoster();return;}
   renderDetail();
   const formation=normalizedFormation(activeRun);
   if (rosterCount) rosterCount.textContent = `${formation.members.length} / 16`;
