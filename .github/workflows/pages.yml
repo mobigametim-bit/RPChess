@@ -158,17 +158,36 @@ jobs:
             grep -q 'VK_APP_SECRET' || { echo "::error::VK secret missing"; exit 1; }
           npx wrangler d1 execute rpchess-leaderboard --remote --file profile-worker/schema.sql --config profile-worker/wrangler.toml --yes
           npx wrangler deploy --config profile-worker/wrangler.toml
+          # Cloudflare propagates a newly deployed Worker across edges
+          # asynchronously. A probe immediately after deployment can still
+          # hit the healthy OLD Worker, so verify with bounded polling.
           node <<'NODE'
           const assert=require('node:assert/strict');
+          const url='https://rpchess-profile-preview.mobigametim.workers.dev/v1/leaderboard';
+          const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
           (async()=>{
-            const base='https://rpchess-profile-preview.mobigametim.workers.dev';
-            const res=await fetch(base+'/v1/leaderboard',{cache:'no-store'});
-            assert.equal(res.status,200,'new production Glory board accessible');
-            const data=await res.json();
-            assert.equal(data.scoreVersion,2,'production Profile Worker must serve ONLY v3 scores');
-            assert(Array.isArray(data.top),'public ranking remains readable');
-            console.log('Production Glory v2 profile API is live; existing scores were NOT imported.');
-          })().catch(e=>{console.error(e);process.exitCode=1;});
+            let last='';
+            for(let attempt=1;attempt<=24;attempt++){
+              try{
+                const res=await fetch(url+'?glory_v2_probe='+attempt,{
+                  cache:'no-store',signal:AbortSignal.timeout(9000),
+                  headers:{'Cache-Control':'no-cache'}
+                });
+                const board=await res.json();
+                if(res.status===200 && board?.scoreVersion===2 && Array.isArray(board.top)){
+                  console.log('Production Glory v2 Profile API verified on attempt '+attempt+
+                    '; v3 leaderboard rows: '+board.top.length);
+                  return;
+                }
+                last='HTTP '+res.status+'; scoreVersion='+String(board?.scoreVersion)+
+                  '; topIsArray='+String(Array.isArray(board?.top));
+              }catch(error){last=String(error?.message||error);}
+              console.log('Waiting for new Profile Worker to propagate ('+attempt+
+                '/24): '+last);
+              if(attempt<24)await sleep(3000);
+            }
+            assert.fail('Glory v2 public Profile Worker did not become healthy: '+last);
+          })().catch(error=>{console.error(error);process.exitCode=1;});
           NODE
       - name: Verify live Tournament and profile API health before Pages
         if: >-
