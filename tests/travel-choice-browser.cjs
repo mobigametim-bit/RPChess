@@ -266,9 +266,9 @@ async function assertDecoratedBackdrops(page, label) {
     assert.deepStrictEqual(await page.evaluate((key) => JSON.parse(localStorage.getItem(key)).currentTravelChoices, RUN_KEY), first);
     await page.reload({ waitUntil:'networkidle' });
     await page.locator('[data-continue-run]').click();await page.locator('[data-journey-choice-modal]:not([hidden]) [data-journey-continue]').click();
-    await page.locator('[data-roster-screen]:not([hidden])').waitFor();
-    await page.locator('[data-roster-travel]').click();
     await travel.waitFor();
+    assert.strictEqual(await page.locator('[data-roster-screen]:not([hidden])').count(),0,
+      'Continue must resume Travel directly');
     await assertDecoratedBackdrops(page, 'main-menu continue re-entry');
     assert.strictEqual(await page.locator('[data-travel-run-portrait]').getAttribute('src'),'assets/kings/nameless_heir/portrait.webp',
       'Travel must preserve selected commander across save/load and menu re-entry');

@@ -132,9 +132,9 @@ async function seedZeroSupplyTravel(page, { kingOnly = false } = {}) {
 
     await page.reload({ waitUntil: 'networkidle' });
     await page.locator('[data-continue-run]').click();await page.locator('[data-journey-choice-modal]:not([hidden]) [data-journey-continue]').click();
-    await page.locator('[data-roster-screen]:not([hidden])').waitFor();
-    await page.locator('[data-roster-travel]').click();
     await page.locator('[data-starvation-screen]:not([hidden])').waitFor();
+    assert.strictEqual(await page.locator('[data-roster-screen]:not([hidden])').count(),0,
+      'Starvation acknowledgement must resume directly');
     const reloaded = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), RUN_KEY);
     assert.strictEqual(reloaded.activeTravelChoice.starvationVictimId, victimId, 'reload must preserve the same victim');
     assert.strictEqual(reloaded.roster.filter((character) => character.status === 'dead').length, 1, 'reload must not kill a second character');
