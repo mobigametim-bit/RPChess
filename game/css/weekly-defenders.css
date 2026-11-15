@@ -350,3 +350,17 @@ body.compact-combat-active .wd-battle-screen .classic-party-panel{
  .wd-battle-screen .wd-chess-stage{width:100%}
  body.compact-combat-active .wd-battle-screen .classic-board-wrap{width:100%!important}
 }
+
+
+/* Compact defender selector: figure and stars only, no overflowing labels. */
+.wd-overlay .wd-opponent{overflow:hidden;gap:7px}
+.wd-overlay .wd-opponent .wd-art{display:block;flex:0 1 auto;min-height:0;
+ height:min(13vh,118px);max-height:calc(100% - 36px);object-fit:contain}
+.wd-overlay .wd-opponent .wd-stars{flex:0 0 auto;line-height:1.2;margin:0;
+ text-align:center;white-space:nowrap}
+.wd-overlay .wd-gold{display:inline-flex;flex-direction:row;align-items:center;gap:8px}
+.wd-overlay .wd-gold-icon{width:clamp(23px,3vw,31px);height:clamp(23px,3vw,31px);object-fit:contain}
+.wd-overlay .wd-gold strong{font-size:clamp(20px,2.2vw,27px);line-height:1.15}
+@media(max-height:620px){
+ .wd-overlay .wd-opponent .wd-art{height:57px;max-height:calc(100% - 28px)}
+}
