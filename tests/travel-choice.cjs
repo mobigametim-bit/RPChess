@@ -772,25 +772,20 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   assert.strictEqual(battleWin.map.day,3);
   assert(!mapCore.finishEncounter(battleWin.map,'0,1',{success:true,opponentPower:630}).ok,
     'the first victory receipt cannot be counted again');
-  // The notification is separate from the actual respawn. Dismissing it
-  // must leave the defender on site, while a second victory cannot grant land.
+  // Weekly defenders are now assigned directly from the production marker:
+  // walking over a completed point must NOT bypass commander selection.
   const returning={...battleWin.map,cells:{...battleWin.map.cells,
     '0,1':{...battleWin.map.cells['0,1'],respawnReady:true,
       production:{id:'weekly:0,1:7:battle',week:1,kind:'battle',amount:1}}}};
-  const ack=mapCore.acknowledgeReturn(returning,'0,1');
-  assert(ack.ok&&ack.map.cells['0,1'].respawnReady===true);
-  assert.equal(ack.map.cells['0,1'].production,null);
-  assert(!mapCore.acknowledgeReturn(ack.map,'0,1').ok);
-  const home=mapCore.enterCell(ack.map,{x:0,y:0});
+  const home=mapCore.enterCell(returning,{x:0,y:0});
   const respawnEntry=mapCore.enterCell(home.map,{x:0,y:1});
-  assert(respawnEntry.ok&&respawnEntry.kind==='retry'&&respawnEntry.map.cells['0,1'].completedOnce===true);
-  const rematch=mapCore.finishEncounter(
-    mapCore.beginEncounter(respawnEntry.map,'0,1').map,'0,1',{success:true,opponentPower:15000});
-  assert(rematch.ok&&!rematch.first,'returning defender is never a first conquest');
-  assert.strictEqual(rematch.map.uniqueFirstConquests.length,battleWin.map.uniqueFirstConquests.length,
-    'second win against same road object never expands kingdom');
-  assert.strictEqual(mapCore.territoryCapacity(rematch.map),mapCore.territoryCapacity(battleWin.map));
-  assert.strictEqual(rematch.map.completedRoads.length,battleWin.map.completedRoads.length);
+  assert(respawnEntry.ok&&respawnEntry.kind==='walk'&&respawnEntry.map.cells['0,1'].completedOnce,
+    'completed Battle remains a walkable province; only the marker can start its weekly match');
+  assert(respawnEntry.map.cells['0,1'].respawnReady,'walking cannot consume the defender');
+  assert.deepStrictEqual(respawnEntry.map.cells['0,1'].production,returning.cells['0,1'].production);
+  assert.strictEqual(respawnEntry.map.uniqueFirstConquests.length,battleWin.map.uniqueFirstConquests.length);
+  assert.strictEqual(mapCore.territoryCapacity(respawnEntry.map),mapCore.territoryCapacity(battleWin.map));
+  assert.strictEqual(respawnEntry.map.completedRoads.length,battleWin.map.completedRoads.length);
 
   const caravanPoint={x:1,y:0},caravanRoute={...mapCore.randomEncounter(mapRun,caravanPoint,500),
     id:'kingdom.test-caravan',type:'caravan'};
