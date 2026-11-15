@@ -88,14 +88,23 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(key){return this.ma
    ['bronze','bronze','silver','silver','gold','gold','diamond','diamond']);
   assert.deepStrictEqual([1,3,4,12].map(n=>threat.threatRank(n).stars),[1,3,1,3]);
   assert.deepStrictEqual([1,4,7,12].map(n=>threat.threatRank(n).elo),[400,1000,1600,2600]);
-  // User-approved starting rank by chess piece value; never reset existing XP.
-  assert.deepStrictEqual(['pawn','knight','bishop','rook','queen'].map(x=>threat.initialHeroThreat(x)),
-   [1,3,3,5,9]);
+  // No free mastery for expensive roles: only Power controls the roll cap.
+  for(const role of ['pawn','knight','bishop','rook','queen'])
+   assert.strictEqual(threat.initialHeroThreat(role),1);
+  for(const level of [1,2,5,9,12]){
+   const values=Array.from({length:64},(_,i)=>threat.rollHeroThreat('seed:'+i,level));
+   assert(values.every(v=>v>=1&&v<=level));
+   assert.strictEqual(threat.rollHeroThreat('stable-key',level),
+    threat.rollHeroThreat('stable-key',level));
+   if(level>1)assert(new Set(values).size>1);
+  }
   const fresh=persistence.createRun({id:'starting-mastery'});
-  assert.strictEqual(fresh.roster.find(c=>c.pieceType==='rook').threatLevel,5);
-  assert.strictEqual(fresh.roster.find(c=>c.pieceType==='bishop').threatLevel,3);
-  assert(fresh.roster.filter(c=>c.pieceType==='pawn').every(c=>c.threatLevel===1));
-  assert.strictEqual(threat.normalizeHeroMastery({pieceType:'queen'}).threatLevel,9);
+  const freshAgain=persistence.createRun({id:'starting-mastery'});
+  assert.deepStrictEqual(fresh.roster.map(c=>c.threatLevel),
+   freshAgain.roster.map(c=>c.threatLevel));
+  assert(fresh.roster.filter(c=>!c.isRunKing).every(c=>
+   c.threatSource==='power-roll-v1'&&c.threatLevel>=1&&c.threatLevel<=12));
+  assert.strictEqual(threat.normalizeHeroMastery({pieceType:'queen'}).threatLevel,1);
   assert.strictEqual(threat.normalizeHeroMastery({pieceType:'rook',threatLevel:7,threatXp:56}).threatXp,56);
   const rating=await import(pathToFileURL(path.join(game,'js/player-rating.mjs')).href);
   for(const power of [400,600,1000,1800,2400,2600]){
@@ -118,11 +127,11 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(key){return this.ma
   const first=weekly.startWeeklyBattle(weeklyRun,'1,0','hero.mara_chain');
   assert(first.ok,'healthy commander must start a weekly defender Battle');
   assert.strictEqual(first.active.mode,'auto');
-  assert.strictEqual(first.active.heroLevel,1,'Pawn starts at Bronze I');
+  assert.strictEqual(first.active.heroLevel,weeklyRun.roster.find(c=>c.id==='hero.mara_chain').threatLevel);
   assert.strictEqual(first.active.encounter.stars,4);
   assert.strictEqual(first.active.enemyFormation.length,16);
   assert(first.active.fen&&first.active.formation.length===16);
-  assert.strictEqual(first.run.roster.find(c=>c.id==='hero.mara_chain').threatLevel,1);
+  assert.strictEqual(first.run.roster.find(c=>c.id==='hero.mara_chain').threatLevel,first.active.heroLevel);
   assert.strictEqual(first.active.formation.length,16,'weekly Battle must have ordinary full army');
   assert(first.active.formation.every(p=>!p.id||p.id==='weekly:free-king'||p.id.startsWith('army:')),
    'no named hero can appear on the weekly chessboard');
@@ -132,9 +141,9 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(key){return this.ma
   assert(updated.ok&&updated.run.weeklyDefenders.active.moves.length===1);
   const won=weekly.settleWeeklyBattle(updated.run,{result:'win',capturedIds:[]});
   assert(won.ok);
-  assert.strictEqual(won.results.beforeLevel,1);
-  assert.strictEqual(won.results.afterLevel,1);
-  assert.strictEqual(won.results.afterXp,won.results.mastery);
+  assert.strictEqual(won.results.beforeLevel,first.active.heroLevel);
+  assert(won.results.afterLevel>=first.active.heroLevel);
+  assert(won.results.afterXp>=0);
   assert.strictEqual(won.results.stats.wins,1);
   assert.strictEqual(won.results.gold,Math.floor((36+9*4)/2));
   assert(won.run.roster.find(c=>c.id==='hero.mara_chain').threatXp>0);
