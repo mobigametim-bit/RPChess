@@ -160,9 +160,8 @@ const origin='https://rpchess-profile-game-preview.mobigametim.workers.dev';
  assert.equal(otherDevice.body.profile.snapshot.run,undefined);
  const malicious=await call('/v1/vk-import',{data:{meta:legacy},token});
  assert.equal(malicious.status,403);
- // Exercise the actual D1 SQLite ranking SQL, not a guessed JS top-ten mock.
- // Old VK rows remain in leaderboard_v1; migrated VK + new RPChess profiles
- // must compete in one deterministic ranking without duplicate accounts.
+ // Exercise the actual v3 D1/SQLite ranking SQL. Old v1 / v2 rows
+ // are intentionally invisible: the new Glory scale starts empty.
  const {DatabaseSync}=require('node:sqlite');
  const fs=require('node:fs');
  const sqlite=new DatabaseSync(':memory:');
@@ -183,29 +182,45 @@ const origin='https://rpchess-profile-game-preview.mobigametim.workers.dev';
  const rankTime=Date.now();
  const addProfile=sqlite.prepare('INSERT INTO rpchess_profile_v1(id,provider,vk_user_id,snapshot_json,created_at,updated_at) VALUES(?,?,?,?,?,?)');
  const webSnapshot={schemaVersion:1,rating:{power:1000},
-   chronicle:{history:[{runId:'web-finished',playerName:'Web Champion',week:200,power:1000,commanderId:'pilgrim'}]}};
+   chronicle:{history:[{runId:'web-finished',playerName:'Web Champion',scoreVersion:2,
+     adventure:120,kingdom:30,day:40,power:1000,achievementCount:8,commanderId:'pilgrim'}]}};
  const vkSnapshot={schemaVersion:1,rating:{power:600},
-   chronicle:{history:[{runId:'vk-finished',playerName:'VK Player',week:100,power:600}]}};
+   chronicle:{history:[{runId:'vk-finished',playerName:'VK Player',scoreVersion:2,
+     adventure:60,kingdom:0,day:50,power:600,achievementCount:4}]}};
  addProfile.run(webId,'web',null,JSON.stringify(webSnapshot),rankTime,rankTime);
  addProfile.run(vkId,'vk','12345',JSON.stringify(vkSnapshot),rankTime,rankTime);
  sqlite.prepare('INSERT INTO leaderboard_v1(vk_id,player_name,glory,week,power,run_id,commander_id,achieved_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?)')
-  .run('12345','Legacy VK',31,100,1000,'legacy-finished','oathkeeper',rankTime-1,rankTime-1);
+   .run('12345','Legacy VK',99999,100,1000,'legacy-finished','oathkeeper',rankTime-1,rankTime-1);
+ sqlite.prepare('INSERT INTO rpchess_leaderboard_v2(profile_id,player_name,glory,week,power,run_id,commander_id,achieved_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?)')
+   .run(webId,'Legacy Profile',99999,100,1000,'old-finished','oathkeeper',rankTime-1,rankTime-1);
  const webRow={id:webId,snapshot_json:JSON.stringify(webSnapshot)};
  const vkRow={id:vkId,snapshot_json:JSON.stringify(vkSnapshot)};
- assert.equal(bestFromSnapshot(webSnapshot).glory,44);
+ assert.equal((await readUnifiedBoard(adapter,webRow)).top.length,0,'new v3 leaderboard starts EMPTY even when legacy rows exist');
+ assert.equal(bestFromSnapshot(webSnapshot).glory,Math.floor(150*Math.sqrt(2)));
  assert.equal(await refreshProfileBoard(adapter,webRow),true);
  assert.equal(await refreshProfileBoard(adapter,vkRow),true);
  const global=await readUnifiedBoard(adapter,webRow);
- assert.equal(global.top.length,2,'one Web profile and one deduplicated VK profile');
- assert.deepEqual(global.top.map(r=>r.name),['Web Champion','Legacy VK']);
+ assert.equal(global.top.length,2,'two RPChess v2-Glory profiles only');
+ assert.deepEqual(global.top.map(r=>r.name),['Web Champion','VK Player']);
+ assert.equal(global.scoreVersion,2);
  assert.equal(global.me.rank,1);
  assert.equal((await readUnifiedBoard(adapter,vkRow)).me.rank,2);
  assert.equal((await readUnifiedBoard(adapter,null)).me,null);
  assert.equal(Object.hasOwn(global.top[0],'owner_key'),false,'do not publish internal account keys');
- const lower={...webSnapshot,chronicle:{history:[{runId:'web-lower',playerName:'Weak',week:1,power:100}]}};
+ const lower={...webSnapshot,chronicle:{history:[{runId:'web-lower',playerName:'Weak',scoreVersion:2,
+   adventure:12,kingdom:0,day:1,power:100,achievementCount:1}]}};
  assert.equal(await refreshProfileBoard(adapter,{id:webId,snapshot_json:JSON.stringify(lower)}),false);
- assert.equal((await readUnifiedBoard(adapter,webRow)).top[0].name,'Web Champion','all-time high-water result must not be lowered');
- assert.equal(bestFromSnapshot({schemaVersion:1,run:{id:'bad',journeyStep:6000},rating:{power:1000}}),null);
+ assert.equal((await readUnifiedBoard(adapter,webRow)).top[0].name,'Web Champion','all-time Glory high-water survives weaker runs');
+ const oldOnly={schemaVersion:1,rating:{power:900},chronicle:{history:[{
+   runId:'old-journey',week:5000,power:900,glory:99}]}};
+ assert.equal(bestFromSnapshot(oldOnly),null,'old Chronicle scores are not imported into v3');
+ const live={schemaVersion:1,run:{id:'live-journey',playerName:'Live',journeyStep:4,
+   kingdomMap:{day:12,battleConqueredCells:['1,1'],outposts:[],builtSettlements:[]},
+   gloryV2:{version:2,events:[['battle','a123',5]]}},rating:{power:900}};
+ assert.equal(bestFromSnapshot(live).glory,Math.floor((45+2)*Math.sqrt(900/500)),
+   'live candidate uses current profile Power and earned deeds');
+ const legacyOnly={schemaVersion:1,run:{id:'old-live',journeyStep:100},rating:{power:900}};
+ assert.equal(bestFromSnapshot(legacyOnly),null,'old live journey without v2 ledger does not enter new ranking');
  sqlite.close();
- console.log('PROFILE WORKER: secure session + D1 unified leaderboard SQL, legacy VK dedup, monotonic Glory: PASS');
+ console.log('PROFILE WORKER: secure session + D1 Glory v2 leaderboard SQL, isolated from legacy v1/v2: PASS');
 })().catch(e=>{console.error(e.stack||e);process.exitCode=1;});

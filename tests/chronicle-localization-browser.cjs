@@ -10,7 +10,7 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     const errors=[];page.on('pageerror',error=>errors.push(error.message));
     // Keep browser localization deterministic; public API connectivity is exercised
     // separately by the Cloudflare deployment smoke test.
-    await page.route('https://rpchess-leaderboard.mobigametim.workers.dev/**',route=>
+    await page.route('https://rpchess-profile-preview.mobigametim.workers.dev/**',route=>
       route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({top:[],me:null})}));
     await page.goto(url,{waitUntil:'networkidle'});
     const panel=page.locator('[data-chronicle-panel]');
@@ -28,93 +28,55 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
       localStorage.setItem('rpchess.reboot.v1.chronicle',JSON.stringify({schemaVersion:1,history:[{runId:'best-language',playerName:'Рагнар',week:35,power:900,completedAt:1000}]}));
       window.RPChessChronicle.render();
     });
-    for(const text of ['CURRENT JOURNEY','Great Commanders','POWER','WEEK','HEROES IN RANKS'])assert((await panel.innerText()).includes(text),text);
-    assert.strictEqual(await panel.locator('[data-chronicle-current] h3').innerText(),'Тимур');
+    for(const text of ['CURRENT JOURNEY','Great Commanders','POWER','DAY','HEROES IN RANKS'])assert((await panel.innerText()).includes(text),text);
+    assert.strictEqual(await panel.locator('[data-chronicle-current] .chronicle-v2-profile-copy strong').innerText(),'Тимур');
     assert.strictEqual(await panel.locator('[data-chronicle-best] h3').innerText(),'Great Commanders');
     assert(!/[А-Яа-яЁё]/u.test((await panel.innerText()).replaceAll('Тимур','')),'only player names may retain Cyrillic');
-    // Mock the API only in the browser regression, never in production.
+    // Mock only the public v3 board. The retired signed VK score uploader
+    // must remain disabled; verified RPChess profile snapshots own writes.
     await page.evaluate(async()=>{
-      window.RPChessLeaderboardAPI='https://leaderboard.example.invalid';
+      window.RPChessProfileAPI='https://board-v2.example.invalid';
       const original=window.fetch.bind(window);
       window.__chronicleOriginalFetch=original;
-      window.fetch=(resource,options)=>String(resource).startsWith('https://leaderboard.example.invalid/')
-        ?Promise.resolve(new Response(JSON.stringify({
-          top:[{rank:1,name:'Рагнар',glory:17},{rank:2,name:'Ивар',glory:15}],
-          me:{rank:43,name:'Тимур',glory:14}
-        }),{status:200,headers:{'content-type':'application/json'}}))
+      window.fetch=(resource,options)=>String(resource).startsWith('https://board-v2.example.invalid/')
+        ?Promise.resolve(new Response(JSON.stringify({scoreVersion:2,
+          top:[{rank:1,name:'Рагнар',glory:177,commanderId:'ash_regent'},
+            {rank:2,name:'Ивар',glory:155,commanderId:'oathkeeper'}],
+          me:null}),{status:200,headers:{'content-type':'application/json'}}))
         :original(resource,options);
+      window.__portraitLeaderboardFetch=window.fetch;
       const {loadLeaderboard}=await import('./js/leaderboard-client.mjs');
       await loadLeaderboard({force:true});
     });
     assert.strictEqual(await panel.locator('.chronicle-leaderboard-row').count(),2);
-    assert((await panel.locator('.chronicle-leaderboard-self').innerText()).includes('#43'));
-    // Signed VK browser: every return to Main Menu can publish a NEW ongoing
-    // Journey's Glory; no backend calls are made without a VK launch signature.
-    const online=await page.evaluate(async()=>{
-      history.replaceState(null,'',location.pathname+'?vk_app_id=54754579&vk_user_id=42&sign=browser-test-only');
+    assert((await panel.innerText()).includes('177'),'real top score should render');
+    // Main-menu refresh reflects a new achievement, not mere passage of time.
+    await page.evaluate(async()=>{
       const {readRun,writeRun}=await import('./js/run-persistence.mjs');
       const {writePlayerRating}=await import('./js/player-rating.mjs');
-      writeRun({...readRun(),journeyStep:50});
+      const current=readRun();
+      writeRun({...current,gloryV2:{version:2,events:[['battle','ba11e',5]]},journeyStep:50});
       writePlayerRating({power:1600,receipts:[]});
-      // Preserve the two-player portrait fixture: the active-Glory scenario
-      // below deliberately installs a separate single-record fake server.
-      window.__portraitLeaderboardFetch=window.fetch;
-      window.__rankedSubmissions=[];
-      window.__rankedServerBest=null;
-      window.fetch=async(resource,options)=>{
-        if(!String(resource).startsWith('https://leaderboard.example.invalid/'))return window.__chronicleOriginalFetch(resource,options);
-        const request=options?.body?JSON.parse(options.body):{};
-        if(String(resource).endsWith('/submit')){
-          window.__rankedSubmissions.push(request.record);
-          window.__rankedServerBest=request.record;
-        }
-        const best=window.__rankedServerBest;
-        return new Response(JSON.stringify({top:best?[{rank:1,name:best.playerName,glory:best.glory}]:[],
-          me:best?{rank:1,name:best.playerName,glory:best.glory,week:best.week,power:best.power}:null,
-          viewerAuthenticated:true}),
-          {status:200,headers:{'content-type':'application/json'}});
-      };
-      return true;
+      window.RPChessChronicle.render();
     });
-    assert(online);
-    async function revisitMenu(){
-      await page.evaluate(async()=>{
-        const menu=document.querySelector('[data-reboot-foundation]');
-        menu.hidden=true;
-        await new Promise(resolve=>requestAnimationFrame(resolve));
-        menu.hidden=false;
-      });
-    }
-    await revisitMenu();
-    await page.waitForFunction(()=>window.__rankedSubmissions.length===1);
-    const record=await page.evaluate(()=>window.__rankedSubmissions[0]);
-    assert.strictEqual(record.glory,28);
-    assert.strictEqual(record.week,50);
-    assert.strictEqual(record.playerName,'Тимур');
-    assert((await panel.innerText()).includes('28'),'new active-run Glory must appear in the rank');
-    await revisitMenu();
-    await page.waitForTimeout(120);
-    assert.strictEqual(await page.evaluate(()=>window.__rankedSubmissions.length),1,
-      'returning to menu without improvement must not resubmit');
+    const initial=await panel.locator('.chronicle-v2-quick strong').first().innerText();
+    assert(Number(initial)>0,'first battle award earns live Glory');
     await page.evaluate(async()=>{
-      const persistence=await import('./js/run-persistence.mjs');
-      persistence.writeRun({...persistence.readRun(),journeyStep:60});
+      const {readRun,writeRun}=await import('./js/run-persistence.mjs');
+      writeRun({...readRun(),journeyStep:60});
+      window.RPChessChronicle.render();
     });
-    await revisitMenu();
-    await page.waitForFunction(()=>window.__rankedSubmissions.length===2);
-    assert.strictEqual(await page.evaluate(()=>window.__rankedSubmissions[1].glory),30,
-      'a later return to menu must publish the higher current Glory');
-    assert.strictEqual(await page.evaluate(()=>JSON.parse(localStorage.getItem('rpchess.reboot.v1.chronicle')).history.length),1,
-      'rank submissions must not write unfinished runs into completed Chronicle');
+    assert.strictEqual(await panel.locator('.chronicle-v2-quick strong').first().innerText(),initial,
+      'passing more weeks alone must not award Glory');
     for(const viewport of [{width:1653,height:760},{width:844,height:390},{width:667,height:300}]){
       await page.setViewportSize(viewport);
-      const view=await panel.evaluate(root=>{
-        const own=root.querySelector('.chronicle-leaderboard-self');
-        const row=root.querySelector('.chronicle-leaderboard-row');
-        return {rank:own?.textContent,row:row?.textContent,visible:getComputedStyle(root).display!=='none'};
-      });
-      assert(view.visible&&view.rank.includes('30')&&view.row?.includes('30'),
-        `live Glory must render at ${viewport.width}x${viewport.height}: ${JSON.stringify(view)}`);
+      const view=await panel.evaluate(root=>({
+        visible:getComputedStyle(root).display!=='none',
+        own:root.querySelector('.chronicle-v2-quick')?.textContent||'',
+        top:root.querySelector('.chronicle-leaderboard-row')?.textContent||''
+      }));
+      assert(view.visible&&view.own.includes(initial)&&view.top.includes('177'),
+        `live Glory and v3 leaderboard at ${viewport.width}x${viewport.height}: ${JSON.stringify(view)}`);
     }
     await page.setViewportSize({width:1653,height:760});
     if(process.env.RPCHESS_FLAG_SCREENSHOT_DIR) {
@@ -136,7 +98,7 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
       return {loaded:document.fonts.check("400 32px GoznakUI","Строчные буквы Aa Бб 2026"),
         italic:document.fonts.check("italic 400 32px GoznakUI","Наклонные Aa Бб"),
         body:family('body'),title:family('.chronicle-header h2'),
-        subheading:family('.chronicle-current h3'),
+        subheading:family('.chronicle-v2-profile-copy strong'),
         button:family('.reboot-menu-actions .reboot-button'),
         label:family('.chronicle-section-label'),
         otherTitle:family('.reboot-menu-screen h1')};
@@ -248,7 +210,7 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     });
     await page.reload({waitUntil:'networkidle'});
     assert.strictEqual(await panel.locator('h2').innerText(),'Chronicle','persisted English applies at startup');
-    assert.strictEqual(await panel.locator('[data-chronicle-current] h3').innerText(),'Тимур');
+    assert.strictEqual(await panel.locator('[data-chronicle-current] .chronicle-v2-profile-copy strong').innerText(),'Тимур');
     // Reuse this existing real-browser acceptance to capture a visual preview
     // of the exact JPEG sent to VK Stories, not a schematic test placeholder.
     const previews=await page.evaluate(async()=>{

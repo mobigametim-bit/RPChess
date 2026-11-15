@@ -1,5 +1,7 @@
 import { readRun } from './run-persistence.mjs';
 import { readPlayerRating } from './player-rating.mjs';
+import { readChronicle,bestChronicleRun } from './chronicle-core.mjs';
+import { commanderPortrait } from './commander-portraits.mjs';
 import { summarizeRun } from './endless-run-core.mjs';
 import { currentLanguage, subscribe, translateLegacy } from './i18n.mjs';
 import { brandLogoSrc, brandLogoAlt } from './brand-logo.mjs';
@@ -24,6 +26,7 @@ function ensureStylesheet(marker, href) {
 function ensureCss() {
   ensureStylesheet('data-endless-run-css', 'css/endless-run.css?v=20260925-flag-1');
   ensureStylesheet('data-endless-run-compact-css', 'css/endless-run-compact.css?v=20261021-summary-fit');
+  ensureStylesheet('data-endless-run-v2-css','css/endless-run-v2.css?v=20261115-glory2');
 }
 
 function renderStaticCopy() {
@@ -35,6 +38,9 @@ function renderStaticCopy() {
   const metrics = screen.querySelector('.endless-run-metrics');
   if (kicker) kicker.textContent = t('endless.kicker');
   if (title) title.textContent = t('endless.title');
+  for(const [selector,key] of [['[data-endless-glory-title]','chronicle.glory'],['[data-endless-power-title]','chronicle.power'],['[data-endless-section]','endless.section']]){
+    const el=screen.querySelector(selector);if(el)el.textContent=t(key);
+  }
   if (metrics) metrics.setAttribute('aria-label', t('endless.metricsAria'));
   for (const metric of screen.querySelectorAll('[data-endless-run-metric]')) {
     const label = metric.closest('.endless-run-metric')?.querySelector('span');
@@ -57,7 +63,18 @@ function ensureScreen() {
   screen.className = 'endless-run-screen';
   screen.dataset.endlessRunScreen = '';
   screen.hidden = true;
-  const icons={weeks:'generated_assets/node_story.png',goldEarned:'generated_assets/reward_gold.png',skirmishWins:'generated_assets/node_battle.png',battleWins:'generated_assets/node_elite.png',puzzlesSolved:'generated_assets/node_training.png',eventsResolved:'generated_assets/node_story.png',heroesRecruited:'generated_assets/reward_recruit.png',finalPower:'assets/doctrines/royal_court/emblem.png',caravansDefended:'assets/doctrines/cavalry/emblem.png'};
+  const icons={
+    skirmishWins:'generated_assets/node_battle.png',
+    battleWins:'generated_assets/node_elite.png',
+    caravansDefended:'assets/doctrines/cavalry/emblem.png',
+    puzzlesSolved:'generated_assets/node_training.png',
+    eventsResolved:'generated_assets/node_story.png',
+    territories:'assets/doctrines/royal_court/emblem.png',
+    outposts:'assets/ui/build_outpost_128.png',
+    settlements:'assets/ui/build_settlement_128.png',
+    goldEarned:'generated_assets/reward_gold.png',
+    heroesRecruited:'generated_assets/reward_recruit.png'
+  };
   const metric=(key,extra='')=>`<div class="endless-run-metric ${extra}"><img src="${icons[key]}" alt="" aria-hidden="true"><span></span><strong data-endless-run-metric="${key}">0</strong></div>`;
   screen.innerHTML = `
     <div class="endless-run-backdrop" aria-hidden="true"><img src="generated_assets/scene_defeat.webp" alt=""></div>
@@ -76,11 +93,25 @@ function ensureScreen() {
         <div class="endless-run-flag-content">
           <h1></h1>
           <p class="endless-run-reason" data-endless-run-reason></p>
-        <div class="endless-run-metrics">
-          ${metric('weeks')}${metric('goldEarned')}${metric('skirmishWins')}${metric('battleWins')}
-          ${metric('puzzlesSolved')}${metric('eventsResolved')}${metric('heroesRecruited')}${metric('finalPower','endless-run-metric--power')}
-          ${metric('caravansDefended','endless-run-metric--caravan')}
-        </div>
+          <div class="endless-v2-hero">
+            <img data-endless-commander-portrait alt="">
+            <div class="endless-v2-hero-copy">
+              <strong data-endless-player-name></strong>
+              <small data-endless-player-day></small>
+            </div>
+          </div>
+          <div class="endless-v2-headline">
+            <div><span data-endless-glory-title></span><strong data-endless-glory>0</strong><small data-endless-record></small></div>
+            <div><span data-endless-power-title></span><strong data-endless-power>0</strong></div>
+          </div>
+          <div class="endless-v2-section" data-endless-section></div>
+          <div class="endless-run-metrics">
+            ${metric('battleWins')}${metric('skirmishWins')}
+            ${metric('caravansDefended')}${metric('puzzlesSolved')}
+            ${metric('eventsResolved')}${metric('territories')}
+            ${metric('outposts')}${metric('settlements')}
+            ${metric('goldEarned')}${metric('heroesRecruited')}
+          </div>
         </div>
       </section>
     </div>`;
@@ -104,10 +135,26 @@ function render(run) {
   const root = ensureScreen();
   if (!root || !run) return false;
   renderStaticCopy();
-  const profile = readPlayerRating();
-  const summary = summarizeRun(run, { power: profile.power });
+  const profile=readPlayerRating();
+  const history=readChronicle();
+  const archived=history.history.find(record=>record.runId===run.id&&record.scoreVersion===2);
+  const effectivePower=archived?.power??profile.power;
+  const summary=summarizeRun(run,{power:effectivePower});
   const reason = root.querySelector('[data-endless-run-reason]');
-  if (reason) reason.textContent = `${translateLegacy(summary.kingName)}. ${translateLegacy(summary.endReasonLabel)}`;
+  if(reason)reason.textContent=translateLegacy(summary.endReasonLabel);
+  const name=root.querySelector('[data-endless-player-name]');
+  if(name)name.textContent=run.playerName||translateLegacy(summary.kingName);
+  const portrait=root.querySelector('[data-endless-commander-portrait]');
+  if(portrait)portrait.src=commanderPortrait(run.commanderId);
+  const day=root.querySelector('[data-endless-player-day]');
+  if(day)day.textContent=t('chronicle.day')+' '+summary.day+' · '+t('chronicle.week')+' '+summary.weeks;
+  const glory=root.querySelector('[data-endless-glory]');
+  if(glory)glory.textContent=String(archived?.glory??summary.glory);
+  const power=root.querySelector('[data-endless-power]');
+  if(power)power.textContent=String(effectivePower);
+  const previousBest=bestChronicleRun({history:history.history.filter(record=>record.runId!==run.id)});
+  const note=root.querySelector('[data-endless-record]');
+  if(note)note.textContent=!previousBest||Number(glory?.textContent)>previousBest.glory?t('endless.record'):'';
   for (const metric of root.querySelectorAll('[data-endless-run-metric]')) {
     const key = metric.dataset.endlessRunMetric;
     metric.textContent = String(summary[key] ?? 0);

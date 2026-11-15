@@ -12,7 +12,7 @@ let pending=null;
 let lastUpload='';
 let uploading=null;
 function apiRoot(){
-  const explicit=globalThis.RPChessLeaderboardAPI || globalThis.document?.querySelector?.('meta[name="rpchess-leaderboard-api"]')?.content || '';
+  const explicit=globalThis.RPChessProfileAPI || globalThis.document?.querySelector?.('meta[name="rpchess-profile-api"]')?.content || '';
   const url=String(explicit).trim().replace(/\/+$/,'');
   return /^https:\/\//.test(url) ? url : '';
 }
@@ -110,39 +110,18 @@ async function loadLeaderboard({force=false}={}){
     })();
     return pending;
   }
+  // Outside RPChess ID mode the new D1 leaderboard is read-only: no VK v1
+  // submissions and no old score union. Authenticated personal ranks require
+  // an active RPChess profile.
   if(!apiRoot())return changed({top:[],me:null,status:'unavailable'});
-  if(!force&&Date.now()-cachedAt<(board.status==='offline'?5000:CACHE_MS))return board;
+  if(!force&&Date.now()-cachedAt<CACHE_MS)return board;
   if(pending)return pending;
   pending=(async()=>{
-    try{
-      const launch=await vkLaunch();
-      if(!launch)return changed(await request('/v1/leaderboard'));
-      try{
-        let answer=await request('/v1/leaderboard/view',{launch});
-        if(!answer.viewerAuthenticated){
-          // The Worker returned HTTP 200 public results but rejected this
-          // signed identity. Never submit using a stale/invalid URL signature.
-          rejectedLaunch=launch;
-          signedLaunch='';
-          const recovered=await vkLaunch();
-          if(recovered&&recovered!==launch){
-            answer=await request('/v1/leaderboard/view',{launch:recovered});
-            if(!answer.viewerAuthenticated){rejectedLaunch=recovered;signedLaunch='';}
-          }
-          if(!answer.viewerAuthenticated)console.warn('[RPChess] VK leaderboard identity not authenticated; scores are read-only until signed launch recovers');
-        }
-        return changed(answer);
-      }catch(error){
-        // VK mobile may reject an authenticated POST even when public reads
-        // work (WebView transport, preflight or stale signed launch). Keep the
-        // public top ten visible; only personal position requires VK auth.
-        console.warn('[RPChess] personal leaderboard lookup unavailable; retrying public top ten',error);
-        return changed(await request('/v1/leaderboard'));
-      }
-    }catch(error){
-      console.warn('[RPChess] leaderboard read failed',error);
+    try{return changed(await request('/v1/leaderboard'));}
+    catch(error){
+      console.warn('[RPChess] public Glory v2 leaderboard unavailable',error);
       return changed({top:[],me:null,status:'offline'});
-    }finally{pending=null}
+    }finally{pending=null;}
   })();
   return pending;
 }
@@ -170,28 +149,9 @@ function alreadyRanked(best) {
   return me.week>best.week||(me.week===best.week&&me.power>=best.power);
 }
 async function submitBestChronicle(){
-  if(platform.profileEnabled)return {status:board.status==='ready'?'already-submitted':'unavailable'};
-  if(!apiRoot())return {status:'unavailable'};
-  const launch=await vkLaunch();
-  if(!launch)return {status:'unavailable'};
-  const best=bestRankedCandidate(launch);
-  if(!best)return {status:'unavailable'};
-  const key=launch+':'+best.runId+':'+best.glory+':'+best.week+':'+best.power+':'+best.commanderId;
-  if(lastUpload===key||alreadyRanked(best))return {status:'already-submitted'};
-  if(uploading)return uploading;
-  uploading=(async()=>{try{
-    const next=await request('/v1/leaderboard/submit',{launch,record:{
-      runId:best.runId,playerName:best.playerName,commanderId:normalizeCommanderId(best.commanderId),
-      glory:best.glory,week:best.week,power:best.power
-    }});
-    if(!next.viewerAuthenticated)throw new Error('Leaderboard submission was not authenticated');
-    lastUpload=key;
-    changed(next);
-    return {status:'submitted'};
-  }catch(error){
-    console.warn('[RPChess] leaderboard submit failed',error);
-    return {status:'error'};
-  }finally{uploading=null;}})();
-  return uploading;
+  // Profile mode refreshes server-side from the authenticated saved snapshot
+  // via unifiedLeaderboard(). Anonymous clients cannot submit old VK scores.
+  return {status:platform.profileEnabled&&board.status==='ready'?'already-submitted':'unavailable'};
 }
+
 export {currentLeaderboard,loadLeaderboard,submitBestChronicle,signedLaunchQuery};

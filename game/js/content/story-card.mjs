@@ -11,13 +11,15 @@ const ICONS = Object.freeze({
   puzzlesSolved:'generated_assets/node_training.png',
   eventsResolved:'generated_assets/node_story.png',
   heroesRecruited:'generated_assets/reward_recruit.png',
-  finalPower:'assets/doctrines/royal_court/emblem.png',
+  territories:'assets/doctrines/royal_court/emblem.png',
+  outposts:'assets/ui/build_outpost_128.png',
+  settlements:'assets/ui/build_settlement_128.png',
   caravansDefended:'assets/doctrines/cavalry/emblem.png'
 });
 const ORDER = Object.freeze([
-  'weeks','goldEarned','skirmishWins','battleWins',
-  'puzzlesSolved','eventsResolved','heroesRecruited','finalPower',
-  'caravansDefended'
+  'battleWins','skirmishWins','caravansDefended','puzzlesSolved',
+  'eventsResolved','territories','outposts','settlements',
+  'goldEarned'
 ]);
 const COPY = Object.freeze({
   ru:{
@@ -29,8 +31,8 @@ const COPY = Object.freeze({
       weeks:'НЕДЕЛЬ В ПУТИ',goldEarned:'ЗОЛОТА ДОБЫТО',
       skirmishWins:'ПОБЕД В СТЫЧКАХ',battleWins:'ПОБЕД В БИТВАХ',
       puzzlesSolved:'ЗАДАЧ РЕШЕНО',eventsResolved:'СОБЫТИЙ ПРОЙДЕНО',
-      heroesRecruited:'ГЕРОЕВ НАНЯТО',finalPower:'ИТОГОВАЯ МОЩЬ',
-      caravansDefended:'КАРАВАНОВ ЗАЩИЩЕНО'
+      heroesRecruited:'ГЕРОЕВ НАНЯТО',territories:'ЗЕМЕЛЬ',outposts:'АВАНПОСТОВ',
+      settlements:'ПОСЕЛЕНИЙ',caravansDefended:'КАРАВАНОВ ЗАЩИЩЕНО'
     }
   },
   en:{
@@ -42,8 +44,8 @@ const COPY = Object.freeze({
       weeks:'WEEKS TRAVELED',goldEarned:'GOLD EARNED',
       skirmishWins:'SKIRMISH WINS',battleWins:'BATTLE WINS',
       puzzlesSolved:'PUZZLES SOLVED',eventsResolved:'EVENTS RESOLVED',
-      heroesRecruited:'HEROES RECRUITED',finalPower:'FINAL POWER',
-      caravansDefended:'CARAVANS DEFENDED'
+      heroesRecruited:'HEROES RECRUITED',territories:'LANDS',outposts:'OUTPOSTS',
+      settlements:'SETTLEMENTS',caravansDefended:'CARAVANS DEFENDED'
     }
   }
 });
@@ -141,7 +143,7 @@ async function renderRunStory(run, { power = 0, language = 'ru', endReason = '' 
   // synthetic panels. The text uses the same inset as endless-run.css.
   contain(ctx,flag,41,320,998,1270);
   if (globalThis.document?.fonts?.load) {
-    try { await document.fonts.load('48px BrahmsGotischCyr'); } catch {}
+    try { await document.fonts.load('48px GoznakUI'); } catch {}
   }
 
   // Separate logo above the banner: it must not crowd the gold banner rails.
@@ -156,7 +158,7 @@ async function renderRunStory(run, { power = 0, language = 'ru', endReason = '' 
   ctx.shadowBlur=7;
   ctx.shadowOffsetY=3;
   ctx.fillStyle='#ffe1a0';
-  ctx.font='48px BrahmsGotischCyr,Georgia,serif';
+  ctx.font='bold 44px GoznakUI,Georgia,serif';
   centered(ctx,copy.heading,540,553,555);
   ctx.fillStyle='#fff5e1';
   ctx.font='26px Georgia,serif';
@@ -169,15 +171,18 @@ async function renderRunStory(run, { power = 0, language = 'ru', endReason = '' 
   ctx.shadowBlur=0;
   ctx.shadowOffsetY=0;
 
-  // Four tightly paired rows + one centered caravan row, matching the game.
-  const metricImages = Object.fromEntries(ORDER.map((key,index)=>[key,icons[index]]));
-  for (let i=0;i<8;i++) {
+  ctx.fillStyle='#ffdf9b';ctx.font='bold 25px GoznakUI,Georgia,serif';
+  centered(ctx,(language==='en'?'GLORY ':'СЛАВА ')+summary.glory+
+    '  ·  '+(language==='en'?'POWER ':'МОЩЬ ')+summary.finalPower,540,680,554);
+  // Original flag, original icons and nine real achievements: no score formula.
+  const metricImages=Object.fromEntries(ORDER.map((key,index)=>[key,icons[index]]));
+  for(let i=0;i<8;i++){
     const key=ORDER[i],column=i%2,row=Math.floor(i/2);
     metric(ctx,copy.metrics[key],summary[key],metricImages[key],
-      262+column*287,682+row*110,269);
+      262+column*287,715+row*105,269);
   }
-  metric(ctx,copy.metrics.caravansDefended,summary.caravansDefended,
-    metricImages.caravansDefended,382,1122,310);
+  metric(ctx,copy.metrics.goldEarned,summary.goldEarned,
+    metricImages.goldEarned,382,1139,310);
 
   // CTA outside the flag: below the gold tip, above the VK Stories controls.
   ctx.strokeStyle='rgba(241,199,113,.85)';

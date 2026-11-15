@@ -1,4 +1,5 @@
 import { STARTER_TEMPLATES } from './roster-data.mjs';
+import {addAchievement,calculateGloryV2,normalizeGloryV2} from './glory-v2.mjs';
 
 const END_REASON_LABELS = Object.freeze({
   starvation_king: 'Король погиб во время перехода без припасов.',
@@ -86,7 +87,29 @@ function accrueRunStats(run, previous) {
     stats.eventsResolved += 1;
   }
 
-  return { ...next, runStats: stats };
+  // One receipt per unique successful site; repeated fights and re-saves do
+  // not generate extra Glory. Old runStats remain available as statistics.
+  let glory=normalizeGloryV2(next.gloryV2||previous.gloryV2);
+  const award=(kind,identity,stars)=>{glory=addAchievement(glory,kind,identity,stars);};
+  for(const [kind,countKey,lastKey] of [
+    ['skirmish','skirmishCount','lastSkirmish'],
+    ['battle','battleCount','lastBattle'],
+    ['caravan','caravanCount','lastCaravan']
+  ]){
+    if(safeCount(next[countKey])>safeCount(previous[countKey])&&combatVictory(next[lastKey])){
+      const record=next[lastKey];
+      award(kind,record?.routeId||record?.encounterId||kind+':'+safeCount(next[countKey]),
+        record?.encounterStars||next.activeTravelChoice?.stars||1);
+    }
+  }
+  if(next.lastPuzzle?.result==='solved'&&puzzleIdentity(next.lastPuzzle)&&
+     puzzleIdentity(next.lastPuzzle)!==puzzleIdentity(previous.lastPuzzle))
+    award('puzzle',next.lastPuzzle.routeId||puzzleIdentity(next.lastPuzzle),
+      next.currentPuzzle?.stars||next.activeTravelChoice?.stars||1);
+  if(next.currentEvent?.resolved===true&&
+     (!previous.currentEvent?.resolved||previous.currentEvent.routeId!==next.currentEvent.routeId))
+    award('event',next.currentEvent.routeId);
+  return { ...next,runStats:stats,gloryV2:glory };
 }
 
 function recruitedHeroCount(run) {
@@ -99,7 +122,12 @@ function endReasonLabel(reason) {
 
 function summarizeRun(run, { power = 0 } = {}) {
   const stats = hydrateRunStats(run);
+  const score=calculateGloryV2(run,power);
   return Object.freeze({
+    glory:score.glory,adventure:score.adventure,kingdomScore:score.kingdom,
+    achievementCount:score.achievementCount,
+    territories:score.territories,outposts:score.outposts,settlements:score.settlements,
+    day:safeCount(run?.kingdomMap?.day)||safeCount(run?.journeyStep)+1,
     weeks: safeCount(run?.journeyStep),
     goldEarned: stats.goldEarned,
     skirmishWins: stats.skirmishWins,

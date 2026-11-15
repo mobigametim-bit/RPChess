@@ -4,6 +4,7 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(k){return this.map.
   const game=path.resolve(__dirname,'..','game'),url=(relative)=>pathToFileURL(path.join(game,relative)).href;
   const persistence=await import(url('js/run-persistence.mjs'));
   const endless=await import(url('js/endless-run-core.mjs'));
+  const glory=await import(url('js/glory-v2.mjs'));
   const rating=await import(url('js/player-rating.mjs'));
   const settlement=await import(url('js/settlement-core.mjs'));
   const storage=new MemoryStorage();
@@ -16,6 +17,7 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(k){return this.map.
 
   run=persistence.writeRun({...run,skirmishCount:1,lastSkirmish:{result:'checkmate',winner:'w',playerColor:'w'}},storage,1100);
   assert.strictEqual(run.runStats.skirmishWins,1);
+  assert.strictEqual(glory.calculateGloryV2(run,500).adventure,12,'one difficulty-I skirmish gives 12 base Glory');
   run=persistence.writeRun({...run},storage,1150);
   assert.strictEqual(run.runStats.skirmishWins,1,'re-saving the same completed Skirmish must not double count');
 
@@ -28,6 +30,7 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(k){return this.map.
   assert.strictEqual(run.runStats.caravansDefended,0,'an unsuccessful caravan defense must not count');
   run=persistence.writeRun({...run,caravanCount:2,lastCaravan:{result:'checkmate',winner:'w',playerColor:'w'}},storage,1280);
   assert.strictEqual(run.runStats.caravansDefended,1,'a successful caravan defense counts once');
+  assert.strictEqual(glory.calculateGloryV2(run,500).adventure,12+29+21,'wins create three distinct Glory receipts');
   run=persistence.writeRun({...run},storage,1290);
   assert.strictEqual(run.runStats.caravansDefended,1,'re-saving a defense must not count twice');
 
@@ -60,6 +63,18 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(k){return this.map.
   assert.strictEqual(summary.eventsResolved,1);
   assert.strictEqual(summary.heroesRecruited,1);
   assert.strictEqual(summary.finalPower,777);
+  assert.strictEqual(summary.adventure,12+29+21+5+10,
+    'resolved event and solved puzzle are credited once');
+  assert.strictEqual(summary.glory,Math.floor((12+29+21+5+10)*glory.powerMultiplier(777)));
+  assert.strictEqual(glory.powerMultiplier(500),1);
+  assert.strictEqual(glory.powerMultiplier(2500),1.5);
+  assert.strictEqual(glory.powerMultiplier(0),.75);
+  const originalScore=summary.glory;
+  assert(glory.calculateGloryV2(run,1100).glory>originalScore,
+    'Power is sampled live at evaluation, without delta tracking');
+  const repeated=persistence.writeRun({...run,ended:false},storage,1660);
+  assert.strictEqual(glory.calculateGloryV2(repeated,777).glory,originalScore,
+    're-saving the same completed encounters does not repeat Glory');
   assert(summary.endReasonLabel.includes('припас'));
   assert.strictEqual(endless.endReasonLabel('king_solo_battle'),'Наемники не посчитались со словами одинокого короля без королевства и повесили вас на суку ближайшего дерева');
 
@@ -82,7 +97,7 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(k){return this.map.
   const roster=fs.readFileSync(path.join(game,'js/roster-app.mjs'),'utf8');
   for(const token of ["from '../localization/runtime-ui.mjs'",'runtimeT(currentLanguage()','translateLegacy(summary.kingName)','translateLegacy(summary.endReasonLabel)','subscribe(() =>','scene_defeat.webp','queueMicrotask(() => open(storedRun))','RPChessEndlessRun'])assert(app.includes(token),`Endless owner app missing ${token}`);
   for(const token of ["import { shareRunResult } from './content/share-result.mjs'",'data-endless-run-share','shareRunResult(activeRun, { power: readPlayerRating().power })'])assert(app.includes(token),`Final-summary sharing contract missing ${token}`);
-  for(const token of ["'endless.title':'ЗАБЕГ ЗАВЕРШЁН'","'endless.metric.goldEarned':'ЗАРАБОТАНО ЗОЛОТА'","'endless.metric.finalPower':'ИТОГОВАЯ МОЩЬ'","'endless.newGame':'НОВАЯ ИГРА'","'endless.menu':'ГЛАВНОЕ МЕНЮ'"])assert(runtimeUi.includes(token),`runtime owner registry missing ${token}`);
+  for(const token of ["'endless.title':'ЗАБЕГ ЗАВЕРШЁН'","'endless.metric.goldEarned':'ЗАРАБОТАНО ЗОЛОТА'","'endless.metric.finalPower':'ИТОГОВАЯ МОЩЬ'","'endless.newGame':'НОВОЕ ПУТЕШЕСТВИЕ'","'endless.menu':'ГЛАВНОЕ МЕНЮ'"])assert(runtimeUi.includes(token),`runtime owner registry missing ${token}`);
   for(const forbidden of ['ЗАБЕГ ЗАВЕРШЁН','ЗАРАБОТАНО ЗОЛОТА','ИТОГОВАЯ МОЩЬ','НОВАЯ ИГРА','ГЛАВНОЕ МЕНЮ'])assert(!app.includes(forbidden),`Endless runtime must not hardcode localized copy: ${forbidden}`);
   assert(app.includes('css/endless-run-compact.css?v=20261021-summary-fit'),'Endless Run owner must load its compact stylesheet after base CSS');
   assert(compactCss.includes('body.endless-run-active .resource-hud{display:none!important}'),'Endless Run owner compact stylesheet must suppress the floating resource HUD on the final summary');

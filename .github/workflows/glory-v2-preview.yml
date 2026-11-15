@@ -1,0 +1,128 @@
+name: Glory v2 isolated game and ranking preview
+on:
+  push:
+    branches:
+      - feature/glory-v2-chronicle-run-end-20261115
+    paths:
+      - '.github/workflows/glory-v2-preview.yml'
+      - 'game/**'
+      - 'profile-worker/**'
+      - 'profile-preview/wrangler-glory-v2.toml'
+      - 'scripts/**'
+      - 'tests/**'
+      - 'package.json'
+      - 'package-lock.json'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: rpchess-glory-v2-isolated-qa
+  cancel-in-progress: true
+jobs:
+  verify-and-publish:
+    if: github.repository == 'mobigametim-bit/RPChess' && github.ref == 'refs/heads/feature/glory-v2-chronicle-run-end-20261115'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 85
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm/rpchess-runtime-assets-v1
+          key: rpchess-runtime-assets-v1-${{ runner.os }}-${{ hashFiles('game/assets/**/*.png', 'game/generated_assets/*.png', 'scripts/*asset*.cjs', 'scripts/runtime-assets-build.cjs') }}
+          restore-keys: rpchess-runtime-assets-v1-${{ runner.os }}-
+      - name: Install tools and SHA-verified Stockfish engine
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund
+          npm pack stockfish@18.0.0 --silent --pack-destination /tmp
+          mkdir -p /tmp/rpchess-stockfish-package /tmp/rpchess-stockfish-verified
+          tar -xzf /tmp/stockfish-18.0.0.tgz -C /tmp/rpchess-stockfish-package
+          package=/tmp/rpchess-stockfish-package/package
+          for name in stockfish-18-lite-single.js stockfish-18-lite-single.wasm; do
+            source=$(find "$package" -type f -name "$name" -print -quit)
+            test -n "$source"
+            cp "$source" "/tmp/rpchess-stockfish-verified/$name"
+          done
+          license=$(find "$package" -type f -iname 'Copying.txt' -print -quit)
+          test -n "$license"
+          cp "$license" /tmp/rpchess-stockfish-verified/COPYING.txt
+      - name: Full local verification
+        env:
+          RPCHESS_STOCKFISH_ASSET_DIR: /tmp/rpchess-stockfish-verified
+        run: npm run gate:local
+      - name: Chromium summary and Chronicle regression
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
+          npx playwright install chromium
+          RPCHESS_BROWSER_TEST=mobile-run-summary-browser.cjs npm run test:browser
+          RPCHESS_BROWSER_TEST=chronicle-localization-browser.cjs npm run test:browser
+      - name: Verify only v3 ranking tables and new assets
+        run: |
+          node <<'NODE'
+          const fs=require('node:fs'),assert=require('node:assert/strict');
+          const board=fs.readFileSync('profile-worker/src/unified-board.mjs','utf8');
+          assert(board.includes('rpchess_leaderboard_v3')&&!board.includes('FROM leaderboard_v1'));
+          assert(fs.existsSync('dist/js/glory-v2.mjs'));
+          for(const path of ['dist/css/endless-run-v2.css','dist/css/chronicle-v2.css','dist/assets/ui/royal_run_flag.png'])
+            assert(fs.existsSync(path),path);
+          console.log('Source and build contain all new Glory v2 assets and isolated v3 query');
+          NODE
+      - name: Create only the new leaderboard table in existing D1
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          npx wrangler d1 execute rpchess-leaderboard --remote --file profile-worker/schema.sql --config profile-worker/wrangler-glory-v2.toml --yes
+      - name: Deploy isolated Glory v2 profile API (not the current profile Worker)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          npx wrangler deploy --config profile-worker/wrangler-glory-v2.toml
+      - name: Point the isolated game at the isolated profile API
+        run: |
+          node <<'NODE'
+          const fs=require('node:fs');
+          const file='dist/index.html',html=fs.readFileSync(file,'utf8');
+          const previous='https://rpchess-profile-preview.mobigametim.workers.dev';
+          if(!html.includes(previous))throw new Error('Profile URL missing from game build');
+          fs.writeFileSync(file,html.replaceAll(previous,'https://rpchess-glory-v2-api-preview.mobigametim.workers.dev'));
+          NODE
+      - name: Deploy isolated playable game without touching Pages or VK
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          npx wrangler deploy --config profile-preview/wrangler-glory-v2.toml
+      - name: Verify both published services (no fake ranking records)
+        run: |
+          node <<'NODE'
+          const assert=require('node:assert/strict');
+          (async()=>{
+            const game='https://rpchess-glory-v2-game-preview.mobigametim.workers.dev';
+            const api='https://rpchess-glory-v2-api-preview.mobigametim.workers.dev';
+            const board=await fetch(api+'/v1/leaderboard',{cache:'no-store'});
+            assert.equal(board.status,200,'New D1 ranking endpoint');
+            const json=await board.json();
+            assert.equal(json.scoreVersion,2,'New board is versioned');
+            const html=await fetch(game+'/?rpchess_profile=1',{cache:'no-store'});
+            assert.equal(html.status,200,'Game index must load');
+            const page=await html.text();
+            assert(page.includes('rpchess-glory-v2-api-preview'),'Game uses isolated API');
+            for(const path of ['/js/glory-v2.mjs','/assets/ui/royal_run_flag.png','/css/endless-run-v2.css','/css/chronicle-v2.css']){
+              const result=await fetch(game+path,{cache:'no-store'});
+              assert.equal(result.status,200,path);
+            }
+            console.log('Glory v2 isolated GAME and API: LIVE',json.top.length,'ranked players');
+          })().catch(e=>{console.error(e);process.exitCode=1;});
+          NODE

@@ -20,7 +20,7 @@ jobs:
     if: >-
       github.ref == 'refs/heads/main' &&
       (github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'push' && (startsWith(github.event.head_commit.message, 'deploy: active Glory menu sync') || startsWith(github.event.head_commit.message, 'deploy: yandex gateway client') || startsWith(github.event.head_commit.message, 'deploy: tournament routing recovery') || startsWith(github.event.head_commit.message, 'deploy: vk profile conflict recovery') || startsWith(github.event.head_commit.message, 'deploy: mobile vk profile transport and localization') || startsWith(github.event.head_commit.message, 'deploy: mentor training rollout') || startsWith(github.event.head_commit.message, 'deploy: kingdom map release'))))
+      (github.event_name == 'push' && (startsWith(github.event.head_commit.message, 'deploy: active Glory menu sync') || startsWith(github.event.head_commit.message, 'deploy: yandex gateway client') || startsWith(github.event.head_commit.message, 'deploy: tournament routing recovery') || startsWith(github.event.head_commit.message, 'deploy: vk profile conflict recovery') || startsWith(github.event.head_commit.message, 'deploy: mobile vk profile transport and localization') || startsWith(github.event.head_commit.message, 'deploy: mentor training rollout') || startsWith(github.event.head_commit.message, 'deploy: kingdom map release') || startsWith(github.event.head_commit.message, 'deploy: glory v2 release'))))
     # Keep Playwright 1.54 compatible with the runner OS for production deploys.
     runs-on: ubuntu-24.04
     timeout-minutes: 60
@@ -138,11 +138,43 @@ jobs:
           npx wrangler deploy --config profile-worker/wrangler.toml
           npx wrangler deploy --config tournament-worker/wrangler-profile.toml
           npx wrangler deploy --config tournament-worker/wrangler.toml
+      # Owner-approved Glory v2 release: migrate ONLY the additive v3 ranking
+      # table and deploy the existing Profile Worker with existing VK secret.
+      # Do not redeploy or re-key either Tournament Worker on this release.
+      - name: Publish Glory v2 Profile API and additive D1 leaderboard
+        if: >-
+          github.ref == 'refs/heads/main' &&
+          github.event_name == 'push' &&
+          startsWith(github.event.head_commit.message, 'deploy: glory v2 release')
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          npx wrangler secret list --config profile-worker/wrangler.toml |
+            grep -q 'VK_APP_SECRET' || { echo "::error::VK secret missing"; exit 1; }
+          npx wrangler d1 execute rpchess-leaderboard --remote --file profile-worker/schema.sql --config profile-worker/wrangler.toml --yes
+          npx wrangler deploy --config profile-worker/wrangler.toml
+          node <<'NODE'
+          const assert=require('node:assert/strict');
+          (async()=>{
+            const base='https://rpchess-profile-preview.mobigametim.workers.dev';
+            const res=await fetch(base+'/v1/leaderboard',{cache:'no-store'});
+            assert.equal(res.status,200,'new production Glory board accessible');
+            const data=await res.json();
+            assert.equal(data.scoreVersion,2,'production Profile Worker must serve ONLY v3 scores');
+            assert(Array.isArray(data.top),'public ranking remains readable');
+            console.log('Production Glory v2 profile API is live; existing scores were NOT imported.');
+          })().catch(e=>{console.error(e);process.exitCode=1;});
+          NODE
       - name: Verify live Tournament and profile API health before Pages
         if: >-
           github.ref == 'refs/heads/main' &&
           (github.event_name == 'workflow_dispatch' ||
-          (github.event_name == 'push' && (startsWith(github.event.head_commit.message, 'deploy: active Glory menu sync') || startsWith(github.event.head_commit.message, 'deploy: yandex gateway client') || startsWith(github.event.head_commit.message, 'deploy: tournament routing recovery') || startsWith(github.event.head_commit.message, 'deploy: vk profile conflict recovery') || startsWith(github.event.head_commit.message, 'deploy: mobile vk profile transport and localization') || startsWith(github.event.head_commit.message, 'deploy: mentor training rollout') || startsWith(github.event.head_commit.message, 'deploy: kingdom map release'))))
+          (github.event_name == 'push' && (startsWith(github.event.head_commit.message, 'deploy: active Glory menu sync') || startsWith(github.event.head_commit.message, 'deploy: yandex gateway client') || startsWith(github.event.head_commit.message, 'deploy: tournament routing recovery') || startsWith(github.event.head_commit.message, 'deploy: vk profile conflict recovery') || startsWith(github.event.head_commit.message, 'deploy: mobile vk profile transport and localization') || startsWith(github.event.head_commit.message, 'deploy: mentor training rollout') || startsWith(github.event.head_commit.message, 'deploy: kingdom map release') || startsWith(github.event.head_commit.message, 'deploy: glory v2 release'))))
         run: |
           node <<'NODE'
           const assert=require('node:assert/strict');
@@ -180,14 +212,14 @@ jobs:
         if: >-
           github.ref == 'refs/heads/main' &&
           (github.event_name == 'workflow_dispatch' ||
-          (github.event_name == 'push' && (startsWith(github.event.head_commit.message, 'deploy: active Glory menu sync') || startsWith(github.event.head_commit.message, 'deploy: yandex gateway client') || startsWith(github.event.head_commit.message, 'deploy: tournament routing recovery') || startsWith(github.event.head_commit.message, 'deploy: vk profile conflict recovery') || startsWith(github.event.head_commit.message, 'deploy: mobile vk profile transport and localization') || startsWith(github.event.head_commit.message, 'deploy: mentor training rollout') || startsWith(github.event.head_commit.message, 'deploy: kingdom map release'))))
+          (github.event_name == 'push' && (startsWith(github.event.head_commit.message, 'deploy: active Glory menu sync') || startsWith(github.event.head_commit.message, 'deploy: yandex gateway client') || startsWith(github.event.head_commit.message, 'deploy: tournament routing recovery') || startsWith(github.event.head_commit.message, 'deploy: vk profile conflict recovery') || startsWith(github.event.head_commit.message, 'deploy: mobile vk profile transport and localization') || startsWith(github.event.head_commit.message, 'deploy: mentor training rollout') || startsWith(github.event.head_commit.message, 'deploy: kingdom map release') || startsWith(github.event.head_commit.message, 'deploy: glory v2 release'))))
         uses: actions/configure-pages@v5
 
       - name: Upload Pages artifact
         if: >-
           github.ref == 'refs/heads/main' &&
           (github.event_name == 'workflow_dispatch' ||
-          (github.event_name == 'push' && (startsWith(github.event.head_commit.message, 'deploy: active Glory menu sync') || startsWith(github.event.head_commit.message, 'deploy: yandex gateway client') || startsWith(github.event.head_commit.message, 'deploy: tournament routing recovery') || startsWith(github.event.head_commit.message, 'deploy: vk profile conflict recovery') || startsWith(github.event.head_commit.message, 'deploy: mobile vk profile transport and localization') || startsWith(github.event.head_commit.message, 'deploy: mentor training rollout') || startsWith(github.event.head_commit.message, 'deploy: kingdom map release'))))
+          (github.event_name == 'push' && (startsWith(github.event.head_commit.message, 'deploy: active Glory menu sync') || startsWith(github.event.head_commit.message, 'deploy: yandex gateway client') || startsWith(github.event.head_commit.message, 'deploy: tournament routing recovery') || startsWith(github.event.head_commit.message, 'deploy: vk profile conflict recovery') || startsWith(github.event.head_commit.message, 'deploy: mobile vk profile transport and localization') || startsWith(github.event.head_commit.message, 'deploy: mentor training rollout') || startsWith(github.event.head_commit.message, 'deploy: kingdom map release') || startsWith(github.event.head_commit.message, 'deploy: glory v2 release'))))
         uses: actions/upload-pages-artifact@v4
         with:
           path: ./dist
@@ -196,7 +228,7 @@ jobs:
     if: >-
       github.ref == 'refs/heads/main' &&
       (github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'push' && (startsWith(github.event.head_commit.message, 'deploy: active Glory menu sync') || startsWith(github.event.head_commit.message, 'deploy: yandex gateway client') || startsWith(github.event.head_commit.message, 'deploy: tournament routing recovery') || startsWith(github.event.head_commit.message, 'deploy: vk profile conflict recovery') || startsWith(github.event.head_commit.message, 'deploy: mobile vk profile transport and localization') || startsWith(github.event.head_commit.message, 'deploy: mentor training rollout') || startsWith(github.event.head_commit.message, 'deploy: kingdom map release'))))
+      (github.event_name == 'push' && (startsWith(github.event.head_commit.message, 'deploy: active Glory menu sync') || startsWith(github.event.head_commit.message, 'deploy: yandex gateway client') || startsWith(github.event.head_commit.message, 'deploy: tournament routing recovery') || startsWith(github.event.head_commit.message, 'deploy: vk profile conflict recovery') || startsWith(github.event.head_commit.message, 'deploy: mobile vk profile transport and localization') || startsWith(github.event.head_commit.message, 'deploy: mentor training rollout') || startsWith(github.event.head_commit.message, 'deploy: kingdom map release') || startsWith(github.event.head_commit.message, 'deploy: glory v2 release'))))
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

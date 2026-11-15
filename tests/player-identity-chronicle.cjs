@@ -65,37 +65,40 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(k){return this.map.
 
   assert.strictEqual(chronicle.gloryForRun(35,900),17);
   assert.strictEqual(chronicle.gloryForRun(0,900),0);
-  const completed={...persistence.createRun({now:2000,id:'completed-run',playerName:'Рагнар',commanderId:'ash_regent'}),journeyStep:35,ended:true,endReason:'starvation_king',updatedAt:2500};
+  const completed={...persistence.createRun({now:2000,id:'completed-run',playerName:'Рагнар',commanderId:'ash_regent'}),journeyStep:35,ended:true,endReason:'starvation_king',updatedAt:2500,gloryV2:{version:2,events:[['battle','b1',5]]}};
   let result=chronicle.recordCompletedRun(completed,{power:900,storage,completedAt:2500});
   assert.strictEqual(result.changed,true);
-  assert.strictEqual(result.record.glory,17);
+  assert.strictEqual(result.record.glory,Math.floor(45*Math.sqrt(900/500)));
+  assert.strictEqual(result.record.scoreVersion,2);
   assert.strictEqual(result.record.playerName,'Рагнар');
   assert.strictEqual(result.record.commanderId,'ash_regent');
   assert.strictEqual(chronicle.readChronicle(storage).history[0].commanderId,'ash_regent');
-  assert(!Object.prototype.hasOwnProperty.call(result.record,'endReason'),'Chronicle must not store/display the run-end reason');
+  assert.strictEqual(result.record.endReason,'starvation_king','new Chronicle entries preserve the final outcome');
   result=chronicle.recordCompletedRun(completed,{power:900,storage,completedAt:2600});
   assert.strictEqual(result.changed,false,'same completed run must be idempotent');
   result=chronicle.recordCompletedRun(completed,{power:1000,storage,completedAt:2700});
-  assert.strictEqual(result.changed,true,'same run may refresh its final Power if rating settlement lands later');
-  assert.strictEqual(result.record.power,1000);
+  assert.strictEqual(result.changed,false,'completed Glory and Power stay frozen after run end');
+  assert.strictEqual(result.record.power,900);
 
   const second={...completed,id:'second-run',playerName:'Эдрик',journeyStep:40,updatedAt:3000};
   chronicle.recordCompletedRun(second,{power:640,storage,completedAt:3000});
   const best=chronicle.bestChronicleRun(chronicle.readChronicle(storage));
-  assert(best&&best.runId==='completed-run','best run must use Glory, then week, then Power ordering');
+  assert(best&&best.runId==='completed-run','best v2 run is selected without legacy Glory');
 
-  const active={...persistence.createRun({id:'active-run',playerName:'Алёна'}),journeyStep:12,roster:persistence.createRun({id:'roster-copy'}).roster.map((hero,index)=>index===1?{...hero,status:'dead'}:hero)};
+  const active={...persistence.createRun({id:'active-run',playerName:'Алёна'}),gloryV2:{version:2,events:[['skirmish','s1',1]]},journeyStep:12,roster:persistence.createRun({id:'roster-copy'}).roster.map((hero,index)=>index===1?{...hero,status:'dead'}:hero)};
   const snapshot=chronicle.activeRunSnapshot(active,{power:777});
   assert.strictEqual(snapshot.playerName,'Алёна');
   assert.strictEqual(snapshot.commanderId,'oathkeeper');
   assert.strictEqual(snapshot.week,12);
   assert.strictEqual(snapshot.power,777);
   assert.strictEqual(snapshot.heroes,active.roster.length-1);
-  assert.strictEqual(chronicle.activeLeaderboardRecord(active,{power:900}).glory,10,
-    'ongoing Journey earns Glory before ending');
+  assert.strictEqual(chronicle.activeLeaderboardRecord(active,{power:900}).glory,Math.floor(12*Math.sqrt(900/500)),
+    'ongoing Journey earns Glory on achievements, not weeks');
   assert.strictEqual(chronicle.bestLeaderboardRecord(chronicle.readChronicle(storage),active,{power:900}).runId,'completed-run',
     'completed record stays on top if its Glory is higher');
-  const improving={...active,journeyStep:50};
+  const improving={...active,journeyStep:50,gloryV2:{version:2,events:[
+    ['battle','b1',5],['battle','b2',5],['battle','b3',5]
+  ]}};
   assert.strictEqual(chronicle.bestLeaderboardRecord(chronicle.readChronicle(storage),improving,{power:1600}).runId,'active-run',
     'an unfinished Journey can overtake the completed personal best');
   assert.strictEqual(chronicle.readChronicle(storage).history.length,2,
@@ -164,77 +167,32 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(k){return this.map.
     assert.strictEqual(rejected.status,403,'Unexpected third-party site must not read the API');
   }
 
-  // A failed mobile VK /view POST should not hide the public top ten when
-  // unauthenticated GET is still accessible. No fake leaderboard scores used.
-  const previousDocument=globalThis.document,previousLocation=globalThis.location,previousFetch=globalThis.fetch;
+  // Glory v2 is profile-authenticated; anonymous VK reads must use only
+  // the fresh public RPChess v3 board, never sign/submit the old score.
+  const previousDocument=globalThis.document,previousFetch=globalThis.fetch;
   try{
-    globalThis.document={querySelector:()=>({content:'https://leaderboard.example.test'})};
-    globalThis.location={search:'?sign=test&vk_app_id=54754579&vk_user_id=42'};
+    globalThis.document={querySelector:()=>({content:'https://rpchess-profile.example.test'})};
     const calls=[];
     globalThis.fetch=async(resource,options={})=>{
-      calls.push({resource:String(resource),method:options.method});
-      if(options.method==='POST')throw new TypeError('Simulated VK mobile POST failure');
-      return new Response(JSON.stringify({top:[{rank:1,name:'Честный игрок',glory:17}],me:null}),{status:200});
+      calls.push({resource:String(resource),method:options.method||'GET'});
+      return new Response(JSON.stringify({scoreVersion:2,
+        top:[{rank:1,name:'New Journey',glory:147}],me:null}),{status:200});
     };
     const client=await import(url('js/leaderboard-client.mjs'));
     const result=await client.loadLeaderboard({force:true});
     assert.strictEqual(result.status,'ready');
-    assert.strictEqual(result.top.length,1,'public leaderboard must remain available on mobile');
-    assert.strictEqual(result.me,null,'never invent a personal rank without verified VK launch');
-    assert.deepStrictEqual(calls.map(call=>call.method),['POST','GET'],'fall back to public leaderboard after failed signed POST');
+    assert.strictEqual(result.top.length,1);
+    assert.strictEqual(result.me,null,'no anonymous personal ranks');
+    assert.deepStrictEqual(calls.map(call=>call.method),['GET'],
+      'anonymous clients must never use the old signed VK leaderboard write API');
+    assert(calls[0].resource.endsWith('/v1/leaderboard'));
+    assert.strictEqual((await client.submitBestChronicle()).status,'unavailable',
+      'only a verified RPChess profile may publish the new score');
+    assert.strictEqual(client.signedLaunchQuery({vk_app_id:54754579,vk_user_id:42}),'',
+      'unsigned VK identity remains untrusted');
   }finally{
     if(previousDocument===undefined)delete globalThis.document;else globalThis.document=previousDocument;
-    if(previousLocation===undefined)delete globalThis.location;else globalThis.location=previousLocation;
     globalThis.fetch=previousFetch;
-  }
-
-  // VK mobile WebView can omit signed launch data from location.search.
-  // Only VK Bridge's signed launch response (not an unchecked profile ID)
-  // may authorize the personal position on our leaderboard Worker.
-  const prevPlatform=globalThis.RPChessPlatform,prevMobileLocation=globalThis.location;
-  const prevMobileDocument=globalThis.document,prevMobileFetch=globalThis.fetch;
-  try{
-    const parameters={vk_app_id:54754579,vk_user_id:42,vk_ts:1720000000,vk_platform:'mobile_android',vk_ref:'other'};
-    const signingText=new URLSearchParams(Object.entries(parameters)
-      .sort(([a],[b])=>a.localeCompare(b)).map(([k,v])=>[k,String(v)])).toString();
-    const sig=require('node:crypto').createHmac('sha256',vkSecret).update(signingText).digest('base64url');
-    const mobileLaunch={...parameters,sign:sig};
-    let bridgeRequests=0;const requests=[];
-    globalThis.location={search:''};
-    globalThis.document={querySelector:()=>({content:'https://leaderboard.example.test'})};
-    globalThis.RPChessPlatform={launch:{isVK:()=>true},bridge:{request:async method=>{
-      assert.strictEqual(method,'VKWebAppGetLaunchParams');
-      bridgeRequests++;
-      return mobileLaunch;
-    }}};
-    globalThis.fetch=async(resource,options={})=>{
-      requests.push({resource:String(resource),method:options.method,body:options.body});
-      if(options.method==='POST'){
-        const submitted=JSON.parse(options.body);
-        assert.strictEqual(await leaderboard.verifiedVKId(submitted.launch,vkSecret),'42',
-          'the mobile bridge must supply a verifiable signed VK identity');
-        return new Response(JSON.stringify({top:[{rank:1,name:'Tester',glory:14}],
-          me:{rank:1,name:'Tester',glory:14},viewerAuthenticated:true}),{status:200});
-      }
-      throw new Error('signed mobile personal request must not silently downgrade to GET');
-    };
-    const client=await import(url('js/leaderboard-client.mjs'));
-    const answer=await client.loadLeaderboard({force:true});
-    assert.strictEqual(bridgeRequests,1,'one VK bridge authentication fetch per mobile session');
-    assert.strictEqual(answer.me.rank,1);
-    assert.strictEqual(answer.viewerAuthenticated,true);
-    assert.strictEqual(requests[0].method,'POST');
-    await client.loadLeaderboard({force:true});
-    assert.strictEqual(bridgeRequests,1,'reuse signed launch params instead of repeatedly requesting the bridge');
-    assert.strictEqual(client.signedLaunchQuery({vk_app_id:54754579,vk_user_id:42}),'',
-      'an unsigned user ID must never grant a personal leaderboard rank');
-    assert.strictEqual(client.signedLaunchQuery({...mobileLaunch,vk_app_id:54754580}),'',
-      'a different VK app cannot impersonate RPChess');
-  }finally{
-    if(prevPlatform===undefined)delete globalThis.RPChessPlatform;else globalThis.RPChessPlatform=prevPlatform;
-    if(prevMobileLocation===undefined)delete globalThis.location;else globalThis.location=prevMobileLocation;
-    if(prevMobileDocument===undefined)delete globalThis.document;else globalThis.document=prevMobileDocument;
-    globalThis.fetch=prevMobileFetch;
   }
   assert(ui.includes('leaderboard.notAuthenticated')&&ui.includes('leaderboard.notRanked'),
     'personal rank must distinguish unverified VK from authenticated players without a completed run');
