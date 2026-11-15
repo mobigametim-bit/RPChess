@@ -10,6 +10,7 @@ import {KINGDOM_OUTPOST_SHARD_COST} from './arena-core.mjs?v=20261109-kingdom-ec
 import {DEFAULT_KINGDOM_ECONOMY,weeklyResourceProduction} from './kingdom-economy-config.mjs';
 import {synchronizeRoyalRoads} from './kingdom-road-network.mjs?v=20261111-polish-v1';
 import {initialIndustry,validIndustry,settleIndustryWeek,realignLandlockedPiers} from './kingdom-industry-core.mjs';
+import {validTradePosts,initializeTrade,settleTradeWeek} from './kingdom-trade-core.mjs';
 
 // Live defaults mirror Atlas Lab's canonical economy; change only after acceptance.
 const production=DEFAULT_KINGDOM_ECONOMY.production;
@@ -200,6 +201,7 @@ function migrateKingdomMap(map,run=null){
  // Old run saves do not receive backdated buildings or free resources.
  if(!result.industry)result={...result,industry:initialIndustry(weekForDay(result.day))};
  result=realignLandlockedPiers(result);
+ result=initializeTrade(result);
  if(!Array.isArray(result.outposts))result={...result,outposts:[]};
  if(!Array.isArray(result.builtSettlements))result={...result,builtSettlements:[]};
  if(!Array.isArray(result.outpostRoads))result={...result,outpostRoads:[]};
@@ -237,7 +239,7 @@ function productionFor(map,id,type,week){
 function settleWeeklyProduction(map){
  const week=weekForDay(map.day);
  const seeded=map.industry?map:{...map,industry:initialIndustry(weekForDay(Math.max(1,map.day-1)))};
- const staged=settleIndustryWeek(seeded,week);
+ const staged=settleTradeWeek(settleIndustryWeek(seeded,week),week);
  if(week<=Math.max(0,staged.processedThroughWeek||0))return staged;
  let cells=staged.cells;
  for(const [id,cell] of Object.entries(staged.cells)){
@@ -285,6 +287,7 @@ function canBuildSettlement(map,point){
   !cell.selectedEncounter&&id!==keyOf(map.castle.x,map.castle.y)&&
   !(map.outposts||[]).some(post=>post.id===id||post.cells?.includes(id))&&
   !(map.industry?.buildings||[]).some(site=>site.id===id)&&
+  !(map.tradePosts||[]).some(site=>site.id===id)&&
   !(map.builtSettlements||[]).some(site=>site.id===id));
  // Roads, rivers and decorative landmarks are not construction blockers for
  // manual Settlements. Only automatic industry needs clear geography.
@@ -313,7 +316,8 @@ function canBuildOutpost(map,point){
   (cell.type==='empty'||cell.completedOnce===true)&&
   !(map.outposts||[]).some(post=>post.id===id)&&
    !(map.builtSettlements||[]).some(site=>site.id===id)&&
-   !(map.industry?.buildings||[]).some(site=>site.id===id));
+   !(map.industry?.buildings||[]).some(site=>site.id===id)&&
+   !(map.tradePosts||[]).some(site=>site.id===id));
  // An Outpost can stand on a completed road event; natural features and roads
  // are intentionally not blockers. Owned/enemy land and other sites remain so.
 }
@@ -388,7 +392,7 @@ function createKingdomMap(run,playerPower=400,raceTag='humans'){
   peakKingPower:power,annexationPointsSpent:0,battlePointsEarned:0,legacyBonusLands:0,
   creditedBattleEncounterIds:[],uniqueFirstConquests:[],centralOwnedCells:[],
   battleTerritories:[],battleConqueredCells:[],
-  day:1,calendarActions:[],processedThroughWeek:0,industry:initialIndustry(),outposts:[],builtSettlements:[],productionClaims:[],
+  day:1,calendarActions:[],processedThroughWeek:0,industry:initialIndustry(),tradePosts:[],tradeProcessedWeek:0,outposts:[],builtSettlements:[],productionClaims:[],
   completedRoads:[],lastCompletedRouteCell:null,outpostRoads:[],royalRoads:[],
   completedNewEncounterCount:0,productionCyclesResolved:0});
 }
@@ -401,7 +405,7 @@ function validateKingdomMap(map){
     !Number.isInteger(map.battlePointsEarned)||map.battlePointsEarned<0||
     !Array.isArray(map.creditedBattleEncounterIds))return false;
  if(map.day!=null&&(!Number.isSafeInteger(map.day)||map.day<1))return false;
- if(!validIndustry(map.industry))return false;
+ if(!validIndustry(map.industry)||!validTradePosts(map))return false;
  if(map.outposts!=null&&(!Array.isArray(map.outposts)||
    !map.outposts.every(p=>p&&typeof p.id==='string'&&
      /^-?[0-9]+,-?[0-9]+$/.test(p.id)&&Array.isArray(p.cells)&&
