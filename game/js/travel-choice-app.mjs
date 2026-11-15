@@ -4,6 +4,7 @@ import { hasPendingStarvation, resolveStarvation } from './starvation-core.mjs';
 import { PLAYABLE_TRAVEL_TYPES, FLAVOR_POOLS, TRAVEL_CHOICE_COUNT, canSelectTravelChoice, createTravelChoices, isTravelChoice, hasHealthySkirmishCompanion } from './travel-choice-core.mjs';
 import { beginEncounter, cancelEncounterBeforeStart } from './kingdom-map-core.mjs?v=20261111-battle-province-v1';
 import { starsText } from './encounter-difficulty.mjs';
+import {decorateThreat} from './hero-threat.mjs';
 import { readPlayerRating, threatStarsForPower } from './player-rating.mjs';
 import { puzzleBaseGold } from './puzzles/puzzle-core.mjs';
 import { subscribe, t, translateLegacy, currentLanguage } from './i18n.mjs';
@@ -44,7 +45,7 @@ function choiceMeta(choice,noSupplies){
   if(choice.type==='settlement'){const meta=document.createElement('span');meta.className='travel-choice-card__safe';const services=document.createElement('small');services.textContent=t('travel.settlementServices');meta.append(services,cost);return meta;}
   if(choice.type==='skirmish'||choice.type==='battle'||choice.type==='puzzle'||choice.type==='caravan'){
     const meta=document.createElement('span');meta.className='travel-choice-card__threat';
-    const stars=document.createElement('strong');stars.textContent=starsText(choice.stars);
+    const stars=document.createElement('strong');decorateThreat(stars,choice.stars,{language:document.documentElement.lang==='en'?'en':'ru'});
     meta.append(stars,cost,rewardPreview(choice));
     return meta;
   }
@@ -64,7 +65,7 @@ function routeCard(choice){
   button.append(visual,body);applyChoiceAvailability(button,choice,activeRun);button.addEventListener('click',()=>chooseChoice(choice,button));return button;
 }
 function renderPortrait(){if(!screen||!activeRun)return;const portrait=screen.querySelector('[data-travel-run-portrait]');const rating=screen.querySelector('[data-travel-player-rating]');if(!portrait||!rating)return;const source=commanderPortrait(activeRun.commanderId);portrait.src=source;portrait.alt=commanderTitle(activeRun.commanderId,currentLanguage());rating.style.setProperty('--travel-commander-portrait',`url("${new URL(source,document.baseURI).href}")`);}
-function renderRating(){if(!screen)return;const profile=readPlayerRating(),stars=threatStarsForPower(profile.power);const power=screen.querySelector('[data-travel-power]'),threat=screen.querySelector('[data-travel-player-threat]');if(power)power.textContent=String(profile.power);if(threat){threat.textContent=starsText(stars);threat.setAttribute('aria-label',t('travel.threatAria',{stars}));}}
+function renderRating(){if(!screen)return;const profile=readPlayerRating(),stars=threatStarsForPower(profile.power);const power=screen.querySelector('[data-travel-power]'),threat=screen.querySelector('[data-travel-player-threat]');if(power)power.textContent=String(profile.power);if(threat){decorateThreat(threat,stars,{language:document.documentElement.lang==='en'?'en':'ru'});}}
 function renderResources(){if(!screen||!activeRun)return;const gold=screen.querySelector('[data-travel-inline-gold]'),supplies=screen.querySelector('[data-travel-inline-supplies]');if(gold)gold.textContent=String(activeRun.gold??0);if(supplies)supplies.textContent=String(activeRun.supplies??0);screen.querySelector('.travel-choice-inline-resource--supplies')?.classList.toggle('is-empty',Number(activeRun.supplies||0)<=0);}
 function renderChoices(){if(!screen||!activeRun)return;applyStaticCopy();const week=(Number.isInteger(activeRun.journeyStep)?activeRun.journeyStep:0)+1;screen.querySelector('[data-travel-week]').textContent=t('travel.week',{week});renderPortrait();renderRating();renderResources();const routes=screen.querySelector('[data-travel-routes]');routes.replaceChildren();for(const choice of activeRun.currentTravelChoices||[])routes.append(routeCard(choice));globalThis.dispatchEvent(new CustomEvent('rpchess:travel-rendered',{detail:{runId:activeRun.id,week}}));}
 function combatCount(run,choice){if(choice?.type==='caravan')return run?.caravanCount||0;if(choice?.type==='battle')return run?.battleCount||0;if(choice?.type==='skirmish')return run?.skirmishCount||0;return null;}

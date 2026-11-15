@@ -1,6 +1,6 @@
 import { MAX_ENCOUNTER_STARS, difficultyForStars } from './encounter-difficulty.mjs';
 import { RACE_TAGS, combatTheme, hashString } from './race-assets.mjs';
-import { STARTING_POWER, adaptiveEncounterStars, threatStarsForPower } from './player-rating.mjs';
+import { STARTING_POWER, adaptiveEncounterStars, adaptiveBattleStars, threatStarsForPower } from './player-rating.mjs';
 
 const TRAVEL_ENCOUNTER_TYPES = Object.freeze(['skirmish', 'battle', 'event', 'settlement', 'puzzle', 'caravan']);
 const PLAYABLE_TRAVEL_TYPES = Object.freeze(['skirmish', 'battle', 'settlement', 'event', 'puzzle', 'caravan']);
@@ -31,7 +31,7 @@ function createTravelChoices({runId,step=1,types=PLAYABLE_TRAVEL_TYPES,playerPow
   const random=seededRandom(`${runId}:travel:${step}`),typeSequence=Array.from({length:TRAVEL_CHOICE_COUNT},()=>allowed[Math.floor(random()*allowed.length)]),baseThreat=threatStarsForPower(playerPower),usedFlavorIndexes=new Map();
   return typeSequence.map((type,index)=>{
     const seed=`${runId}:travel:${step}:${index+1}:${type}`;
-    const stars=type==='settlement'?baseThreat:adaptiveEncounterStars(playerPower,seed);
+    const stars=type==='settlement'?baseThreat:type==='battle'?adaptiveBattleStars(playerPower,seed):adaptiveEncounterStars(playerPower,seed);
     const pool=FLAVOR_POOLS[type],used=usedFlavorIndexes.get(type)||new Set();let flavorIndex=hashString(`${seed}:flavor`)%pool.length;while(used.has(flavorIndex)&&used.size<pool.length)flavorIndex=(flavorIndex+1)%pool.length;used.add(flavorIndex);usedFlavorIndexes.set(type,used);
     const combat=type==='skirmish'||type==='battle'||type==='caravan',raceTag=combat?RACE_TAGS[hashString(`${seed}:race`)%RACE_TAGS.length]:null,theme=combat?combatTheme({seed,raceTag}):null;
     return {id:`travel.${step}.${index+1}.${hashString(seed).toString(36)}`,step,type,label:ENCOUNTER_LABELS[type],stars,threatLabel:type==='puzzle'?`СЛОЖНОСТЬ ★${stars}`:THREAT_LABELS[stars],flavor:pool[flavorIndex],mechanicalHint:MECHANICAL_HINTS[type],seed,difficultyModel:'power-v1',...(theme?{playerColor:theme.playerColor,enemyRaceTag:theme.enemyRaceTag,enemyRoleRaces:theme.enemyRoleRaces,sideNarrative:theme.sideNarrative}:{})};

@@ -286,6 +286,67 @@ async function assertResponsiveStars(page, selector, cardSelector) {
     await mobile.locator('[data-artifact-choice="none"]').click();
     await mobile.locator('[data-classic-screen]:not([hidden])').waitFor();
 
+    // The weekly Battle now uses the SAME full-screen compact classic-shell
+    // layout as the ordinary Battle. Verify layout with real browser geometry,
+    // not a CSS/source-string assertion.
+    const weekly = await browser.newPage({viewport:{width:1440,height:900}});
+    const weeklyErrors=[];
+    weekly.on('pageerror',error=>weeklyErrors.push(String(error.message||error)));
+    await weekly.goto(url,{waitUntil:'networkidle'});
+    await startNewRun(weekly,{legacyTravel:false});
+    // The map owner is lazy-loaded by the Roster Travel action in production.
+    await weekly.locator('[data-roster-travel]').click();
+    await weekly.locator('[data-kingdom-map-screen]:not([hidden])').waitFor();
+    await weekly.evaluate(key=>{
+      // Seed the normal persisted Kingdom and click the REAL floating defender
+      // marker. Do not dynamically import runtime modules inside this fixture:
+      // other test pages register a service worker with different module URLs.
+      const run=JSON.parse(localStorage.getItem(key));
+      const map=run.kingdomMap;
+      if(!map)throw new Error('Kingdom map must initialize before weekly fixture');
+      const id='1,0';
+      const point={status:'completed',completedOnce:true,explored:true,annexed:true,
+        selectedEncounter:{id:'weekly.qa',seed:'weekly.qa',type:'battle',stars:3,
+          enemyRaceTag:'elves',raceTag:'elves',playerColor:'w'},
+        production:{kind:'battle',id:'weekly.qa:production',week:1,amount:1},
+        respawnReady:true};
+      const next={...map,day:7,cells:{...map.cells,[id]:point},
+        centralOwnedCells:[...new Set([...(map.centralOwnedCells||[]),id])]};
+      localStorage.setItem(key,JSON.stringify({...run,kingdomMap:next,gold:500,supplies:200}));
+      globalThis.RPChessKingdomMap.open();
+    },RUN_KEY);
+    const marker=weekly.locator('[data-kingdom-collect="1,0"][data-production-kind="battle"]');
+    await marker.waitFor({state:'visible'});
+    // Production marker deliberately bobs, so Playwright's stationary-element
+    // predicate never becomes true. Invoke the actual button click directly.
+    await marker.evaluate(button=>button.click());
+    await weekly.locator('[data-weekly-defenders]:not([hidden])').waitFor();
+    assert.equal(await weekly.locator('.wd-opponent b,.wd-opponent small').count(),0,
+      'no truncated enemy text can poke through the stars');
+    assert.equal(await weekly.locator('.wd-gold-icon').count(),1,
+      'reward uses the actual gold asset instead of a long text label');
+    await weekly.locator('[data-wd-carousel] .wd-hero').nth(2).click();
+    await weekly.locator('[data-wd-action="start"]').click();
+    await weekly.locator('[data-wd-hire-action="yes"]').click();
+    await weekly.locator('[data-weekly-battle-screen]:not([hidden])').waitFor();
+    const placement=await weekly.locator('[data-weekly-battle-screen]').evaluate(screen=>{
+      const board=screen.querySelector('.wd-chess-board')?.getBoundingClientRect();
+      const left=screen.querySelector('.classic-party-panel')?.getBoundingClientRect();
+      return {board:board&&{x:board.x,y:board.y,right:board.right,bottom:board.bottom,
+        width:board.width,height:board.height},left:left&&{right:left.right,bottom:left.bottom},
+        viewport:{width:innerWidth,height:innerHeight},
+        modalHidden:document.querySelector('[data-weekly-defenders]')?.hidden};
+    });
+    assert(placement.board&&placement.left&&placement.modalHidden,
+      'weekly combat must be a normal full-screen scene, not a modal');
+    assert(placement.left.right<=placement.board.x+3&&placement.board.y>=0&&
+      placement.board.right<=placement.viewport.width+2&&
+      placement.board.bottom<=placement.viewport.height+2,
+      'native Battle board must fit viewport with party panel on the left: '+
+      JSON.stringify(placement));
+    await weekly.locator('[data-wd-action="pause"]').click();
+    assert.deepStrictEqual(weeklyErrors,[]);
+
     assert.deepStrictEqual(errors, []);
     assert.deepStrictEqual(blackErrors, []);
     assert.deepStrictEqual(woundedErrors, []);

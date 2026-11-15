@@ -1,4 +1,5 @@
 import { ClassicChessEngine } from '../classic-chess-engine.mjs';
+import {decorateThreat} from '../hero-threat.mjs';
 import { attachPieceDrag } from '../piece-drag.mjs?v=20261022-portrait-motion1';
 import { boardRacePiecePath } from '../race-assets.mjs';
 import { fantasyPieceMarkup } from '../fantasy-piece.mjs';
@@ -213,7 +214,6 @@ function instructionText(item) {
 
 function renderMeta() {
   const objective = objectiveText(puzzle);
-  const stars = starsText(state.stars);
   const weekly=state.weekly;
   const baseReward=weekly?weekly.amount:puzzleBaseGold(state.stars);
   const currentReward=weekly?weekly.amount:puzzleGoldReward(state.stars,state.errors);
@@ -228,9 +228,9 @@ function renderMeta() {
   if(featured)screen.dataset.puzzleTheme=featured.key;
   else delete screen.dataset.puzzleTheme;
   screen.querySelector('[data-puzzle-objective]').textContent = objective;
-  screen.querySelector('[data-puzzle-stars]').textContent = stars;
+  decorateThreat(screen.querySelector('[data-puzzle-stars]'),state.stars,{language:currentLanguage()});
   screen.querySelector('[data-puzzle-compact-objective-label]').textContent = objective;
-  screen.querySelector('[data-puzzle-compact-stars]').textContent = stars;
+  decorateThreat(screen.querySelector('[data-puzzle-compact-stars]'),state.stars,{language:currentLanguage()});
   screen.querySelector('[data-puzzle-instruction]').textContent = instructionText(puzzle);
   screen.querySelector('[data-puzzle-base-reward]').textContent=weekly?
     `${baseReward} ${shardsLabel}`:`${baseReward} ${t('resources.goldDelta')}`;

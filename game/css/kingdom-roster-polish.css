@@ -319,3 +319,18 @@
     gap:2px!important;padding-inline:0 5px!important;
   }
 }
+
+/* Chess command mastery: same four ranks as weekly Battle defender overlay. */
+.roster-weekly-mastery{display:flex;flex-direction:column;gap:7px;margin-top:12px;
+ padding:10px 12px;border:1px solid rgba(216,177,93,.34);border-radius:7px;
+ background:rgba(9,15,19,.65);color:#eddaae}
+.roster-weekly-mastery strong{font-size:15px}
+.roster-weekly-stars{font-size:21px;letter-spacing:3px}
+.roster-weekly-track{width:100%;max-width:300px;height:5px;border-radius:5px;
+ background:#273b40;overflow:hidden}
+.roster-weekly-track i{display:block;height:100%;background:#dfbb72}
+.roster-weekly-mastery p{font-size:12px;margin:2px 0}
+.roster-weekly-mastery small{font-size:11px;color:#bbaa87}
+.roster-weekly-mastery details{margin-top:4px;font-size:12px}
+.roster-weekly-mastery summary{cursor:pointer;color:#f5d18a}
+.roster-weekly-mastery details p{border-top:1px solid #a68b5730;padding-top:4px}

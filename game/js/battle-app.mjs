@@ -7,6 +7,7 @@ import { checkpointFor, combatMoves } from './combat-checkpoint.mjs';
 import {armyCandidates} from './kingdom-army-core.mjs';
 import { boardPieceArtForTheme, boardPieceArtForCharacter, boardRacePiecePath, namedPawnPieceArt, setBoardPieceArt, racePiecePath } from './race-assets.mjs';
 import { starsText } from './encounter-difficulty.mjs';
+import {decorateThreat} from './hero-threat.mjs';
 import { subscribe, t, translateLegacy } from './i18n.mjs';
 import { brandLogoSrc } from './brand-logo.mjs';
 import { chooseArtifact, renderThreatOverlay } from './artifact-combat-ui.mjs';
@@ -261,7 +262,7 @@ function renderEncounter() {
   prepScreen.querySelector('[data-battle-title]').textContent = isCaravan() ? t('caravan.title') : contentText(encounter.label) || t('battle.title');
   prepScreen.querySelector('[data-battle-description]').textContent = isCaravan() ? t('caravan.description') : contentText(`${encounter.description} ${encounter.sideNarrative || ''}`.trim());
   const stars = prepScreen.querySelector('[data-battle-stars]');
-  stars.textContent = starsText(encounter.stars);
+  decorateThreat(stars,encounter.stars,{language:document.documentElement.lang==='en'?'en':'ru'});
   stars.setAttribute('aria-label', t('battle.difficultyAria',{stars:encounter.stars}));
   prepScreen.querySelector('[data-battle-tactic]').textContent = encounter.tactic ? t('battle.tactic',{tactic:contentText(encounter.tactic)}) : t('battle.tacticFallback');
 }

@@ -1,6 +1,7 @@
 import { heroPortraitArt,boardRacePiecePath,RACE_LABELS } from './race-assets.mjs';
 import {PIECE_TYPES,PIECE_LABELS} from './kingdom-economy-config.mjs';
 import {normalizeArmy} from './kingdom-army-core.mjs';
+import {normalizeHeroMastery,decorateThreat} from './hero-threat.mjs';
 import { STATUS_LABELS, PIECE_GLYPHS } from './roster-data.mjs';
 import { createRun, readRun, writeRun } from './run-persistence.mjs';
 import { applyNewRunPowerCarryover } from './player-rating.mjs';
@@ -134,6 +135,38 @@ function renderDetail() {
     body.append(note);
   }
   body.append(description);
+  // Chess command mastery is independent from the named piece's RPG combat role.
+  const mastery=normalizeHeroMastery(character);
+  const skill=document.createElement('section');skill.className='roster-weekly-mastery';
+  const english=currentLanguage()==='en';
+  const caption=document.createElement('strong');
+  caption.textContent=english?'Chess command mastery':'Шахматное мастерство';
+  const stars=document.createElement('span');stars.className='roster-weekly-stars';
+  decorateThreat(stars,mastery.threatLevel,{language:currentLanguage(),xp:mastery.threatXp});
+  const bar=document.createElement('div');bar.className='roster-weekly-track';
+  const fill=document.createElement('i');fill.style.width=mastery.threatXp+'%';bar.append(fill);
+  const stats=mastery.weeklyBattleStats;
+  const record=document.createElement('p');record.textContent=
+   (english?'Wins / Draws / Losses':'Победы / Ничьи / Поражения')+
+   ': '+stats.wins+' / '+stats.draws+' / '+stats.losses;
+  const highest=document.createElement('small');
+  highest.textContent=(english?'Strongest defeated opponent':'Наибольшая побеждённая угроза')+
+   ': '+(stats.highestDefeatedThreat||'—');
+  skill.append(caption,stars,bar,record,highest);
+  if(mastery.weeklyBattleHistory.length){
+   const history=document.createElement('details'),summary=document.createElement('summary');
+   summary.textContent=english?'Battle history':'История Битв';history.append(summary);
+   for(const row of mastery.weeklyBattleHistory.slice(-10).reverse()){
+    const p=document.createElement('p');
+    const label={win:english?'Victory':'Победа',draw:english?'Draw':'Ничья',
+     loss:english?'Defeat':'Поражение'}[row.result]||row.result;
+    p.textContent=(english?'Week ':'Неделя ')+row.week+' · '+row.cellId+' · '+label+
+     ' · '+(row.moves?.length||0)+(english?' half-moves':' полуходов');
+    history.append(p);
+   }
+   skill.append(history);
+  }
+  body.append(skill);
   rosterDetail.append(media, body);
 }
 

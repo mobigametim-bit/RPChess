@@ -2,6 +2,9 @@ import {DEFAULT_KINGDOM_ECONOMY as K} from './kingdom-economy-config.mjs';
 import { PIECE_VALUES } from './roster-data.mjs';
 import { seededRandom } from './travel-choice-core.mjs';
 import { applyArtifactPurchase, deterministicArtifactOffer, isArtifactOffer } from './artifact-core.mjs';
+import {rollHeroThreat,normalizeHeroMastery} from './hero-threat.mjs';
+import {threatStarsForPower} from './player-rating.mjs';
+import {STARTING_POWER} from './power-elo.mjs';
 
 const SETTLEMENT_OFFER_COUNT = 3;
 const SETTLEMENT_SUPPLY_PRICE=K.settlementServices.supplyUnitGold;
@@ -153,7 +156,7 @@ function applyHealing(run, characterId) {
   };
 }
 
-function applyRecruitment(run, candidateId) {
+function applyRecruitment(run, candidateId, {playerPower=STARTING_POWER}={}) {
   const candidate = recruitProfile(candidateId);
   if (!candidate || !isSettlementState(run?.currentSettlement) || !run.currentSettlement.offers.includes(candidateId)) {
     return { run, success: false, spent: 0, reason: 'not-offered' };
@@ -162,7 +165,10 @@ function applyRecruitment(run, candidateId) {
   const price = recruitCost(candidate);
   if (!Number.isInteger(price)) return { run, success: false, spent: 0, reason: 'unsupported-piece' };
   if ((run.gold || 0) < price) return { run, success: false, spent: 0, reason: 'insufficient-gold' };
-  const recruit = { ...candidate, status: 'healthy', isRunKing: false };
+  const powerCap=threatStarsForPower(playerPower);
+  const recruit=normalizeHeroMastery({...candidate,status:'healthy',isRunKing:false,
+   threatLevel:rollHeroThreat(run.id+':settlement:'+run.currentSettlement.seed+':'+candidate.id,powerCap),
+   threatSource:'power-roll-v1'});
   return {
     run: { ...run, gold: run.gold - price, roster: [...run.roster, recruit] },
     success: true,

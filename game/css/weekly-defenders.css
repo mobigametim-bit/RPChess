@@ -1,0 +1,381 @@
+/* Weekly defender overlay: GoznakUI and the Kingdom's existing obsidian/brass palette. */
+.wd-overlay[hidden],.wd-overlay [hidden]{display:none!important}
+.wd-overlay{position:fixed;inset:0;z-index:1900;display:grid;place-items:center;
+ padding:8px;background:rgba(3,7,11,.86);backdrop-filter:blur(4px);color:#f1dfba;
+ font-family:'GoznakUI',Georgia,serif!important;box-sizing:border-box}
+.wd-overlay *{box-sizing:border-box;font-family:'GoznakUI',Georgia,serif!important}
+.wd-dialog{width:min(880px,calc(100vw - 16px));max-height:calc(100dvh - 16px);
+ display:flex;flex-direction:column;overflow:hidden;
+ background:linear-gradient(145deg,rgba(19,26,27,.99),rgba(7,12,16,.995));
+ border:1px solid #b69a60;border-radius:10px;box-shadow:0 22px 90px #000d,inset 0 1px #f8cf7930;
+ padding:clamp(9px,1.35vh,17px);gap:clamp(7px,1.15vh,13px)}
+.wd-dialog button{color:inherit;cursor:pointer}
+.wd-dialog button:disabled{cursor:not-allowed;opacity:.48}
+.wd-header{display:flex;align-items:center;justify-content:space-between;gap:8px;
+ border-bottom:1px solid #aa915d55;padding-bottom:7px;min-height:0}
+.wd-header h2{font-size:clamp(21px,2.5vw,30px);line-height:1.1;margin:1px 0 0;color:#fae1a9;font-weight:700}
+.wd-eyebrow{color:#bd9d68;font-size:11px;letter-spacing:.11em;text-transform:uppercase}
+.wd-x{flex:none;width:31px;height:31px;min-height:0!important;border:1px solid #a88a52;
+ border-radius:5px;background:#211d18;font-size:22px;line-height:1}
+[data-wd-setup]{display:flex;flex-direction:column;min-height:0;gap:8px}
+.wd-duel{display:grid;grid-template-columns:1fr 1fr;gap:11px;min-height:0}
+.wd-portrait{min-width:0;height:clamp(115px,23vh,202px);border:1px solid #ab8953a0;
+ background:linear-gradient(180deg,#202a29,#0a1012);display:flex;align-items:center;
+ flex-direction:column;justify-content:center;gap:3px;padding:6px;border-radius:7px}
+.wd-portrait.wd-commander{border-style:dashed}
+.wd-portrait .wd-art{width:auto;max-width:100%;height:clamp(62px,14vh,121px);object-fit:contain}
+.wd-portrait b{font-size:clamp(14px,1.5vw,18px);max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wd-portrait small{font-size:10px;color:#b8ac91}
+.wd-empty-icon{font-size:40px;opacity:.4;line-height:1}
+.wd-portrait p{margin:0;font-size:12px;text-align:center;color:#adad9d}
+.wd-stars{font:700 clamp(17px,1.7vw,22px)/1 'GoznakUI',Georgia,serif!important;letter-spacing:3px;
+ text-shadow:0 2px 4px #0009}
+.wd-progress{height:5px;width:82%;border-radius:5px;background:#263e43;overflow:hidden;margin:2px auto}
+.wd-progress>div{height:100%;background:#dab975;transition:width .2s}
+.wd-section-caption{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px;
+ color:#ead3a6}
+.wd-section-caption span:last-child{color:#a99c82;font-size:11px}
+.wd-carousel-wrap{display:grid;grid-template-columns:31px minmax(0,1fr) 31px;align-items:stretch;gap:4px;
+ min-height:0}
+.wd-arrow{min-height:0!important;border:1px solid #b28f52;border-radius:4px;
+ background:#231c15;font-size:26px;padding:0 2px}
+.wd-carousel{display:flex;gap:7px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x proximity;
+ scrollbar-width:thin;scrollbar-color:#9d7c47 #141c1d;overscroll-behavior-x:contain;padding-bottom:4px}
+.wd-hero{flex:0 0 clamp(107px,14vw,143px);scroll-snap-align:start;min-height:0!important;
+ height:clamp(111px,19vh,165px);display:flex;flex-direction:column;align-items:center;justify-content:center;
+ gap:1px;padding:4px;border:1px solid #7b704f;border-radius:5px;background:#111d21}
+.wd-hero:hover:not(:disabled){border-color:#f2c66a;filter:brightness(1.1)}
+.wd-hero.is-selected{border:2px solid #f4d083;background:#263632}
+.wd-hero.is-locked{opacity:.45}
+.wd-hero-art{width:auto;height:clamp(53px,9vh,80px);max-width:98%;object-fit:contain}
+.wd-hero b{font-size:12px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wd-hero small{font-size:10px;color:#b5ada0}
+.wd-hero .wd-stars{font-size:15px}
+.wd-hero .wd-progress{height:3px}
+.wd-foot{display:flex;justify-content:space-between;gap:10px;align-items:end;min-height:0;border-top:1px solid #a58d553a;
+ padding-top:7px}
+.wd-gold{display:flex;flex-direction:column;gap:3px;font-size:10px;color:#cbb98c}
+.wd-gold strong{color:#f4d68c;font-size:19px}
+.wd-buttons{display:flex;justify-content:flex-end;align-items:center;gap:9px}
+.wd-button{padding:7px 14px;min-height:39px!important;min-width:110px;
+ border:1px solid #b28f52;border-radius:5px;
+ background:linear-gradient(#30291f,#151b1e);font-size:14px;color:#f2d9a1!important}
+.wd-button:hover:not(:disabled){filter:brightness(1.13)}
+.wd-primary{background:linear-gradient(#74562d,#42331f);border-color:#dfb466;font-weight:800}
+.wd-payment,.wd-results{min-width:0;display:flex;flex-direction:column;gap:12px;padding:8px 5px;overflow-y:auto}
+.wd-payment h3,.wd-results h2{margin:0;color:#f1d397}
+.wd-payment p,.wd-results p{margin:3px 0;color:#d7c7a8}
+.wd-payment-row{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.wd-merc{display:flex;gap:4px;align-items:center;padding:5px;background:#1a2829;border:1px solid #948156;border-radius:6px}
+.wd-merc img{width:42px;height:42px}
+.wd-merc b{font-size:12px}
+.wd-debt{padding:10px;color:#ffd1ba;background:#4f201c9c;border:1px solid #db7455;border-radius:6px}
+.wd-play{min-height:0;flex:1 1 auto}
+.wd-play-layout{display:grid;grid-template-columns:minmax(190px,1fr) minmax(0,min(75vh,680px));
+ gap:12px;align-items:stretch;justify-content:center;min-height:0;height:100%}
+.wd-sidebar{min-height:0;display:flex;flex-direction:column;gap:9px}
+.wd-sidebar h3{margin:0;color:#f4d69e;font-size:clamp(15px,1.5vw,21px)}
+.wd-sidebar p{font-size:13px;color:#bdad8f}
+.wd-move-history{flex:1;overflow:auto;min-height:75px;display:flex;flex-wrap:wrap;align-content:start;gap:4px}
+.wd-move-history span{padding:3px 7px;border-radius:4px;background:#253030;font-size:12px}
+.wd-play-controls{display:flex;flex-wrap:wrap;gap:4px}
+.wd-play-controls .wd-button{font-size:12px;min-width:0;flex:1;padding:5px}
+.wd-chess-board{width:100%;aspect-ratio:1;align-self:center;
+ display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);
+ border:3px solid #b99b64;box-shadow:0 9px 35px #000c}
+.wd-square{display:grid;place-items:center;border:0;padding:0;position:relative;min-height:0!important;aspect-ratio:1}
+.wd-light{background:#d4bd86}.wd-dark{background:#7c795d}
+.wd-square.is-selected{box-shadow:inset 0 0 0 3px #ffeaa4}
+.wd-piece{height:91%;width:91%;object-fit:contain;filter:drop-shadow(0 2px 2px #0008);pointer-events:none}
+.wd-grade{position:absolute;right:0;top:0;background:#162b2c;color:#fff1ad;padding:1px 4px;font-size:13px}
+.wd-results{min-height:190px;align-items:center;justify-content:center;text-align:center}
+@media(max-height:620px){
+ .wd-dialog{gap:5px;padding:6px 12px}
+ .wd-header{padding:2px 0}
+ .wd-portrait{height:115px}
+ .wd-portrait .wd-art{height:62px}
+ .wd-hero{height:111px}
+ .wd-hero-art{height:52px}
+ .wd-foot{padding-top:4px}
+ .wd-play-layout{grid-template-columns:minmax(150px,1fr) minmax(0,min(75vh,500px))}
+}
+@media(max-width:610px){
+ .wd-dialog{padding:8px}
+ .wd-portrait{height:clamp(130px,24vh,190px)}
+ .wd-duel{gap:5px}
+ .wd-hero{flex-basis:112px}
+ .wd-section-caption span:last-child{display:none}
+ .wd-foot{gap:5px}
+ .wd-button{min-width:90px;padding:6px 8px;font-size:13px}
+ .wd-play-layout{grid-template-columns:1fr;grid-template-rows:auto auto}
+ .wd-sidebar{order:2}
+ .wd-chess-board{order:1;max-height: min(57vh,calc(100vw - 30px));width:auto;max-width:100%;justify-self:center}
+ .wd-move-history{max-height:85px;min-height:25px}
+}
+@media(prefers-reduced-motion:reduce){.wd-overlay *{scroll-behavior:auto!important;transition:none!important}}
+
+
+/* Battle owner parity: board is the primary (left) surface, large and textured. */
+.wd-overlay:has([data-wd-play]:not([hidden])) .wd-dialog{
+ width:min(1460px,calc(100vw - 20px));max-width:none;
+ max-height:calc(100dvh - 12px);height:calc(100dvh - 12px);
+ background:linear-gradient(90deg,rgba(4,9,15,.94),rgba(8,15,25,.96)),
+  url('../generated_assets/scene_battle.webp') center/cover no-repeat
+}
+.wd-overlay:has([data-wd-play]:not([hidden])) .wd-play{min-height:0;overflow:hidden}
+.wd-overlay .wd-play-layout{
+ height:100%;grid-template-columns:minmax(0,1fr) minmax(230px,325px);
+ grid-template-rows:minmax(0,1fr);justify-content:center;align-items:center;gap:clamp(9px,1.3vw,21px)
+}
+.wd-chess-stage{position:relative;width:min(100%,calc(100dvh - 115px));aspect-ratio:1;
+ max-height:100%;margin:auto;padding:clamp(5px,.7vw,10px);
+ border:1px solid rgba(216,177,93,.65);border-radius:7px;
+ background:rgba(8,16,25,.92);box-shadow:0 20px 50px #000a}
+.wd-overlay .wd-chess-board{width:100%;height:100%;aspect-ratio:1;
+ border:2px solid rgba(228,195,116,.65);border-radius:2px;
+ grid-template-columns:repeat(8,minmax(0,1fr));grid-template-rows:repeat(8,minmax(0,1fr))}
+.wd-overlay .wd-square{position:relative;overflow:visible;isolation:isolate;aspect-ratio:auto;
+ min-height:0!important;width:100%;height:100%;padding:0;border:0}
+.wd-overlay .wd-square.wd-last{box-shadow:inset 0 0 0 2px rgba(251,214,118,.36)}
+.wd-overlay .wd-square.is-selected{box-shadow:inset 0 0 0 4px #f4de95}
+.wd-overlay .wd-battle-unit{display:block;width:94%;height:94%;object-fit:contain;
+ filter:drop-shadow(0 2px 3px #000a);pointer-events:none}
+.wd-overlay .wd-battle-simple{display:none;pointer-events:none}
+html[data-simple-pieces="1"] .wd-overlay .wd-battle-unit{display:none!important}
+html[data-simple-pieces="1"] .wd-overlay .wd-battle-simple{
+ display:block!important;width:91%;height:91%;object-fit:contain}
+.wd-overlay .mentor-square-grade{z-index:6;pointer-events:none;font-weight:900;
+ position:absolute;right:0;top:-4px;padding:1px 3px;font:bold clamp(16px,2vw,26px)/1 Arial,sans-serif;
+ color:#ff817a;text-shadow:1px 2px 1px #1b1110,0 0 8px #000}
+.wd-overlay .mentor-square-grade--good{color:#b8e9a0;text-shadow:0 2px 3px #081209,0 0 5px #183310}
+.wd-overlay .wd-sidebar{height:100%;max-height:100%;min-height:0;
+ padding:clamp(8px,1.2vw,18px);border:1px solid rgba(216,177,93,.35);
+ background:rgba(7,15,23,.91);border-radius:7px;gap:11px}
+.wd-overlay .wd-sidebar h3{font-size:clamp(17px,1.6vw,25px);color:#eace92}
+.wd-overlay .wd-view-toggle{display:flex;justify-content:flex-start;min-height:38px}
+.wd-overlay .wd-view-toggle .rpchess-board-view-toggle{margin:0;transform:none}
+.wd-overlay .wd-move-history{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+ align-content:start;align-items:start;gap:5px;overflow-y:auto;flex:1 1 auto}
+.wd-overlay .wd-move-history span{font-size:12px;background:#243239;
+ border:1px solid rgba(215,180,92,.12);padding:5px 7px;
+ white-space:nowrap;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.wd-overlay .wd-move-history .mentor-grade{padding-left:4px;color:#ef9485}
+.wd-overlay .wd-move-history .mentor-grade--inaccuracy{color:#f1d884}
+.wd-overlay .wd-move-history .mentor-grade--good{color:#badf87}
+.wd-overlay .wd-move-history .mentor-grade--excellent{color:#eac574}
+@media(max-width:760px){
+ .wd-overlay:has([data-wd-play]:not([hidden])) .wd-dialog{height:calc(100dvh - 8px);padding:7px}
+ .wd-overlay .wd-play-layout{display:flex;flex-direction:column;gap:6px}
+ .wd-overlay .wd-chess-stage{flex:0 1 auto;width:min(100%,calc(100dvh - 280px));
+  max-height:min(100%,calc(100dvh - 280px));padding:3px}
+ .wd-overlay .wd-sidebar{width:100%;min-height:0;flex:1 1 auto;order:2;padding:7px}
+ .wd-overlay .wd-move-history{max-height:60px;min-height:0}
+ .wd-overlay .wd-view-toggle{min-height:28px}
+ .wd-overlay .wd-sidebar h3,.wd-overlay .wd-sidebar p{margin:0}
+}
+@media(max-height:530px) and (min-width:761px){
+ .wd-overlay .wd-sidebar{gap:5px;padding:7px}
+ .wd-overlay .wd-chess-stage{width:min(100%,calc(100dvh - 85px))}
+}
+
+
+/* Standard Battle aftermath framing + approved hero mastery result composition. */
+.wd-overlay:has([data-wd-results]:not([hidden])) .wd-dialog{
+ width:min(810px,calc(100vw - 16px));max-height:calc(100dvh - 12px);
+ background:linear-gradient(150deg,#111b20,#090f17 72%);
+ border:1px solid #c4a266
+}
+.wd-overlay .wd-results{width:100%;min-height:0;max-height:calc(100dvh - 115px);
+ display:flex;flex-direction:column;align-items:stretch;text-align:left;
+ padding:0 3px 5px;gap:10px;overflow-y:auto}
+.wd-outcome-banner{padding:clamp(9px,1.8vw,20px);border:1px solid #9d8155;
+ border-radius:5px;background:linear-gradient(90deg,#111d24ee,#111a20cf),
+ url('../generated_assets/scene_victory.webp') right/cover no-repeat;text-align:center}
+.wd-outcome-kicker{font-size:11px;letter-spacing:.13em;color:#bda66e}
+.wd-outcome-title{margin:0!important;color:#f5d997!important;
+ text-align:center;font-size:clamp(25px,3.3vw,38px)}
+.wd-outcome-subtitle{font-size:13px;text-align:center;margin:3px 0 0!important}
+.wd-result-hero{display:grid;grid-template-columns:180px minmax(0,1fr);gap:18px;align-items:center;
+ padding:10px;background:linear-gradient(110deg,#1b2629,#0e171b);
+ border:1px solid #82704f;border-radius:5px;min-width:0}
+.wd-result-portrait{max-width:100%;height:clamp(134px,22vh,188px);width:100%;
+ object-fit:contain;filter:drop-shadow(0 5px 12px #0008)}
+.wd-result-hero-info{min-width:0;display:flex;flex-direction:column;gap:8px}
+.wd-result-hero-info h3{font-size:clamp(19px,2.7vw,29px);line-height:1.1;
+ color:#f7dfa7;margin:0;overflow-wrap:anywhere}
+.wd-result-ranks{display:flex;align-items:center;gap:10px}
+.wd-result-stars{font-size:clamp(19px,2.5vw,26px);letter-spacing:3px}
+.wd-result-arrow{color:#c1a66d}
+.wd-progress-caption{display:flex;justify-content:space-between;gap:8px;
+ font-size:11px;color:#c8b995}
+.wd-result-xp-track{height:10px;width:100%;border:1px solid #927a4d;
+ background:#17252c;border-radius:6px;overflow:hidden}
+.wd-result-xp-fill{height:100%;border-radius:6px;transition:width .6s ease}
+.wd-result-xp-gained{color:#b8e8a2;font-size:15px}
+.wd-outcome-status{font-size:12px;color:#baddb9!important;margin:0!important}
+.wd-outcome-danger{color:#edb19b!important}
+.wd-result-king-note{font-size:13px;color:#bfae87}
+.wd-result-rewards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.wd-result-reward{text-align:center;padding:10px 6px;border:1px solid #82704f;
+ background:#152121;border-radius:4px}
+.wd-result-reward small{font-size:10px;display:block;letter-spacing:.09em;color:#afa188}
+.wd-result-reward strong{display:flex;justify-content:center;align-items:center;gap:6px;
+ margin-top:5px;color:#f0d894;font-size:clamp(18px,2.3vw,26px)}
+.wd-reward-icon{width:26px;height:26px;object-fit:contain}
+.wd-outcome-record{text-align:center;font-size:12px!important;margin:0!important}
+.wd-result-actions{margin-top:4px;justify-content:center}
+.wd-result-history{max-height:120px;overflow-y:auto;padding:8px 12px;
+ border:1px solid #847052;background:#111c20}
+.wd-result-history p{margin:4px!important;font-size:12px!important}
+@media(max-width:530px){
+ .wd-result-hero{grid-template-columns:95px minmax(0,1fr);gap:7px;padding:7px}
+ .wd-result-portrait{height:114px}
+ .wd-result-hero-info{gap:4px}
+ .wd-result-ranks{gap:5px}
+ .wd-result-stars{font-size:18px}
+ .wd-result-rewards{gap:5px}
+ .wd-result-reward{padding:5px 2px}
+ .wd-result-reward small{font-size:9px}
+}
+
+/* Mentor's semantic grade symbols, not generic ✓ / ? glyphs. */
+.wd-grade-legend{display:flex;flex-wrap:wrap;gap:6px 9px;align-items:center}
+.wd-grade-caption{display:inline-flex;align-items:center;gap:3px;white-space:nowrap;
+ font-size:10px;color:#ccbfa4}
+.wd-grade-caption em{font-size:13px!important;font-style:normal}
+.wd-overlay button[hidden]{display:none!important}
+
+/* Shared Battle pointer-drag input requires touch gestures on the board surface. */
+.wd-overlay .wd-chess-board.rpchess-draggable-board{touch-action:none}
+.wd-overlay .wd-square.rpchess-drop-target{box-shadow:inset 0 0 0 4px #b7e4aa}
+
+
+/* 2026-11-15: The combat scene is now a REAL full-screen classic Battle
+   sibling, not a modal. Reuse ui-redesign-final compact-combat-active
+   placement. Scope these rules to the new scene without touching Battle. */
+.wd-battle-screen[hidden]{display:none!important}
+.wd-battle-screen{z-index:30;position:relative;box-sizing:border-box;color:#f1dfba;
+ font-family:'GoznakUI',Georgia,serif!important}
+.wd-battle-screen *{box-sizing:border-box}
+.wd-battle-screen .classic-topbar{display:flex;align-items:center;justify-content:space-between}
+.wd-battle-screen .wd-battle-topbar h1{margin:2px 0 0;
+ font:400 clamp(21px,2.4vw,32px)/1.05 'BrahmsGotischCyr','GoznakUI',Georgia,serif;
+ color:#f0d697}
+.wd-battle-screen .wd-battle-topbar .wd-eyebrow{font-size:11px}
+.wd-battle-screen .wd-battle-topbar .classic-mini-button{
+ min-width:37px;min-height:37px;padding:3px 10px;font-size:25px}
+.wd-battle-screen .classic-party-panel{display:flex;flex-direction:column;gap:9px}
+.wd-battle-screen .classic-party-panel>h2{font:400 clamp(20px,2.2vw,28px)/1.16 'BrahmsGotischCyr',Georgia,serif;margin:0}
+.wd-battle-screen .classic-party-panel .classic-opponent{font-size:13px;margin:0}
+.wd-battle-screen .wd-battle-journal{min-height:0;flex:1 1 auto;display:flex;
+ flex-direction:column;padding:10px 0 0;margin-top:5px!important;
+ border-top:1px solid rgba(216,177,93,.25)}
+.wd-battle-screen .wd-battle-journal>h3{margin:0 0 7px;font-size:20px}
+.wd-battle-screen .wd-view-toggle{min-height:31px;display:flex;justify-content:flex-start}
+.wd-battle-screen .wd-view-toggle .rpchess-board-view-toggle{margin:0;transform:none}
+.wd-battle-screen .wd-move-history{max-height:none!important;min-height:40px;
+ width:100%;overflow-y:auto;flex:1 1 auto;display:grid;
+ grid-template-columns:repeat(2,minmax(0,1fr));gap:3px;
+ align-content:start;align-items:start;padding-right:3px}
+.wd-battle-screen .wd-move-history .wd-move{font-size:12px;min-width:0;
+ background:rgba(40,58,62,.73);border:1px solid rgba(216,177,93,.15);
+ border-radius:3px;display:flex;gap:3px;align-items:center;min-height:28px;
+ padding:4px 6px;white-space:nowrap;overflow:hidden}
+.wd-battle-screen .wd-move-history .wd-move>span{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.wd-battle-screen .wd-move-history .mentor-grade{font-style:normal;font-weight:900;color:#ef9485}
+.wd-battle-screen .wd-move-history .mentor-grade--inaccuracy{color:#f1d884}
+.wd-battle-screen .wd-move-history .mentor-grade--good{color:#badf87}
+.wd-battle-screen .wd-move-history .mentor-grade--excellent{color:#eac574}
+.wd-battle-screen .wd-grade-legend{display:flex;flex-wrap:wrap;gap:4px 8px;margin-top:auto}
+.wd-battle-screen .wd-grade-caption{display:inline-flex;align-items:center;gap:3px;
+ color:#ccbd9f;font-size:10px}
+.wd-battle-screen .wd-grade-caption .mentor-grade{font-style:normal;font-weight:900}
+.wd-battle-screen .wd-play-controls{display:flex;flex-wrap:wrap;gap:4px;margin-top:3px}
+.wd-battle-screen .wd-play-controls .classic-mini-button{flex:1;min-width:0;
+ padding:7px 4px;min-height:38px;font-size:clamp(11px,1vw,14px)}
+.wd-battle-screen .wd-battle-status{min-height:35px;margin:0 0 8px;padding:5px 10px;
+ color:#f4d899;font-size:14px}
+.wd-battle-screen .wd-battle-main{width:100%;height:100%;min-width:0;min-height:0;
+ display:flex;flex-direction:column;align-items:center;justify-content:center}
+.wd-battle-screen .wd-chess-stage{display:block;position:relative;flex:0 1 auto;
+ max-height:none;aspect-ratio:1;margin:0 auto;width:100%;padding:8px}
+.wd-battle-screen .wd-chess-board{width:100%!important;height:100%!important;
+ max-width:100%!important;max-height:100%!important;aspect-ratio:1;
+ display:grid;grid-template-columns:repeat(8,minmax(0,1fr));
+ grid-template-rows:repeat(8,minmax(0,1fr));overflow:hidden}
+.wd-battle-screen .wd-square{height:100%;width:100%;min-height:0!important;min-width:0;
+ aspect-ratio:auto;overflow:hidden;position:relative;isolation:isolate;
+ padding:0!important;border:0;display:grid;place-items:center}
+.wd-battle-screen .wd-square.wd-last{box-shadow:inset 0 0 0 2px #f4d37165}
+.wd-battle-screen .wd-square.is-selected{box-shadow:inset 0 0 0 4px #f4de95}
+.wd-battle-screen .wd-battle-unit{display:block;width:92%;height:92%;
+ object-fit:contain;pointer-events:none}
+.wd-battle-screen .wd-battle-simple{display:none;pointer-events:none}
+html[data-simple-pieces="1"] .wd-battle-screen .wd-battle-unit{display:none!important}
+html[data-simple-pieces="1"] .wd-battle-screen .wd-battle-simple{
+ display:block!important;width:92%;height:92%;object-fit:contain}
+.wd-battle-screen .wd-square .mentor-square-grade{z-index:7;pointer-events:none;position:absolute;
+ right:1px;top:0;padding:0 3px;color:#ff817a;
+ font:bold clamp(15px,2.5vw,27px)/1 Arial,sans-serif;
+ text-shadow:0 1px 3px #000,0 0 6px #000}
+.wd-battle-screen .wd-square .mentor-square-grade--good{color:#b8e9a0}
+.wd-battle-screen .wd-chess-board.rpchess-draggable-board{touch-action:none}
+.wd-battle-screen .wd-square.rpchess-drop-target{box-shadow:inset 0 0 0 4px #b7e4aa}
+body.compact-combat-active .wd-battle-screen .classic-board-wrap{
+ width:min(calc(100svh - 66px),calc(100vw - 405px),940px)!important;
+ max-width:100%!important;min-width:0!important;aspect-ratio:1;
+ margin:0 auto!important;padding:8px!important}
+body.compact-combat-active .wd-battle-screen .classic-party-panel{
+ scrollbar-width:thin;scrollbar-color:#a68a53 #101b20}
+@media(max-width:900px){
+ .wd-battle-screen{min-height:100svh;height:auto;overflow-y:auto;padding:9px}
+ .wd-battle-screen .classic-shell{display:flex;flex-direction:column;
+  width:100%;max-width:100%;margin:0 auto;gap:8px}
+ .wd-battle-screen .classic-topbar{order:0}
+ .wd-battle-screen .wd-battle-main{order:1;height:auto;width:100%;flex:none}
+ .wd-battle-screen .wd-battle-party{order:2;width:100%;height:auto!important;overflow:visible!important;
+  min-height:0;max-width:100%;padding:12px}
+ .wd-battle-screen .wd-chess-stage{width:min(100%,calc(100svh - 145px),760px);
+  min-width:0;max-height:none}
+ .wd-battle-screen .wd-battle-journal{flex:none;max-height:170px}
+ .wd-battle-screen .wd-move-history{max-height:140px!important}
+ .wd-battle-screen .wd-grade-legend{margin-top:0}
+ body.compact-combat-active .wd-battle-screen .classic-board-wrap{
+  width:min(100%,calc(100svh - 145px),760px)!important}
+ body.compact-combat-active{overflow:auto!important}
+}
+@media(max-width:520px){
+ .wd-battle-screen .wd-battle-topbar h1{font-size:23px}
+ .wd-battle-screen .wd-battle-status{margin-bottom:4px}
+ .wd-battle-screen .wd-chess-stage{width:100%}
+ body.compact-combat-active .wd-battle-screen .classic-board-wrap{width:100%!important}
+}
+
+
+/* Compact defender selector: figure and stars only, no overflowing labels. */
+.wd-overlay .wd-opponent{overflow:hidden;gap:7px}
+.wd-overlay .wd-opponent .wd-art{display:block;flex:0 1 auto;min-height:0;
+ height:min(13vh,118px);max-height:calc(100% - 36px);object-fit:contain}
+.wd-overlay .wd-opponent .wd-stars{flex:0 0 auto;line-height:1.2;margin:0;
+ text-align:center;white-space:nowrap}
+.wd-overlay .wd-gold{display:inline-flex;flex-direction:row;align-items:center;gap:8px}
+.wd-overlay .wd-gold-icon{width:clamp(23px,3vw,31px);height:clamp(23px,3vw,31px);object-fit:contain}
+.wd-overlay .wd-gold strong{font-size:clamp(20px,2.2vw,27px);line-height:1.15}
+@media(max-height:620px){
+ .wd-overlay .wd-opponent .wd-art{height:57px;max-height:calc(100% - 28px)}
+}
+
+
+/* Beat the native compact mode's !important grid on classic-main: that grid
+   cannot distribute a fixed square board AND status line without clipping. */
+@media(min-width:901px){
+ body.compact-combat-active .wd-battle-screen .wd-battle-main{
+  display:flex!important;flex-direction:column!important;align-items:center!important;
+  justify-content:center!important;place-items:unset!important;min-height:0!important;
+  height:100%!important}
+ body.compact-combat-active .wd-battle-screen .classic-board-wrap{
+  width:min(calc(100svh - 89px),calc(100vw - 405px),940px)!important;
+  flex:0 0 auto;max-height:calc(100svh - 89px)!important}
+ body.compact-combat-active .wd-battle-screen .wd-battle-party{
+  display:flex!important;flex-direction:column!important;min-height:0!important}
+}

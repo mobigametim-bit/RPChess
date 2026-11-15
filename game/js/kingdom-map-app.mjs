@@ -4,6 +4,7 @@ import {readPlayerRating} from './player-rating.mjs';
 import {commanderPieceArt,commanderById} from './commander-portraits.mjs';
 import {raceBoardTiles,boardRacePiecePath,hashString,RACE_TAGS} from './race-assets.mjs';
 import {difficultyForStars,starsText} from './encounter-difficulty.mjs';
+import {decorateThreat} from './hero-threat.mjs';
 import {TRAVEL_SUPPLY_COST,combatGoldReward,applyTravelSupplyCost} from './resources-core.mjs';
 import {puzzleBaseGold} from './puzzles/puzzle-core.mjs';
 import {gloryForRun} from './chronicle-core.mjs';
@@ -361,7 +362,7 @@ function routeCard(choice,run,cell,canVisitSettlement=false){
  const stats=document.createElement('div');stats.className='km-route-card__stats';
  if(['battle','skirmish','caravan','puzzle'].includes(choice.type)){
   const stars=document.createElement('span');stars.className='km-route-card__stars';
-  stars.textContent=starsText(choice.stars);
+  decorateThreat(stars,choice.stars,{language:currentLanguage()});
   stars.setAttribute('aria-label',t('travel.threatAria',{stars:choice.stars}));
   stats.append(stars);
  }
@@ -799,6 +800,19 @@ function render(){
     }
     if(cell.status==='failed'){const flag=document.createElement('span');flag.className='km-failure';flag.textContent='!';btn.append(flag);}
    }
+   // In-progress matches have their own Continue icon. They never recreate a weekly reward.
+   if(visible&&run.weeklyDefenders?.active?.cellId===id){
+    const resume=document.createElement('button');
+    resume.type='button';resume.className='km-production-marker';
+    resume.dataset.kingdomResumeWeekly=id;
+    resume.style.left=((col+CENTER_X+.62)*100/WIDTH)+'%';
+    resume.style.top=((row+CENTER_Y+.13)*100/HEIGHT)+'%';
+    const icon=document.createElement('img');icon.src=ROUTE_ICONS.battle;icon.alt='';
+    const label=document.createElement('strong');label.textContent='▶';
+    resume.append(icon,label);
+    resume.setAttribute('aria-label',currentLanguage()==='en'?'Resume weekly Battle':'Продолжить еженедельную Битву');
+    productions.append(resume);
+   }
    if(resourceBurst?.id===id){
     const group=document.createElement('span');group.className='km-resource-bursts';
     group.setAttribute('role','status');
@@ -865,7 +879,9 @@ function render(){
     const amount=document.createElement('strong');
     amount.textContent=['battle','recruits'].includes(item.kind)?'!':String(item.amount);
     marker.append(icon,amount);
-    marker.setAttribute('aria-label',tr('collect')+': '+item.kind+' '+item.amount);
+    marker.setAttribute('aria-label',item.kind==='battle'?
+     (currentLanguage()==='en'?'Returned defender: assign commander':'Возрождённый защитник: назначить героя'):
+     tr('collect')+': '+item.kind+' '+item.amount);
     productions.append(marker);
    }
    if(flavorBurst?.id===id){
@@ -1012,6 +1028,10 @@ function render(){
 }
 function parsePoint(id){if(!/^-?\d+,-?\d+$/.test(id||''))return null;const [x,y]=id.split(',').map(Number);return {x,y};}
 function onWorldClick(event){
+ const resume=event.target.closest('[data-kingdom-resume-weekly]');
+ if(resume){event.preventDefault();event.stopPropagation();
+  void import('./weekly-defenders-app.mjs').then(mod=>mod.resumeWeekly());return;
+ }
  const marker=event.target.closest('[data-kingdom-collect]');
  if(marker){event.preventDefault();event.stopPropagation();
   claimWeekly(marker.dataset.kingdomCollect);return;}
@@ -1106,10 +1126,9 @@ function claimWeekly(id){
   void beginWeeklyPuzzle(id,item);return;
  }
  if(item.kind==='battle'){
-  const acknowledged=acknowledgeReturn(run.kingdomMap,id);
-  if(!acknowledged.ok)return;
-  writeRun({...run,kingdomMap:acknowledged.map});
-  selected=id;render();return; // The already visible defender is the notification.
+  // Direct assignment from this marker: no extra notification or king movement.
+  void import('./weekly-defenders-app.mjs').then(mod=>mod.openWeekly(id));
+  return;
  }
  const result=collectProduction(run.kingdomMap,id);if(!result.ok)return;
  if(result.kind==='recruits'){

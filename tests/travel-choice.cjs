@@ -95,9 +95,12 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   const first=travel.createTravelChoices({runId:'travel-test-run',step:1,playerPower:500}),repeat=travel.createTravelChoices({runId:'travel-test-run',step:1,playerPower:500});assert.deepStrictEqual(first,repeat);assert.strictEqual(first.length,3);assert.strictEqual(new Set(first.map(c=>c.id)).size,3);assert(first.every(travel.isTravelChoice));assert(first.every(c=>c.difficultyModel==='power-v1'));
   const duplicateFound=Array.from({length:100},(_,i)=>travel.createTravelChoices({runId:`dupe-${i}`,step:1,playerPower:500})).some(f=>new Set(f.map(c=>c.type)).size<3);assert(duplicateFound,'independent pool must still allow duplicate types in one fork');
   const counts={skirmish:0,battle:0,settlement:0,event:0,puzzle:0,caravan:0};for(let i=0;i<5000;i++)for(const c of travel.createTravelChoices({runId:`distribution-${i}`,step:1,playerPower:500}))counts[c.type]++;for(const [type,count] of Object.entries(counts)){const ratio=count/15000;assert(ratio>.15&&ratio<.185,`${type} ratio ${ratio} must stay near 1/6`);}
-  for(const power of [500,600,1000,1600,2400,2600]){const threat=rating.threatStarsForPower(power);for(const type of ['skirmish','battle','puzzle']){for(let i=0;i<100;i++){const choices=travel.createTravelChoices({runId:`adaptive-${power}-${type}-${i}`,step:37,types:[type],playerPower:power});assert(choices.every(c=>c.stars>=threat&&c.stars<=Math.min(12,threat+3)),`${type} must stay at Threat..Threat+3`);}}}
+  for(const power of [500,600,1000,1600,2400,2600]){const threat=rating.threatStarsForPower(power);for(const type of ['skirmish','battle','puzzle']){for(let i=0;i<100;i++){const choices=travel.createTravelChoices({runId:`adaptive-${power}-${type}-${i}`,step:37,types:[type],playerPower:power});assert(choices.every(c=>type==='battle'?
+  c.stars>=Math.max(1,threat-2)&&c.stars<=Math.min(12,threat+2):
+  c.stars>=threat&&c.stars<=Math.min(12,threat+3)),
+  `${type} must respect its approved Power-relative threat band`);}}}
   const low=Array.from({length:300},(_,i)=>travel.createTravelChoices({runId:`low-${i}`,step:99,types:['puzzle'],playerPower:500})[0]);assert(low.every(c=>c.stars>=1&&c.stars<=4),'journey week must no longer raise Puzzle beyond player-adaptive range');assert(new Set(low.map(c=>c.stars)).size>1,'adaptive Puzzle must expose multiple +0..3 levels');
-  const late=Array.from({length:100},(_,i)=>travel.createTravelChoices({runId:`late-${i}`,step:30,playerPower:2400})).flat().filter(c=>c.type==='skirmish'||c.type==='battle');assert(late.some(c=>c.stars===12));assert(late.every(c=>c.stars>=11&&c.stars<=12));assert(late.every(c=>['w','b'].includes(c.playerColor)&&c.enemyRaceTag));assert(late.some(c=>c.playerColor==='b'));
+  const late=Array.from({length:100},(_,i)=>travel.createTravelChoices({runId:`late-${i}`,step:30,playerPower:2400})).flat().filter(c=>c.type==='skirmish'||c.type==='battle');assert(late.some(c=>c.stars===12));assert(late.every(c=>c.stars>=(c.type==='battle'?9:11)&&c.stars<=12));assert(late.every(c=>['w','b'].includes(c.playerColor)&&c.enemyRaceTag));assert(late.some(c=>c.playerColor==='b'));
   const run=persistence.createRun({id:'travel-run',now:1000}),storage=memoryStorage();persistence.writeRun({...run,currentTravelChoices:first},storage,1100);assert.deepStrictEqual(persistence.readRun(storage).currentTravelChoices,first);
   const puzzleChoice={...travel.createTravelChoices({runId:'persist-puzzle',step:41,types:['puzzle'],playerPower:500})[0],supplyCostAtSelection:1,supplyPaid:1};persistence.writeRun({...run,journeyStep:41,currentTravelChoices:null,activeTravelChoice:puzzleChoice},storage,1120);const storedPuzzle=persistence.readRun(storage);assert(storedPuzzle&&storedPuzzle.activeTravelChoice.type==='puzzle');assert(storedPuzzle.activeTravelChoice.stars>=1&&storedPuzzle.activeTravelChoice.stars<=4);
   const persistedEvent={...first[0],id:'persist.event',type:'event',label:'СОБЫТИЕ',stars:1,threatLabel:'ОЧЕНЬ НИЗКАЯ',flavor:'Неожиданная встреча у дороги.',mechanicalHint:'',seed:'persist-event'};const eventFork=[persistedEvent,first[1],first[2]];persistence.writeRun({...run,currentTravelChoices:eventFork},storage,1150);const persistedEventFork=persistence.readRun(storage);assert(persistedEventFork);assert.strictEqual(persistedEventFork.currentTravelChoices[0].mechanicalHint,'');
@@ -772,25 +775,20 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   assert.strictEqual(battleWin.map.day,3);
   assert(!mapCore.finishEncounter(battleWin.map,'0,1',{success:true,opponentPower:630}).ok,
     'the first victory receipt cannot be counted again');
-  // The notification is separate from the actual respawn. Dismissing it
-  // must leave the defender on site, while a second victory cannot grant land.
+  // Weekly defenders are now assigned directly from the production marker:
+  // walking over a completed point must NOT bypass commander selection.
   const returning={...battleWin.map,cells:{...battleWin.map.cells,
     '0,1':{...battleWin.map.cells['0,1'],respawnReady:true,
       production:{id:'weekly:0,1:7:battle',week:1,kind:'battle',amount:1}}}};
-  const ack=mapCore.acknowledgeReturn(returning,'0,1');
-  assert(ack.ok&&ack.map.cells['0,1'].respawnReady===true);
-  assert.equal(ack.map.cells['0,1'].production,null);
-  assert(!mapCore.acknowledgeReturn(ack.map,'0,1').ok);
-  const home=mapCore.enterCell(ack.map,{x:0,y:0});
+  const home=mapCore.enterCell(returning,{x:0,y:0});
   const respawnEntry=mapCore.enterCell(home.map,{x:0,y:1});
-  assert(respawnEntry.ok&&respawnEntry.kind==='retry'&&respawnEntry.map.cells['0,1'].completedOnce===true);
-  const rematch=mapCore.finishEncounter(
-    mapCore.beginEncounter(respawnEntry.map,'0,1').map,'0,1',{success:true,opponentPower:15000});
-  assert(rematch.ok&&!rematch.first,'returning defender is never a first conquest');
-  assert.strictEqual(rematch.map.uniqueFirstConquests.length,battleWin.map.uniqueFirstConquests.length,
-    'second win against same road object never expands kingdom');
-  assert.strictEqual(mapCore.territoryCapacity(rematch.map),mapCore.territoryCapacity(battleWin.map));
-  assert.strictEqual(rematch.map.completedRoads.length,battleWin.map.completedRoads.length);
+  assert(respawnEntry.ok&&respawnEntry.kind==='walk'&&respawnEntry.map.cells['0,1'].completedOnce,
+    'completed Battle remains a walkable province; only the marker can start its weekly match');
+  assert(respawnEntry.map.cells['0,1'].respawnReady,'walking cannot consume the defender');
+  assert.deepStrictEqual(respawnEntry.map.cells['0,1'].production,returning.cells['0,1'].production);
+  assert.strictEqual(respawnEntry.map.uniqueFirstConquests.length,battleWin.map.uniqueFirstConquests.length);
+  assert.strictEqual(mapCore.territoryCapacity(respawnEntry.map),mapCore.territoryCapacity(battleWin.map));
+  assert.strictEqual(respawnEntry.map.completedRoads.length,battleWin.map.completedRoads.length);
 
   const caravanPoint={x:1,y:0},caravanRoute={...mapCore.randomEncounter(mapRun,caravanPoint,500),
     id:'kingdom.test-caravan',type:'caravan'};

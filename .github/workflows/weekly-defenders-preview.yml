@@ -1,0 +1,90 @@
+name: Weekly Defenders — isolated QA preview
+on:
+  push:
+    branches: [feature/weekly-defenders-hero-threat]
+    paths:
+      - 'game/**'
+      - 'scripts/**'
+      - 'weekly-defenders-preview/**'
+      - '.github/workflows/weekly-defenders-preview.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: rpchess-weekly-defenders-preview
+  cancel-in-progress: true
+jobs:
+  preview:
+    if: github.repository == 'mobigametim-bit/RPChess' && github.ref == 'refs/heads/feature/weekly-defenders-hero-threat'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm/rpchess-runtime-assets-v1
+          key: rpchess-runtime-assets-v1-${{ runner.os }}-${{ hashFiles('game/assets/**/*.png', 'game/generated_assets/*.png', 'scripts/*asset*.cjs', 'scripts/runtime-assets-build.cjs') }}
+          restore-keys: rpchess-runtime-assets-v1-${{ runner.os }}-
+      - name: Install dependencies and verified Stockfish
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund
+          npm pack stockfish@18.0.0 --silent --pack-destination /tmp
+          mkdir -p /tmp/rpchess-stockfish-package /tmp/rpchess-stockfish-verified
+          tar -xzf /tmp/stockfish-18.0.0.tgz -C /tmp/rpchess-stockfish-package
+          package=/tmp/rpchess-stockfish-package/package
+          for name in stockfish-18-lite-single.js stockfish-18-lite-single.wasm; do
+            source=$(find "$package" -type f -name "$name" -print -quit)
+            test -n "$source"
+            cp "$source" "/tmp/rpchess-stockfish-verified/$name"
+          done
+          license=$(find "$package" -type f -iname 'Copying.txt' -print -quit)
+          test -n "$license"
+          cp "$license" /tmp/rpchess-stockfish-verified/COPYING.txt
+      - name: Build standalone weekly defender candidate
+        env:
+          RPCHESS_STOCKFISH_ASSET_DIR: /tmp/rpchess-stockfish-verified
+        run: |
+          npm run build
+          node tests/battle.cjs
+          node tests/travel-choice.cjs
+      - name: Deploy isolated preview Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          npx wrangler deploy --config weekly-defenders-preview/wrangler.toml
+      - name: Verify deployment serves the new modules
+        run: |
+          node <<'NODE'
+          const assert=require('node:assert/strict');
+          const host='https://rpchess-weekly-defenders-preview.mobigametim.workers.dev';
+          (async()=>{
+            for(let attempt=0;attempt<12;attempt++){
+              try{
+                for(const [path,required] of [
+                  ['/','data-reboot-foundation'],
+                  ['/js/weekly-defenders-app.mjs','openWeekly'],
+                  ['/js/weekly-defenders-core.mjs','settleWeeklyBattle'],
+                  ['/js/hero-threat.mjs','THREAT_RANKS'],
+                  ['/css/weekly-defenders.css','wd-carousel']]){
+                  const response=await fetch(host+path,{cache:'no-store'});
+                  assert.equal(response.status,200,path);
+                  assert((await response.text()).includes(required),path+' missing compiled preview');
+                }
+                console.log('Weekly defenders isolated preview: PASS '+host);return;
+              }catch(error){
+                if(attempt===11)throw error;
+                await new Promise(resolve=>setTimeout(resolve,3000));
+              }
+            }
+          })().catch(error=>{console.error(error);process.exitCode=1;});
+          NODE

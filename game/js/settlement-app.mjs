@@ -1,6 +1,7 @@
 import { heroPortraitArt } from './race-assets.mjs';
 import { PIECE_GLYPHS } from './roster-data.mjs';
 import { readRun, writeRun } from './run-persistence.mjs';
+import { readPlayerRating } from './player-rating.mjs';
 import { subscribe, t, translateLegacy } from './i18n.mjs';
 import { brandLogoSrc, brandLogoAlt } from './brand-logo.mjs';
 import { heroNoteForId } from './content/hero-notes.mjs';
@@ -278,7 +279,7 @@ function handleServiceAction(event) {
     const result = applyHealing(activeRun, healButton.dataset.settlementHeal);
     changed = persistResult(result, { goldDelta: -result.spent, labelKey: result.success ? 'resources.healing' : '' });
   } else if (recruitButton) {
-    const result = applyRecruitment(activeRun, recruitButton.dataset.settlementRecruit);
+    const result = applyRecruitment(activeRun, recruitButton.dataset.settlementRecruit,{playerPower:readPlayerRating().power});
     changed = persistResult(result, { goldDelta: -result.spent, labelKey: result.success ? 'resources.newFighter' : '' });
   } else if (supplyButton) {
     const result = applySupplyPurchase(activeRun);

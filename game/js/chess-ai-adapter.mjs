@@ -117,6 +117,26 @@ class ChessAIAdapter {
     const search = this.activeSearch;
     if (!search) return;
     if (line.startsWith('info ')) {
+      // Opt-in analysis scores are consumed by the weekly move grader.
+      // Other AI callers retain exactly their original move-selection behavior.
+      if(search.evaluateOnly){
+        const multipv=Number(line.match(/\bmultipv\s+(\d+)/)?.[1]||1);
+        const depth=Number(line.match(/\bdepth\s+(\d+)/)?.[1]||0);
+        const cpMatch=line.match(/\bscore\s+cp\s+(-?\d+)/);
+        const mateMatch=line.match(/\bscore\s+mate\s+(-?\d+)/);
+        const pv=line.match(/\bpv\s+([a-h][1-8][a-h][1-8][qrbn]?)/i)?.[1]?.toLowerCase()||null;
+        if(multipv===2&&depth>=5&&(cpMatch||mateMatch)&&depth>=(search.second?.depth||0)){
+          const mate=mateMatch?Number(mateMatch[1]):null;
+          search.second={depth,cp:cpMatch?Number(cpMatch[1]):mate>0?1200:-1200,mate};
+          if(search.score){search.score.secondCp=search.second.cp;search.score.secondDepth=search.second.depth;}
+        }
+        if(multipv===1&&depth>=5&&(cpMatch||mateMatch)&&depth>=(search.score?.depth||0)){
+          const mate=mateMatch?Number(mateMatch[1]):null;
+          search.score={depth,cp:cpMatch?Number(cpMatch[1]):mate>0?1200:-1200,
+            mate,bestMove:pv,secondCp:search.second?.cp??null,secondDepth:search.second?.depth||0};
+        }
+        return;
+      }
       const multipv = Number(line.match(/\bmultipv\s+(\d+)/)?.[1] || 1);
       const pv = line.match(/\bpv\s+([a-h][1-8][a-h][1-8][qrbn]?)/i)?.[1]?.toLowerCase();
       if (pv && search.legal.has(pv)) search.candidates.set(multipv, pv);
@@ -126,7 +146,7 @@ class ChessAIAdapter {
       const best = line.match(/^bestmove\s+([a-h][1-8][a-h][1-8][qrbn]?)/i)?.[1]?.toLowerCase() || null;
       this.activeSearch = null;
       clearTimeout(search.timer);
-      search.resolve(this._selectSearchMove(search, best));
+      search.resolve(search.evaluateOnly?(search.score||null):this._selectSearchMove(search, best));
     }
   }
 
@@ -261,6 +281,35 @@ class ChessAIAdapter {
       if (operationEpoch !== this.operationEpoch) return null;
       this.degraded = true;
       return [...legal][0];
+    }
+  }
+
+  // Accurate side-to-move score at a fixed search depth, for the Mentor
+  // probability-loss move grading contract. No claimed quality on failure.
+  async analyzePosition({fen,depth=8}={}){
+    if(typeof fen!=='string'||!fen)return null;
+    const epoch=++this.operationEpoch;
+    try{
+      await this.init();
+      if(epoch!==this.operationEpoch)return null;
+      this._stopActiveSearch();
+      this._send('setoption name UCI_Chess960 value false');
+      this._send('setoption name MultiPV value 2');
+      this._send('setoption name UCI_LimitStrength value false');
+      await this._ready();
+      if(epoch!==this.operationEpoch)return null;
+      this._send('position fen '+fen);
+      return await new Promise((resolve,reject)=>{
+        const search={evaluateOnly:true,score:null,second:null,resolve,reject,timer:null};
+        search.timer=setTimeout(()=>{
+          if(this.activeSearch!==search)return;
+          this.activeSearch=null;this._send('stop');resolve(search.score||null);
+        },this.timeoutMs);
+        this.activeSearch=search;
+        this._send('go depth '+Math.max(5,Math.min(16,Math.floor(depth)||8)));
+      });
+    }catch{
+      return null;
     }
   }
 
