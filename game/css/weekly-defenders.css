@@ -364,3 +364,18 @@ body.compact-combat-active .wd-battle-screen .classic-party-panel{
 @media(max-height:620px){
  .wd-overlay .wd-opponent .wd-art{height:57px;max-height:calc(100% - 28px)}
 }
+
+
+/* Beat the native compact mode's !important grid on classic-main: that grid
+   cannot distribute a fixed square board AND status line without clipping. */
+@media(min-width:901px){
+ body.compact-combat-active .wd-battle-screen .wd-battle-main{
+  display:flex!important;flex-direction:column!important;align-items:center!important;
+  justify-content:center!important;place-items:unset!important;min-height:0!important;
+  height:100%!important}
+ body.compact-combat-active .wd-battle-screen .classic-board-wrap{
+  width:min(calc(100svh - 89px),calc(100vw - 405px),940px)!important;
+  flex:0 0 auto;max-height:calc(100svh - 89px)!important}
+ body.compact-combat-active .wd-battle-screen .wd-battle-party{
+  display:flex!important;flex-direction:column!important;min-height:0!important}
+}
