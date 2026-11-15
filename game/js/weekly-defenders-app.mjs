@@ -417,16 +417,90 @@ function finishBattle(){
  if(!finished.ok)return;
  writeRun(finished.run);lastResult=finished.results;
  showPane('results');
+ const english=currentLanguage()==='en',copy=(ru,en)=>english?en:ru;
  const panel=root.querySelector('[data-wd-results]');panel.replaceChildren();
- panel.append(h('h2','',t(result)),h('p','',active.heroName+' · '+t('week')+' '+active.week));
- panel.append(h('p','',t('rewards')+': '+lastResult.gold+' · '+t('mastery')+': +'+lastResult.mastery));
- panel.append(h('p','',t('warning')+': '+lastResult.capturedIds.length));
- if(lastResult.killed)panel.append(h('p','wd-debt',t('dead')));
- const btn=h('button','wd-button wd-primary',t('return'));btn.onclick=()=>{
+ const hero=finished.run.roster.find(x=>x.id===active.heroId);
+ const kicker=h('div','wd-outcome-kicker',copy('ИТОГИ ЕЖЕНЕДЕЛЬНОЙ БИТВЫ','WEEKLY BATTLE RESULT'));
+ const title=h('h2','wd-outcome-title',t(result));
+ const description=h('p','wd-outcome-subtitle',copy('Неделя ','Week ')+active.week+' · '+active.heroName);
+ const banner=h('div','wd-outcome-banner');
+ banner.append(kicker,title,description);
+ panel.append(banner);
+ const heroCard=h('section','wd-result-hero');
+ heroCard.append(image(heroPortraitArt(hero),'wd-result-portrait',hero?.name||active.heroName));
+ const heroInfo=h('div','wd-result-hero-info');
+ heroInfo.append(h('small','wd-outcome-kicker',copy('КОМАНДИР','COMMANDER')),
+  h('h3','',hero?.name||active.heroName));
+ if(active.mode==='auto'){
+  const from=threatRank(lastResult.beforeLevel);
+  const to=threatRank(lastResult.afterLevel);
+  const transition=h('div','wd-result-ranks');
+  const fromStars=h('span','wd-result-stars');
+  decorateThreat(fromStars,lastResult.beforeLevel,{language:currentLanguage(),xp:lastResult.beforeXp});
+  const afterStars=h('span','wd-result-stars');
+  decorateThreat(afterStars,lastResult.afterLevel,{language:currentLanguage(),xp:lastResult.afterXp});
+  const change=(lastResult.beforeLevel!==lastResult.afterLevel);
+  transition.append(fromStars,h('span','wd-result-arrow',change?'➜':'·'),afterStars);
+  const nextLabel=h('div','wd-progress-caption');
+  nextLabel.append(h('span','',english?to.en:to.ru),
+   h('span','',(lastResult.afterXp||0)+' / 100 XP'));
+  const bar=h('div','wd-result-xp-track'),fill=h('div','wd-result-xp-fill');
+  fill.style.width=(lastResult.afterXp||0)+'%';fill.style.background=to.color;
+  bar.append(fill);
+  heroInfo.append(transition,nextLabel,bar);
+  if(lastResult.mastery>0)heroInfo.append(h('strong','wd-result-xp-gained','+'+lastResult.mastery+' XP'));
+ }else{
+  heroInfo.append(h('p','wd-result-king-note',
+   copy('Личный король · ручное управление · не получает мастерство',
+    'Personal king · manual play · no mastery gained')));
+ }
+ let outcomeText=result==='win'?copy('Победа! Территория остаётся вашей.','Victory! The territory remains yours.'):
+  result==='draw'?copy('Ничья. Командир не ранен.','Draw. Commander remains healthy.'):
+  active.mode==='auto'?copy('Поражение. Командир тяжело ранен.','Defeat. Commander seriously wounded.'):
+   copy('Поражение короля. Путешествие продолжается.','King defeated. The journey continues.');
+ if(lastResult.killed)outcomeText=copy('Командир погиб из-за долга наёмникам.','Commander died from unpaid mercenary debt.');
+ heroInfo.append(h('p','wd-outcome-status'+(lastResult.killed||result==='loss'?' wd-outcome-danger':''),outcomeText));
+ heroCard.append(heroInfo);panel.append(heroCard);
+ const rewards=h('div','wd-result-rewards');
+ for(const [heading,value,art] of [
+  [copy('ЗОЛОТО','GOLD'),'+'+lastResult.gold,'generated_assets/reward_gold.png'],
+  [copy('МАСТЕРСТВО','MASTERY'),active.mode==='manual'?'—':'+'+lastResult.mastery,null],
+  [copy('ПОТЕРИ РЕКРУТОВ','LOST RECRUITS'),String(lastResult.capturedIds.length),null]
+ ]){
+  const box=h('div','wd-result-reward');
+  const top=h('small','',heading);box.append(top);
+  const amount=h('strong','',value);
+  if(art)amount.prepend(image(art,'wd-reward-icon'));
+  box.append(amount);rewards.append(box);
+ }
+ panel.append(rewards);
+ const stats=lastResult.stats;
+ if(stats){
+  panel.append(h('p','wd-outcome-record',copy('Статистика героя: ','Hero record: ')+
+   stats.wins+' / '+stats.draws+' / '+stats.losses+
+   '  '+copy('(победы / ничьи / поражения)','(W / D / L)')));
+ }
+ const action=h('div','wd-buttons wd-result-actions');
+ const history=h('button','wd-button',copy('История героя','Hero history'));
+ const back=h('button','wd-button wd-primary',t('return'));
+ history.onclick=()=>{
+  const existing=panel.querySelector('[data-wd-history]');if(existing){existing.remove();return;}
+  const box=h('div','wd-result-history');box.dataset.wdHistory='';
+  const records=hero?.weeklyBattleHistory||[];
+  for(const row of records.slice(-8).reverse()){
+   box.append(h('p','',copy('Неделя ','Week ')+row.week+' · '+row.cellId+' · '+
+    ({win:t('win'),draw:t('draw'),loss:t('loss')}[row.result]||row.result)));
+  }
+  if(!records.length)box.append(h('p','',copy('История пока пуста','No battles yet')));
+  action.before(box);
+ };
+ back.onclick=()=>{
   root.hidden=true;cellId=null;selectedHeroId=null;
   if(lastResult.kingDied){globalThis.RPChessEndlessRun?.open?.(readRun());}
-  else {globalThis.RPChessKingdomMap?.open?.();globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated',{detail:{source:'weekly-defenders'}}));}
- };panel.append(btn);
+  else{globalThis.RPChessKingdomMap?.open?.();
+   globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated',{detail:{source:'weekly-defenders'}}));}
+ };
+ action.append(history,back);panel.append(action);
 }
 function onAction(event){
  const button=event.target.closest('[data-wd-action]');if(!button)return;
