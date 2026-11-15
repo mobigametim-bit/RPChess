@@ -505,8 +505,6 @@ function showMap(){
  screen.hidden=false;document.body.classList.add('kingdom-map-active');
  window.scrollTo({top:0,behavior:'auto'});
  globalThis.RPChessResources?.render?.();
- const current=readRun();
- if(current?.weeklyDefenders?.active)void import('./weekly-defenders-app.mjs').then(m=>m.resumeWeekly());
 }
 function ensureMap(run){
  const power=readPlayerRating().power;
@@ -802,6 +800,19 @@ function render(){
     }
     if(cell.status==='failed'){const flag=document.createElement('span');flag.className='km-failure';flag.textContent='!';btn.append(flag);}
    }
+   // In-progress matches have their own Continue icon. They never recreate a weekly reward.
+   if(visible&&run.weeklyDefenders?.active?.cellId===id){
+    const resume=document.createElement('button');
+    resume.type='button';resume.className='km-production-marker';
+    resume.dataset.kingdomResumeWeekly=id;
+    resume.style.left=((col+CENTER_X+.62)*100/WIDTH)+'%';
+    resume.style.top=((row+CENTER_Y+.13)*100/HEIGHT)+'%';
+    const icon=document.createElement('img');icon.src=ROUTE_ICONS.battle;icon.alt='';
+    const label=document.createElement('strong');label.textContent='▶';
+    resume.append(icon,label);
+    resume.setAttribute('aria-label',currentLanguage()==='en'?'Resume weekly Battle':'Продолжить еженедельную Битву');
+    productions.append(resume);
+   }
    if(resourceBurst?.id===id){
     const group=document.createElement('span');group.className='km-resource-bursts';
     group.setAttribute('role','status');
@@ -1017,6 +1028,10 @@ function render(){
 }
 function parsePoint(id){if(!/^-?\d+,-?\d+$/.test(id||''))return null;const [x,y]=id.split(',').map(Number);return {x,y};}
 function onWorldClick(event){
+ const resume=event.target.closest('[data-kingdom-resume-weekly]');
+ if(resume){event.preventDefault();event.stopPropagation();
+  void import('./weekly-defenders-app.mjs').then(mod=>mod.resumeWeekly());return;
+ }
  const marker=event.target.closest('[data-kingdom-collect]');
  if(marker){event.preventDefault();event.stopPropagation();
   claimWeekly(marker.dataset.kingdomCollect);return;}
