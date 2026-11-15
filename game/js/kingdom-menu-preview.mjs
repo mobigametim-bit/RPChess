@@ -5,7 +5,7 @@ import {validateKingdomMap,isOwned} from './kingdom-map-core.mjs?v=20261112-prov
 import {kingdomMapSprite,kingdomEncounterSprite} from './kingdom-map-assets.mjs';
 import {PARCHMENT_TILE} from './kingdom-parchment-core.mjs?v=20261111-parchment-png-only-v1';
 import {commanderPieceArt} from './commander-portraits.mjs';
-import {renderParchment,renderParchmentFog,parchmentAssetsSettled,visibleThroughFog} from './kingdom-parchment-app.mjs?v=20261116-marsh-under-forest-v2';
+import {renderParchment,renderParchmentFog,parchmentAssetsSettled,visibleThroughFog} from './kingdom-parchment-app.mjs?v=20261116-ground-under-forest-v3';
 import {drawKingdomOverlay} from './kingdom-map-overlay.mjs?v=20261112-province-colors-v1';
 import {animateTravelers,stopTravelers} from './kingdom-traveler-renderer.mjs?v=20261111-npc-floor-v1';
 
