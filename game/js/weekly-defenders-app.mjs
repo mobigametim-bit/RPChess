@@ -77,7 +77,13 @@ function ensure(){
  return root;
 }
 function close(){
- if(weeklyState(readRun()).active)return; // Do not silently abandon a committed match.
+ // Suspending is safe: every played half-move and the week receipt are saved.
+ if(weeklyState(readRun()).active){
+  paused=true;session++;clearTimeout(turnTimer);adapter?.stop?.();
+  root.hidden=true;
+  globalThis.RPChessKingdomMap?.open?.();
+  return;
+ }
  root.hidden=true;cellId=null;selectedHeroId=null;
 }
 function showPane(name){
@@ -298,7 +304,7 @@ function finishBattle(){
  const btn=h('button','wd-button wd-primary',t('return'));btn.onclick=()=>{
   root.hidden=true;cellId=null;selectedHeroId=null;
   if(lastResult.kingDied){globalThis.RPChessEndlessRun?.open?.(readRun());}
-  else {globalThis.RPChessKingdomMap?.show?.();globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated',{detail:{source:'weekly-defenders'}}));}
+  else {globalThis.RPChessKingdomMap?.open?.();globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated',{detail:{source:'weekly-defenders'}}));}
  };panel.append(btn);
 }
 function onAction(event){
