@@ -13,6 +13,7 @@ import {makeToggle,syncToggles} from './board-view-toggle.mjs';
 import {classifyStrongMove,reviewMoveJournal} from './finished-game-review.mjs';
 import {combatGoldReward} from './resources-core.mjs';
 import {armyCandidates} from './kingdom-army-core.mjs';
+import {attachPieceDrag} from './piece-drag.mjs';
 import {currentLanguage} from './i18n.mjs';
 
 const C={
@@ -82,6 +83,18 @@ function ensure(){
  document.body.append(root);
  root.querySelector('[data-wd-view-toggle]').append(makeToggle());
  syncToggles();
+ attachPieceDrag(root.querySelector('[data-wd-board]'),{
+  canPick:square=>{
+   const active=weeklyState(readRun()).active;
+   return Boolean(active&&active.mode==='manual'&&engine&&
+    engine.turn()===active.playerColor&&!thinking&&!movePending&&
+    engine.pieceAt(square)?.color===active.playerColor);
+  },
+  onStart:from=>{selectedSquare=from;renderBoard();},
+  onDrop:(from,to)=>{selectedSquare=from;if(to)manualSquare(to);
+   else{selectedSquare=null;renderBoard();}},
+  onCancel:()=>{selectedSquare=null;renderBoard();}
+ });
  root.addEventListener('click',onAction);
  root.addEventListener('dragover',e=>{if(e.target.closest('.wd-drop'))e.preventDefault()});
  root.addEventListener('drop',e=>{if(!e.target.closest('.wd-drop'))return;e.preventDefault();selectHero(e.dataTransfer?.getData('text/plain'))});
