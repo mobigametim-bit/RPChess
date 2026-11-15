@@ -138,11 +138,11 @@ async function desktopContract(browser) {
     await page.locator('[data-player-identity-close]').click();
     await menu.locator('[data-new-game]').click();
     await page.locator('[data-journey-continue]').click();
-    await waitForVisible(page,'[data-roster-screen]:not([hidden])','Continued Journey');
+    await waitForVisible(page,'[data-travel-choice-screen]:not([hidden])','Continued Travel');
     assert.strictEqual(await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).id,RUN_KEY),
       originalRunId,'Continue must preserve the saved run');
-    await page.locator('[data-roster-travel]').click();
-    await waitForVisible(page, '[data-travel-choice-screen]:not([hidden])', 'Travel Choice');
+    assert.equal(await page.locator('[data-roster-screen]:not([hidden])').count(),0,
+      'Continue must not insert a roster detour');
     assert.strictEqual(await page.locator('[data-travel-choice]').count(), 3);
     await assertDocumentFits(page, 'desktop Travel');
     assert.deepStrictEqual(errors, [], `desktop browser errors:\n${errors.join('\n')}`);
@@ -369,9 +369,10 @@ async function journeyPickerContract(browser){
   await page.locator('[data-player-identity-close]').click();
   await icon.click();await picker.waitFor({state:'visible'});
   await picker.locator('[data-journey-continue]').click();
-  await waitForVisible(page,'[data-roster-screen]:not([hidden])','Continued saved Journey');
+  await waitForVisible(page,'[data-kingdom-map-screen]:not([hidden])','Continued saved Kingdom');
   assert.equal(await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).id,RUN_KEY),runId);
-  await page.locator('[data-roster-menu]').click();
+  assert.equal(await page.locator('[data-roster-screen]:not([hidden])').count(),0);
+  await page.locator('[data-kingdom-menu]').click();
   await page.setViewportSize({width:844,height:390});
   await icon.click();await picker.waitFor({state:'visible'});
   await assertInsideViewport(picker.locator('.journey-choice-panel'),'Journey picker landscape phone');
