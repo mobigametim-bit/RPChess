@@ -9,6 +9,7 @@ import { renderThreatOverlay } from './artifact-combat-ui.mjs';
 import { applyPinIce } from './king-pin-ice.mjs';
 import { t, currentLanguage, subscribe } from './i18n.mjs';
 import { platform } from './platform.mjs';
+import {readRun} from './run-persistence.mjs';
 import { ARENA_KEY, SHARD_ICON, PIECE_CODE, OPPONENTS, OPPONENT_BY_ID, SQUAD_PRICES, ARTIFACT_PRICES, emptyArena, normalizeArena, arenaSummary, newMatch, chooseArtifact, finishMatch, claimDouble, purchaseSquad } from './arena-core.mjs?v=20261109-kingdom-economy-v7';
 
 const copy = {
@@ -64,7 +65,16 @@ function renderCatalog(){
   root.setAttribute('aria-label',l('title'));
   root.querySelector('[data-arena-title]').textContent=l('title');
   root.querySelector('[data-arena-back]').textContent=l('back');
+  const rivalsNav=root.querySelector('[data-arena-rivals]');
+  rivalsNav.setAttribute('aria-label',l('rivals'));rivalsNav.title=l('rivals');
+  const journeyNav=root.querySelector('[data-arena-journey]');
+  if(journeyNav){
+    const journey=currentLanguage()==='en'?'Journey':'Путешествие';
+    journeyNav.setAttribute('aria-label',journey);journeyNav.title=journey;
+  }
   h.hidden=Boolean(state.match&&state.match.phase==='playing' && engine);
+  const journeyNav=root.querySelector('[data-arena-journey]');
+  if(journeyNav)journeyNav.hidden=h.hidden||!readRun()||readRun().ended;
   root.querySelector('[data-arena-shards]').innerHTML=img(SHARD_ICON,'arena-shard','')+' '+stats.balance+' · '+l('shards');
   const squads=root.querySelector('[data-arena-squads]');squads.replaceChildren();
   for(const race of RACE_TAGS){
@@ -105,7 +115,7 @@ function renderBoard(){
   root.querySelector('[data-arena-party-title]').textContent=l('party');
   root.querySelector('[data-arena-battle-title]').textContent=l('opponent')+' · '+l('power')+': '+foe.elo;
   root.querySelector('[data-arena-status]').textContent=thinking?l('thinking'):(snapshot.status.over?l('result'):snapshot.status.checked?l('check'):snapshot.turn===state.match.playerColor?l('move'):l('thinking'));
-  root.querySelector('[data-arena-rivals]').textContent=l('rivals');
+  // Keep the genuine menu Arena icon; never replace it with localized text.
   renderBattleHistory();
   board.replaceChildren();
   applyRaceBoardTheme(board,foe.race);
@@ -326,6 +336,16 @@ attachPieceDrag(board, {
 root?.addEventListener('click',event=>{
   const target=event.target.closest('button');if(!target||target.disabled)return;
   if(target.dataset.arenaBack!==undefined){leave();return;}
+  if(target.dataset.arenaJourney!==undefined){
+    const run=readRun();
+    if(!run||run.ended)return;
+    leave();
+    // The map owns its scene, including pending encounter recovery.
+    void import('./kingdom-map-app.mjs?v=20261115-polish-v1').then(({openMap})=>
+      openMap({detail:{source:'arena-journey',runId:run.id}}))
+      .catch(error=>console.error('[RPChess] Arena -> Kingdom failed',error));
+    return;
+  }
   if(target.dataset.arenaResume!==undefined){if(state.match?.phase==='offer')dialogType='offer';else if(state.match?.phase==='result')dialogType='result';else restoreMatch();render();globalThis.RPChessLoading?.requestVisibleAssets?.();return;}
   if(target.dataset.arenaRivals!==undefined){adapter.stop();searchId++;thinking=false;stopMoveAnimation();engine=null;render();globalThis.RPChessLoading?.requestVisibleAssets?.();return;}
   if(target.dataset.arenaSquad){
