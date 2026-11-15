@@ -10,6 +10,7 @@
   display:grid;place-items:center;padding:2px;
   background:transparent;border:0;box-shadow:none;
 }
+.arena-nav-actions .arena-nav-illustrated[hidden]{display:none!important}
 .arena-nav-actions .arena-nav-illustrated img{
   width:100%;height:100%;object-fit:contain;pointer-events:none;
 }
