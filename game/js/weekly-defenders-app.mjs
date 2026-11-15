@@ -14,6 +14,7 @@ import {classifyStrongMove,reviewMoveJournal} from './finished-game-review.mjs';
 import {combatGoldReward} from './resources-core.mjs';
 import {armyCandidates} from './kingdom-army-core.mjs';
 import {attachPieceDrag} from './piece-drag.mjs';
+import {applyPinIce} from './king-pin-ice.mjs';
 import {currentLanguage} from './i18n.mjs';
 
 const C={
@@ -384,6 +385,7 @@ function renderBoard(){
  const ranks=active.playerColor==='w'?[7,6,5,4,3,2,1,0]:[0,1,2,3,4,5,6,7];
  const files=active.playerColor==='w'?[0,1,2,3,4,5,6,7]:[7,6,5,4,3,2,1,0];
  const snap=engine.snapshot();
+ const checkedKing=snap.status.checked?snap.board.findIndex(piece=>piece?.type==='k'&&piece.color===snap.turn):-1;
  const roles={k:'king',q:'queen',r:'rook',b:'bishop',n:'knight',p:'pawn'};
  const last=active.moves.at(-1);
  const badgeMarks={inaccuracy:'?!',mistake:'?',blunder:'??',good:'!',excellent:'!!'};
@@ -393,6 +395,7 @@ function renderBoard(){
   const button=h('button','wd-square classic-square '+(light?'classic-square--light':'classic-square--dark')+
    (sq===selectedSquare?' is-selected':'')+(last&&(last.uci.slice(0,2)===sq||last.uci.slice(2,4)===sq)?' wd-last':''));
   button.type='button';button.dataset.square=sq;button.setAttribute('aria-label',sq);
+  if(rank*8+file===checkedKing)button.classList.add('classic-square--check');
   if(snap.status.type==='checkmate'&&piece?.type==='k')
    button.classList.add(piece.color===snap.status.winner?
      'rpchess-king-victorious':'rpchess-king-defeated');
@@ -415,6 +418,8 @@ function renderBoard(){
   }
   button.addEventListener('click',()=>manualSquare(sq));board.append(button);
  }
+ // Weekly autoplay re-creates all 64 squares on each ply; reinstall ice after every render.
+ applyPinIce(board,snap);
 }
 const GRADE_LABELS={
  ru:{good:'Хороший ход',excellent:'Блестящий ход',inaccuracy:'Неточность',mistake:'Ошибка',blunder:'Зевок'},
