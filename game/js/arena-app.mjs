@@ -343,7 +343,7 @@ root?.addEventListener('click',event=>{
     if(!run||run.ended)return;
     leave();
     // The map owns its scene, including pending encounter recovery.
-    void import('./kingdom-map-app.mjs?v=20261115-polish-v1').then(({openMap})=>
+    void import('./kingdom-map-app.mjs?v=20261112-province-colors-v2').then(({openMap})=>
       openMap({detail:{source:'arena-journey',runId:run.id}}))
       .catch(error=>console.error('[RPChess] Arena -> Kingdom failed',error));
     return;
