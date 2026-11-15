@@ -337,7 +337,7 @@ function continuePath() {
     if(globalThis.RPChessKingdomMap?.open){
       globalThis.RPChessKingdomMap.open({detail});
     }else{
-      void import('./kingdom-map-app.mjs?v=20261111-polish-v1')
+      void import('./kingdom-map-app.mjs?v=20261116-trade-ui-v3')
         .then(({openMap})=>openMap({detail}))
         .catch(error=>{
           console.error('[RPChess] Return from Settlement to Kingdom failed',error);
