@@ -16,6 +16,8 @@ import {buyCastleRecruit,addArmyRecruits} from './kingdom-army-core.mjs';
 import {createSettlementState} from './settlement-core.mjs';
 import {FLAVOR_POOLS} from './travel-choice-core.mjs';
 import {isUnprotectedBanditAmbush,resolveUnprotectedBanditAmbush} from './kingdom-bandit-core.mjs';
+import {canBuildTradePost,buildTradePost,pendingTradeGold,collectTradeGold,
+ tradeLimits,exchangeAtTradePost,GOLD_TO_SUPPLY,SUPPLY_TO_GOLD} from './kingdom-trade-core.mjs';
 import {captureMercenaryEntry,rollbackMercenaryEntry} from './kingdom-entry-rollback.mjs';
 import {translateLegacy} from './i18n.mjs';
 import {commanderPortrait,commanderTitle} from './commander-portraits.mjs';
@@ -31,7 +33,7 @@ import {runtimeT} from '../localization/runtime-ui.mjs';
 import {createKingdomMap,validateKingdomMap,updatePeak,randomEncounter,enterCell,
  finishEncounter,matchesCombatReceipt,migrateKingdomMap,territoryCapacity,playerTerritoryCount,castleLevel,revealAround,
  collectProduction,canBuildOutpost,buildOutpost,canBuildSettlement,buildSettlement,
- romanForStars,keyOf,adjacent,shortestKingRoute,acknowledgeReturn,isOwned,borderEdges,weekForDay} from './kingdom-map-core.mjs?v=20261112-province-colors-v1';
+ romanForStars,keyOf,adjacent,shortestKingRoute,acknowledgeReturn,isOwned,borderEdges,weekForDay,advanceDay} from './kingdom-map-core.mjs?v=20261112-province-colors-v1';
 
 const COPY={
  ru:{day:'День',shards:'Осколки чести',castle:'Замок',supply:'Припасы',power:'Мощь',points:'Очки присоединения',
@@ -44,6 +46,9 @@ const COPY={
    outpostNeed:'Недостаточно осколков чести',outpostBuilt:'Аванпост построен',
    moveKing:'Перетащите короля для перемещения',collect:'Собрать',battleReady:'Защитник вернулся. Войди в клетку для нового боя.',
    needCompanion:'Стычка отложена: нужен хотя бы один боец помимо короля. Пополните отряд.',
+   tradeTent:'Торговая палатка',buildTrade:'Поставить торговую палатку',
+   tradeWeekly:'золота в неделю',tradeBuy:'Купить припасы: 15 золота за 1 припас',
+   tradeSell:'Продать припасы: 1 припас за 6 золота',tradeExchange:'Обменять',
 
    productionSite:'Строится',productionWeekly:'за неделю',productionSupplies:'припасов',productionGold:'золота',
  zoomGroup:'Масштаб карты',zoomIn:'Увеличить масштаб',zoomOut:'Уменьшить масштаб',zoomReset:'Сбросить масштаб карты'},
@@ -57,6 +62,9 @@ const COPY={
    outpostNeed:'Not enough Honor shards',outpostBuilt:'Outpost constructed',
    moveKing:'Drag the king to move',collect:'Collect',battleReady:'Defender returned. Enter the cell for a rematch.',
    needCompanion:'Skirmish postponed: recruit at least one fighter besides your King.',
+   tradeTent:'Trading tent',buildTrade:'Build trading tent',
+   tradeWeekly:'Gold per week',tradeBuy:'Buy supplies: 15 Gold per 1 Supply',
+   tradeSell:'Sell supplies: 1 Supply for 6 Gold',tradeExchange:'Exchange',
 
    productionSite:'Under construction',productionWeekly:'per week',productionSupplies:'Supplies',productionGold:'Gold',
  zoomGroup:'Map zoom',zoomIn:'Zoom in',zoomOut:'Zoom out',zoomReset:'Reset map zoom'}
@@ -217,6 +225,7 @@ const GOLD_ICON='generated_assets/reward_gold.png';
 const SUPPLIES_ICON='generated_assets/reward_supplies.png';
 const OUTPOST_ACTION_ICON='assets/ui/build_outpost_128.png';
 const SETTLEMENT_ACTION_ICON='assets/ui/build_settlement_128.png';
+const TRADING_TENT_ICON='assets/ui/trading-tent-64.png';
 const ARENA_ACTION_ICON='assets/ui/main-menu-arena.png';
 // Reuse Arena's canonical Power icon; already included in the optimized build.
 const POWER_ICON='generated_assets/node_battle.png';
@@ -451,8 +460,20 @@ function screenReady(){
  <div class="km-inspector-buttons"><button type="button" data-kingdom-annex hidden></button>
  <button class="km-inspector-action" type="button" data-kingdom-outpost hidden></button>
  <button class="km-inspector-action" type="button" data-kingdom-build-settlement hidden></button>
+ <button class="km-inspector-action" type="button" data-kingdom-build-trade hidden></button>
  <button class="km-inspector-action km-inspector-action--arena" type="button" data-kingdom-earn-shards hidden></button></div>
- <p class="km-hint" data-kingdom-hint></p></aside></section></div>`;
+ <div class="km-trade-controls" data-kingdom-trade-controls hidden>
+  <section class="km-trade-row">
+    <label for="km-trade-buy" data-kingdom-trade-buy-label></label>
+    <div><input id="km-trade-buy" type="range" min="0" max="0" step="1" value="0" data-kingdom-trade-buy><output data-kingdom-trade-buy-count>0</output></div>
+    <button class="reboot-button reboot-button--primary" type="button" data-kingdom-trade-buy-apply></button>
+  </section>
+  <section class="km-trade-row">
+    <label for="km-trade-sell" data-kingdom-trade-sell-label></label>
+    <div><input id="km-trade-sell" type="range" min="0" max="0" step="1" value="0" data-kingdom-trade-sell><output data-kingdom-trade-sell-count>0</output></div>
+    <button class="reboot-button reboot-button--primary" type="button" data-kingdom-trade-sell-apply></button>
+  </section>
+ </div><p class="km-hint" data-kingdom-hint></p></aside></section></div>`;
  screen.style.setProperty('--km-event-size-px',(MAP_LAYOUT.cellPx*MAP_LAYOUT.eventScalePercent/100)+'px');
  screen.style.setProperty('--km-king-px',MAP_LAYOUT.kingPx+'px');
  screen.style.setProperty('--km-inspector-width',MAP_LAYOUT.inspectorWidthPercent+'%');
@@ -473,6 +494,13 @@ function screenReady(){
  });
  screen.querySelector('[data-kingdom-outpost]').addEventListener('click',constructOutpost);
  screen.querySelector('[data-kingdom-build-settlement]').addEventListener('click',constructSettlement);
+ screen.querySelector('[data-kingdom-build-trade]').addEventListener('click',constructTradePost);
+ for(const direction of ['buy','sell']){
+   const slider=screen.querySelector('[data-kingdom-trade-'+direction+']');
+   slider.addEventListener('input',()=>updateTradeSlider(direction));
+   screen.querySelector('[data-kingdom-trade-'+direction+'-apply]')
+     .addEventListener('click',()=>applyTradeExchange(direction));
+ }
  screen.querySelector('[data-kingdom-earn-shards]').addEventListener('click',goToArena);
  screen.querySelector('[data-kingdom-world]').addEventListener('click',onWorldClick);
  const frame=screen.querySelector('.km-map-frame');
@@ -731,6 +759,7 @@ function render(){
  const tileUrls=new Map(); // Reuse resolved CSS URLs across the visible grid.
  const outpostCenters=new Set((map.outposts||[]).map(post=>post.id));
  const industrySites=new Map((map.industry?.buildings||[]).map(site=>[site.id,site]));
+ const tradeSites=new Map((map.tradePosts||[]).map(site=>[site.id,site]));
  const industryWeek=weekForDay(map.day);
  for(let row=-CENTER_Y;row<HEIGHT-CENTER_Y;row++)
   for(let col=-CENTER_X;col<WIDTH-CENTER_X;col++){
