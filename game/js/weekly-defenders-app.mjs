@@ -44,7 +44,7 @@ const C={
 };
 function t(k){return C[currentLanguage()==='en'?'en':'ru'][k]||k;}
 const typeToCode={king:'K',queen:'Q',rook:'R',bishop:'B',knight:'N',pawn:'P'};
-let root=null,selectedHeroId=null,cellId=null,engine=null,adapter=null;
+let root=null,battleScreen=null,selectedHeroId=null,cellId=null,engine=null,adapter=null;
 let identities=new Map(),capturedIds=new Set(),selectedSquare=null,paused=false,speed=1,skip=false,thinking=false;
 let turnTimer=null,session=0,lastResult=null,movePending=false,paymentModal=null,beforeFenForMove=null;
 function h(tag,cls='',text=''){
@@ -70,20 +70,41 @@ function ensure(){
   '<div class="wd-buttons"><button data-wd-action="close" class="wd-button"></button>'+
   '<button data-wd-action="start" class="wd-button wd-primary"></button></div></div></div>'+
   '<section class="wd-payment" data-wd-payment hidden></section>'+
-  '<section class="wd-play" data-wd-play hidden><div class="wd-play-layout">'+
-  '<div class="wd-chess-stage"><div class="classic-board wd-chess-board" data-wd-board></div></div>'+
-  '<aside class="wd-sidebar"><h3 data-wd-battle-title></h3><p data-wd-battle-info></p>'+
-  '<div class="wd-view-toggle" data-wd-view-toggle></div>'+
-  '<div class="wd-move-history" data-wd-moves></div>'+
-  '<div class="wd-grade-legend" data-wd-grade-legend></div>'+
-  '<div class="wd-play-controls"><button class="wd-button" data-wd-action="pause"></button>'+
-  '<button class="wd-button" data-wd-action="speed">×1</button>'+
-  '<button class="wd-button" data-wd-action="skip"></button></div></aside></div></section>'+
   '<section class="wd-results" data-wd-results hidden></section></section>';
  document.body.append(root);
- root.querySelector('[data-wd-view-toggle]').append(makeToggle());
+ // Copy the native full-screen Battle composition: shared classic-shell,
+ // topbar, left classic-party-panel, right classic-main and square board.
+ // The weekly chess owner retains its own state; it never starts a normal Battle.
+ battleScreen=h('main','classic-screen wd-battle-screen');
+ battleScreen.dataset.weeklyBattleScreen='';battleScreen.hidden=true;
+ battleScreen.setAttribute('aria-label',t('battle'));
+ battleScreen.innerHTML='<div class="classic-shell">'+
+  '<header class="classic-topbar wd-battle-topbar">'+
+  '<div><small class="wd-eyebrow" data-wd-battle-week></small><h1 data-wd-battle-heading></h1></div>'+
+  '<div class="classic-toolbar"><button type="button" class="classic-mini-button" data-wd-action="close">×</button></div>'+
+  '</header>'+
+  '<aside class="classic-panel classic-party-panel wd-battle-party wd-sidebar">'+
+  '<h2 data-wd-battle-title></h2><p class="classic-opponent" data-wd-battle-info></p>'+
+  '<div class="wd-view-toggle" data-wd-view-toggle></div>'+
+  '<section class="classic-panel classic-panel--moves wd-battle-journal">'+
+  '<h3 data-wd-journal-heading></h3>'+
+  '<div class="classic-moves wd-move-history" data-wd-moves></div></section>'+
+  '<div class="wd-grade-legend" data-wd-grade-legend></div>'+
+  '<div class="wd-play-controls">'+
+  '<button type="button" class="classic-mini-button wd-button" data-wd-action="pause"></button>'+
+  '<button type="button" class="classic-mini-button wd-button" data-wd-action="speed">×1</button>'+
+  '<button type="button" class="classic-mini-button wd-button" data-wd-action="skip"></button></div>'+
+  '</aside>'+
+  '<section class="classic-main wd-battle-main">'+
+  '<div class="classic-statusbar wd-battle-status"><span data-wd-board-status></span></div>'+
+  '<div class="classic-board-wrap wd-chess-stage">'+
+  '<div class="classic-board wd-chess-board" data-wd-board role="grid" aria-label="Шахматная доска"></div>'+
+  '</div></section></div>';
+ (document.querySelector('#app')||document.body).append(battleScreen);
+ battleScreen.querySelector('[data-wd-view-toggle]').append(makeToggle());
  syncToggles();
- attachPieceDrag(root.querySelector('[data-wd-board]'),{
+ battleScreen.addEventListener('click',onAction);
+ attachPieceDrag(battleScreen.querySelector('[data-wd-board]'),{
   canPick:square=>{
    const active=weeklyState(readRun()).active;
    return Boolean(active&&active.mode==='manual'&&engine&&
@@ -103,6 +124,8 @@ function ensure(){
 }
 function close(){
  if(paymentModal)paymentModal.hidden=true;
+ if(battleScreen)battleScreen.hidden=true;
+ document.body.classList.remove('compact-combat-active','classic-chess-active','wd-combat-active');
  // Suspending is safe: every played half-move and the week receipt are saved.
  if(weeklyState(readRun()).active){
   paused=true;session++;clearTimeout(turnTimer);adapter?.stop?.();
@@ -113,9 +136,18 @@ function close(){
  root.hidden=true;cellId=null;selectedHeroId=null;
 }
 function showPane(name){
- for(const n of ['setup','payment','play','results'])root.querySelector('[data-wd-'+n+']').hidden=n!==name;
+ if(name==='play'){
+  root.hidden=true;
+  globalThis.RPChessKingdomMap?.hide?.();
+  battleScreen.hidden=false;
+  document.body.classList.add('compact-combat-active','classic-chess-active','wd-combat-active');
+ }else{
+  battleScreen.hidden=true;root.hidden=false;
+  document.body.classList.remove('compact-combat-active','classic-chess-active','wd-combat-active');
+ }
+ for(const n of ['setup','payment','results'])root.querySelector('[data-wd-'+n+']').hidden=n!==name;
 }
-function setText(selector,value){const e=root.querySelector(selector);if(e)e.textContent=value}
+function setText(selector,value){const e=(battleScreen||root).querySelector(selector)||root.querySelector(selector);if(e)e.textContent=value}
 function selectHero(id){
  const run=readRun();if(!run||!run.roster.some(c=>c.id===id&&c.status==='healthy'&&c.weeklyCommandedWeek!==weekForDay(run.kingdomMap.day)))return;
  selectedHeroId=id;renderCommander();renderHeroes();
@@ -285,26 +317,30 @@ function newEngine(active){
 }
 function resumeWeekly(){
  const run=readRun(),active=weeklyState(run).active;if(!active)return false;
- ensure();root.hidden=false;cellId=active.cellId;selectedHeroId=active.heroId;
+ ensure();cellId=active.cellId;selectedHeroId=active.heroId;
  try{
   const recreated=newEngine(active);engine=recreated.chess;identities=recreated.identities;capturedIds=recreated.lost;
  }catch(e){console.error(e);return false;}
  session++;paused=false;speed=1;skip=false;thinking=false;lastResult=null;
  adapter?.destroy?.();adapter=new ChessAIAdapter();movePending=false;
- showPane('play');setText('[data-wd-title]',t('battle'));setText('[data-wd-week]',t('week')+' '+active.week);
+ showPane('play');
+ setText('[data-wd-battle-week]',t('week')+' '+active.week);
+ setText('[data-wd-battle-heading]',t('battle'));
  setText('[data-wd-battle-title]',active.heroName+' · '+t('enemy'));
- const legend=root.querySelector('[data-wd-grade-legend]');legend.replaceChildren();
+ setText('[data-wd-journal-heading]',t('move'));
+ battleScreen.querySelector('[data-wd-action="close"]').setAttribute('aria-label',t('back'));
+ const legend=battleScreen.querySelector('[data-wd-grade-legend]');legend.replaceChildren();
  for(const grade of ['excellent','good','inaccuracy','mistake','blunder']){
   const sym={excellent:'!!',good:'!',inaccuracy:'?!',mistake:'?',blunder:'??'}[grade];
   const badge=h('span','wd-grade-caption');
   badge.append(h('em','mentor-grade mentor-grade--'+grade,sym),
    h('span','',gradeLabel(grade)));legend.append(badge);
  }
- root.querySelector('[data-wd-action="skip"]').hidden=active.mode==='manual';
+ battleScreen.querySelector('[data-wd-action="skip"]').hidden=active.mode==='manual';
  renderBattle();scheduleTurn();return true;
 }
 function renderBoard(){
- const board=root.querySelector('[data-wd-board]');board.replaceChildren();
+ const board=battleScreen.querySelector('[data-wd-board]');board.replaceChildren();
  const run=readRun(),active=weeklyState(run).active;if(!active)return;
  const battlefield=active.encounter||run.kingdomMap?.cells?.[active.cellId]?.selectedEncounter||{};
  const tiles=raceBoardTiles(battlefield.enemyRaceTag||battlefield.raceTag||'humans');
@@ -357,7 +393,8 @@ function gradeLabel(kind){return GRADE_LABELS[currentLanguage()==='en'?'en':'ru'
 function renderBattle(){
  const active=weeklyState(readRun()).active;if(!active)return;
  setText('[data-wd-battle-info]',active.mode==='auto'?t('battleAuto'):(engine.turn()===active.playerColor?t('battleManual'):t('thinking')));
- const moves=root.querySelector('[data-wd-moves]');moves.replaceChildren();
+ setText('[data-wd-board-status]',engine.turn()==='w'?(currentLanguage()==='en'?'White to move':'Ход белых'):(currentLanguage()==='en'?'Black to move':'Ход чёрных'));
+ const moves=battleScreen.querySelector('[data-wd-moves]');moves.replaceChildren();
  let journal=[];
  try{journal=reviewMoveJournal(active.moves.map(m=>m.uci),{startFen:active.fen||undefined});}
  catch{journal=active.moves.map((m,i)=>({ply:i+1,san:m.uci}));}
@@ -372,9 +409,9 @@ function renderBattle(){
   moves.append(item);
  });
  moves.scrollTop=moves.scrollHeight;
- root.querySelector('[data-wd-action="pause"]').textContent=paused?t('resume'):t('pause');
- root.querySelector('[data-wd-action="speed"]').textContent='×'+speed;
- root.querySelector('[data-wd-action="skip"]').textContent=t('result');
+ battleScreen.querySelector('[data-wd-action="pause"]').textContent=paused?t('resume'):t('pause');
+ battleScreen.querySelector('[data-wd-action="speed"]').textContent='×'+speed;
+ battleScreen.querySelector('[data-wd-action="skip"]').textContent=t('result');
  renderBoard();
 }
 function manualSquare(sq){
@@ -526,7 +563,7 @@ function finishBattle(){
   action.before(box);
  };
  back.onclick=()=>{
-  root.hidden=true;cellId=null;selectedHeroId=null;
+  root.hidden=true;battleScreen.hidden=true;cellId=null;selectedHeroId=null;
   if(lastResult.kingDied){globalThis.RPChessEndlessRun?.open?.(readRun());}
   else{globalThis.RPChessKingdomMap?.open?.();
    globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated',{detail:{source:'weekly-defenders'}}));}
