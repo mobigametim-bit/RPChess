@@ -22,7 +22,7 @@ import {captureMercenaryEntry,rollbackMercenaryEntry} from './kingdom-entry-roll
 import {translateLegacy} from './i18n.mjs';
 import {commanderPortrait,commanderTitle} from './commander-portraits.mjs';
 import {kingdomMapSprite,kingdomEncounterSprite} from './kingdom-map-assets.mjs';
-import {renderParchment,renderParchmentFog,visibleThroughFog} from './kingdom-parchment-app.mjs?v=20261114-fog-events-v1';
+import {renderParchment,renderParchmentFog,visibleThroughFog} from './kingdom-parchment-app.mjs?v=20261116-marsh-under-forest-v2';
 import {drawKingdomOverlay} from './kingdom-map-overlay.mjs?v=20261114-corridor-joints-v2';
 import {animateTravelers,stopTravelers} from './kingdom-traveler-renderer.mjs?v=20261111-npc-floor-v1';
 import {industrySprite,industrySpriteIndex,industryYield,industryLevel,industryPending,collectIndustry,BUILDING_TYPES} from './kingdom-industry-core.mjs';
@@ -1102,7 +1102,7 @@ function parsePoint(id){if(!/^-?\d+,-?\d+$/.test(id||''))return null;const [x,y]
 function onWorldClick(event){
  const resume=event.target.closest('[data-kingdom-resume-weekly]');
  if(resume){event.preventDefault();event.stopPropagation();
-  void import('./weekly-defenders-app.mjs').then(mod=>mod.resumeWeekly());return;
+  void import('./weekly-defenders-app.mjs?v=20261116-pin-ice-v2').then(mod=>mod.resumeWeekly());return;
  }
  const marker=event.target.closest('[data-kingdom-collect]');
  if(marker){event.preventDefault();event.stopPropagation();
@@ -1206,7 +1206,7 @@ function claimWeekly(id){
  }
  if(item.kind==='battle'){
   // Direct assignment from this marker: no extra notification or king movement.
-  void import('./weekly-defenders-app.mjs').then(mod=>mod.openWeekly(id));
+  void import('./weekly-defenders-app.mjs?v=20261116-pin-ice-v2').then(mod=>mod.openWeekly(id));
   return;
  }
  const result=collectProduction(run.kingdomMap,id);if(!result.ok)return;
