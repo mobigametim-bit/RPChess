@@ -294,7 +294,9 @@ async function assertResponsiveStars(page, selector, cardSelector) {
     weekly.on('pageerror',error=>weeklyErrors.push(String(error.message||error)));
     await weekly.goto(url,{waitUntil:'networkidle'});
     await startNewRun(weekly,{legacyTravel:false});
-    await weekly.evaluate(()=>globalThis.RPChessKingdomMap.open());
+    // The map owner is lazy-loaded by the Roster Travel action in production.
+    await weekly.locator('[data-roster-travel]').click();
+    await weekly.locator('[data-kingdom-map-screen]:not([hidden])').waitFor();
     await weekly.evaluate(key=>{
       // Seed the normal persisted Kingdom and click the REAL floating defender
       // marker. Do not dynamically import runtime modules inside this fixture:
