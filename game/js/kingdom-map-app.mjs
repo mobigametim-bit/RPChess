@@ -463,14 +463,20 @@ function screenReady(){
  <button class="km-inspector-action" type="button" data-kingdom-build-trade hidden></button>
  <button class="km-inspector-action km-inspector-action--arena" type="button" data-kingdom-earn-shards hidden></button></div>
  <div class="km-trade-controls" data-kingdom-trade-controls hidden>
-  <section class="km-trade-row">
-    <label for="km-trade-buy" data-kingdom-trade-buy-label></label>
-    <div><input id="km-trade-buy" type="range" min="0" max="0" step="1" value="0" data-kingdom-trade-buy><output data-kingdom-trade-buy-count>0</output></div>
+  <section class="km-trade-row km-trade-row--buy" data-kingdom-trade-buy-label>
+    <div class="km-trade-offer">
+     <span class="km-trade-supply"><img src="generated_assets/reward_supplies.png" alt="" aria-hidden="true"><strong>+1</strong></span>
+     <span class="km-trade-arrow" aria-hidden="true">←</span>
+     <output class="km-trade-gold"><strong data-kingdom-trade-buy-count>15</strong><img src="generated_assets/reward_gold.png" alt="" aria-hidden="true"></output>
+    </div>
     <button class="reboot-button reboot-button--primary" type="button" data-kingdom-trade-buy-apply></button>
   </section>
-  <section class="km-trade-row">
-    <label for="km-trade-sell" data-kingdom-trade-sell-label></label>
-    <div><input id="km-trade-sell" type="range" min="0" max="0" step="1" value="0" data-kingdom-trade-sell><output data-kingdom-trade-sell-count>0</output></div>
+  <section class="km-trade-row km-trade-row--sell" data-kingdom-trade-sell-label>
+    <div class="km-trade-offer">
+     <span class="km-trade-supply"><img src="generated_assets/reward_supplies.png" alt="" aria-hidden="true"><strong>−1</strong></span>
+     <span class="km-trade-arrow" aria-hidden="true">→</span>
+     <output class="km-trade-gold"><strong data-kingdom-trade-sell-count>6</strong><img src="generated_assets/reward_gold.png" alt="" aria-hidden="true"></output>
+    </div>
     <button class="reboot-button reboot-button--primary" type="button" data-kingdom-trade-sell-apply></button>
   </section>
  </div><p class="km-hint" data-kingdom-hint></p></aside></section></div>`;
@@ -496,8 +502,6 @@ function screenReady(){
  screen.querySelector('[data-kingdom-build-settlement]').addEventListener('click',constructSettlement);
  screen.querySelector('[data-kingdom-build-trade]').addEventListener('click',constructTradePost);
  for(const direction of ['buy','sell']){
-   const slider=screen.querySelector('[data-kingdom-trade-'+direction+']');
-   slider.addEventListener('input',()=>updateTradeSlider(direction));
    screen.querySelector('[data-kingdom-trade-'+direction+'-apply]')
      .addEventListener('click',()=>applyTradeExchange(direction));
  }
@@ -1085,13 +1089,11 @@ function render(){
  const limits=tradeLimits(run,selectedId);
  controls.hidden=!limits.available;
  if(limits.available){
-  for(const [direction,max] of [['buy',limits.buySupplies],['sell',limits.sellSupplies]]){
-   const slider=screen.querySelector('[data-kingdom-trade-'+direction+']');
-   slider.max=String(max);slider.value='0';
-   screen.querySelector('[data-kingdom-trade-'+direction+'-label]').textContent=
-     tr(direction==='buy'?'tradeBuy':'tradeSell');
+  for(const direction of ['buy','sell']){
+   screen.querySelector('[data-kingdom-trade-'+direction+'-label]')
+     .setAttribute('aria-label',tr(direction==='buy'?'tradeBuy':'tradeSell'));
    screen.querySelector('[data-kingdom-trade-'+direction+'-apply]').textContent=tr('tradeExchange');
-   updateTradeSlider(direction);
+   updateTradeOffer(direction,limits);
   }
  }
   const hint=screen.querySelector('[data-kingdom-hint]');
@@ -1322,20 +1324,23 @@ function refreshEconomyControls(){
   if(earn)earn.hidden=!place||!needs;
  }
 }
-function updateTradeSlider(direction){
- const slider=screen?.querySelector('[data-kingdom-trade-'+direction+']');
+// A trade is one supply per click: no slider or arbitrary amount to obscure
+// the cost. The exchange core remains the single authority for prices/limits.
+function updateTradeOffer(direction,limits){
+ const amount=direction==='buy'?GOLD_TO_SUPPLY:SUPPLY_TO_GOLD;
  const output=screen?.querySelector('[data-kingdom-trade-'+direction+'-count]');
  const button=screen?.querySelector('[data-kingdom-trade-'+direction+'-apply]');
- if(!slider||!output||!button)return;
- const value=Math.max(0,Number(slider.value)||0);
- const cost=direction==='buy'?value*GOLD_TO_SUPPLY:value*SUPPLY_TO_GOLD;
- output.textContent=value+' / '+cost+' '+(lang()==='en'?'Gold':'золота');
- button.disabled=value<1;
+ if(!output||!button)return;
+ output.textContent=String(amount);
+ const description=tr(direction==='buy'?'tradeBuy':'tradeSell');
+ button.title=description;button.setAttribute('aria-label',description);
+ button.disabled=!limits?.available||(direction==='buy'?limits.buySupplies:limits.sellSupplies)<1;
+ button.setAttribute('aria-disabled',String(button.disabled));
 }
 function applyTradeExchange(direction){
  const run=readRun(),id=selected||'';
- const value=Number(screen?.querySelector('[data-kingdom-trade-'+direction+']')?.value);
- const result=exchangeAtTradePost(run,id,direction,value);
+ if(!run)return;
+ const result=exchangeAtTradePost(run,id,direction,1);
  if(!result.ok)return;
  writeRun(result.run);render();
  globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated',{detail:{source:'kingdom-trade-exchange'}}));
