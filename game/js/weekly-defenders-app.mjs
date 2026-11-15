@@ -18,7 +18,7 @@ import {currentLanguage} from './i18n.mjs';
 
 const C={
  ru:{title:'Возрождённый защитник',choose:'Назначьте командира',enemy:'Защитник',commander:'Ваш командир',
-  empty:'Перетащите или выберите героя',army:'Армия из обычных рекрутов и наёмников',
+  empty:'Перетащите или выберите героя',
   available:'Доступные герои',cancel:'Отмена',fight:'Бой',auto:'Автобой',week:'Неделя',
   gold:'Золото за победу',wounded:'Тяжело ранен',used:'Уже участвовал',healthy:'Здоров',
   tutorial:'Один герой — одна Битва за неделю',mercenary:'Наёмники',cost:'Стоимость найма',
@@ -30,7 +30,7 @@ const C={
   rewards:'Награда',mastery:'Мастерство',dead:'Командир погиб из-за долга',warning:'Потери обычных рекрутов постоянны',
   error:'Не удалось начать сражение',noHeroes:'Нет доступных героев',back:'Закрыть'},
  en:{title:'Returned defender',choose:'Assign a commander',enemy:'Defender',commander:'Your commander',
-  empty:'Drag or select a hero',army:'Regular recruits and mercenaries only',
+  empty:'Drag or select a hero',
   available:'Available heroes',cancel:'Cancel',fight:'Battle',auto:'Auto battle',week:'Week',
   gold:'Gold on victory',wounded:'Seriously wounded',used:'Already deployed',healthy:'Healthy',
   tutorial:'One battle per hero each week',mercenary:'Mercenaries',cost:'Hiring cost',
@@ -66,7 +66,7 @@ function ensure(){
   '<div class="wd-carousel-wrap"><button class="wd-arrow" data-wd-action="prev" aria-label="Previous heroes">‹</button>'+
   '<div class="wd-carousel" data-wd-carousel></div>'+
   '<button class="wd-arrow" data-wd-action="next" aria-label="Next heroes">›</button></div>'+
-  '<div class="wd-foot"><div class="wd-gold"><span data-wd-gold-label></span><strong data-wd-gold></strong></div>'+
+  '<div class="wd-foot"><div class="wd-gold"><img class="wd-gold-icon" src="generated_assets/reward_gold.png" alt="" aria-hidden="true"><strong data-wd-gold></strong></div>'+
   '<div class="wd-buttons"><button data-wd-action="close" class="wd-button"></button>'+
   '<button data-wd-action="start" class="wd-button wd-primary"></button></div></div></div>'+
   '<section class="wd-payment" data-wd-payment hidden></section>'+
@@ -193,7 +193,7 @@ function renderSetup(){
  setText('[data-wd-week]',t('week')+' '+weekForDay(run.kingdomMap.day));
  setText('[data-wd-title]',t('title'));
  setText('[data-wd-available]',t('available'));setText('[data-wd-tip]',t('tutorial'));
- setText('[data-wd-gold-label]',t('gold'));
+ const goldBox=root.querySelector('.wd-gold');goldBox.setAttribute('aria-label',t('gold'));goldBox.title=t('gold');
  const gold=Math.floor(combatGoldReward({encounterType:'battle',stars:cell.selectedEncounter.stars,playerColor:'w',status:{over:true,type:'checkmate',winner:'w'}})/2);
  setText('[data-wd-gold]',gold.toString());
  const opponent=root.querySelector('[data-wd-enemy]');opponent.replaceChildren();
@@ -203,9 +203,12 @@ function renderSetup(){
   Math.floor((Math.max(1,Math.min(12,Number(cell.selectedEncounter.stars)||1))-1)/2)];
  const defenderArt=art?.includes('/pieces/board/')?art:
   boardRacePiecePath('humans',role,'b');
- opponent.append(image(defenderArt,'wd-art'),h('b','',t('enemy')));
+ // The role image already identifies the defender; do not add another
+ // caption inside this compact panel (it used to clip into the first star).
+ const defenderImg=image(defenderArt,'wd-art');defenderImg.title=t('enemy');
+ opponent.append(defenderImg);
  const stars=h('div','wd-stars');decorateThreat(stars,cell.selectedEncounter.stars,{language:currentLanguage()});
- opponent.append(stars,h('small','',t('army')));
+ opponent.append(stars);
  root.querySelector('.wd-foot [data-wd-action="close"]').textContent=t('cancel');
  renderCommander();renderHeroes();
 }
