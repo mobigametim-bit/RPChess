@@ -293,12 +293,15 @@ async function assertResponsiveStars(page, selector, cardSelector) {
     const weeklyErrors=[];
     weekly.on('pageerror',error=>weeklyErrors.push(String(error.message||error)));
     await weekly.goto(url,{waitUntil:'networkidle'});
-    await startNewRun(weekly);
-    await weekly.evaluate(async key=>{
-      const persistence=await import('/js/run-persistence.mjs');
-      const mapCore=await import('/js/kingdom-map-core.mjs');
-      const run=persistence.readRun();
-      const map=run.kingdomMap||mapCore.createKingdomMap(run,500,'humans');
+    await startNewRun(weekly,{legacyTravel:false});
+    await weekly.evaluate(()=>globalThis.RPChessKingdomMap.open());
+    await weekly.evaluate(key=>{
+      // Seed the normal persisted Kingdom and click the REAL floating defender
+      // marker. Do not dynamically import runtime modules inside this fixture:
+      // other test pages register a service worker with different module URLs.
+      const run=JSON.parse(localStorage.getItem(key));
+      const map=run.kingdomMap;
+      if(!map)throw new Error('Kingdom map must initialize before weekly fixture');
       const id='1,0';
       const point={status:'completed',completedOnce:true,explored:true,annexed:true,
         selectedEncounter:{id:'weekly.qa',seed:'weekly.qa',type:'battle',stars:3,
@@ -307,10 +310,12 @@ async function assertResponsiveStars(page, selector, cardSelector) {
         respawnReady:true};
       const next={...map,day:7,cells:{...map.cells,[id]:point},
         centralOwnedCells:[...new Set([...(map.centralOwnedCells||[]),id])]};
-      persistence.writeRun({...run,kingdomMap:next,gold:500,supplies:200});
+      localStorage.setItem(key,JSON.stringify({...run,kingdomMap:next,gold:500,supplies:200}));
       globalThis.RPChessKingdomMap.open();
-      (await import('/js/weekly-defenders-app.mjs')).openWeekly(id);
     },RUN_KEY);
+    const marker=weekly.locator('[data-kingdom-collect="1,0"][data-production-kind="battle"]');
+    await marker.waitFor({state:'visible'});
+    await marker.click();
     await weekly.locator('[data-weekly-defenders]:not([hidden])').waitFor();
     assert.equal(await weekly.locator('.wd-opponent b,.wd-opponent small').count(),0,
       'no truncated enemy text can poke through the stars');
