@@ -317,7 +317,9 @@ async function assertResponsiveStars(page, selector, cardSelector) {
     },RUN_KEY);
     const marker=weekly.locator('[data-kingdom-collect="1,0"][data-production-kind="battle"]');
     await marker.waitFor({state:'visible'});
-    await marker.click();
+    // Production marker deliberately bobs, so Playwright's stationary-element
+    // predicate never becomes true. Invoke the actual button click directly.
+    await marker.evaluate(button=>button.click());
     await weekly.locator('[data-weekly-defenders]:not([hidden])').waitFor();
     assert.equal(await weekly.locator('.wd-opponent b,.wd-opponent small').count(),0,
       'no truncated enemy text can poke through the stars');
