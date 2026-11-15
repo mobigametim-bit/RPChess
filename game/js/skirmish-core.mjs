@@ -117,7 +117,18 @@ function placeArmy(army,color,{seed='rpchess-formation',preferredSquares=null}={
 }
 function fenFromPlacements(placements,turn='w'){const board=new Map(placements.map((p)=>[p.square,p])),ranks=[];for(let rank=8;rank>=1;rank--){let row='',empty=0;for(const file of FILES){const p=board.get(`${file}${rank}`);if(!p){empty++;continue;}if(empty){row+=String(empty);empty=0;}const code=TYPE_CODE[p.pieceType]||p.type;row+=p.color==='w'?code.toUpperCase():code.toLowerCase();}if(empty)row+=String(empty);ranks.push(row);}return`${ranks.join('/')} ${turn} - - 0 1`;}
 
-function generateEnemyArmy({playerPoints=0,playerCount=1,encounter}={}){
+function generateEnemyArmy({playerPoints=0,playerCount=1,playerArmy=null,encounter}={}){
+  // Skirmish mirrors the player's chosen chess PIECE TYPES and quantities;
+  // only its deployment is free across the two home ranks. Different AI
+  // strength still comes from encounter stars / opponent ELO.
+  if(Array.isArray(playerArmy)&&playerArmy.length){
+    const army=playerArmy.map((member,index)=>({
+      id:'enemy.mirror.'+index,name:'Enemy '+member.pieceType,
+      pieceType:member.pieceType,commandCost:PIECE_VALUES[member.pieceType]||0
+    }));
+    const points=army.reduce((total,piece)=>total+(piece.commandCost||0),0);
+    return {army,points,target:points};
+  }
   const resolved=encounter||createEncounter(),random=seededRandom(`${resolved.seed}:${resolved.stars}:${playerPoints}:${playerCount}`);
   const scale=.62+(resolved.stars-1)*.058;
   const target=clamp(Math.round(Number(playerPoints||0)*scale+resolved.stars*1.65),4,MAX_SKIRMISH_POINTS);
@@ -129,7 +140,7 @@ function generateEnemyArmy({playerPoints=0,playerCount=1,encounter}={}){
 
 function createBattlePlan({roster,selectedIds,encounter,formation=null}={}){
   const validation=validateSelection(roster,selectedIds);if(!validation.ok)throw new Error(`Invalid Skirmish selection: ${validation.reason}`);
-  const resolved=encounter||createEncounter(),playerColor=resolved.playerColor==='b'?'b':'w',enemyColor=oppositeColor(playerColor),enemy=generateEnemyArmy({playerPoints:validation.points,playerCount:validation.count,encounter:resolved});
+  const resolved=encounter||createEncounter(),playerColor=resolved.playerColor==='b'?'b':'w',enemyColor=oppositeColor(playerColor),enemy=generateEnemyArmy({playerPoints:validation.points,playerCount:validation.count,playerArmy:validation.members,encounter:resolved});
   const playerFormation=placeArmy(validation.members,playerColor,{seed:`${resolved.seed}:player`,preferredSquares:formation});
   const enemyFormation=placeArmy(enemy.army,enemyColor,{seed:`${resolved.seed}:enemy`});
   const obstacles=generateSkirmishObstacles(resolved.seed);
