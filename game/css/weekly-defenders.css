@@ -113,3 +113,67 @@
  .wd-move-history{max-height:85px;min-height:25px}
 }
 @media(prefers-reduced-motion:reduce){.wd-overlay *{scroll-behavior:auto!important;transition:none!important}}
+
+
+/* Battle owner parity: board is the primary (left) surface, large and textured. */
+.wd-overlay:has([data-wd-play]:not([hidden])) .wd-dialog{
+ width:min(1460px,calc(100vw - 20px));max-width:none;
+ max-height:calc(100dvh - 12px);height:calc(100dvh - 12px);
+ background:linear-gradient(90deg,rgba(4,9,15,.94),rgba(8,15,25,.96)),
+  url('../generated_assets/scene_battle.webp') center/cover no-repeat
+}
+.wd-overlay:has([data-wd-play]:not([hidden])) .wd-play{min-height:0;overflow:hidden}
+.wd-overlay .wd-play-layout{
+ height:100%;grid-template-columns:minmax(0,1fr) minmax(230px,325px);
+ grid-template-rows:minmax(0,1fr);justify-content:center;align-items:center;gap:clamp(9px,1.3vw,21px)
+}
+.wd-chess-stage{position:relative;width:min(100%,calc(100dvh - 115px));aspect-ratio:1;
+ max-height:100%;margin:auto;padding:clamp(5px,.7vw,10px);
+ border:1px solid rgba(216,177,93,.65);border-radius:7px;
+ background:rgba(8,16,25,.92);box-shadow:0 20px 50px #000a}
+.wd-overlay .wd-chess-board{width:100%;height:100%;aspect-ratio:1;
+ border:2px solid rgba(228,195,116,.65);border-radius:2px;
+ grid-template-columns:repeat(8,minmax(0,1fr));grid-template-rows:repeat(8,minmax(0,1fr))}
+.wd-overlay .wd-square{position:relative;overflow:visible;isolation:isolate;aspect-ratio:auto;
+ min-height:0!important;width:100%;height:100%;padding:0;border:0}
+.wd-overlay .wd-square.wd-last{box-shadow:inset 0 0 0 2px rgba(251,214,118,.36)}
+.wd-overlay .wd-square.is-selected{box-shadow:inset 0 0 0 4px #f4de95}
+.wd-overlay .wd-battle-unit{display:block;width:94%;height:94%;object-fit:contain;
+ filter:drop-shadow(0 2px 3px #000a);pointer-events:none}
+.wd-overlay .wd-battle-simple{display:none;pointer-events:none}
+html[data-simple-pieces="1"] .wd-overlay .wd-battle-unit{display:none!important}
+html[data-simple-pieces="1"] .wd-overlay .wd-battle-simple{
+ display:block!important;width:91%;height:91%;object-fit:contain}
+.wd-overlay .mentor-square-grade{z-index:6;pointer-events:none;font-weight:900;
+ position:absolute;right:0;top:-4px;padding:1px 3px;font:bold clamp(16px,2vw,26px)/1 Arial,sans-serif;
+ color:#ff817a;text-shadow:1px 2px 1px #1b1110,0 0 8px #000}
+.wd-overlay .mentor-square-grade--good{color:#b8e9a0;text-shadow:0 2px 3px #081209,0 0 5px #183310}
+.wd-overlay .wd-sidebar{height:100%;max-height:100%;min-height:0;
+ padding:clamp(8px,1.2vw,18px);border:1px solid rgba(216,177,93,.35);
+ background:rgba(7,15,23,.91);border-radius:7px;gap:11px}
+.wd-overlay .wd-sidebar h3{font-size:clamp(17px,1.6vw,25px);color:#eace92}
+.wd-overlay .wd-view-toggle{display:flex;justify-content:flex-start;min-height:38px}
+.wd-overlay .wd-view-toggle .rpchess-board-view-toggle{margin:0;transform:none}
+.wd-overlay .wd-move-history{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+ align-content:start;align-items:start;gap:5px;overflow-y:auto;flex:1 1 auto}
+.wd-overlay .wd-move-history span{font-size:12px;background:#243239;
+ border:1px solid rgba(215,180,92,.12);padding:5px 7px;
+ white-space:nowrap;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.wd-overlay .wd-move-history .mentor-grade{padding-left:4px;color:#ef9485}
+.wd-overlay .wd-move-history .mentor-grade--inaccuracy{color:#f1d884}
+.wd-overlay .wd-move-history .mentor-grade--good{color:#badf87}
+.wd-overlay .wd-move-history .mentor-grade--excellent{color:#eac574}
+@media(max-width:760px){
+ .wd-overlay:has([data-wd-play]:not([hidden])) .wd-dialog{height:calc(100dvh - 8px);padding:7px}
+ .wd-overlay .wd-play-layout{display:flex;flex-direction:column;gap:6px}
+ .wd-overlay .wd-chess-stage{flex:0 1 auto;width:min(100%,calc(100dvh - 280px));
+  max-height:min(100%,calc(100dvh - 280px));padding:3px}
+ .wd-overlay .wd-sidebar{width:100%;min-height:0;flex:1 1 auto;order:2;padding:7px}
+ .wd-overlay .wd-move-history{max-height:60px;min-height:0}
+ .wd-overlay .wd-view-toggle{min-height:28px}
+ .wd-overlay .wd-sidebar h3,.wd-overlay .wd-sidebar p{margin:0}
+}
+@media(max-height:530px) and (min-width:761px){
+ .wd-overlay .wd-sidebar{gap:5px;padding:7px}
+ .wd-overlay .wd-chess-stage{width:min(100%,calc(100dvh - 85px))}
+}
