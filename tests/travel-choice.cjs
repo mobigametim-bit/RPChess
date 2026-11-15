@@ -566,11 +566,11 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   assert.strictEqual(goldReady,3*builtTent.post.level,'income is 3× frozen site level per week');
   assert.strictEqual(trade.pendingTradeGold(mapCore.settleWeeklyProduction(tentWeek),junctionId),goldReady,
     'replaying weekly settlement does not credit tents twice');
-  const claimed=trade.collectTradeGold(tentWeek,junctionId);
-  assert(claimed.ok&&claimed.amount===goldReady);
-  assert(!trade.collectTradeGold(claimed.map,junctionId).ok,'pickup receipt is single-use');
+  const claimedTrade=trade.collectTradeGold(tentWeek,junctionId);
+  assert(claimedTrade.ok&&claimedTrade.amount===goldReady);
+  assert(!trade.collectTradeGold(claimedTrade.map,junctionId).ok,'pickup receipt is single-use');
   const trader={...soloBase,gold:100,supplies:10,kingdomMap:{
-    ...claimed.map,king:{x:1,y:0},pendingCell:null}};
+    ...claimedTrade.map,king:{x:1,y:0},pendingCell:null}};
   assert.strictEqual(trade.tradeLimits(trader,junctionId).buySupplies,6);
   const bought=trade.exchangeAtTradePost(trader,junctionId,'buy',2);
   assert(bought.ok&&bought.run.gold===70&&bought.run.supplies===12);
