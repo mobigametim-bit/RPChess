@@ -76,12 +76,20 @@ function isOwned(map,point){
 // Persist per-Battle hues; blue belongs exclusively to the player.
 const BATTLE_PROVINCE_HUES=Object.freeze([0,18,36,55,75,95,115,135,155,175,247,265,283,301,319,337]);
 function nextProvinceColorIndex(seed,id,used){
- const start=(hashString(seed+':province-color:'+id)>>>0)%BATTLE_PROVINCE_HUES.length;
- for(let n=0;n<BATTLE_PROVINCE_HUES.length;n++){
-  const index=(start+n)%BATTLE_PROVINCE_HUES.length;
-  if(!used.has(index)){used.add(index);return index;}
- }
- return start;
+ const seedIndex=(hashString(seed+':province-color:'+id)>>>0)%BATTLE_PROVINCE_HUES.length;
+ const free=BATTLE_PROVINCE_HUES.map((hue,index)=>({hue,index}))
+  .filter(({index})=>!used.has(index));
+ const pool=free.length?free:BATTLE_PROVINCE_HUES.map((hue,index)=>({hue,index}));
+ const circular=(a,b)=>Math.min(Math.abs(a-b),360-Math.abs(a-b));
+ pool.sort((a,b)=>{
+  const minDist=item=>used.size?Math.min(...[...used].map(index=>
+   circular(item.hue,BATTLE_PROVINCE_HUES[index]))):180;
+  const diff=minDist(b)-minDist(a);
+  if(diff)return diff;
+  const rank=index=>(index-seedIndex+BATTLE_PROVINCE_HUES.length)%BATTLE_PROVINCE_HUES.length;
+  return rank(a.index)-rank(b.index);
+ });
+ const chosen=pool[0].index;used.add(chosen);return chosen;
 }
 const CARDINAL=Object.freeze([[0,-1],[1,0],[0,1],[-1,0]]);
 function growTerritory(map){
@@ -123,9 +131,11 @@ function growTerritory(map){
 // stolen. The reservation may extend beyond fog but stays hidden until scouted.
 function reserveBattleTerritories(map){
  const usedColors=new Set();
- let recolored=false;
+ const recolorLegacy=map.provincePaletteVersion!==2;
+ let recolored=recolorLegacy;
  // Upgrade old saves once and keep enemy hues stable after conquest/reload.
  const existing=(map.battleTerritories||[]).map(p=>{
+  if(recolorLegacy)return {...p,colorIndex:nextProvinceColorIndex(map.seed,p.id,usedColors)};
   const index=p.colorIndex;
   if(Number.isInteger(index)&&index>=0&&index<BATTLE_PROVINCE_HUES.length&&
       (!usedColors.has(index)||usedColors.size===BATTLE_PROVINCE_HUES.length)){
@@ -138,7 +148,7 @@ function reserveBattleTerritories(map){
  const newBattles=Object.entries(map.cells||{}).filter(([id,c])=>
   c?.selectedEncounter?.type==='battle'&&!c.completedOnce&&c.status!=='completed'&&
   !existingIds.has(id)).sort(([a],[b])=>a.localeCompare(b,'en'));
- if(!newBattles.length)return recolored?{...map,battleTerritories:existing}:map;
+ if(!newBattles.length)return recolored?{...map,battleTerritories:existing,provincePaletteVersion:2}:map;
  const committed=playerTerritoryKeys(map);
  const newCenters=new Set(newBattles.map(([id])=>id));
  const allCenters=new Set([...existingIds,...newCenters]);
@@ -183,7 +193,7 @@ function reserveBattleTerritories(map){
   territories.push(allocate(id,cell.selectedEncounter.id,
    Math.max(1,Math.floor(difficultyForStars(cell.selectedEncounter.stars).elo/200)),
    nextProvinceColorIndex(map.seed,id,usedColors)));
- return {...map,battleTerritories:territories};
+ return {...map,battleTerritories:territories,provincePaletteVersion:2};
 }
 function migrateKingdomMap(map,run=null){
  if(!validateKingdomMap(map))return map;
