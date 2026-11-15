@@ -279,6 +279,21 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   const solo={...soloBase,army:[{pieceType:'pawn',raceTag:'humans',count:5}],roster:soloBase.roster.filter(x=>x.isRunKing),gold:50,supplies:60,
     kingdomMap:{...soloMap,pendingCell:ambushId,king:{...ambushPoint},cells:{...soloMap.cells,[ambushId]:armedCell}}};
   assert(bandits.isUnprotectedBanditAmbush(solo),'a solo King receives a robber ambush');
+  // Named heroes, not regular troops, determine whether a King is unprotected.
+  const regularArmy={...solo,army:[{pieceType:'queen',raceTag:'humans',count:100}]};
+  assert(!travel.hasHealthySkirmishCompanion(regularArmy)&&bandits.isUnprotectedBanditAmbush(regularArmy),
+    'even 100 healthy regular troops do not prevent robbery');
+  const companion=soloBase.roster.find(x=>!x.isRunKing);
+  assert(companion,'starter roster contains a named hero');
+  const woundedOnly={...regularArmy,roster:[solo.roster[0],{...companion,status:'wounded'}]};
+  assert(!travel.hasHealthySkirmishCompanion(woundedOnly)&&bandits.isUnprotectedBanditAmbush(woundedOnly),
+    'wounded named heroes cannot prevent robbery regardless of regular army');
+  const deadOnly={...regularArmy,roster:[solo.roster[0],{...companion,status:'dead'}]};
+  assert(bandits.isUnprotectedBanditAmbush(deadOnly),'dead heroes do not prevent robbery');
+  const escorted={...regularArmy,roster:[solo.roster[0],{...companion,status:'healthy'}]};
+  assert(travel.hasHealthySkirmishCompanion(escorted)&&!bandits.isUnprotectedBanditAmbush(escorted),
+    'one healthy named hero prevents robbery regardless of regular army');
+
   const robbed=bandits.resolveUnprotectedBanditAmbush(solo);
   assert(robbed.ok&&robbed.kind==='robbed'&&robbed.run.gold===10&&robbed.run.supplies===10&&
     robbed.run.kingdomMap.pendingCell===null&&!robbed.run.ended&&
