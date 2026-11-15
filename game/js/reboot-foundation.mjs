@@ -146,9 +146,13 @@ function clearLegacySavesOnce() {
   target.setItem(REBOOT_INIT_KEY, '1');
 }
 
+// Device-wide preferences: do NOT store them under a transient RPChess ID
+// prefix. The pending->verified profile switch would otherwise reset music
+// and piece selection while the actual profile save continues to work.
 function readSettings() {
   try {
-    const value = JSON.parse(platform.storage.getItem(SETTINGS_KEY) || '{}');
+    const raw=globalThis.localStorage?.getItem(SETTINGS_KEY);
+    const value = JSON.parse(raw ?? platform.storage.getItem(SETTINGS_KEY) ?? '{}');
     return {
       music: Number.isFinite(value.music) ? value.music : 20,
       sfx: Number.isFinite(value.sfx) ? value.sfx : 80,
@@ -162,7 +166,12 @@ function readSettings() {
 }
 
 function writeSettings(settings) {
-  platform.storage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  const serialized=JSON.stringify(settings);
+  try{
+    if(globalThis.localStorage){globalThis.localStorage.setItem(SETTINGS_KEY,serialized);return;}
+  }catch{}
+  // Storage-restricted WebViews retain the previous scoped fallback.
+  platform.storage.setItem(SETTINGS_KEY,serialized);
 }
 
 function openModal(modal, audio) {
