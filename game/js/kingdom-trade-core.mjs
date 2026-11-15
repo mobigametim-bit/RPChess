@@ -42,7 +42,7 @@ function hasTradeConflict(map,id){
   return id===asPoint(map.castle)||!!map.cells?.[id]?.selectedEncounter||
     map.cells?.[id]?.type==='castle'||map.cells?.[id]?.type==='settlement'||
     (map.industry?.buildings||[]).some(site=>site.id===id)||
-    (map.outposts||[]).some(site=>site.id===id||site.cells?.includes(id))||
+    (map.outposts||[]).some(site=>site.id===id)||
     (map.builtSettlements||[]).some(site=>site.id===id)||
     (map.tradePosts||[]).some(site=>site.id===id);
 }
