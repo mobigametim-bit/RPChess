@@ -74,4 +74,16 @@ assert(html.includes('const releasePages=location.hostname'),'First paint must u
 assert(platform.includes("query.get('rpchess_profile')==='0'"),'D1 release must allow explicit legacy rollback');
 assert(gamepushSource.includes("query.get('rpchess_gamepush')==='0'"),'GamePush release must allow explicit native ads rollback');
 
+// One canonical URL is required: differing query strings create distinct ES
+// module instances with competing map screens, save handlers and selection.
+const kingdomSceneOwners=['roster-app.mjs','travel-choice-app.mjs','arena-app.mjs','settlement-app.mjs'];
+const mapModuleRefs=kingdomSceneOwners.flatMap(filename=>{
+  const source=fs.readFileSync(path.join(game,'js',filename),'utf8');
+  const imports=[...source.matchAll(/\.\/kingdom-map-app\.mjs\?v=([a-zA-Z0-9-]+)/g)].map(match=>match[1]);
+  assert(imports.length>=1,filename+' must import the canonical Kingdom map module');
+  return imports;
+});
+assert.equal(new Set(mapModuleRefs).size,1,
+ 'All Kingdom scene owners must share a single versioned ES module URL');
+
 console.log('Reboot Foundation, profile release flags and noncommercial music exclusion: PASS');
