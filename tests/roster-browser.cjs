@@ -84,8 +84,11 @@ async function assertOneScreen(page,label){
       writeRun({...run,currentCombat:null,activeTravelChoice:null,
         currentTravelChoices:null,combatArtifactChoice:null});
       sessionStorage.removeItem('rpchess.test.legacyTravel');
-      if(!globalThis.RPChessRoster?.openRoster?.())
-        throw new Error('Roster button owner did not open squad');
+      // Same navigation handler as the Travel squad icon. It also clears
+      // the Travel scene's active body state before revealing the squad.
+      globalThis.RPChessTravelChoice?.openRoster?.();
+      if(document.querySelector('[data-roster-screen]')?.hidden!==false)
+        throw new Error('Explicit squad navigation did not reveal Roster');
     });
     await waitForVisible(page,'[data-roster-screen]:not([hidden])','Roster after leaving artifact choice');
     await page.locator('[data-roster-menu]').click();
