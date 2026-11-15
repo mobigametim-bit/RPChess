@@ -120,11 +120,11 @@ class ChessAIAdapter {
       // Opt-in analysis scores are consumed by the weekly move grader.
       // Other AI callers retain exactly their original move-selection behavior.
       if(search.evaluateOnly){
-        const multipv=Number(line.match(/\\bmultipv\\s+(\\d+)/)?.[1]||1);
-        const depth=Number(line.match(/\\bdepth\\s+(\\d+)/)?.[1]||0);
-        const cpMatch=line.match(/\\bscore\\s+cp\\s+(-?\\d+)/);
-        const mateMatch=line.match(/\\bscore\\s+mate\\s+(-?\\d+)/);
-        const pv=line.match(/\\bpv\\s+([a-h][1-8][a-h][1-8][qrbn]?)/i)?.[1]?.toLowerCase()||null;
+        const multipv=Number(line.match(/\bmultipv\s+(\d+)/)?.[1]||1);
+        const depth=Number(line.match(/\bdepth\s+(\d+)/)?.[1]||0);
+        const cpMatch=line.match(/\bscore\s+cp\s+(-?\d+)/);
+        const mateMatch=line.match(/\bscore\s+mate\s+(-?\d+)/);
+        const pv=line.match(/\bpv\s+([a-h][1-8][a-h][1-8][qrbn]?)/i)?.[1]?.toLowerCase()||null;
         if(multipv===1&&depth>=5&&(cpMatch||mateMatch)&&depth>=(search.score?.depth||0)){
           const mate=mateMatch?Number(mateMatch[1]):null;
           search.score={depth,cp:cpMatch?Number(cpMatch[1]):mate>0?1200:-1200,
