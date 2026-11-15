@@ -77,7 +77,7 @@ function image(path,cls='',alt=''){
 }
 function ensure(){
  if(root)return root;
- const link=h('link');link.rel='stylesheet';link.href='css/weekly-defenders.css?v=20261115-a';
+ const link=h('link');link.rel='stylesheet';link.href='css/weekly-defenders.css?v=20261115-mate-freeze-v1';
  document.head.append(link);
  root=h('div','wd-overlay');root.hidden=true;root.dataset.weeklyDefenders='';
  root.innerHTML='<section class="wd-dialog" role="dialog" aria-modal="true" aria-label="Weekly defender">'+
