@@ -47,6 +47,28 @@ const typeToCode={king:'K',queen:'Q',rook:'R',bishop:'B',knight:'N',pawn:'P'};
 let root=null,battleScreen=null,selectedHeroId=null,cellId=null,engine=null,adapter=null;
 let identities=new Map(),capturedIds=new Set(),selectedSquare=null,paused=false,speed=1,skip=false,thinking=false;
 let turnTimer=null,session=0,lastResult=null,movePending=false,paymentModal=null,beforeFenForMove=null;
+let mateCeremonyTimer=null;
+const MATE_CEREMONY_MS=3000;
+function cancelMateCeremony(){
+ clearTimeout(mateCeremonyTimer);mateCeremonyTimer=null;
+ battleScreen?.classList.remove('wd-mate-ceremony');
+}
+function finishWithMateCeremony(){
+ if(!engine||!battleScreen)return;
+ if(engine.status().type!=='checkmate'){finishBattle();return;}
+ if(mateCeremonyTimer!==null)return;
+ // Shared king aura + 90-degree fall are applied by king-mate-polish.css
+ // to the same rpchess-king-* square classes as Classic and Arena.
+ clearTimeout(turnTimer);adapter?.stop?.();thinking=false;paused=true;
+ const stamp=session;
+ battleScreen.classList.add('wd-mate-ceremony');
+ renderBattle();
+ mateCeremonyTimer=setTimeout(()=>{
+  mateCeremonyTimer=null;
+  if(stamp!==session||battleScreen.hidden||engine?.status().type!=='checkmate')return;
+  finishBattle();
+ },MATE_CEREMONY_MS);
+}
 function h(tag,cls='',text=''){
  const e=document.createElement(tag);if(cls)e.className=cls;if(text)e.textContent=text;return e;
 }
@@ -123,6 +145,7 @@ function ensure(){
  return root;
 }
 function close(){
+ cancelMateCeremony();
  if(paymentModal)paymentModal.hidden=true;
  if(battleScreen)battleScreen.hidden=true;
  document.body.classList.remove('compact-combat-active','classic-chess-active','wd-combat-active');
@@ -324,6 +347,7 @@ function resumeWeekly(){
  try{
   const recreated=newEngine(active);engine=recreated.chess;identities=recreated.identities;capturedIds=recreated.lost;
  }catch(e){console.error(e);return false;}
+ cancelMateCeremony();
  session++;paused=false;speed=1;skip=false;thinking=false;lastResult=null;
  adapter?.destroy?.();adapter=new ChessAIAdapter();movePending=false;
  showPane('play');
@@ -369,6 +393,10 @@ function renderBoard(){
   const button=h('button','wd-square classic-square '+(light?'classic-square--light':'classic-square--dark')+
    (sq===selectedSquare?' is-selected':'')+(last&&(last.uci.slice(0,2)===sq||last.uci.slice(2,4)===sq)?' wd-last':''));
   button.type='button';button.dataset.square=sq;button.setAttribute('aria-label',sq);
+  if(snap.status.type==='checkmate'&&piece?.type==='k')
+   button.classList.add(piece.color===snap.status.winner?
+     'rpchess-king-victorious':'rpchess-king-defeated');
+  button.disabled=Boolean(snap.status.over||mateCeremonyTimer!==null);
   if(piece){
    const role=roles[piece.type];let art;
    if(piece.color===active.playerColor){
@@ -396,7 +424,10 @@ function gradeLabel(kind){return GRADE_LABELS[currentLanguage()==='en'?'en':'ru'
 function renderBattle(){
  const active=weeklyState(readRun()).active;if(!active)return;
  setText('[data-wd-battle-info]',active.mode==='auto'?t('battleAuto'):(engine.turn()===active.playerColor?t('battleManual'):t('thinking')));
- setText('[data-wd-board-status]',engine.turn()==='w'?(currentLanguage()==='en'?'White to move':'Ход белых'):(currentLanguage()==='en'?'Black to move':'Ход чёрных'));
+ const status=engine.status();
+ setText('[data-wd-board-status]',status.type==='checkmate'?
+   (currentLanguage()==='en'?'Checkmate':'Мат'):
+   (engine.turn()==='w'?(currentLanguage()==='en'?'White to move':'Ход белых'):(currentLanguage()==='en'?'Black to move':'Ход чёрных')));
  const moves=battleScreen.querySelector('[data-wd-moves]');moves.replaceChildren();
  let journal=[];
  try{journal=reviewMoveJournal(active.moves.map(m=>m.uci),{startFen:active.fen||undefined});}
@@ -419,7 +450,8 @@ function renderBattle(){
 }
 function manualSquare(sq){
  const active=weeklyState(readRun()).active;
- if(!active||active.mode!=='manual'||engine.turn()!==active.playerColor||thinking||movePending)return;
+ if(!active||active.mode!=='manual'||engine.turn()!==active.playerColor||
+   thinking||movePending||mateCeremonyTimer!==null||engine.status().over)return;
  if(!selectedSquare){if(engine.pieceAt(sq)?.color===active.playerColor){selectedSquare=sq;renderBoard();}return;}
  if(sq===selectedSquare){selectedSquare=null;renderBoard();return;}
  const choices=engine.legalMoves(selectedSquare).filter(m=>(m.uciTo||m.to)===sq);
@@ -457,13 +489,17 @@ async function playMove(uci){
  const restored=newEngine(weeklyState(saved.run).active);
  identities=restored.identities;capturedIds=restored.lost;
  renderBattle();
- if(engine.status().over||weeklyState(saved.run).active.moves.length>=400){finishBattle();return;}
+ if(engine.status().over||weeklyState(saved.run).active.moves.length>=400){
+  finishWithMateCeremony();return;
+ }
  scheduleTurn();
  }finally{movePending=false;}
 }
 function scheduleTurn(){
  clearTimeout(turnTimer);
- const run=readRun(),active=weeklyState(run).active;if(!active||!engine||engine.status().over)return;
+ const run=readRun(),active=weeklyState(run).active;if(!active||!engine)return;
+ if(engine.status().over){finishWithMateCeremony();return;}
+ if(mateCeremonyTimer!==null)return;
  if(active.mode==='manual'&&engine.turn()===active.playerColor){renderBattle();return;}
  if(paused)return;
  const stamp=session;
@@ -478,6 +514,7 @@ function scheduleTurn(){
  },skip?0:Math.round(1000/speed));
 }
 function finishBattle(){
+ cancelMateCeremony();
  clearTimeout(turnTimer);session++;adapter?.stop?.();
  const run=readRun(),active=weeklyState(run).active;if(!active)return;
  const status=engine.status();
@@ -579,8 +616,8 @@ function onAction(event){
  if(act==='close')close();
  if(act==='prev'||act==='next')root.querySelector('[data-wd-carousel]').scrollBy({left:(act==='next'?1:-1)*400,behavior:'smooth'});
  if(act==='start')commitStart(false);
- if(act==='pause'){paused=!paused;if(!paused)scheduleTurn();renderBattle();}
- if(act==='speed'){speed=speed===1?2:speed===2?4:1;renderBattle();}
- if(act==='skip'){skip=true;paused=false;scheduleTurn();renderBattle();}
+ if(act==='pause'&&mateCeremonyTimer===null){paused=!paused;if(!paused)scheduleTurn();renderBattle();}
+ if(act==='speed'&&mateCeremonyTimer===null){speed=speed===1?2:speed===2?4:1;renderBattle();}
+ if(act==='skip'&&mateCeremonyTimer===null){skip=true;paused=false;scheduleTurn();renderBattle();}
 }
 export {openWeekly,resumeWeekly};
