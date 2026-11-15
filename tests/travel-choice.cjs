@@ -275,13 +275,14 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   const soloBase=persistence.createRun({id:'kingdom-bandit-regression',now:1700000000000});
   const soloMap=mapCore.createKingdomMap(soloBase,400);
   const ambushPoint={x:1,y:0},ambushId='1,0';
-  const armedCell={status:'revealed',explored:true,selectedEncounter:{type:'skirmish',id:'bandit-hit',step:1}};
-  const solo={...soloBase,army:[],roster:soloBase.roster.filter(x=>x.isRunKing),gold:50,supplies:60,
+  const armedCell={status:'revealed',explored:true,lastEntryFrom:{x:0,y:0},selectedEncounter:{type:'skirmish',id:'bandit-hit',step:1}};
+  const solo={...soloBase,army:[{pieceType:'pawn',raceTag:'humans',count:5}],roster:soloBase.roster.filter(x=>x.isRunKing),gold:50,supplies:60,
     kingdomMap:{...soloMap,pendingCell:ambushId,king:{...ambushPoint},cells:{...soloMap.cells,[ambushId]:armedCell}}};
   assert(bandits.isUnprotectedBanditAmbush(solo),'a solo King receives a robber ambush');
   const robbed=bandits.resolveUnprotectedBanditAmbush(solo);
   assert(robbed.ok&&robbed.kind==='robbed'&&robbed.run.gold===10&&robbed.run.supplies===10&&
-    robbed.run.kingdomMap.pendingCell===null&&!robbed.run.ended,
+    robbed.run.kingdomMap.pendingCell===null&&!robbed.run.ended&&
+    robbed.run.kingdomMap.king.x===0&&robbed.run.kingdomMap.king.y===0,
     'bandits leave exactly ten Gold and ten Supplies');
   assert(!bandits.resolveUnprotectedBanditAmbush(robbed.run).ok,'robbery is single-use');
   const killed=bandits.resolveUnprotectedBanditAmbush({...solo,gold:9,supplies:60});
@@ -542,6 +543,50 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   assert.strictEqual(mapCore.territoryCapacity(outpost.map),mapCore.territoryCapacity(startMap),
     'remote outpost does not spend or inflate main-castle land capacity');
   const across={...remoteMap,royalRoads:[{id:'crossing',from:(remote.x-1)+','+remote.y,to:(remote.x+1)+','+remote.y,bend:0}]};
+  // Trade tents: genuine owned three-way roads only, with paid weekly receipts.
+  const trade=await import(pathToFileURL(path.join(game,'js/kingdom-trade-core.mjs')).href);
+  const junction={x:1,y:0},junctionId='1,0';
+  const crossroads={...startMap,
+    centralOwnedCells:[...new Set([...(startMap.centralOwnedCells||[]),'0,0','1,0','2,0','1,1'])],
+    royalRoadsVersion:3,tradePosts:[],tradeProcessedWeek:0,
+    royalRoads:[
+      {id:'test:trade:west',from:'0,0',to:'1,0',bend:0},
+      {id:'test:trade:east',from:'1,0',to:'2,0',bend:0},
+      {id:'test:trade:south',from:'1,0',to:'1,1',bend:0}
+    ]};
+  assert(trade.canBuildTradePost(crossroads,junction),'owned three-way road permits trading tent');
+  assert(!trade.canBuildTradePost(crossroads,{x:1,y:2}),'arbitrary tiles reject trading tents');
+  const builtTent=trade.buildTradePost(crossroads,junction);
+  assert(builtTent.ok&&builtTent.post.level>=1&&builtTent.post.level<=5);
+  assert(mapCore.validateKingdomMap(builtTent.map),'tent is saved as valid Kingdom data');
+  assert(!trade.canBuildTradePost(builtTent.map,junction),'one tent per crossing');
+  let tentWeek=builtTent.map;
+  for(let day=2;day<=7;day++)tentWeek=mapCore.advanceDay(tentWeek,'test:trade:'+day);
+  const goldReady=trade.pendingTradeGold(tentWeek,junctionId);
+  assert.strictEqual(goldReady,3*builtTent.post.level,'income is 3× frozen site level per week');
+  assert.strictEqual(trade.pendingTradeGold(mapCore.settleWeeklyProduction(tentWeek),junctionId),goldReady,
+    'replaying weekly settlement does not credit tents twice');
+  const claimed=trade.collectTradeGold(tentWeek,junctionId);
+  assert(claimed.ok&&claimed.amount===goldReady);
+  assert(!trade.collectTradeGold(claimed.map,junctionId).ok,'pickup receipt is single-use');
+  const trader={...soloBase,gold:100,supplies:10,kingdomMap:{
+    ...claimed.map,king:{x:1,y:0},pendingCell:null}};
+  assert.strictEqual(trade.tradeLimits(trader,junctionId).buySupplies,6);
+  const bought=trade.exchangeAtTradePost(trader,junctionId,'buy',2);
+  assert(bought.ok&&bought.run.gold===70&&bought.run.supplies===12);
+  const sold=trade.exchangeAtTradePost(bought.run,junctionId,'sell',3);
+  assert(sold.ok&&sold.run.gold===88&&sold.run.supplies===9);
+  assert(!trade.exchangeAtTradePost(trader,junctionId,'buy',7).ok);
+  assert(!trade.exchangeAtTradePost({...trader,kingdomMap:{...trader.kingdomMap,king:{x:0,y:0}}},junctionId,'sell',1).ok,
+    'trading is only allowed while the King stands on the tent');
+  assert(!trade.canBuildTradePost({...crossroads,industry:{...crossroads.industry,
+    buildings:[{id:junctionId,kind:'farm',builtWeek:1}]}},junction),
+    'industry blocks construction of trading tents');
+  assert(fs.existsSync(path.join(game,'assets/ui/trading-tent-64.png')),
+    'user-provided 64px tent sprite exists');
+  assert(buildSource.includes("'assets/ui/trading-tent-64.png'")&&
+    buildSource.includes("'js/kingdom-trade-core.mjs'"),
+    'runtime build must include tent artwork and logic');
   const industryCore=await import(pathToFileURL(path.join(game,'js/kingdom-industry-core.mjs')).href);
   assert(industryCore.siteHasGeographyConflict(across,remote.x,remote.y),
     'the crossing still blocks automated production buildings');
