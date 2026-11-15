@@ -46,6 +46,24 @@ async function assertOneScreen(page,label){
       'selected King displays King role glyph, not Command Points');
     assert.strictEqual(await page.locator('[data-roster-detail] .roster-detail__facts small').count(),0,
       'old Command Points frame and label must be absent');
+    // Army tab has no left detail frame, no racial sections and no empty types.
+    await page.evaluate(async()=>{
+      const {readRun,writeRun}=await import('./js/run-persistence.mjs');
+      writeRun({...readRun(),army:[
+        {raceTag:'orcs',pieceType:'pawn',count:2},
+        {raceTag:'humans',pieceType:'knight',count:1}
+      ]});
+      dispatchEvent(new CustomEvent('rpchess:run-updated'));
+    });
+    await page.locator('[data-roster-arm-tab="army"]').click();
+    assert.deepStrictEqual(await page.locator('.roster-army-tile span').allTextContents(),
+      ['Пешка','Пешка','Конь'],'Army must render only the three owned recruits in chess order');
+    assert.strictEqual(await page.locator('.roster-army-race').count(),0,'Army must not group recruits by race');
+    assert.equal(await page.locator('[data-roster-detail]').evaluate(e=>getComputedStyle(e).display),'none',
+      'Army must not retain the left hero-detail frame');
+    await page.locator('[data-roster-arm-tab="named"]').click();
+    assert.strictEqual(await page.locator('[data-roster-slot]').count(),16,
+      'returning to Heroes restores the editable formation grid');
     // First tap selects the hero, second tap chooses an empty destination.
     const aldricSquare=await page.locator('[data-roster-slot]:has([data-roster-piece="hero.aldric_wall"])').getAttribute('data-roster-slot');
     await page.locator(`[data-roster-slot="${aldricSquare}"]`).click();
