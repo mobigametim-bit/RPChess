@@ -59,8 +59,10 @@ function startWeeklyBattle(run,id,heroId,{acceptDebt=false}={}){
  const map={...run.kingdomMap,cells:{...run.kingdomMap.cells,[id]:nextCell}};
  const active={receiptId,week,cellId:id,heroId,heroName:hero.name,mode,
   playerColor:plan.playerColor,enemyLevel:threatLevel(cell.selectedEncounter.stars),
-  heroLevel:threatLevel(hero.threatLevel),paid:payment,selectionIds:plan.selectedIds,
-  formation:plan.playerFormation,moves:[],status:'playing'};
+  heroLevel:normalizeHeroMastery(hero).threatLevel,heroXp:normalizeHeroMastery(hero).threatXp,
+  paid:payment,selectionIds:plan.selectedIds,formation:plan.playerFormation,
+  enemyFormation:plan.enemyFormation,encounter:plan.encounter,fen:plan.fen,
+  moves:[],status:'playing'};
  const roster=run.roster.map(c=>c.id===heroId?
    {...normalizeHeroMastery(c),weeklyCommandedWeek:week}:c);
  return {ok:true,run:{...run,kingdomMap:map,roster,
@@ -106,8 +108,12 @@ function settleWeeklyBattle(run,{result,capturedIds=[]}={}){
  const next={...armyLoss.run,roster,gold:armyLoss.run.gold+gold,
   ended:Boolean(run.ended||kingDied),endReason:kingDied?'weekly-mercenary-debt':run.endReason,
   weeklyDefenders:{active:null,receipts:[...state.receipts,active.receiptId].slice(-6000)}};
+ const winner=roster.find(c=>c.id===active.heroId);
  return {ok:true,run:next,receiptId:active.receiptId,results:{result,gold,mastery,killed,
-  capturedIds:[...new Set(capturedIds)],heroId:active.heroId,kingDied}};
+  capturedIds:[...new Set(capturedIds)],heroId:active.heroId,kingDied,
+  beforeLevel:active.heroLevel,beforeXp:active.heroXp||0,
+  afterLevel:winner?.threatLevel||active.heroLevel,
+  afterXp:winner?.threatXp||0,stats:winner?.weeklyBattleStats||null}};
 }
 export {FREE_KING,weeklyState,eligibleWeeklySite,canCommand,weeklyArmyPlan,
  weeklyQuote,startWeeklyBattle,recordWeeklyMove,settleWeeklyBattle};
