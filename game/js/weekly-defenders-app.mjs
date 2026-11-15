@@ -83,6 +83,7 @@ function ensure(){
  return root;
 }
 function close(){
+ if(paymentModal)paymentModal.hidden=true;
  // Suspending is safe: every played half-move and the week receipt are saved.
  if(weeklyState(readRun()).active){
   paused=true;session++;clearTimeout(turnTimer);adapter?.stop?.();
@@ -159,24 +160,76 @@ function openWeekly(id){
  if(!eligibleWeeklySite(run.kingdomMap,id))return false;
  ensure();cellId=id;selectedHeroId=null;root.hidden=false;renderSetup();return true;
 }
+// Use the approved Battle mercenary dialog DOM and CSS, not a parallel design.
+function ensurePaymentModal(){
+ if(paymentModal)return paymentModal;
+ if(!document.querySelector('[data-mercenary-hire-style],[data-wd-hire-style]')){
+  const link=h('link');link.rel='stylesheet';
+  link.href='css/battle-mercenary-dialog.css?v=20261114-travel-overlay-v2';
+  link.dataset.wdHireStyle='';document.head.append(link);
+ }
+ paymentModal=h('div','rpchess-mercenary-modal');paymentModal.hidden=true;
+ paymentModal.dataset.weeklyHireOverlay='';
+ paymentModal.innerHTML='<div class="rpchess-mercenary-layout">'+
+  '<img class="rpchess-mercenary-portrait" alt="" data-wd-orc>'+
+  '<section class="rpchess-mercenary-panel" role="dialog" aria-modal="true">'+
+  '<h2 class="rpchess-mercenary-title" data-wd-hire-title></h2>'+
+  '<div class="rpchess-mercenary-tip"><span class="rpchess-mercenary-dot" aria-hidden="true"></span>'+
+  '<div data-wd-hire-content></div></div>'+
+  '<div class="rpchess-mercenary-actions" data-wd-hire-actions></div></section></div>';
+ document.body.append(paymentModal);
+ paymentModal.querySelector('[data-wd-orc]').src='assets/ui/orc-mercenary-recruiter.png?v=20261114-original-512';
+ paymentModal.addEventListener('click',event=>{
+  const action=event.target.closest('[data-wd-hire-action]')?.dataset.wdHireAction;
+  if(!action)return;
+  paymentModal.hidden=true;
+  if(action==='no'){root.hidden=false;renderSetup();return;}
+  if(action==='yes'){root.hidden=false;commitStart(true);}
+ });
+ return paymentModal;
+}
 function renderPayment(offer){
- showPane('payment');
- const container=root.querySelector('[data-wd-payment]');container.replaceChildren();
- container.append(h('h3','',t('mercenary')),h('p','',t('warning')));
- const row=h('div','wd-payment-row');
- for(const [name,count] of Object.entries(offer.quote.counts).filter(([,n])=>n)){
-  const tag=h('span','wd-merc');tag.append(image('assets/pieces/fantasy/w'+typeToCode[name]+'.svg'),h('b','',name+' ×'+count));row.append(tag);
+ const modal=ensurePaymentModal(),english=currentLanguage()==='en';
+ root.hidden=true;modal.hidden=false;
+ modal.querySelector('[data-wd-hire-title]').textContent=english?
+  '"At your service, Your Majesty! For a fair price, of course…"':
+  '«Мы к вашим услугам, Ваше Величество! За подходящую плату, конечно...»';
+ const content=modal.querySelector('[data-wd-hire-content]');content.replaceChildren();
+ const roster=h('div','rpchess-mercenary-roster');
+ let count=0;
+ function plus(text){roster.append(h('span','rpchess-mercenary-plus',text));}
+ for(const type of ['queen','rook','bishop','knight','pawn']){
+  const n=offer.quote.counts[type]||0;if(!n)continue;
+  if(count++)plus('+');
+  const item=h('span','rpchess-mercenary-piece'),art=image(boardRacePiecePath('orcs',type,'w'),'');
+  const quantity=h('strong','',n>1?'×'+n:'');
+  art.title=(english?{queen:'Queen',rook:'Rook',bishop:'Bishop',knight:'Knight',pawn:'Pawn'}:
+   {queen:'Ферзь',rook:'Ладья',bishop:'Слон',knight:'Конь',pawn:'Пешка'})[type];
+  item.append(art,quantity);roster.append(item);
  }
- container.append(row);
- container.append(h('p','',t('cost')+': '+offer.quote.totalCost+' · '+t('fromGold')+': '+offer.payment.chargedGold+' · '+t('fromSupplies')+': '+offer.payment.chargedSupplies));
- if(offer.payment.unpaidValue){
-  const danger=h('div','wd-debt',t('debt')+offer.hero.name);
-  if(offer.hero.isRunKing)danger.append(h('p','',t('kingDebt')));
-  container.append(danger);
+ plus('=');
+ const amounts=[
+  [offer.payment.chargedGold,'generated_assets/reward_gold.png',english?'Gold':'Золото'],
+  [offer.payment.chargedSupplies,'generated_assets/reward_supplies.png',english?'Supplies':'Припасы']
+ ];
+ amounts.forEach(([n,art,label],i)=>{
+  if(i)plus('+');
+  const item=h('span','rpchess-mercenary-cost');
+  item.append(h('strong','',String(n)),image(art,'',label));roster.append(item);
+ });
+ content.append(roster);
+ if(offer.payment.unpaidValue>0){
+  content.append(h('p','wd-debt',t('debt')+offer.hero.name+
+   (offer.hero.isRunKing?' '+t('kingDebt'):'')));
  }
- const actions=h('div','wd-buttons'),cancel=h('button','wd-button',t('cancel')),accept=h('button','wd-button wd-primary',t('confirm'));
- cancel.onclick=()=>renderSetup();accept.onclick=()=>commitStart(true);
- actions.append(cancel,accept);container.append(actions);
+ content.append(h('p','',t('warning')));
+ const actions=modal.querySelector('[data-wd-hire-actions]');actions.replaceChildren();
+ const no=h('button','','✕'),yes=h('button','','✓');
+ no.type=yes.type='button';no.dataset.wdHireAction='no';yes.dataset.wdHireAction='yes';
+ no.title=no.getAttribute('aria-label')||t('cancel');no.setAttribute('aria-label',t('cancel'));
+ yes.title=t('confirm');yes.setAttribute('aria-label',t('confirm'));
+ actions.append(no,yes);
+ yes.focus();
 }
 function commitStart(accepted){
  const run=readRun();if(!run||!selectedHeroId)return;
