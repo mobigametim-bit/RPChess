@@ -86,4 +86,14 @@ const mapModuleRefs=kingdomSceneOwners.flatMap(filename=>{
 assert.equal(new Set(mapModuleRefs).size,1,
  'All Kingdom scene owners must share a single versioned ES module URL');
 
+// The battle router imports the Settlement scene eagerly. Dynamic entry
+// points must share its exact unversioned URL to avoid duplicate scene owners.
+for(const filename of ['battle-route.mjs','roster-app.mjs','kingdom-map-app.mjs']){
+  const ownerSource=fs.readFileSync(path.join(game,'js',filename),'utf8');
+  const refs=[...ownerSource.matchAll(/['"]\.\/settlement-app\.mjs(?:\?v=[^'"]+)?['"]/g)]
+    .map(match=>match[0]);
+  assert(refs.length>=1&&refs.every(ref=>ref.includes("./settlement-app.mjs'")),
+    'Settlement scene must have one ES-module owner: '+filename);
+}
+
 console.log('Reboot Foundation, profile release flags and noncommercial music exclusion: PASS');
