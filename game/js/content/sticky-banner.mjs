@@ -12,6 +12,9 @@ const QUIET_SCENES=Object.freeze({
 });
 let installed=false,observer=null,bodyObserver=null,scheduled=false,wanted=false,currentScene='none';
 let lifecycleActive=true,lastAttempt='not-requested',lastResult='idle';
+// Rendering, resize and mutations can fire repeatedly on the same scene.
+// Never repeat a rejected banner request until scene/provider state changes.
+let attemptedScene=null,attemptedProviderState=null;
 let diagnosticPanel=null;
 const previewHost=globalThis.location?.hostname==='rpchess-vk-sticky-preview.mobigametim.workers.dev';
 const STATUS_TEXT={
@@ -100,12 +103,22 @@ function chooseStickyScene(){
   }
   return null;
 }
+function bannerProviderState(){
+  const d=platform.ads.banner.diagnostics;
+  return [d.selectedBackend,d.gpStatus,d.gpStickyAvailable?'1':'0',
+    d.vkHostConfirmed?'1':'0'].join('|');
+}
+function shouldAttemptBanner(scene,providerState,wasScene,wasProviderState,active){
+  return Boolean(scene) && !active &&
+    (scene!==wasScene||providerState!==wasProviderState);
+}
 async function reconcile(){
   const scene=chooseStickyScene();
   currentScene=scene||'none';
   const allow=Boolean(scene);
   renderDiagnostics();
   if(!allow){
+    attemptedScene=null;attemptedProviderState=null;
     if(wanted||platform.ads.banner.active){
       wanted=false;
       await platform.ads.banner.hide();
@@ -114,7 +127,12 @@ async function reconcile(){
     renderDiagnostics();
     return;
   }
-  if(wanted && platform.ads.banner.active)return;
+  const providerState=bannerProviderState();
+  if(!shouldAttemptBanner(scene,providerState,attemptedScene,
+    attemptedProviderState,platform.ads.banner.active))return;
+  // Set before await so overlapping scene/resize callbacks cannot queue
+  // duplicate show requests for the same provider state.
+  attemptedScene=scene;attemptedProviderState=providerState;
   wanted=true;
   try{
     const result=await platform.ads.banner.show();
@@ -160,4 +178,4 @@ function installStickyBanner(){
   schedule();
 }
 
-export {chooseStickyScene,installStickyBanner};
+export {chooseStickyScene,shouldAttemptBanner,installStickyBanner};
