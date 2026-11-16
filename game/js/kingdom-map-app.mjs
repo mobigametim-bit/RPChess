@@ -463,21 +463,23 @@ function screenReady(){
  <button class="km-inspector-action" type="button" data-kingdom-build-trade hidden></button>
  <button class="km-inspector-action km-inspector-action--arena" type="button" data-kingdom-earn-shards hidden></button></div>
  <div class="km-trade-controls" data-kingdom-trade-controls hidden>
-  <section class="km-trade-row km-trade-row--buy" data-kingdom-trade-buy-label>
-    <div class="km-trade-offer">
-     <span class="km-trade-supply"><img src="generated_assets/reward_supplies.png" alt="" aria-hidden="true"><strong>+1</strong></span>
-     <span class="km-trade-arrow" aria-hidden="true">←</span>
-     <output class="km-trade-gold"><strong data-kingdom-trade-buy-count>15</strong><img src="generated_assets/reward_gold.png" alt="" aria-hidden="true"></output>
-    </div>
-    <button class="reboot-button reboot-button--primary" type="button" data-kingdom-trade-buy-apply></button>
-  </section>
   <section class="km-trade-row km-trade-row--sell" data-kingdom-trade-sell-label>
-    <div class="km-trade-offer">
-     <span class="km-trade-supply"><img src="generated_assets/reward_supplies.png" alt="" aria-hidden="true"><strong>−1</strong></span>
-     <span class="km-trade-arrow" aria-hidden="true">→</span>
-     <output class="km-trade-gold"><strong data-kingdom-trade-sell-count>6</strong><img src="generated_assets/reward_gold.png" alt="" aria-hidden="true"></output>
-    </div>
-    <button class="reboot-button reboot-button--primary" type="button" data-kingdom-trade-sell-apply></button>
+   <div class="km-trade-slider-wrap">
+    <input id="km-trade-sell" class="km-trade-slider km-trade-slider--supplies" type="range" min="0" max="0" step="1" value="0" data-kingdom-trade-sell>
+    <output for="km-trade-sell" data-kingdom-trade-sell-selected>0</output>
+   </div>
+   <button class="reboot-button reboot-button--primary km-trade-action" type="button" data-kingdom-trade-sell-apply>
+    <strong data-kingdom-trade-sell-count>0</strong><img src="generated_assets/reward_gold.png" alt="" aria-hidden="true">
+   </button>
+  </section>
+  <section class="km-trade-row km-trade-row--buy" data-kingdom-trade-buy-label>
+   <div class="km-trade-slider-wrap">
+    <input id="km-trade-buy" class="km-trade-slider km-trade-slider--gold" type="range" min="0" max="0" step="15" value="0" data-kingdom-trade-buy>
+    <output for="km-trade-buy" data-kingdom-trade-buy-selected>0</output>
+   </div>
+   <button class="reboot-button reboot-button--primary km-trade-action" type="button" data-kingdom-trade-buy-apply>
+    <strong data-kingdom-trade-buy-count>0</strong><img src="generated_assets/reward_supplies.png" alt="" aria-hidden="true">
+   </button>
   </section>
  </div><p class="km-hint" data-kingdom-hint></p></aside></section></div>`;
  screen.style.setProperty('--km-event-size-px',(MAP_LAYOUT.cellPx*MAP_LAYOUT.eventScalePercent/100)+'px');
@@ -501,7 +503,9 @@ function screenReady(){
  screen.querySelector('[data-kingdom-outpost]').addEventListener('click',constructOutpost);
  screen.querySelector('[data-kingdom-build-settlement]').addEventListener('click',constructSettlement);
  screen.querySelector('[data-kingdom-build-trade]').addEventListener('click',constructTradePost);
- for(const direction of ['buy','sell']){
+ for(const direction of ['sell','buy']){
+   const slider=screen.querySelector('[data-kingdom-trade-'+direction+']');
+   slider.addEventListener('input',()=>updateTradeSlider(direction));
    screen.querySelector('[data-kingdom-trade-'+direction+'-apply]')
      .addEventListener('click',()=>applyTradeExchange(direction));
  }
@@ -1089,11 +1093,14 @@ function render(){
  const limits=tradeLimits(run,selectedId);
  controls.hidden=!limits.available;
  if(limits.available){
-  for(const direction of ['buy','sell']){
-   screen.querySelector('[data-kingdom-trade-'+direction+'-label]')
-     .setAttribute('aria-label',tr(direction==='buy'?'tradeBuy':'tradeSell'));
-   screen.querySelector('[data-kingdom-trade-'+direction+'-apply]').textContent=tr('tradeExchange');
-   updateTradeOffer(direction,limits);
+  for(const direction of ['sell','buy']){
+   const slider=screen.querySelector('[data-kingdom-trade-'+direction+']');
+   slider.max=String(direction==='sell'?limits.sellSupplies:limits.buySupplies*GOLD_TO_SUPPLY);
+   slider.disabled=Number(slider.max)<1;
+   const value=Number(slider.value),step=Number(slider.step);
+   slider.value=String(slider.disabled?0:Math.min(Number(slider.max),Math.max(step,value||step)));
+   slider.setAttribute('aria-label',tr(direction==='sell'?'tradeSell':'tradeBuy'));
+   updateTradeSlider(direction);
   }
  }
   const hint=screen.querySelector('[data-kingdom-hint]');
@@ -1324,23 +1331,36 @@ function refreshEconomyControls(){
   if(earn)earn.hidden=!place||!needs;
  }
 }
-// A trade is one supply per click: no slider or arbitrary amount to obscure
-// the cost. The exchange core remains the single authority for prices/limits.
-function updateTradeOffer(direction,limits){
- const amount=direction==='buy'?GOLD_TO_SUPPLY:SUPPLY_TO_GOLD;
- const output=screen?.querySelector('[data-kingdom-trade-'+direction+'-count]');
+// The top slider spends Supplies and returns Gold; the bottom spends Gold
+// (in multiples of 15) and returns Supplies. The thumb itself is resource art.
+function updateTradeSlider(direction){
+ const slider=screen?.querySelector('[data-kingdom-trade-'+direction+']');
+ const selectedOutput=screen?.querySelector('[data-kingdom-trade-'+direction+'-selected]');
+ const rewardOutput=screen?.querySelector('[data-kingdom-trade-'+direction+'-count]');
  const button=screen?.querySelector('[data-kingdom-trade-'+direction+'-apply]');
- if(!output||!button)return;
- output.textContent=String(amount);
- const description=tr(direction==='buy'?'tradeBuy':'tradeSell');
- button.title=description;button.setAttribute('aria-label',description);
- button.disabled=!limits?.available||(direction==='buy'?limits.buySupplies:limits.sellSupplies)<1;
+ if(!slider||!selectedOutput||!rewardOutput||!button)return;
+ const budget=Math.min(Number(slider.max)||0,Math.max(0,Number(slider.value)||0));
+ const spend=direction==='sell'?budget:Math.floor(budget/GOLD_TO_SUPPLY)*GOLD_TO_SUPPLY;
+ const reward=direction==='sell'?spend*SUPPLY_TO_GOLD:spend/GOLD_TO_SUPPLY;
+ selectedOutput.textContent=String(spend);
+ rewardOutput.textContent=String(reward);
+ const label=lang()==='en'?
+  (direction==='sell'?'Sell '+spend+' Supplies for '+reward+' Gold':
+   'Spend '+spend+' Gold for '+reward+' Supplies'):
+  (direction==='sell'?'Продать '+spend+' припасов за '+reward+' золота':
+   'Обменять '+spend+' золота на '+reward+' припасов');
+ button.disabled=reward<1;
  button.setAttribute('aria-disabled',String(button.disabled));
+ button.title=label;button.setAttribute('aria-label',label);
+ slider.setAttribute('aria-valuetext',label);
 }
 function applyTradeExchange(direction){
  const run=readRun(),id=selected||'';
  if(!run)return;
- const result=exchangeAtTradePost(run,id,direction,1);
+ const slider=screen?.querySelector('[data-kingdom-trade-'+direction+']');
+ const budget=Math.max(0,Number(slider?.value)||0);
+ const amount=direction==='sell'?budget:budget/GOLD_TO_SUPPLY;
+ const result=exchangeAtTradePost(run,id,direction,amount);
  if(!result.ok)return;
  writeRun(result.run);render();
  globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated',{detail:{source:'kingdom-trade-exchange'}}));
