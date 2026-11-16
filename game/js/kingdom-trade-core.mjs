@@ -3,7 +3,7 @@
  * only when physically standing on his own trading-tent tile. */
 import {visibleRoyalRoads,ownedKeys} from './kingdom-road-network.mjs';
 import {naturalTileOccupancy} from './kingdom-geography.mjs';
-import {hashString} from './travel-choice-core.mjs';
+import {industryLevel} from './kingdom-industry-core.mjs';
 
 const KEY=/^-?\d+,-?\d+$/;
 const GOLD_PER_LEVEL=3,GOLD_TO_SUPPLY=15,SUPPLY_TO_GOLD=6;
@@ -33,10 +33,14 @@ function junctionType(map,id){
   }
   return null;
 }
-function tradeLevel(map,id){
-  // A road junction has no encounter-stars card. Freeze a persistent,
-  // point-specific I-V level at construction, not the current king's Power.
-  return 1+(hashString(map.seed+':trade-level:'+id)%5);
+function tradeLevel(map){
+  // Trading tents are production buildings: never above the castle.
+  return industryLevel(map);
+}
+function synchronizeTradeLevels(map){
+  const level=tradeLevel(map),posts=map?.tradePosts||[];
+  if(!posts.some(site=>site.level!==level))return map;
+  return {...map,tradePosts:posts.map(site=>site.level===level?site:{...site,level})};
 }
 function hasTradeConflict(map,id){
   return id===asPoint(map.castle)||!!map.cells?.[id]?.selectedEncounter||
@@ -70,12 +74,12 @@ function initializeTrade(map){
 function buildTradePost(map,point){
   if(!canBuildTradePost(map,point))return {ok:false,map};
   const id=asPoint(point),initialized=initializeTrade(map),week=weekForDay(map.day);
-  const post={id,level:tradeLevel(map,id),builtWeek:week,pendingGold:0};
+  const post={id,level:tradeLevel(initialized),builtWeek:week,pendingGold:0};
   return {ok:true,post,map:{...initialized,tradePosts:[...initialized.tradePosts,post],
     tradeProcessedWeek:Math.max(initialized.tradeProcessedWeek,week)}};
 }
 function settleTradeWeek(map,week=weekForDay(map?.day)){
-  const initialized=initializeTrade(map);
+  const initialized=synchronizeTradeLevels(initializeTrade(map));
   if(week<=initialized.tradeProcessedWeek)return initialized;
   const posts=initialized.tradePosts.map(site=>({
     ...site,pendingGold:site.pendingGold+
@@ -118,6 +122,6 @@ function exchangeAtTradePost(run,id,direction,amount){
   }
   return {ok:false,run};
 }
-export {GOLD_PER_LEVEL,GOLD_TO_SUPPLY,SUPPLY_TO_GOLD,junctionType,tradeLevel,
+export {GOLD_PER_LEVEL,GOLD_TO_SUPPLY,SUPPLY_TO_GOLD,junctionType,tradeLevel,synchronizeTradeLevels,
   canBuildTradePost,validTradePosts,initializeTrade,buildTradePost,settleTradeWeek,
   pendingTradeGold,collectTradeGold,tradeLimits,exchangeAtTradePost};
