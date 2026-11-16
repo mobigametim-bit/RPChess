@@ -852,6 +852,7 @@ function render(){
    }
    if(resourceBurst?.id===id){
     const group=document.createElement('span');group.className='km-resource-bursts';
+    if(resourceBurst.origin==='king')group.classList.add('km-resource-bursts--king');
     group.setAttribute('role','status');
     resourceBurst.changes.forEach((change,index)=>{
      const burst=document.createElement('span');burst.className='km-resource-burst';
@@ -1118,13 +1119,18 @@ function onWorldClick(event){
   claimWeekly(marker.dataset.kingdomCollect);return;}
  onCell(event);
 }
-function showEconomyBurst(id,kind,amount){
- const icon={gold:GOLD_ICON,supplies:SUPPLIES_ICON,shards:SHARD_ICON}[kind];
- if(!icon)return;
- resourceBurst={id,changes:[{kind,icon,delta:amount}]};
+function showEconomyBursts(id,changes,origin='waypoint'){
+ const icons={gold:GOLD_ICON,supplies:SUPPLIES_ICON,shards:SHARD_ICON};
+ const visible=changes.filter(change=>change.delta!==0&&icons[change.kind])
+  .map(change=>({...change,icon:icons[change.kind]}));
+ if(!visible.length)return;
+ resourceBurst={id,changes:visible,origin};
  clearTimeout(resourceTimer);
  resourceTimer=setTimeout(()=>{resourceBurst=null;
   if(screen&&!screen.hidden)render();},RESOURCE_FX_MS);
+}
+function showEconomyBurst(id,kind,amount){
+ showEconomyBursts(id,[{kind,delta:amount}]);
 }
 let weeklyOpening=false;
 async function beginWeeklyPuzzle(id,item){
@@ -1362,7 +1368,17 @@ function applyTradeExchange(direction){
  const amount=direction==='sell'?budget:budget/GOLD_TO_SUPPLY;
  const result=exchangeAtTradePost(run,id,direction,amount);
  if(!result.ok)return;
- writeRun(result.run);render();
+ writeRun(result.run);
+ // Reuse the waypoint's existing icon + signed amount flyout.
+ // Both the spent and received resources fly up from the king's cell.
+ const king=result.run.kingdomMap.king;
+ showEconomyBursts(keyOf(king.x,king.y),[
+  {kind:direction==='sell'?'supplies':'gold',
+   delta:direction==='sell'?result.supplyDelta:result.goldDelta},
+  {kind:direction==='sell'?'gold':'supplies',
+   delta:direction==='sell'?result.goldDelta:result.supplyDelta}
+ ],'king');
+ render();
  globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated',{detail:{source:'kingdom-trade-exchange'}}));
 }
 function constructTradePost(){
