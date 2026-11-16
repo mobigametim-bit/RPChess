@@ -79,8 +79,14 @@ let verifiedVKHost = false;
 
 // Desktop VK can embed the game without launch parameters or a referrer. Verify
 // the parent bridge before enabling VK-only storage; a direct Pages tab stays local.
-async function discoverVKHost({ timeoutMs = 1800 } = {}) {
-  if (isVKLaunch()) return true;
+async function discoverVKHost({ timeoutMs = 1800, requireTrustedOrigin = false } = {}) {
+  if (requireTrustedOrigin) {
+    if (verifiedVKHost || isKnownVKAppHosting()
+      || /(^|\\.)vk\\.(com|ru)$/i.test(referrerHost())
+      || Boolean(globalThis.AndroidBridge?.VKWebAppInit)
+      || Boolean(globalThis.webkit?.messageHandlers?.VKWebAppInit?.postMessage))
+      return true;
+  } else if (isVKLaunch()) return true;
   if (!globalThis.parent || globalThis.parent === globalThis || !globalThis.addEventListener) return false;
   const requestId = nextRequestId();
   return new Promise(resolve => {
@@ -494,7 +500,10 @@ function stickyHostAllowed() {
   return confirmedVKAdHost() || isKnownVKAppHosting();
 }
 async function showNativeSticky(){
-  if(!stickyHostAllowed())return stickyRecord('vk-host-unverified');
+  if(!stickyHostAllowed()){
+    await discoverVKHost({requireTrustedOrigin:true});
+    if(!stickyHostAllowed())return stickyRecord('vk-host-unverified');
+  }
   try {
     // The desktop VK host may not report all supported methods in the
     // SetSupportedHandlers list. For a verified VK host, attempt the real
@@ -767,8 +776,14 @@ const platform = Object.freeze({
       // Native VK is not initialized concurrently with a healthy GamePush SDK.
       // If SDK player auth fails (e.g. VK userId not found), restore the
       // existing ad mechanism without changing RPChess ID/D1 persistence.
-      void gamepushSdk.init().then(ready=>{
-        if(!ready && confirmedVKAdHost())sendVKWebAppInit();
+      void gamepushSdk.init().then(async ready=>{
+        if(ready)return;
+        // SDK auth failures on developer URLs often arrive without referrer
+        // or launch params. A trusted parent-origin handshake can establish
+        // VK ownership without enabling two ad SDKs simultaneously.
+        await discoverVKHost({requireTrustedOrigin:true});
+        if(confirmedVKAdHost())sendVKWebAppInit();
+        globalThis.dispatchEvent?.(new Event('rpchess:vk-ad-host-verified'));
       }).catch(()=>{});
       return true;
     }
