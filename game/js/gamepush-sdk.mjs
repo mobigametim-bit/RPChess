@@ -208,6 +208,25 @@ async function showAd(format) {
   }
 }
 
+// Sticky is a non-rewarding placement managed by the active platform alone.
+// Do not emulate it with an HTML ad block or retry through another provider.
+async function showSticky() {
+  if(state!=='ready'||sdk?.ads?.isStickyAvailable!==true||
+     typeof sdk.ads.showSticky!=='function')return Object.freeze({status:'unavailable'});
+  try {
+    await sdk.ads.showSticky();
+    return Object.freeze({status:'shown'});
+  }catch {return Object.freeze({status:'error'});}
+}
+async function hideSticky() {
+  if(state!=='ready'||typeof sdk?.ads?.closeSticky!=='function')
+    return Object.freeze({status:'hidden'});
+  try {
+    await sdk.ads.closeSticky();
+    return Object.freeze({status:'hidden'});
+  }catch{return Object.freeze({status:'error'});}
+}
+
 const gamepushSdk = Object.freeze({
   get enabled() { return isEnabled(); },
   get ready() { return state === 'ready'; },
@@ -232,7 +251,10 @@ const gamepushSdk = Object.freeze({
   ads:Object.freeze({
     supported:adsAvailable,
     check:adsAvailable,
-    show:showAd
+    show:showAd,
+    get stickyAvailable(){return state==='ready'&&sdk?.ads?.isStickyAvailable===true;},
+    showSticky,
+    hideSticky
   })
 });
 
