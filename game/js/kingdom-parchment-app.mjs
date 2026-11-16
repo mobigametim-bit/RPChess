@@ -222,41 +222,90 @@ function fallbackSymbol(ctx,kind,x,y,size,seed){
 // Roads and rivers are drawn as continuous world-coordinate Canvas strokes.
 // No road_segments / river_segments assets or sprite-layer overlays are used.
 function drawWaterRoads(ctx,seed,left,top,width,height,map=null){
- const toLocalX=x=>(x-left)*PARCHMENT_TILE;
- const toLocalY=y=>(y-top)*PARCHMENT_TILE;
+ const px=x=>(x-left)*PARCHMENT_TILE,py=y=>(y-top)*PARCHMENT_TILE;
+ const modern=(map?.worldGeneratorVersion||5)>=6;
  const riverDrift=randomAt(seed,1,1,'river')*Math.max(1,VISUAL.riverSpacing)*(12/17);
  const lower=Math.floor((left-riverDrift-12)/VISUAL.riverSpacing)-1;
  const upper=Math.ceil((left+width-riverDrift+12)/VISUAL.riverSpacing)+1;
- ctx.save();ctx.globalAlpha=VISUAL.riverOpacity;
+ const riverAt=(index,y)=>modern?riverXAt(seed,index,y):
+  index*VISUAL.riverSpacing+riverDrift+
+   Math.sin(y*.21+index*1.7)*2.15*VISUAL.riverCurve+Math.sin(y*.79+index*.3)*.55;
+ ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
+ ctx.globalAlpha=VISUAL.riverOpacity;
  for(let river=lower;river<=upper;river++){
-  const center=river*VISUAL.riverSpacing+riverDrift;
+  // Water follows precisely the same deterministic river centerline used for
+  // travel, bridges and fishing piers. Details are anchored to WORLD coords.
   ctx.beginPath();
-  for(let y=top-1,first=true;y<=top+height+1;y+=.16){
-   const x=(map?.worldGeneratorVersion||5)>=6?riverXAt(seed,river,y):
-    center+Math.sin(y*.21+river*1.7)*2.15*VISUAL.riverCurve+Math.sin(y*.79+river*.3)*.55;
-   const px=toLocalX(x),py=toLocalY(y);
-   if(first){ctx.moveTo(px,py);first=false;}else ctx.lineTo(px,py);
+  for(let y=top-1,first=true;y<=top+height+1;y+=.12){
+   const x=px(riverAt(river,y)),v=py(y);
+   if(first){ctx.moveTo(x,v);first=false;}else ctx.lineTo(x,v);
   }
-  ctx.lineWidth=14*VISUAL.riverWidth;ctx.strokeStyle='#b7a78c';ctx.stroke();
-  ctx.lineWidth=9*VISUAL.riverWidth;ctx.strokeStyle='#849a9e';ctx.stroke();
-  ctx.lineWidth=2*VISUAL.riverWidth;ctx.strokeStyle='#c8d0ba';ctx.stroke();
+  for(const [w,color] of [
+   [16.2,'#ad9773'],[13.3,'#c9b48f'],[10.2,'#638b92'],
+   [8.2,'#89aeb2'],[3.5,'#a9c2be']
+  ]){ctx.lineWidth=w*VISUAL.riverWidth;ctx.strokeStyle=color;ctx.stroke();}
+  // Sparse wind ripples across the stream. Slight jitter prevents parallel
+  // ribbons and makes the water read as a painted surface, not a blue wire.
+  for(let tick=Math.floor((top-1)/.43);tick<=Math.ceil((top+height+1)/.43);tick++){
+   if(randomAt(seed,river,tick,'water-ripple')<.32)continue;
+   const y=tick*.43+(randomAt(seed,river,tick,'ripple-shift')-.5)*.12;
+   const x=px(riverAt(river,y)),v=py(y);
+   const bend=(randomAt(seed,river,tick,'ripple-bend')-.5)*1.6;
+   const length=2.6+randomAt(seed,river,tick,'ripple-length')*2.8;
+   ctx.globalAlpha=.65*VISUAL.riverOpacity;
+   ctx.lineWidth=.85;ctx.strokeStyle='#ecdfbb';
+   ctx.beginPath();ctx.moveTo(x-length,v+bend);
+   ctx.quadraticCurveTo(x,v-1.8+bend,x+length,v+.4+bend);ctx.stroke();
+  }
+  // Occasional tiny fish silhouettes, not one on every tile.
+  for(let tick=Math.floor((top-1)/1.25);tick<=Math.ceil((top+height+1)/1.25);tick++){
+   if(randomAt(seed,river,tick,'fish-visible')>.18)continue;
+   const y=tick*1.25+(randomAt(seed,river,tick,'fish-shift')-.5)*.5;
+   const x=px(riverAt(river,y))+
+    (randomAt(seed,river,tick,'fish-bank')-.5)*4*VISUAL.riverWidth;
+   const v=py(y);
+   ctx.save();ctx.translate(x,v);
+   ctx.rotate(Math.PI/2+(randomAt(seed,river,tick,'fish-angle')-.5)*.6);
+   ctx.globalAlpha=.63*VISUAL.riverOpacity;ctx.fillStyle='#425e62';
+   ctx.beginPath();ctx.ellipse(0,0,2.9,1.05,0,0,Math.PI*2);ctx.fill();
+   ctx.beginPath();ctx.moveTo(-2.4,0);ctx.lineTo(-5,-2);
+   ctx.lineTo(-5,2);ctx.closePath();ctx.fill();ctx.restore();
+  }
  }
  ctx.restore();
  const roadDrift=randomAt(seed,1,1,'road')*Math.max(1,VISUAL.roadSpacing)*(8/12);
  const first=Math.floor((top-roadDrift-8)/VISUAL.roadSpacing)-1;
  const last=Math.ceil((top+height-roadDrift+8)/VISUAL.roadSpacing)+1;
- ctx.save();ctx.globalAlpha=VISUAL.roadOpacity;
+ const roadAt=(index,x)=>modern?roadYAt(seed,index,x):
+   index*VISUAL.roadSpacing+roadDrift+
+   Math.sin(x*.37+index*2.1)*1.25*VISUAL.roadCurve+Math.sin(x*.83+index)*.18;
+ ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
+ ctx.globalAlpha=VISUAL.roadOpacity;
  for(let road=first;road<=last;road++){
-  const center=road*VISUAL.roadSpacing+roadDrift;
   ctx.beginPath();
-  for(let x=left-1,firstPoint=true;x<=left+width+1;x+=.16){
-   const y=(map?.worldGeneratorVersion||5)>=6?roadYAt(seed,road,x):
-    center+Math.sin(x*.37+road*2.1)*1.25*VISUAL.roadCurve+Math.sin(x*.83+road)*.18;
-   const px=toLocalX(x),py=toLocalY(y);
-   if(firstPoint){ctx.moveTo(px,py);firstPoint=false;}else ctx.lineTo(px,py);
+  for(let x=left-1,firstPoint=true;x<=left+width+1;x+=.12){
+   const u=px(x),y=py(roadAt(road,x));
+   if(firstPoint){ctx.moveTo(u,y);firstPoint=false;}else ctx.lineTo(u,y);
   }
-  ctx.lineWidth=8*VISUAL.roadWidth;ctx.strokeStyle='#b6a17c';ctx.stroke();
-  ctx.lineWidth=2.5*VISUAL.roadWidth;ctx.strokeStyle='#746245';ctx.setLineDash([9,7]);ctx.stroke();ctx.setLineDash([]);
+  // Goat trails are trampled earth, not a uniform dotted centerline.
+  for(const [w,color] of [[9,'#977f57'],[7.2,'#b8a077'],[4.2,'#d8c29b']]){
+   ctx.lineWidth=w*VISUAL.roadWidth;ctx.strokeStyle=color;ctx.stroke();
+  }
+  for(let tick=Math.floor((left-1)/.29);tick<=Math.ceil((left+width+1)/.29);tick++){
+   if(randomAt(seed,road,tick,'trail-mark')<.32)continue;
+   const x=tick*.29+(randomAt(seed,road,tick,'trail-shift')-.5)*.10;
+   const y=py(roadAt(road,x));
+   const lane=(tick%2?1:-1)*(2+randomAt(seed,road,tick,'trail-side')*2);
+   ctx.globalAlpha=.30*VISUAL.roadOpacity;
+   ctx.fillStyle='#735d40';
+   ctx.beginPath();ctx.ellipse(px(x),y+lane,1.8,1.05,.21,0,Math.PI*2);ctx.fill();
+   if(randomAt(seed,road,tick,'trail-stones')>.82){
+    ctx.globalAlpha=.53*VISUAL.roadOpacity;
+    ctx.fillStyle='#e5d0a5';
+    ctx.beginPath();ctx.arc(px(x)+2,y-lane,1.3,0,Math.PI*2);ctx.fill();
+   }
+  }
+  ctx.globalAlpha=VISUAL.roadOpacity;
  }
  ctx.restore();
 }
@@ -376,6 +425,7 @@ function renderParchment(canvas,{seed,view,columns,rows,map,resolution=1,detailC
   detailCtx.clearRect(0,0,width,height);
  }
  drawWaterRoads(detailCtx,seed,left,top,columns,rows,map);
+ canvas.dataset.naturalPathArt='water-ripples-fish-and-worn-goat-trails';
  canvas.dataset.playerRoadSegments=String(drawKingdomRoads(detailCtx,{map,view,columns,rows}));
  canvas.dataset.roadLayer=detailCanvas?'terrain-details':'terrain';
  // Ground and dry/barren terrain come first. Marshes/wasteland are the
