@@ -299,9 +299,16 @@ async function assertTileImage(page,cellId){
     localStorage.setItem(storage,JSON.stringify(run));globalThis.RPChessKingdomMap.open();
     return chosen;
   },key);
-  await page.locator('[data-kingdom-cell="'+settlementCellId+'"]').evaluate(cell=>cell.click());
   const settlementButton=page.locator('[data-kingdom-build-settlement]');
-  assert.equal(await settlementButton.isVisible(),true,'an eligible explored empty cell can host a Settlement');
+  // A map re-open may inherit the 650ms suppression window from a prior
+  // pan/drag. Re-select once it expires instead of racing a synthetic click.
+  for(let attempt=0;attempt<4;attempt++){
+    await page.locator('[data-kingdom-cell="'+settlementCellId+'"]').evaluate(cell=>cell.click());
+    if(await settlementButton.isVisible())break;
+    await page.waitForTimeout(300);
+  }
+  assert.equal(await settlementButton.isVisible(),true,
+    'an eligible explored empty cell can host a Settlement');
   assert.equal(await settlementButton.isDisabled(),true,'insufficient Gold must block construction');
   assert.equal(await settlementButton.getAttribute('aria-disabled'),'true');
   const settlementIcon=await settlementButton.locator('.km-action-illustration').getAttribute('src');
