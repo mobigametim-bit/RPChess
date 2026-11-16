@@ -17,12 +17,12 @@ import {createSettlementState} from './settlement-core.mjs';
 import {FLAVOR_POOLS} from './travel-choice-core.mjs';
 import {isUnprotectedBanditAmbush,resolveUnprotectedBanditAmbush} from './kingdom-bandit-core.mjs';
 import {canBuildTradePost,buildTradePost,pendingTradeGold,collectTradeGold,
- tradeLimits,exchangeAtTradePost,GOLD_TO_SUPPLY,SUPPLY_TO_GOLD} from './kingdom-trade-core.mjs';
+ tradeLimits,exchangeAtTradePost,GOLD_TO_SUPPLY,SUPPLY_TO_GOLD} from './kingdom-trade-core.mjs?v=20261116-castle-trade-v4';
 import {captureMercenaryEntry,rollbackMercenaryEntry} from './kingdom-entry-rollback.mjs';
 import {translateLegacy} from './i18n.mjs';
 import {commanderPortrait,commanderTitle} from './commander-portraits.mjs';
 import {kingdomMapSprite,kingdomEncounterSprite} from './kingdom-map-assets.mjs';
-import {renderParchment,renderParchmentFog,visibleThroughFog} from './kingdom-parchment-app.mjs?v=20261116-ground-under-forest-v3';
+import {renderParchment,renderParchmentFog,visibleThroughFog} from './kingdom-parchment-app.mjs?v=20261116-pond-river-trail-v4';
 import {drawKingdomOverlay} from './kingdom-map-overlay.mjs?v=20261114-corridor-joints-v2';
 import {animateTravelers,stopTravelers} from './kingdom-traveler-renderer.mjs?v=20261111-npc-floor-v1';
 import {industrySprite,industrySpriteIndex,industryYield,industryLevel,industryPending,collectIndustry,BUILDING_TYPES} from './kingdom-industry-core.mjs';
@@ -420,7 +420,7 @@ function report(text){const node=screen?.querySelector('[data-kingdom-toast]');i
  node.textContent=text;node.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>{node.hidden=true},2400);}
 function cssReady(){
  if(document.querySelector('[data-kingdom-style]'))return;
- const link=document.createElement('link');link.rel='stylesheet';link.href='css/kingdom-map.css?v=20261116-trade-ui-v3';link.dataset.kingdomStyle='';
+ const link=document.createElement('link');link.rel='stylesheet';link.href='css/kingdom-map.css?v=20261116-trade-sliders-v4';link.dataset.kingdomStyle='';
  link.addEventListener('load',()=>{if(screen&&!screen.hidden)render();});
  document.head.append(link);
 }
@@ -1525,7 +1525,7 @@ async function visitSettlement(){
  try{
   // A completed Settlement is a free revisit, NOT a pending map encounter.
   // Load the owner BEFORE changing the save or hiding the Kingdom map.
-  await import('./settlement-app.mjs');
+  await import('./settlement-app.mjs?v=20261116-trade-sliders-v4');
   const latest=readRun(),current=latest?.kingdomMap?.cells?.[id];
   if(!latest||latest.ended||latest.id!==run.id||latest.activeTravelChoice||
      !screen||screen.hidden||current?.status!=='completed'||
