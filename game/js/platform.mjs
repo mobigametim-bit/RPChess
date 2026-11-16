@@ -479,6 +479,12 @@ async function nativeVKShow(normalized) {
 let stickyWanted=false;
 let stickyBackend=null;
 let stickyQueue=Promise.resolve();
+let stickyLastReason='not-requested';
+let stickyLastResult='idle';
+let stickyAttempts=0;
+function stickyRecord(reason,result='unavailable'){
+  stickyLastReason=reason;stickyLastResult=result;return Object.freeze({status:result});
+}
 function enqueueSticky(operation) {
   const current=stickyQueue.then(operation,operation);
   stickyQueue=current.then(()=>{},()=>{});
@@ -488,30 +494,47 @@ function stickyHostAllowed() {
   return confirmedVKAdHost() || isKnownVKAppHosting();
 }
 async function showNativeSticky(){
-  if(!stickyHostAllowed() || !await supportsVKMethod('VKWebAppShowBannerAd'))
-    return Object.freeze({status:'unavailable'});
+  if(!stickyHostAllowed())return stickyRecord('vk-host-unverified');
   try {
-    // Check is optional on older VK mobile WebViews. Never refuse a known
-    // native ShowBannerAd solely because CheckBannerAd is missing.
+    // The desktop VK host may not report all supported methods in the
+    // SetSupportedHandlers list. For a verified VK host, attempt the real
+    // method; only its own response can establish whether it is available.
     if(await supportsVKMethod('VKWebAppCheckBannerAd')){
-      const check=await sendVKRequest('VKWebAppCheckBannerAd',{});
-      if(check?.result!==true)return Object.freeze({status:'unavailable'});
+      const check=await sendVKRequest('VKWebAppCheckBannerAd',{}, {timeoutMs:7000});
+      if(check?.result!==true)return stickyRecord('vk-no-banner-inventory');
     }
-    if(!stickyWanted)return Object.freeze({status:'hidden'});
-    const result=await sendVKRequest('VKWebAppShowBannerAd',
+    if(!stickyWanted)return stickyRecord('scene-changed','hidden');
+    const response=await sendVKRequest('VKWebAppShowBannerAd',
       {banner_location:'bottom',layout_type:'resize'},{timeoutMs:12000});
-    return Object.freeze({status:result?.result===true?'shown':'error'});
-  }catch{return Object.freeze({status:'error'});}
+    if(response?.result===true)return stickyRecord('vk-banner-accepted','shown');
+    return stickyRecord('vk-banner-rejected');
+  }catch(error){
+    return stickyRecord(error?.reason==='timeout'?'vk-bridge-timeout':
+      error?.data?.error_type?'vk-bridge-error':'vk-request-failed','error');
+  }
 }
 async function hideNativeSticky(){
   try {
     await sendVKRequest('VKWebAppHideBannerAd',{}, {timeoutMs:12000});
     return Object.freeze({status:'hidden'});
-  }catch{return Object.freeze({status:'error'});}
+  }catch {return Object.freeze({status:'error'});}
 }
 const banner=Object.freeze({
   get active(){return stickyBackend!==null;},
   get backend(){return stickyBackend||'none';},
+  get diagnostics(){return Object.freeze({
+    selectedBackend:advertisingBackend(),
+    activeBackend:stickyBackend||'none',
+    wanted:stickyWanted,
+    result:stickyLastResult,
+    reason:stickyLastReason,
+    attempts:stickyAttempts,
+    gpEnabled:gamepushSdk.enabled,
+    gpStatus:gamepushSdk.status,
+    gpStickyAvailable:gamepushSdk.ads.stickyAvailable,
+    vkHostConfirmed:stickyHostAllowed(),
+    vkLaunch:isVKLaunch()
+  });},
   async check(){
     if(advertisingBackend()==='gamepush')return gamepushSdk.ads.stickyAvailable;
     if(advertisingBackend()!=='vk-bridge'||!stickyHostAllowed())return false;
@@ -520,18 +543,25 @@ const banner=Object.freeze({
   show(){
     stickyWanted=true;
     return enqueueSticky(async()=>{
-      if(!stickyWanted)return Object.freeze({status:'hidden'});
+      if(!stickyWanted)return stickyRecord('scene-changed','hidden');
       const backend=advertisingBackend();
-      if(stickyBackend===backend)return Object.freeze({status:'shown'});
+      if(stickyBackend===backend)return stickyRecord('already-visible','shown');
       if(stickyBackend){
         const previous=stickyBackend;stickyBackend=null;
         if(previous==='gamepush')await gamepushSdk.ads.hideSticky();
         else await hideNativeSticky();
       }
       if(!stickyWanted||backend==='none')
-        return Object.freeze({status:'unavailable'});
-      const result=backend==='gamepush'
-        ?await gamepushSdk.ads.showSticky():await showNativeSticky();
+        return stickyRecord('sdk-loading-or-not-vk');
+      stickyAttempts++;
+      let result;
+      if(backend==='gamepush'){
+        if(!gamepushSdk.ads.stickyAvailable)
+          return stickyRecord('gamepush-sticky-unavailable');
+        result=await gamepushSdk.ads.showSticky();
+        stickyRecord(result.status==='shown'?'gamepush-banner-accepted':
+          result.status==='error'?'gamepush-error':'gamepush-banner-unavailable',result.status);
+      }else result=await showNativeSticky();
       if(result.status==='shown')stickyBackend=backend;
       return result;
     });
@@ -554,6 +584,8 @@ const ads = Object.freeze({
   get diagnostics() { return Object.freeze({
     stickyBackend:banner.backend,
     stickyActive:banner.active,
+    stickyReason:banner.diagnostics.reason,
+    stickyResult:banner.diagnostics.result,
     backend:advertisingBackend(),
     sdkStatus:gamepushSdk.status,
     vkHostConfirmed:confirmedVKAdHost(),
