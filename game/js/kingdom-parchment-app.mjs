@@ -28,7 +28,7 @@ function requestExtraManifest(){
     ['landmarks','decor_minor_landmarks']
    ]){
     const names=Array.isArray(groups[folder])?groups[folder]:[];
-    extraGroups[kind]=names.filter(file=>/\.png$/i.test(file))
+    extraGroups[kind]=names.filter(file=>/\.(png|svg)$/i.test(file))
       .map(file=>'assets/kingdom-parchment/'+folder+'/'+file);
    }
    queueRedraw();
@@ -120,7 +120,7 @@ function drawLegacyOptionalNature(ctx,seed,left,top,width,height,map,repaint,lay
    const x=xi*step+randomAt(seed,xi,yi,'extra-x')*step;
    const y=yi*step+randomAt(seed,xi,yi,'extra-y')*step;
    const t=terrainAt(seed,x,y);
-   if(layer!=='landmarks'&&t.wet>VISUAL.marshWetThreshold&&t.elevation<.59){
+   if((layer==='marsh'||layer==='all')&&t.wet>VISUAL.marshWetThreshold&&t.elevation<.59){
     const count=Math.min(3,Math.ceil(VISUAL.marshDensity));
     for(let i=0;i<count;i++){
      if(randomAt(seed,xi,yi,'marsh'+i)>=Math.min(1,VISUAL.marshDensity-i))continue;
@@ -132,9 +132,12 @@ function drawLegacyOptionalNature(ctx,seed,left,top,width,height,map,repaint,lay
       (y+dy-top)*PARCHMENT_TILE-size/2,size,size,VISUAL.marshOpacity,repaint);
     }
    }
-   if(layer!=='marsh'&&randomAt(seed,xi,yi,'landmark')<VISUAL.landmarkDensity){
+   if((layer==='pond'||layer==='landmarks'||layer==='all')&&
+      randomAt(seed,xi,yi,'landmark')<VISUAL.landmarkDensity){
     const size=PARCHMENT_TILE*VISUAL.landmarkSize;
     const src=extraSprite(seed,'landmarks',xi,yi);
+    const isPond=/\/14_pond\.(png|svg)$/i.test(src||'');
+    if((layer==='pond'&&!isPond)||(layer==='landmarks'&&isPond))continue;
     drawVector(ctx,src,(x-left)*PARCHMENT_TILE-size/2,
      (y-top)*PARCHMENT_TILE-size/2,size,size,VISUAL.landmarkOpacity,repaint);
    }
@@ -151,7 +154,7 @@ function biomeExtraSprite(seed,biome,x,y,salt){
 function drawOptionalNature(ctx,seed,left,top,width,height,map,repaint,layer='all'){
  if((map?.worldGeneratorVersion||5)<=5)
   return drawLegacyOptionalNature(ctx,seed,left,top,width,height,map,repaint,layer);
- if(layer!=='landmarks'){
+ if(layer==='marsh'||layer==='all'){
  const step=3.6;
  for(let yi=Math.floor(top/step)-1;yi<=Math.ceil((top+height)/step);yi++)
   for(let xi=Math.floor(left/step)-1;xi<=Math.ceil((left+width)/step);xi++){
@@ -176,7 +179,10 @@ function drawOptionalNature(ctx,seed,left,top,width,height,map,repaint,layer='al
   for(let x=Math.floor(left)-1;x<=Math.ceil(left+width);x++){
    const landmark=landmarkAt(seed,x,y,{worldGeneratorVersion:6});
    if(!landmark)continue;
-   const src=extraGroups.landmarks.find(file=>file.endsWith('/'+landmark+'.png'));
+   const isPond=landmark==='14_pond';
+   if((layer==='pond'&&!isPond)||(layer==='landmarks'&&isPond))continue;
+   const src=extraGroups.landmarks.find(file=>
+    file.endsWith('/'+landmark+'.png')||file.endsWith('/'+landmark+'.svg'));
    if(!src)continue;
    const size=PARCHMENT_TILE*VISUAL.landmarkSize;
    let px=x+.5,py=y+.5;
@@ -377,6 +383,8 @@ function renderParchment(canvas,{seed,view,columns,rows,map,resolution=1,detailC
  // Landmarks (e.g. bridges) stay on top of vegetation.
  drawTerrainSymbols(detailCtx,seed,left,top,columns,rows,repaint,map,'background');
  drawOptionalNature(detailCtx,seed,left,top,columns,rows,map,repaint,'marsh');
+ // Pond water is a terrain surface, not a tree-height landmark.
+ drawOptionalNature(detailCtx,seed,left,top,columns,rows,map,repaint,'pond');
  drawTerrainSymbols(detailCtx,seed,left,top,columns,rows,repaint,map,'forest');
  drawOptionalNature(detailCtx,seed,left,top,columns,rows,map,repaint,'landmarks');
  drawFogInk(detailCtx,seed,left,top,columns,rows,map,repaint);
