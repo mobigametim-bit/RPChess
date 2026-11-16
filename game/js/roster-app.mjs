@@ -283,7 +283,7 @@ function continueRun() {
     try{
       const id=activeRun.id;
       if(!activeRun.kingdomMap){await beginJourney();return;}
-      const {openMap}=await import('./kingdom-map-app.mjs?v=20261116-trade-ui-v3');
+      const {openMap}=await import('./kingdom-map-app.mjs?v=20261116-trade-sliders-v4');
       if(readRun()?.id!==id)return;
       openMap({detail:{source:'run-continue',runId:id}});
       if(document.querySelector('[data-kingdom-map-screen]')?.hidden!==false)
@@ -307,7 +307,7 @@ async function ensureTravelChoiceReady() {
   if (routeReady && typeof routeReady.then === 'function') await routeReady;
   if (globalThis.RPChessTravelChoice?.open) return globalThis.RPChessTravelChoice;
   try {
-    await import('./travel-choice-app.mjs?v=20261110-pre-entry-starvation-v1');
+    await import('./travel-choice-app.mjs?v=20261116-trade-sliders-v4');
   } catch (error) {
     console.error('[RPChess] Travel Choice bootstrap failed', error);
     return null;
@@ -352,7 +352,7 @@ async function beginJourney() {
       if(document.querySelector('[data-settlement-screen]')?.hidden!==false)
         throw new Error('Saved Settlement scene did not become active');
     } else if (!legacyTravel && !activeRun.activeTravelChoice) {
-      const { openMap } = await import('./kingdom-map-app.mjs?v=20261116-trade-ui-v3');
+      const { openMap } = await import('./kingdom-map-app.mjs?v=20261116-trade-sliders-v4');
       const current = readRun();
       if (!current || current.ended || current.id !== runId) return;
       openMap({ detail:{ source:'roster', runId } });
