@@ -10,7 +10,7 @@ const QUIET_SCENES=Object.freeze({
   'kingdomMapScreen':'journey-map',
   'travelChoiceScreen':'journey-choice'
 });
-let installed=false,observer=null,scheduled=false,wanted=false,currentScene='none';
+let installed=false,observer=null,bodyObserver=null,scheduled=false,wanted=false,currentScene='none';
 let lifecycleActive=true;
 
 function overlayOpen(){
@@ -75,7 +75,8 @@ function installStickyBanner(){
   // from triggering repeated calls to the native ad provider.
   observer=new MutationObserver(schedule);
   observer.observe(document.body,{attributes:true,subtree:true,attributeFilter:['hidden']});
-  observer.observe(document.body,{attributes:true,attributeFilter:['class']});
+  bodyObserver=new MutationObserver(schedule);
+  bodyObserver.observe(document.body,{attributes:true,attributeFilter:['class']});
   platform.lifecycle.subscribe(({active})=>{
     lifecycleActive=active;schedule();
   });
