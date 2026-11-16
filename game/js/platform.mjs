@@ -787,7 +787,7 @@ const platform = Object.freeze({
         const safeToProbe=isKnownVKAppHosting()
           || hostname==='rpchess-vk-sticky-preview.mobigametim.workers.dev'
           || hostname==='mobigametim-bit.github.io'
-            && /^\\/RPChess(?:\\/|$)/.test(globalThis.location?.pathname||'')
+            && /^\/RPChess(?:\/|$)/.test(globalThis.location?.pathname||'')
             && parseLaunchParams().has('sign');
         if(safeToProbe)await discoverVKHost({requireTrustedOrigin:true});
         if(confirmedVKAdHost())sendVKWebAppInit();
