@@ -135,34 +135,96 @@ async function assertTileImage(page,cellId){
     'reopening a v6 save must never downgrade or regenerate its world');
   assert.equal(reopened.kingdomMap.seed,before.kingdomMap.seed,
     'world seed and scouted events remain stable across reopen');
-  // The supplied Trading Tent sprite must decode; its original PNG was corrupt.
+  // The original real range controls are restored, with art on each thumb
+  // and an exact-price currency icon inside each exchange button.
   const tradeVisual=await page.evaluate(async()=>{
     const tent=new Image();tent.src='assets/ui/trading-tent-64.png';
     await tent.decode();
     const controls=document.querySelector('[data-kingdom-trade-controls]');
     return {width:tent.naturalWidth,height:tent.naturalHeight,
-      sliderCount:controls?.querySelectorAll('input[type="range"]').length,
-      priceTexts:[...controls.querySelectorAll('.km-trade-gold strong')].map(e=>e.textContent),
-      supplies:controls.querySelectorAll('.km-trade-supply img[src="generated_assets/reward_supplies.png"]').length,
-      coins:controls.querySelectorAll('.km-trade-gold img[src="generated_assets/reward_gold.png"]').length,
-      labels:[...controls.querySelectorAll('.km-trade-row')].map(e=>e.getAttribute('aria-label'))};
+      sliders:[...controls.querySelectorAll('input[type="range"]')].map(slider=>({
+        direction:slider.hasAttribute('data-kingdom-trade-sell')?'sell':'buy',step:slider.step
+      })),
+      buttons:[...controls.querySelectorAll('.km-trade-action img')].map(img=>img.getAttribute('src'))
+    };
   });
   assert.deepEqual([tradeVisual.width,tradeVisual.height],[64,64],
     'Trading Tent must decode from the supplied 64px PNG');
-  assert.equal(tradeVisual.sliderCount,0,'single-unit trades replace the old range sliders');
-  assert.deepEqual(tradeVisual.priceTexts,['15','6'],'both trade prices stay unchanged');
-  assert.equal(tradeVisual.supplies,2,'both trade directions use the supplies artwork');
-  assert.equal(tradeVisual.coins,2,'both trade directions use the gold artwork');
+  assert.deepEqual(tradeVisual.sliders,[{direction:'sell',step:'1'},{direction:'buy',step:'15'}],
+    'Top range spends Supplies; bottom range spends Gold in 15-Gold increments');
+  assert.deepEqual(tradeVisual.buttons,[
+    'generated_assets/reward_gold.png','generated_assets/reward_supplies.png'
+  ],'Exchange buttons display the received currency icons, not text');
+  const tradeCss=fs.readFileSync(path.join(__dirname,'../game/css/kingdom-map.css'),'utf8');
+  assert(tradeCss.includes('.km-trade-slider--gold::-webkit-slider-thumb') &&
+    tradeCss.includes("url('../generated_assets/reward_supplies.png')") &&
+    tradeCss.includes("url('../generated_assets/reward_gold.png')"),
+    'Both actual slider thumbs must display the correct resource artwork');
+  assert(tradeCss.includes('width:calc(var(--km-event-size-px,103px)*.8)'),
+    'Trading tent sprite must render at 80% of the standard site size');
+  // UI integration: one slider changes resource amount, while its action
+  // exchanges the WHOLE selected amount atomically through the real core.
+  await page.evaluate(async()=>{
+    const {readRun,writeRun}=await import('./js/run-persistence.mjs');
+    const run=readRun();globalThis.__tradeFixtureOriginal=run;
+    writeRun({...run,gold:150,supplies:4,kingdomMap:{...run.kingdomMap,
+      tradePosts:[{id:'0,0',level:1,builtWeek:0,pendingGold:0}],
+      tradeProcessedWeek:0}});
+    globalThis.RPChessKingdomMap.open();
+  });
+  await page.locator('[data-kingdom-trade-controls]:visible').waitFor();
+  await page.locator('[data-kingdom-trade-sell]').evaluate(slider=>{
+    slider.value='2';slider.dispatchEvent(new Event('input',{bubbles:true}));
+  });
+  assert.equal(await page.locator('[data-kingdom-trade-sell-count]').textContent(),'12',
+    'selling two Supplies must return 12 Gold');
+  await page.locator('[data-kingdom-trade-sell-apply]').click();
+  let tradeResult=await read(page);
+  assert.equal(tradeResult.gold,162,'selling two Supplies credits exactly 12 Gold');
+  assert.equal(tradeResult.supplies,2,'selling two Supplies debits exactly two Supplies');
+  await page.locator('[data-kingdom-trade-buy]').evaluate(slider=>{
+    slider.value='30';slider.dispatchEvent(new Event('input',{bubbles:true}));
+  });
+  assert.equal(await page.locator('[data-kingdom-trade-buy-count]').textContent(),'2',
+    'spending 30 Gold must award two Supplies');
+  await page.locator('[data-kingdom-trade-buy-apply]').click();
+  tradeResult=await read(page);
+  assert.equal(tradeResult.gold,132,'buying two Supplies debits exactly 30 Gold');
+  assert.equal(tradeResult.supplies,4,'buying two Supplies credits exactly two Supplies');
+  await page.evaluate(async()=>{
+    const {writeRun}=await import('./js/run-persistence.mjs');
+    writeRun(globalThis.__tradeFixtureOriginal);
+    delete globalThis.__tradeFixtureOriginal;
+    globalThis.RPChessKingdomMap.open();
+  });
+  const tradeCore=await page.evaluate(async()=>{
+    const {synchronizeTradeLevels,tradeLevel,settleTradeWeek}=await import('./js/kingdom-trade-core.mjs');
+    const map=globalThis.RPChessKingdomMap.map,level=tradeLevel(map);
+    const stale={...map,tradePosts:[{id:'3,0',level:5,builtWeek:0,pendingGold:12}],
+      tradeProcessedWeek:0};
+    const synced=synchronizeTradeLevels(stale);
+    const settled=settleTradeWeek(synced,1);
+    return {level,actual:synced.tradePosts[0].level,
+      retained:synced.tradePosts[0].pendingGold,
+      produced:settled.tradePosts[0].pendingGold};
+  });
+  assert.equal(tradeCore.actual,tradeCore.level,'legacy high-level tents sync to castle level');
+  assert.equal(tradeCore.retained,12,'migration must preserve already-earned Gold');
+  assert.equal(tradeCore.produced,12+3*tradeCore.level,
+    'new weekly production must use the synchronized castle level');
   const parchmentCode=fs.readFileSync(path.join(__dirname,'../game/js/kingdom-parchment-app.mjs'),'utf8');
   const terrainPasses=[
     "drawTerrainSymbols(detailCtx,seed,left,top,columns,rows,repaint,map,'background')",
     "drawOptionalNature(detailCtx,seed,left,top,columns,rows,map,repaint,'marsh')",
+    "drawOptionalNature(detailCtx,seed,left,top,columns,rows,map,repaint,'pond')",
     "drawTerrainSymbols(detailCtx,seed,left,top,columns,rows,repaint,map,'forest')",
     "drawOptionalNature(detailCtx,seed,left,top,columns,rows,map,repaint,'landmarks')"
   ].map(token=>parchmentCode.indexOf(token));
   assert(terrainPasses.every(index=>index>=0) &&
     terrainPasses.every((index,i)=>!i||terrainPasses[i-1]<index),
-    'Dry land and marshes must render beneath all forests and trees');
+    'Dry land, marshes and ponds must render underneath trees and forest');
+  assert(parchmentCode.includes("'fish-visible'")&&parchmentCode.includes("'trail-mark'"),
+    'Natural river waves/fish and earth trail scuffs must be rendered');
   // The castle hire list uses shipped race chess-piece art and the real Gold icon.
   const recruitArt=await page.locator('.km-castle-recruit').evaluateAll(async rows=>Promise.all(rows.map(async row=>{
     const piece=row.querySelector('.km-castle-recruit__piece'),coin=row.querySelector('.km-castle-recruit__gold');
