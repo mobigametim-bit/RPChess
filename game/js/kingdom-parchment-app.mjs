@@ -233,6 +233,7 @@ function drawWaterRoads(ctx,seed,left,top,width,height,map=null){
  ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
  ctx.globalAlpha=VISUAL.riverOpacity;
  for(let river=lower;river<=upper;river++){
+  ctx.globalAlpha=VISUAL.riverOpacity;
   // Water follows precisely the same deterministic river centerline used for
   // travel, bridges and fishing piers. Details are anchored to WORLD coords.
   ctx.beginPath();
