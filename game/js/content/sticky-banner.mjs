@@ -151,6 +151,7 @@ function installStickyBanner(){
     lifecycleActive=active;schedule();
   });
   globalThis.addEventListener('rpchess:gamepush-status',schedule);
+  globalThis.addEventListener('rpchess:vk-ad-host-verified',schedule);
   globalThis.addEventListener('resize',schedule);
   globalThis.addEventListener('pagehide',()=>{wanted=false;void platform.ads.banner.hide();});
   globalThis.RPChessStickyBanner=Object.freeze({
