@@ -26,8 +26,20 @@ function isEnabled() {
     const query=new URLSearchParams(globalThis.location?.search||'');
     if(query.get('rpchess_gamepush')==='0')return false; // Safe VK Bridge rollback.
     if(query.get('rpchess_gamepush')==='1')return true; // Isolated preview opt-in.
-    // Turn on GamePush ONLY for real signed VK launches from the canonical
-    // Pages release; other sites/standalone Web and Yandex remain unchanged.
+    // The isolated sticky QA URL must use the same VK GamePush backend as
+    // production when embedded in a platform host. Without this, a VK
+    // developer URL silently falls through to Bridge and never tests GP.
+    // Standalone QA tabs must never load the platform SDK.
+    const qaHost=globalThis.location?.hostname==='rpchess-vk-sticky-preview.mobigametim.workers.dev';
+    const inFrame=Boolean(globalThis.parent && globalThis.parent!==globalThis);
+    const referrer=(()=>{
+      try{return new URL(globalThis.document?.referrer||'').hostname;}
+      catch{return '';}
+    })();
+    const inVK=/^(?:.+\\.)?vk\\.(?:com|ru)$/i.test(referrer);
+    if(qaHost && (inFrame || inVK || query.get('vk_app_id')==='54754579'))
+      return true;
+    // Normal releases require a real signed VK launch from canonical Pages.
     // SDK failure leaves the existing native VK ad path available.
     return globalThis.location?.hostname==='mobigametim-bit.github.io'
       && /^\/RPChess(?:\/|$)/.test(globalThis.location?.pathname||'')
@@ -214,8 +226,10 @@ async function showSticky() {
   if(state!=='ready'||sdk?.ads?.isStickyAvailable!==true||
      typeof sdk.ads.showSticky!=='function')return Object.freeze({status:'unavailable'});
   try {
-    await sdk.ads.showSticky();
-    return Object.freeze({status:'shown'});
+    const displayed=await sdk.ads.showSticky();
+    // GamePush explicitly returns boolean. A resolved false is not an
+    // impression and must not be treated as an actually visible banner.
+    return Object.freeze({status:displayed===true?'shown':'unavailable'});
   }catch {return Object.freeze({status:'error'});}
 }
 async function hideSticky() {
