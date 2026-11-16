@@ -1525,7 +1525,7 @@ async function visitSettlement(){
  try{
   // A completed Settlement is a free revisit, NOT a pending map encounter.
   // Load the owner BEFORE changing the save or hiding the Kingdom map.
-  await import('./settlement-app.mjs?v=20261116-trade-sliders-v4');
+  await import('./settlement-app.mjs');
   const latest=readRun(),current=latest?.kingdomMap?.cells?.[id];
   if(!latest||latest.ended||latest.id!==run.id||latest.activeTravelChoice||
      !screen||screen.hidden||current?.status!=='completed'||
