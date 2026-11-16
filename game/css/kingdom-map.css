@@ -780,31 +780,63 @@ body.arena-active .resource-hud{display:none!important}
 }
 
 
-/* User-supplied 64px trading tent, on the same map-object layer as industries. */
-.km-object--trade{
+/* Trading tent uses the common event-size basis, reduced to 80% like other
+   settlement buildings. The old 76%-of-tile value was much too large. */
+.kingdom-map-screen .km-object--trade{
  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
- width:76%;height:76%;z-index:4;pointer-events:none;object-fit:contain;
+ width:calc(var(--km-event-size-px,103px)*.8);
+ height:calc(var(--km-event-size-px,103px)*.8);
+ z-index:8;pointer-events:none;object-fit:contain;
  filter:drop-shadow(0 3px 3px rgba(14,9,4,.65));
 }
-/* Compact fixed-price offers: supplies ±1 and the gold amount use existing HUD art. */
-.km-trade-controls{display:grid;gap:9px;margin-top:3px;padding:10px;
+/* Both original amount sliders remain interactive; currency art replaces each
+   native circular thumb. The right button shows only the exact exchange reward. */
+.km-trade-controls{display:grid;gap:12px;margin-top:3px;padding:11px;
  background:rgba(5,12,19,.56);border:1px solid rgba(208,169,91,.36);border-radius:8px}
 .km-trade-controls[hidden]{display:none!important}
-.km-trade-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px}
-.km-trade-row + .km-trade-row{border-top:1px solid rgba(208,169,91,.25);padding-top:9px}
-.km-trade-offer{min-width:0;display:flex;align-items:center;justify-content:space-between;gap:7px;color:#f6dba6}
-.km-trade-supply,.km-trade-gold{display:inline-flex;align-items:center;justify-content:center;gap:4px;white-space:nowrap;font-size:clamp(14px,1.2vw,19px);font-weight:700}
-.km-trade-supply img,.km-trade-gold img{display:block;width:clamp(25px,2.5vw,34px);height:clamp(25px,2.5vw,34px);object-fit:contain}
-.km-trade-arrow{flex:0 0 auto;color:#c8ad70;font-size:clamp(15px,1.5vw,21px)}
-.km-trade-gold{min-width:52px;text-align:right;color:#ffe9af}
-.km-trade-gold strong{font-size:inherit}
-.km-trade-row .reboot-button{font-size:clamp(12px,1.1vw,15px);min-height:34px;max-width:120px;padding:5px 11px;white-space:nowrap}
-.km-trade-row .reboot-button:disabled{opacity:.38;cursor:not-allowed}
-@media(max-width:650px),(max-height:580px){
- .km-trade-controls{gap:5px;padding:6px}
- .km-trade-row{gap:5px}
- .km-trade-row+.km-trade-row{padding-top:6px}
- .km-trade-supply img,.km-trade-gold img{width:22px;height:22px}
- .km-trade-row .reboot-button{min-height:29px;padding:4px 7px}
+.km-trade-row{display:grid;grid-template-columns:minmax(0,1fr) 99px;align-items:center;gap:12px;min-height:43px}
+.km-trade-row + .km-trade-row{border-top:1px solid rgba(208,169,91,.25);padding-top:10px}
+.km-trade-slider-wrap{min-width:0;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px}
+.km-trade-slider-wrap output{min-width:26px;font:700 13px/1.2 Georgia,serif;text-align:right;color:#e3c27c}
+.km-trade-slider{
+ display:block;width:100%;height:9px;margin:0;min-width:0;
+ appearance:none;-webkit-appearance:none;border:1px solid #a88c5e;border-radius:20px;
+ background:linear-gradient(180deg,#d1bf90,#8e7954);cursor:pointer
 }
-
+.km-trade-slider::-webkit-slider-runnable-track{height:8px;border-radius:16px}
+.km-trade-slider::-moz-range-track{height:8px;border-radius:16px;background:linear-gradient(#d1bf90,#8e7954)}
+.km-trade-slider::-webkit-slider-thumb{
+ appearance:none;-webkit-appearance:none;width:35px;height:35px;margin-top:-14px;
+ border:0;box-shadow:none;cursor:grab;
+ background:transparent url('../generated_assets/reward_supplies.png') center/contain no-repeat
+}
+.km-trade-slider::-moz-range-thumb{
+ width:35px;height:35px;border:0;border-radius:0;box-shadow:none;cursor:grab;
+ background:transparent url('../generated_assets/reward_supplies.png') center/contain no-repeat
+}
+.km-trade-slider--gold::-webkit-slider-thumb{
+ background-image:url('../generated_assets/reward_gold.png')
+}
+.km-trade-slider--gold::-moz-range-thumb{
+ background-image:url('../generated_assets/reward_gold.png')
+}
+.km-trade-slider:focus-visible{outline:2px solid #ffe1a0;outline-offset:17px}
+.km-trade-slider:disabled{opacity:.35;cursor:not-allowed}
+.km-trade-action{
+ display:flex;align-items:center;justify-content:center;gap:4px;
+ min-width:0;width:99px;min-height:37px;white-space:nowrap;
+ padding:4px 7px!important
+}
+.km-trade-action strong{font:700 clamp(14px,1.3vw,18px)/1.1 Georgia,serif;color:#ffe5a6}
+.km-trade-action img{display:block;width:28px;height:28px;object-fit:contain;pointer-events:none}
+.km-trade-action:disabled{opacity:.38;cursor:not-allowed}
+@media(max-width:650px),(max-height:580px){
+ .km-trade-controls{gap:7px;padding:8px}
+ .km-trade-row{grid-template-columns:minmax(0,1fr) 80px;gap:6px;min-height:38px}
+ .km-trade-row+.km-trade-row{padding-top:7px}
+ .km-trade-slider-wrap{gap:5px}
+ .km-trade-action{min-height:32px;width:80px;padding:3px 5px!important}
+ .km-trade-action img{width:24px;height:24px}
+ .km-trade-slider::-webkit-slider-thumb{width:29px;height:29px;margin-top:-11px}
+ .km-trade-slider::-moz-range-thumb{width:29px;height:29px}
+}
