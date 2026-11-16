@@ -473,9 +473,87 @@ async function nativeVKShow(normalized) {
     return Object.freeze({ status:adErrorStatus(error), format:normalized });
   }
 }
+// Exactly one sticky banner across eligible scenes. All operations serialize
+// so an async ShowBannerAd cannot resurrect a banner after a battle opens.
+// VK Bridge owns the actual bottom placement and viewport resize.
+let stickyWanted=false;
+let stickyBackend=null;
+let stickyQueue=Promise.resolve();
+function enqueueSticky(operation) {
+  const current=stickyQueue.then(operation,operation);
+  stickyQueue=current.then(()=>{},()=>{});
+  return current;
+}
+function stickyHostAllowed() {
+  return confirmedVKAdHost() || isKnownVKAppHosting();
+}
+async function showNativeSticky(){
+  if(!stickyHostAllowed() || !await supportsVKMethod('VKWebAppShowBannerAd'))
+    return Object.freeze({status:'unavailable'});
+  try {
+    // Check is optional on older VK mobile WebViews. Never refuse a known
+    // native ShowBannerAd solely because CheckBannerAd is missing.
+    if(await supportsVKMethod('VKWebAppCheckBannerAd')){
+      const check=await sendVKRequest('VKWebAppCheckBannerAd',{});
+      if(check?.result!==true)return Object.freeze({status:'unavailable'});
+    }
+    if(!stickyWanted)return Object.freeze({status:'hidden'});
+    const result=await sendVKRequest('VKWebAppShowBannerAd',
+      {banner_location:'bottom',layout_type:'resize'},{timeoutMs:12000});
+    return Object.freeze({status:result?.result===true?'shown':'error'});
+  }catch{return Object.freeze({status:'error'});}
+}
+async function hideNativeSticky(){
+  try {
+    await sendVKRequest('VKWebAppHideBannerAd',{}, {timeoutMs:12000});
+    return Object.freeze({status:'hidden'});
+  }catch{return Object.freeze({status:'error'});}
+}
+const banner=Object.freeze({
+  get active(){return stickyBackend!==null;},
+  get backend(){return stickyBackend||'none';},
+  async check(){
+    if(advertisingBackend()==='gamepush')return gamepushSdk.ads.stickyAvailable;
+    if(advertisingBackend()!=='vk-bridge'||!stickyHostAllowed())return false;
+    return supportsVKMethod('VKWebAppShowBannerAd');
+  },
+  show(){
+    stickyWanted=true;
+    return enqueueSticky(async()=>{
+      if(!stickyWanted)return Object.freeze({status:'hidden'});
+      const backend=advertisingBackend();
+      if(stickyBackend===backend)return Object.freeze({status:'shown'});
+      if(stickyBackend){
+        const previous=stickyBackend;stickyBackend=null;
+        if(previous==='gamepush')await gamepushSdk.ads.hideSticky();
+        else await hideNativeSticky();
+      }
+      if(!stickyWanted||backend==='none')
+        return Object.freeze({status:'unavailable'});
+      const result=backend==='gamepush'
+        ?await gamepushSdk.ads.showSticky():await showNativeSticky();
+      if(result.status==='shown')stickyBackend=backend;
+      return result;
+    });
+  },
+  hide(){
+    stickyWanted=false;
+    return enqueueSticky(async()=>{
+      const backend=stickyBackend;
+      stickyBackend=null;
+      if(!backend)return Object.freeze({status:'hidden'});
+      return backend==='gamepush'
+        ?gamepushSdk.ads.hideSticky():hideNativeSticky();
+    });
+  }
+});
+
 const ads = Object.freeze({
   get backend() { return advertisingBackend(); },
+  banner,
   get diagnostics() { return Object.freeze({
+    stickyBackend:banner.backend,
+    stickyActive:banner.active,
     backend:advertisingBackend(),
     sdkStatus:gamepushSdk.status,
     vkHostConfirmed:confirmedVKAdHost(),
