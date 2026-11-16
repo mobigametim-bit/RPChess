@@ -172,7 +172,7 @@ if(!['ready','failed','untrusted'].includes(mode))throw Error('Unknown ad case')
   }
   // The same controller covers both Journey screens and calm menus, but
   // never combat, the Arena chessboard or a blocking dialog.
-  const {chooseStickyScene,shouldAttemptBanner}=await import(
+  const {chooseStickyScene,shouldAttemptBanner,shouldRetrySticky}=await import(
     pathToFileURL(path.join(__dirname,'..','game/js/content/sticky-banner.mjs')).href);
   let view={dataset:{rebootFoundation:''},querySelector:()=>null};
   globalThis.innerWidth=1366;globalThis.innerHeight=768;
@@ -223,6 +223,19 @@ if(!['ready','failed','untrusted'].includes(mode))throw Error('Unknown ad case')
   assert.equal(shouldAttemptBanner(null,'gamepush|ready|1|1',
     'journey-map','gamepush|ready|1|1',false),false,
     'no banner on a battle or overlay');
+
+  assert.equal(shouldRetrySticky('unavailable','journey-map',false,0),true,
+    'GamePush false return after battle should be retried with backoff');
+  assert.equal(shouldRetrySticky('unavailable','journey-map',false,1),true,
+    'the second bounded retry is allowed');
+  assert.equal(shouldRetrySticky('unavailable','journey-map',false,2),false,
+    'repeated unavailable inventory must not be spammed');
+  assert.equal(shouldRetrySticky('shown','journey-map',false,0),false,
+    'a successful banner never needs retries');
+  assert.equal(shouldRetrySticky('error',null,false,0),false,
+    'a battle, modal or inactive screen prevents retry');
+  assert.equal(shouldRetrySticky('unavailable','journey-map',true,0),false,
+    'an active sticky cannot be shown again');
 
   // QA on a VK iframe must enable the same GamePush path as production,
   // even though its hostname is not the canonical GitHub Pages release.
