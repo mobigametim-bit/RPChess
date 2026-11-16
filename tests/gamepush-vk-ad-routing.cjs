@@ -65,7 +65,7 @@ if(!['ready','failed','untrusted'].includes(mode))throw Error('Unknown ad case')
   globalThis.dispatchEvent=evt=>{emit(evt.type,evt);return true;};
   globalThis.localStorage={getItem:()=>null,setItem(){}};
   globalThis.RPChessFeatureFlags={};
-  let nextNativeResult=true,nextSDKResult=true;
+  let nextNativeResult=true,nextSDKResult=true,nextStickyResult=true;
   const fakeSDK={
     player:{
       ready:mode==='ready'?Promise.resolve():{then(_resolve,reject){reject(new Error('400 invalid player data userId not found'));}},
@@ -75,7 +75,7 @@ if(!['ready','failed','untrusted'].includes(mode))throw Error('Unknown ad case')
     platform:{type:'VK_GAMES'},
     ads:{
       isRewardedAvailable:true,isFullscreenAvailable:true,isStickyAvailable:true,
-      showSticky(){sdkCalls.push('sticky-show');return Promise.resolve();},
+      showSticky(){sdkCalls.push('sticky-show');return Promise.resolve(nextStickyResult);},
       closeSticky(){sdkCalls.push('sticky-hide');return Promise.resolve();},
       showRewardedVideo(){
         sdkCalls.push('reward');
@@ -125,6 +125,13 @@ if(!['ready','failed','untrusted'].includes(mode))throw Error('Unknown ad case')
     assert.deepEqual(sdkCalls.slice(-2),['sticky-show','sticky-hide'],
       'GamePush sticky should show and close once, without VK Bridge fallback');
     assert(!nativeCalls.includes('VKWebAppShowBannerAd'),'healthy GamePush must own its banners');
+    nextStickyResult=false;
+    assert.equal((await platform.ads.banner.show()).status,'unavailable',
+      'GamePush showSticky false must NOT be counted as visible');
+    assert.equal(platform.ads.banner.active,false);
+    assert.equal(platform.ads.banner.diagnostics.reason,'gamepush-banner-unavailable');
+    await platform.ads.banner.hide();
+    nextStickyResult=true;
   }else if(mode==='failed'){
     assert.equal(ready,false,'VK SDK player auth failure must be reported');
     assert.equal(platform.gamepush.status,'unavailable');
@@ -137,6 +144,8 @@ if(!['ready','failed','untrusted'].includes(mode))throw Error('Unknown ad case')
     assert.equal((await platform.ads.show('interstitial')).status,'error');
     assert.deepEqual(nativeCalls.filter(x=>x==='VKWebAppShowNativeAds').length,3);
     assert.equal(sdkCalls.length,0,'failed SDK is never called to show ads');
+    assert.equal(platform.ads.banner.diagnostics.gpStatus,'unavailable');
+    assert.equal(platform.ads.banner.diagnostics.selectedBackend,'vk-bridge');
     nextNativeResult=true;
     assert.equal(await platform.ads.banner.check(),true);
     assert.equal((await platform.ads.banner.show()).status,'shown');
@@ -194,6 +203,17 @@ if(!['ready','failed','untrusted'].includes(mode))throw Error('Unknown ad case')
   globalThis.innerHeight=490;
   assert.equal(chooseStickyScene(),null,'cramped landscape scenes must not be covered');
 
+  // QA on a VK iframe must enable the same GamePush path as production,
+  // even though its hostname is not the canonical GitHub Pages release.
+  const previousLocation=globalThis.location;
+  globalThis.location={
+    hostname:'rpchess-vk-sticky-preview.mobigametim.workers.dev',
+    pathname:'/',search:''
+  };
+  assert.equal(platform.gamepush.enabled,true,
+    'inside VK iframe the sticky QA preview must opt into GamePush');
+  globalThis.location=previousLocation;
+  assert.equal(platform.ads.banner.diagnostics.attempts>=0,true);
   const diag=JSON.stringify(platform.gamepush.diagnostics)+JSON.stringify(platform.ads.diagnostics);
   assert(!diag.includes('userId not found'),'SDK failure message must not leak into diagnostics');
   assert(!diag.includes('1234'),'SDK player ID must not leak into diagnostics');
