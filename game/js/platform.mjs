@@ -769,11 +769,24 @@ const platform = Object.freeze({
   get profileEnabled() { return rpchessProfileEnabled(); },
   setProfileStorageIdentity,
   async init() {
-    // GamePush opt-in owns platform initialization on Web, VK and Yandex test
-    // builds. No parallel VK Bridge init, ad call or legacy VK cloud restore.
-    // Do not block the menu if a test origin has not been configured yet.
+    // GamePush owns ads and player authorization, but the VK host shell still
+    // needs VKWebAppInit to dismiss its loading splash. These are separate
+    // contracts: bridge *initialization* is not a second ad/storage provider.
+    // Verify the VK parent first, without trusting forged launch query args.
     if (gamepushSdk.enabled) {
-      // Native VK is not initialized concurrently with a healthy GamePush SDK.
+      const hostname=globalThis.location?.hostname||'';
+      const knownGameHost=isKnownVKAppHosting()
+        || hostname==='rpchess-vk-sticky-preview.mobigametim.workers.dev'
+        || hostname==='mobigametim-bit.github.io'
+          && /^\/RPChess(?:\/|$)/.test(globalThis.location?.pathname||'');
+      if(knownGameHost){
+        void discoverVKHost({requireTrustedOrigin:true})
+          .then(trusted=>{if(trusted)sendVKWebAppInit();})
+          .catch(()=>{});
+      }
+      // Keep GamePush solely responsible for ads: never initialize a second
+      // ad SDK or restore legacy VK cloud while it is loading/ready.
+      // Do not block the menu on a missing external SDK.
       // If SDK player auth fails (e.g. VK userId not found), restore the
       // existing ad mechanism without changing RPChess ID/D1 persistence.
       void gamepushSdk.init().then(async ready=>{
