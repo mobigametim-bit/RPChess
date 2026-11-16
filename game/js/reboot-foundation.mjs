@@ -67,6 +67,12 @@ const monetizationReady = cloudReady
   });
 globalThis.RPChessMonetizationReady = monetizationReady;
 
+// The platform owns native sticky placement; scenes merely determine whether
+// a banner is safe. Keep this async and separate from rewarded/interstitial.
+void platformReady.then(()=>import('./content/sticky-banner.mjs?v=20261116-vk-bottom-v1'))
+  .then(module=>module.installStickyBanner())
+  .catch(error=>console.warn('[RPChess] Sticky banner unavailable',error));
+
 // Travel Choice is part of the critical run shell. Its stylesheet must be available even if
 // the wider route/content bootstrap fails and Roster has to use the direct Travel fallback.
 if (!document.querySelector('[data-travel-choice-css]')) {
