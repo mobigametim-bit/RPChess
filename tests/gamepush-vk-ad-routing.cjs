@@ -46,10 +46,11 @@ if(!['ready','failed','untrusted'].includes(mode))throw Error('Unknown ad case')
   globalThis.parent=parent;
   globalThis.location={
     search:'?vk_app_id=54754579&rpchess_gamepush=1',
-    hostname:'rpchess-gamepush-preview.mobigametim.workers.dev'
+    hostname:realHost?'rpchess-vk-sticky-preview.mobigametim.workers.dev':
+      'rpchess-gamepush-preview.mobigametim.workers.dev'
   };
   globalThis.document={
-    referrer:realHost?'https://vk.com/app54754579':'',
+    referrer:mode==='failed'?'https://vk.com/app54754579':'',
     hidden:false,visibilityState:'visible',
     addEventListener:on,
     removeEventListener:off,
@@ -66,9 +67,11 @@ if(!['ready','failed','untrusted'].includes(mode))throw Error('Unknown ad case')
   globalThis.localStorage={getItem:()=>null,setItem(){}};
   globalThis.RPChessFeatureFlags={};
   let nextNativeResult=true,nextSDKResult=true,nextStickyResult=true;
+  let releasePlayerReady=()=>{};
+  const pendingPlayerReady=new Promise(resolve=>{releasePlayerReady=resolve;});
   const fakeSDK={
     player:{
-      ready:mode==='ready'?Promise.resolve():{then(_resolve,reject){reject(new Error('400 invalid player data userId not found'));}},
+      ready:mode==='ready'?pendingPlayerReady:{then(_resolve,reject){reject(new Error('400 invalid player data userId not found'));}},
       id:mode==='ready'?1234:null,
       isLoggedIn:mode==='ready'
     },
@@ -97,6 +100,21 @@ if(!['ready','failed','untrusted'].includes(mode))throw Error('Unknown ad case')
   assert.equal(platform.ads.backend,'none','GP loading may not trigger a competing native ad call');
   assert.equal((await platform.ads.show('reward')).status,'unavailable');
   await platform.init();
+  // VK's own shell must receive VKWebAppInit BEFORE GamePush player.ready.
+  // Otherwise VK keeps showing its chess-icon loading spinner indefinitely.
+  await new Promise(resolve=>setTimeout(resolve,0));
+  if(realHost){
+    assert.equal(nativeCalls.filter(x=>x==='VKWebAppInit').length,1,
+      'trusted VK host must be initialized exactly once, even with pending GamePush');
+  }else{
+    assert.equal(nativeCalls.includes('VKWebAppInit'),false,
+      'untrusted iframe/query must never initialize VK');
+  }
+  if(mode==='ready'){
+    assert.equal(platform.gamepush.status,'loading',
+      'host splash is dismissed while GamePush player is still pending');
+    releasePlayerReady();
+  }
   const ready=await platform.gamepush.init();
   if(mode==='ready'){
     assert.equal(ready,true);
