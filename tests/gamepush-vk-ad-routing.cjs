@@ -172,7 +172,7 @@ if(!['ready','failed','untrusted'].includes(mode))throw Error('Unknown ad case')
   }
   // The same controller covers both Journey screens and calm menus, but
   // never combat, the Arena chessboard or a blocking dialog.
-  const {chooseStickyScene}=await import(
+  const {chooseStickyScene,shouldAttemptBanner}=await import(
     pathToFileURL(path.join(__dirname,'..','game/js/content/sticky-banner.mjs')).href);
   let view={dataset:{rebootFoundation:''},querySelector:()=>null};
   globalThis.innerWidth=1366;globalThis.innerHeight=768;
@@ -202,6 +202,27 @@ if(!['ready','failed','untrusted'].includes(mode))throw Error('Unknown ad case')
   globalThis.document.querySelector=()=>null;
   globalThis.innerHeight=490;
   assert.equal(chooseStickyScene(),null,'cramped landscape scenes must not be covered');
+
+  // Observer/resize callbacks cannot trigger repeated SDK show() attempts
+  // within one stable scene and backend state. A battle ends that session;
+  // returning to a scene may show the banner once again.
+  assert.equal(shouldAttemptBanner('journey-map','gamepush|ready|1|1',
+    null,null,false),true,'first eligible scene should show a banner');
+  assert.equal(shouldAttemptBanner('journey-map','gamepush|ready|1|1',
+    'journey-map','gamepush|ready|1|1',false),false,
+    'repeated same-scene mutations must not re-request a rejected banner');
+  assert.equal(shouldAttemptBanner('journey-map','gamepush|ready|1|1',
+    'journey-map','gamepush|ready|1|1',true),false,
+    'a visible banner must never be requested twice');
+  assert.equal(shouldAttemptBanner('journey-map','gamepush|ready|1|1',
+    'journey-map','gamepush|loading|0|1',false),true,
+    'when GamePush becomes ready after loading, the scene may retry');
+  assert.equal(shouldAttemptBanner('arena-catalog','gamepush|ready|1|1',
+    'journey-map','gamepush|ready|1|1',false),true,
+    'a new quiet scene may retry unavailable inventory');
+  assert.equal(shouldAttemptBanner(null,'gamepush|ready|1|1',
+    'journey-map','gamepush|ready|1|1',false),false,
+    'no banner on a battle or overlay');
 
   // QA on a VK iframe must enable the same GamePush path as production,
   // even though its hostname is not the canonical GitHub Pages release.
