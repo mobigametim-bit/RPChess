@@ -10,7 +10,7 @@ import {KINGDOM_OUTPOST_SHARD_COST} from './arena-core.mjs?v=20261109-kingdom-ec
 import {DEFAULT_KINGDOM_ECONOMY,weeklyResourceProduction} from './kingdom-economy-config.mjs';
 import {synchronizeRoyalRoads} from './kingdom-road-network.mjs?v=20261111-polish-v1';
 import {initialIndustry,validIndustry,settleIndustryWeek,realignLandlockedPiers} from './kingdom-industry-core.mjs';
-import {validTradePosts,initializeTrade,settleTradeWeek} from './kingdom-trade-core.mjs';
+import {validTradePosts,initializeTrade,settleTradeWeek,synchronizeTradeLevels} from './kingdom-trade-core.mjs';
 
 // Live defaults mirror Atlas Lab's canonical economy; change only after acceptance.
 const production=DEFAULT_KINGDOM_ECONOMY.production;
@@ -211,7 +211,7 @@ function migrateKingdomMap(map,run=null){
  // Old run saves do not receive backdated buildings or free resources.
  if(!result.industry)result={...result,industry:initialIndustry(weekForDay(result.day))};
  result=realignLandlockedPiers(result);
- result=initializeTrade(result);
+ result=synchronizeTradeLevels(initializeTrade(result));
  if(!Array.isArray(result.outposts))result={...result,outposts:[]};
  if(!Array.isArray(result.builtSettlements))result={...result,builtSettlements:[]};
  if(!Array.isArray(result.outpostRoads))result={...result,outpostRoads:[]};
@@ -465,7 +465,7 @@ function validateKingdomMap(map){
 function updatePeak(map,power){
  const next=Math.max(map.peakKingPower,Math.max(0,Math.floor(Number(power)||0)));
  if(next===map.peakKingPower)return map;
- return growTerritory({...map,peakKingPower:next});
+ return growTerritory(synchronizeTradeLevels({...map,peakKingPower:next}));
 }
 function randomEncounter(run,point,power,planned=null){
  const coord=keyOf(point.x,point.y),worldSeed=run.kingdomMap?.seed||run.id,
