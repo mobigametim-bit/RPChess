@@ -36,7 +36,7 @@ function isEnabled() {
       try{return new URL(globalThis.document?.referrer||'').hostname;}
       catch{return '';}
     })();
-    const inVK=/^(?:.+\\.)?vk\\.(?:com|ru)$/i.test(referrer);
+    const inVK=/^(?:.+\.)?vk\.(?:com|ru)$/i.test(referrer);
     if(qaHost && (inFrame || inVK || query.get('vk_app_id')==='54754579'))
       return true;
     // Normal releases require a real signed VK launch from canonical Pages.
