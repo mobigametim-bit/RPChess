@@ -69,7 +69,7 @@ globalThis.RPChessMonetizationReady = monetizationReady;
 
 // The platform owns native sticky placement; scenes merely determine whether
 // a banner is safe. Keep this async and separate from rewarded/interstitial.
-void platformReady.then(()=>import('./content/sticky-banner.mjs?v=20261116-vk-bottom-v2-diagnostics'))
+void platformReady.then(()=>import('./content/sticky-banner.mjs?v=20261116-vk-bottom-v3-dedupe'))
   .then(module=>module.installStickyBanner())
   .catch(error=>console.warn('[RPChess] Sticky banner unavailable',error));
 
