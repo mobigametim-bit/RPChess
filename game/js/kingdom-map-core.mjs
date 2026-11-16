@@ -10,7 +10,7 @@ import {KINGDOM_OUTPOST_SHARD_COST} from './arena-core.mjs?v=20261109-kingdom-ec
 import {DEFAULT_KINGDOM_ECONOMY,weeklyResourceProduction} from './kingdom-economy-config.mjs';
 import {synchronizeRoyalRoads} from './kingdom-road-network.mjs?v=20261111-polish-v1';
 import {initialIndustry,validIndustry,settleIndustryWeek,realignLandlockedPiers} from './kingdom-industry-core.mjs';
-import {validTradePosts,initializeTrade,settleTradeWeek,synchronizeTradeLevels} from './kingdom-trade-core.mjs';
+import {validTradePosts,initializeTrade,settleTradeWeek,synchronizeTradeLevels} from './kingdom-trade-core.mjs?v=20261116-castle-trade-v4';
 
 // Live defaults mirror Atlas Lab's canonical economy; change only after acceptance.
 const production=DEFAULT_KINGDOM_ECONOMY.production;
