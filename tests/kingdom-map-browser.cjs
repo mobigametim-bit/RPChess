@@ -616,7 +616,7 @@ async function assertTileImage(page,cellId){
     drawWaterRoads(ctx,'kingdom-test-seed',-5,-3,11,7);
     const pixels=ctx.getImageData(0,0,canvas.width,canvas.height).data;
     let painted=0;for(let k=3;k<pixels.length;k+=32)if(pixels[k]>0)painted++;
-    return {river:paintedStrokes.has('#849a9e'),road:paintedStrokes.has('#b6a17c'),painted};
+    return {river:paintedStrokes.has('#638b92'),road:paintedStrokes.has('#b8a077'),painted};
   });
   assert(lineArt.river&&lineArt.road&&lineArt.painted>10,
     'real procedural Canvas strokes must render roads and rivers without retired SVGs');
