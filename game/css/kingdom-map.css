@@ -406,6 +406,10 @@ body.kingdom-map-active .resource-hud{display:none!important}
  animation-delay:var(--km-fx-delay,0s)
 }
 .kingdom-map-screen .km-resource-burst img{width:21px;height:21px;object-fit:contain}
+/* Reuse waypoint flyout, but originate trade resources at the king's center. */
+.kingdom-map-screen .km-resource-bursts--king{
+ top:50%;z-index:20;transform:translate(-50%,-50%)
+}
 @keyframes km-resource-flight{
  0%{opacity:0;transform:translateY(24px) scale(.72)}
  18%{opacity:1;transform:translateY(0) scale(1.1)}
@@ -780,12 +784,12 @@ body.arena-active .resource-hud{display:none!important}
 }
 
 
-/* Trading tent uses the common event-size basis, reduced to 80% like other
-   settlement buildings. The old 76%-of-tile value was much too large. */
+/* Trading tent is 20% smaller than its previously approved 80% size:
+   0.8 * 0.8 = 0.64 of the normal event sprite dimension. */
 .kingdom-map-screen .km-object--trade{
  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
- width:calc(var(--km-event-size-px,103px)*.8);
- height:calc(var(--km-event-size-px,103px)*.8);
+ width:calc(var(--km-event-size-px,103px)*.64);
+ height:calc(var(--km-event-size-px,103px)*.64);
  z-index:8;pointer-events:none;object-fit:contain;
  filter:drop-shadow(0 3px 3px rgba(14,9,4,.65));
 }
