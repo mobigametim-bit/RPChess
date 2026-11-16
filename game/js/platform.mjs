@@ -781,7 +781,15 @@ const platform = Object.freeze({
         // SDK auth failures on developer URLs often arrive without referrer
         // or launch params. A trusted parent-origin handshake can establish
         // VK ownership without enabling two ad SDKs simultaneously.
-        await discoverVKHost({requireTrustedOrigin:true});
+        // Only a known deployment may probe its parent for native VK fallback.
+        // A forged ?vk_app_id on an arbitrary iframe is not authorization.
+        const hostname=globalThis.location?.hostname||'';
+        const safeToProbe=isKnownVKAppHosting()
+          || hostname==='rpchess-vk-sticky-preview.mobigametim.workers.dev'
+          || hostname==='mobigametim-bit.github.io'
+            && /^\\/RPChess(?:\\/|$)/.test(globalThis.location?.pathname||'')
+            && parseLaunchParams().has('sign');
+        if(safeToProbe)await discoverVKHost({requireTrustedOrigin:true});
         if(confirmedVKAdHost())sendVKWebAppInit();
         globalThis.dispatchEvent?.(new Event('rpchess:vk-ad-host-verified'));
       }).catch(()=>{});
