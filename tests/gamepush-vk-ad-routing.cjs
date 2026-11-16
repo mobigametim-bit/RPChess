@@ -23,7 +23,11 @@ if(!['ready','failed','untrusted'].includes(mode))throw Error('Unknown ad case')
       if(!message.params?.request_id)return;
       const answer={
         type:message.handler+'Result',
-        data:{request_id:message.params.request_id,result:nextNativeResult}
+        data:{request_id:message.params.request_id,result:nextNativeResult,
+          ...(message.handler==='SetSupportedHandlers'?{supportedHandlers:[
+            'VKWebAppInit','VKWebAppCheckBannerAd','VKWebAppShowBannerAd',
+            'VKWebAppHideBannerAd','VKWebAppShowNativeAds'
+          ]}:{})}
       };
       queueMicrotask(()=>emit('message',event('message',answer,parent)));
     }
@@ -60,7 +64,9 @@ if(!['ready','failed','untrusted'].includes(mode))throw Error('Unknown ad case')
     },
     platform:{type:'VK_GAMES'},
     ads:{
-      isRewardedAvailable:true,isFullscreenAvailable:true,
+      isRewardedAvailable:true,isFullscreenAvailable:true,isStickyAvailable:true,
+      showSticky(){sdkCalls.push('sticky-show');return Promise.resolve();},
+      closeSticky(){sdkCalls.push('sticky-hide');return Promise.resolve();},
       showRewardedVideo(){
         sdkCalls.push('reward');
         if(nextSDKResult==='error')return Promise.reject(Error('SDK declined'));
@@ -100,6 +106,15 @@ if(!['ready','failed','untrusted'].includes(mode))throw Error('Unknown ad case')
     assert.deepEqual(sdkCalls,['reward','reward','reward','interstitial']);
     assert(!nativeCalls.includes('VKWebAppShowNativeAds'),
       'healthy GamePush must never dispatch the same ad through VK Bridge');
+    assert.equal(await platform.ads.banner.check(),true);
+    assert.equal((await platform.ads.banner.show()).status,'shown');
+    assert.equal((await platform.ads.banner.show()).status,'shown','repeated same-scene shows must be idempotent');
+    assert.equal(platform.ads.banner.backend,'gamepush');
+    assert.equal((await platform.ads.banner.hide()).status,'hidden');
+    assert.equal((await platform.ads.banner.hide()).status,'hidden');
+    assert.deepEqual(sdkCalls.slice(-2),['sticky-show','sticky-hide'],
+      'GamePush sticky should show and close once, without VK Bridge fallback');
+    assert(!nativeCalls.includes('VKWebAppShowBannerAd'),'healthy GamePush must own its banners');
   }else if(mode==='failed'){
     assert.equal(ready,false,'VK SDK player auth failure must be reported');
     assert.equal(platform.gamepush.status,'unavailable');
@@ -112,12 +127,63 @@ if(!['ready','failed','untrusted'].includes(mode))throw Error('Unknown ad case')
     assert.equal((await platform.ads.show('interstitial')).status,'error');
     assert.deepEqual(nativeCalls.filter(x=>x==='VKWebAppShowNativeAds').length,3);
     assert.equal(sdkCalls.length,0,'failed SDK is never called to show ads');
+    nextNativeResult=true;
+    assert.equal(await platform.ads.banner.check(),true);
+    assert.equal((await platform.ads.banner.show()).status,'shown');
+    assert.equal(platform.ads.banner.backend,'vk-bridge');
+    assert.equal((await platform.ads.banner.hide()).status,'hidden');
+    assert.equal(nativeCalls.filter(x=>x==='VKWebAppCheckBannerAd').length,1);
+    assert.equal(nativeCalls.filter(x=>x==='VKWebAppShowBannerAd').length,1);
+    assert.equal(nativeCalls.filter(x=>x==='VKWebAppHideBannerAd').length,1);
+    nextNativeResult=false;
+    assert.equal((await platform.ads.banner.show()).status,'unavailable',
+      'a failed banner availability check must not show a placeholder');
+    assert.equal(nativeCalls.filter(x=>x==='VKWebAppShowBannerAd').length,1,
+      'unavailable inventory must not try a second banner show');
+    await platform.ads.banner.hide();
   }else{
     assert.equal(ready,false);
     assert.equal(platform.ads.backend,'none','forged VK query alone is not a verified VK host');
     assert.equal((await platform.ads.show('reward')).status,'unavailable');
     assert.equal(nativeCalls.length,0,'an untrusted Web preview never receives VK-native ad calls');
+    assert.equal(await platform.ads.banner.check(),false);
+    assert.equal((await platform.ads.banner.show()).status,'unavailable');
+    assert.equal(nativeCalls.length,0,'untrusted Web must not dispatch banner requests');
+    await platform.ads.banner.hide();
   }
+  // The same controller covers both Journey screens and calm menus, but
+  // never combat, the Arena chessboard or a blocking dialog.
+  const {chooseStickyScene}=await import(
+    pathToFileURL(path.join(__dirname,'..','game/js/content/sticky-banner.mjs')).href);
+  let view={dataset:{rebootFoundation:''},querySelector:()=>null};
+  globalThis.innerWidth=1366;globalThis.innerHeight=768;
+  globalThis.document.querySelector=()=>null;
+  globalThis.document.querySelectorAll=()=>[view];
+  for(const [dataset,expected] of [
+    [{rebootFoundation:''},'menu'],[{rosterScreen:''},'roster'],
+    [{settlementScreen:''},'settlement'],
+    [{kingdomMapScreen:''},'journey-map'],
+    [{travelChoiceScreen:''},'journey-choice']]){
+    view.dataset=dataset;
+    assert.equal(chooseStickyScene(),expected);
+  }
+  view.dataset={arenaScreen:''};
+  view.querySelector=selector=>
+    selector==='[data-arena-catalog]'?{hidden:false}:{hidden:true};
+  assert.equal(chooseStickyScene(),'arena-catalog');
+  view.querySelector=selector=>
+    selector==='[data-arena-catalog]'?{hidden:true}:{hidden:false};
+  assert.equal(chooseStickyScene(),null,'Arena battle must hide sticky');
+  view.dataset={classicScreen:''};
+  assert.equal(chooseStickyScene(),null,'chessboard must never be ad eligible');
+  view.dataset={kingdomMapScreen:''};
+  globalThis.document.querySelector=selector=>
+    selector.includes('.reboot-modal')?{hidden:false}:null;
+  assert.equal(chooseStickyScene(),null,'modals hide sticky even on the Journey map');
+  globalThis.document.querySelector=()=>null;
+  globalThis.innerHeight=490;
+  assert.equal(chooseStickyScene(),null,'cramped landscape scenes must not be covered');
+
   const diag=JSON.stringify(platform.gamepush.diagnostics)+JSON.stringify(platform.ads.diagnostics);
   assert(!diag.includes('userId not found'),'SDK failure message must not leak into diagnostics');
   assert(!diag.includes('1234'),'SDK player ID must not leak into diagnostics');
