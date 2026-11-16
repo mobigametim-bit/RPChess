@@ -96,4 +96,26 @@ for(const filename of ['battle-route.mjs','roster-app.mjs','kingdom-map-app.mjs'
     'Settlement scene must have one ES-module owner: '+filename);
 }
 
+// Platform-rendered sticky ad placement (not a fake in-game banner).
+const stickySource=fs.readFileSync(path.join(game,'js/content/sticky-banner.mjs'),'utf8');
+assert(js.includes("import('./content/sticky-banner.mjs?v=20261116-vk-bottom-v5-host-init')"),
+  'The common foundation must bootstrap exactly one sticky controller');
+for(const token of ['rebootFoundation','rosterScreen','settlementScreen',
+    'kingdomMapScreen','travelChoiceScreen','arena-catalog','data-arena-battle',
+    'game-loading','reboot-modal','MutationObserver','platform.ads.banner.hide()']){
+  assert(stickySource.includes(token),'Sticky scene controller missing '+token);
+}
+for(const token of ["VKWebAppCheckBannerAd","VKWebAppShowBannerAd","VKWebAppHideBannerAd",
+    "banner_location:'bottom'","layout_type:'resize'","stickyWanted",
+    "enqueueSticky","stickyHostAllowed","gamepushSdk.ads.showSticky()"]){
+  assert(platform.includes(token),'Native VK/GP sticky integration missing '+token);
+}
+for(const token of ['isStickyAvailable','showSticky','closeSticky']){
+  assert(gamepushSource.includes(token),'GamePush sticky capability missing '+token);
+}
+assert(html.includes('js/reboot-foundation.mjs?v=20261116-vk-bottom-v5-host-init'),
+  'The public entry point must load fresh sticky bootstrap');
+assert(!stickySource.includes("document.createElement('iframe')"),
+  'A platform banner must not be faked with arbitrary embedded ad markup');
+
 console.log('Reboot Foundation, profile release flags and noncommercial music exclusion: PASS');

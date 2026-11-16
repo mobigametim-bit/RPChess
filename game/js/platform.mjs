@@ -79,8 +79,14 @@ let verifiedVKHost = false;
 
 // Desktop VK can embed the game without launch parameters or a referrer. Verify
 // the parent bridge before enabling VK-only storage; a direct Pages tab stays local.
-async function discoverVKHost({ timeoutMs = 1800 } = {}) {
-  if (isVKLaunch()) return true;
+async function discoverVKHost({ timeoutMs = 1800, requireTrustedOrigin = false } = {}) {
+  if (requireTrustedOrigin) {
+    if (verifiedVKHost || isKnownVKAppHosting()
+      || /(^|\.)vk\.(com|ru)$/i.test(referrerHost())
+      || Boolean(globalThis.AndroidBridge?.VKWebAppInit)
+      || Boolean(globalThis.webkit?.messageHandlers?.VKWebAppInit?.postMessage))
+      return true;
+  } else if (isVKLaunch()) return true;
   if (!globalThis.parent || globalThis.parent === globalThis || !globalThis.addEventListener) return false;
   const requestId = nextRequestId();
   return new Promise(resolve => {
@@ -473,9 +479,122 @@ async function nativeVKShow(normalized) {
     return Object.freeze({ status:adErrorStatus(error), format:normalized });
   }
 }
+// Exactly one sticky banner across eligible scenes. All operations serialize
+// so an async ShowBannerAd cannot resurrect a banner after a battle opens.
+// VK Bridge owns the actual bottom placement and viewport resize.
+let stickyWanted=false;
+let stickyBackend=null;
+let stickyQueue=Promise.resolve();
+let stickyLastReason='not-requested';
+let stickyLastResult='idle';
+let stickyAttempts=0;
+function stickyRecord(reason,result='unavailable'){
+  stickyLastReason=reason;stickyLastResult=result;return Object.freeze({status:result});
+}
+function enqueueSticky(operation) {
+  const current=stickyQueue.then(operation,operation);
+  stickyQueue=current.then(()=>{},()=>{});
+  return current;
+}
+function stickyHostAllowed() {
+  return confirmedVKAdHost() || isKnownVKAppHosting();
+}
+async function showNativeSticky(){
+  if(!stickyHostAllowed()){
+    await discoverVKHost({requireTrustedOrigin:true});
+    if(!stickyHostAllowed())return stickyRecord('vk-host-unverified');
+  }
+  try {
+    // The desktop VK host may not report all supported methods in the
+    // SetSupportedHandlers list. For a verified VK host, attempt the real
+    // method; only its own response can establish whether it is available.
+    if(await supportsVKMethod('VKWebAppCheckBannerAd')){
+      const check=await sendVKRequest('VKWebAppCheckBannerAd',{}, {timeoutMs:7000});
+      if(check?.result!==true)return stickyRecord('vk-no-banner-inventory');
+    }
+    if(!stickyWanted)return stickyRecord('scene-changed','hidden');
+    const response=await sendVKRequest('VKWebAppShowBannerAd',
+      {banner_location:'bottom',layout_type:'resize'},{timeoutMs:12000});
+    if(response?.result===true)return stickyRecord('vk-banner-accepted','shown');
+    return stickyRecord('vk-banner-rejected');
+  }catch(error){
+    return stickyRecord(error?.reason==='timeout'?'vk-bridge-timeout':
+      error?.data?.error_type?'vk-bridge-error':'vk-request-failed','error');
+  }
+}
+async function hideNativeSticky(){
+  try {
+    await sendVKRequest('VKWebAppHideBannerAd',{}, {timeoutMs:12000});
+    return Object.freeze({status:'hidden'});
+  }catch {return Object.freeze({status:'error'});}
+}
+const banner=Object.freeze({
+  get active(){return stickyBackend!==null;},
+  get backend(){return stickyBackend||'none';},
+  get diagnostics(){return Object.freeze({
+    selectedBackend:advertisingBackend(),
+    activeBackend:stickyBackend||'none',
+    wanted:stickyWanted,
+    result:stickyLastResult,
+    reason:stickyLastReason,
+    attempts:stickyAttempts,
+    gpEnabled:gamepushSdk.enabled,
+    gpStatus:gamepushSdk.status,
+    gpStickyAvailable:gamepushSdk.ads.stickyAvailable,
+    vkHostConfirmed:stickyHostAllowed(),
+    vkLaunch:isVKLaunch()
+  });},
+  async check(){
+    if(advertisingBackend()==='gamepush')return gamepushSdk.ads.stickyAvailable;
+    if(advertisingBackend()!=='vk-bridge'||!stickyHostAllowed())return false;
+    return supportsVKMethod('VKWebAppShowBannerAd');
+  },
+  show(){
+    stickyWanted=true;
+    return enqueueSticky(async()=>{
+      if(!stickyWanted)return stickyRecord('scene-changed','hidden');
+      const backend=advertisingBackend();
+      if(stickyBackend===backend)return stickyRecord('already-visible','shown');
+      if(stickyBackend){
+        const previous=stickyBackend;stickyBackend=null;
+        if(previous==='gamepush')await gamepushSdk.ads.hideSticky();
+        else await hideNativeSticky();
+      }
+      if(!stickyWanted||backend==='none')
+        return stickyRecord('sdk-loading-or-not-vk');
+      stickyAttempts++;
+      let result;
+      if(backend==='gamepush'){
+        if(!gamepushSdk.ads.stickyAvailable)
+          return stickyRecord('gamepush-sticky-unavailable');
+        result=await gamepushSdk.ads.showSticky();
+        stickyRecord(result.status==='shown'?'gamepush-banner-accepted':
+          result.status==='error'?'gamepush-error':'gamepush-banner-unavailable',result.status);
+      }else result=await showNativeSticky();
+      if(result.status==='shown')stickyBackend=backend;
+      return result;
+    });
+  },
+  hide(){
+    stickyWanted=false;
+    return enqueueSticky(async()=>{
+      const backend=stickyBackend;
+      stickyBackend=null;
+      if(!backend)return Object.freeze({status:'hidden'});
+      return backend==='gamepush'
+        ?gamepushSdk.ads.hideSticky():hideNativeSticky();
+    });
+  }
+});
+
 const ads = Object.freeze({
   get backend() { return advertisingBackend(); },
+  banner,
   get diagnostics() { return Object.freeze({
+    stickyBackend:banner.backend,
+    stickyActive:banner.active,
+    stickyReason:banner.diagnostics.reason,
+    stickyResult:banner.diagnostics.result,
     backend:advertisingBackend(),
     sdkStatus:gamepushSdk.status,
     vkHostConfirmed:confirmedVKAdHost(),
@@ -650,15 +769,42 @@ const platform = Object.freeze({
   get profileEnabled() { return rpchessProfileEnabled(); },
   setProfileStorageIdentity,
   async init() {
-    // GamePush opt-in owns platform initialization on Web, VK and Yandex test
-    // builds. No parallel VK Bridge init, ad call or legacy VK cloud restore.
-    // Do not block the menu if a test origin has not been configured yet.
+    // GamePush owns ads and player authorization, but the VK host shell still
+    // needs VKWebAppInit to dismiss its loading splash. These are separate
+    // contracts: bridge *initialization* is not a second ad/storage provider.
+    // Verify the VK parent first, without trusting forged launch query args.
     if (gamepushSdk.enabled) {
-      // Native VK is not initialized concurrently with a healthy GamePush SDK.
+      const hostname=globalThis.location?.hostname||'';
+      const knownGameHost=isKnownVKAppHosting()
+        || hostname==='rpchess-vk-sticky-preview.mobigametim.workers.dev'
+        || hostname==='mobigametim-bit.github.io'
+          && /^\/RPChess(?:\/|$)/.test(globalThis.location?.pathname||'');
+      if(knownGameHost){
+        void discoverVKHost({requireTrustedOrigin:true})
+          .then(trusted=>{if(trusted)sendVKWebAppInit();})
+          .catch(()=>{});
+      }
+      // Keep GamePush solely responsible for ads: never initialize a second
+      // ad SDK or restore legacy VK cloud while it is loading/ready.
+      // Do not block the menu on a missing external SDK.
       // If SDK player auth fails (e.g. VK userId not found), restore the
       // existing ad mechanism without changing RPChess ID/D1 persistence.
-      void gamepushSdk.init().then(ready=>{
-        if(!ready && confirmedVKAdHost())sendVKWebAppInit();
+      void gamepushSdk.init().then(async ready=>{
+        if(ready)return;
+        // SDK auth failures on developer URLs often arrive without referrer
+        // or launch params. A trusted parent-origin handshake can establish
+        // VK ownership without enabling two ad SDKs simultaneously.
+        // Only a known deployment may probe its parent for native VK fallback.
+        // A forged ?vk_app_id on an arbitrary iframe is not authorization.
+        const hostname=globalThis.location?.hostname||'';
+        const safeToProbe=isKnownVKAppHosting()
+          || hostname==='rpchess-vk-sticky-preview.mobigametim.workers.dev'
+          || hostname==='mobigametim-bit.github.io'
+            && /^\/RPChess(?:\/|$)/.test(globalThis.location?.pathname||'')
+            && parseLaunchParams().has('sign');
+        if(safeToProbe)await discoverVKHost({requireTrustedOrigin:true});
+        if(confirmedVKAdHost())sendVKWebAppInit();
+        globalThis.dispatchEvent?.(new Event('rpchess:vk-ad-host-verified'));
       }).catch(()=>{});
       return true;
     }
