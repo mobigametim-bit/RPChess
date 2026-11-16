@@ -160,8 +160,9 @@ async function assertTileImage(page,cellId){
     tradeCss.includes("url('../generated_assets/reward_supplies.png')") &&
     tradeCss.includes("url('../generated_assets/reward_gold.png')"),
     'Both actual slider thumbs must display the correct resource artwork');
-  assert(tradeCss.includes('width:calc(var(--km-event-size-px,103px)*.8)'),
-    'Trading tent sprite must render at 80% of the standard site size');
+  assert(tradeCss.includes('width:calc(var(--km-event-size-px,103px)*.64)') &&
+    tradeCss.includes('height:calc(var(--km-event-size-px,103px)*.64)'),
+    'Trading tent must be 20% smaller than its prior 80% size');
   // UI integration: one slider changes resource amount, while its action
   // exchanges the WHOLE selected amount atomically through the real core.
   await page.evaluate(async()=>{
@@ -183,6 +184,15 @@ async function assertTileImage(page,cellId){
   let tradeResult=await read(page);
   assert.equal(tradeResult.gold,162,'selling two Supplies credits exactly 12 Gold');
   assert.equal(tradeResult.supplies,2,'selling two Supplies debits exactly two Supplies');
+  const sellFx=await page.locator('[data-kingdom-cell="0,0"] .km-resource-bursts--king .km-resource-burst')
+    .evaluateAll(items=>items.map(item=>({
+      amount:item.querySelector('strong')?.textContent,
+      icon:item.querySelector('img')?.getAttribute('src')
+    })));
+  assert.deepEqual(sellFx,[
+    {amount:'-2',icon:'generated_assets/reward_supplies.png'},
+    {amount:'+12',icon:'generated_assets/reward_gold.png'}
+  ],'selling must show spent Supplies and gained Gold flying from the King');
   await page.locator('[data-kingdom-trade-buy]').evaluate(slider=>{
     slider.value='30';slider.dispatchEvent(new Event('input',{bubbles:true}));
   });
@@ -192,6 +202,15 @@ async function assertTileImage(page,cellId){
   tradeResult=await read(page);
   assert.equal(tradeResult.gold,132,'buying two Supplies debits exactly 30 Gold');
   assert.equal(tradeResult.supplies,4,'buying two Supplies credits exactly two Supplies');
+  const buyFx=await page.locator('[data-kingdom-cell="0,0"] .km-resource-bursts--king .km-resource-burst')
+    .evaluateAll(items=>items.map(item=>({
+      amount:item.querySelector('strong')?.textContent,
+      icon:item.querySelector('img')?.getAttribute('src')
+    })));
+  assert.deepEqual(buyFx,[
+    {amount:'-30',icon:'generated_assets/reward_gold.png'},
+    {amount:'+2',icon:'generated_assets/reward_supplies.png'}
+  ],'buying must show spent Gold and gained Supplies flying from the King');
   await page.evaluate(async()=>{
     const {RUN_STORAGE_KEY}=await import('./js/run-persistence.mjs');
     // Restore exact storage bytes. writeRun() would update the timestamp and
