@@ -15,6 +15,37 @@ let lifecycleActive=true,lastAttempt='not-requested',lastResult='idle';
 // Rendering, resize and mutations can fire repeatedly on the same scene.
 // Never repeat a rejected banner request until scene/provider state changes.
 let attemptedScene=null,attemptedProviderState=null;
+// A false GamePush result can be temporary after closeSticky() or when ad
+// inventory is unavailable. Retry only twice, with backoff, while the exact
+// same quiet scene remains active; never poll while a battle is visible.
+const STICKY_RETRY_DELAYS_MS=Object.freeze([8000,30000]);
+let retryTimer=null,retryCount=0,retryScene=null,retryProviderState=null;
+function cancelStickyRetry(){
+  if(retryTimer!==null)clearTimeout(retryTimer);
+  retryTimer=null;
+}
+function resetStickyRetry(){
+  cancelStickyRetry();
+  retryCount=0;retryScene=null;retryProviderState=null;
+}
+function shouldRetrySticky(status,scene,active,attemptNumber){
+  return Boolean(scene)&&!active&&
+    (status==='unavailable'||status==='error')&&
+    attemptNumber<STICKY_RETRY_DELAYS_MS.length;
+}
+function queueStickyRetry(scene,providerState){
+  if(retryTimer!==null||!shouldRetrySticky(lastResult,scene,
+    platform.ads.banner.active,retryCount))return;
+  const delay=STICKY_RETRY_DELAYS_MS[retryCount++];
+  retryTimer=setTimeout(()=>{
+    retryTimer=null;
+    // Do not revive an ad above a combat view or a blocking dialog.
+    if(chooseStickyScene()!==scene || bannerProviderState()!==providerState ||
+      platform.ads.banner.active)return;
+    attemptedScene=null;attemptedProviderState=null;
+    schedule();
+  },delay);
+}
 let diagnosticPanel=null;
 const previewHost=globalThis.location?.hostname==='rpchess-vk-sticky-preview.mobigametim.workers.dev';
 const STATUS_TEXT={
@@ -54,6 +85,7 @@ function renderDiagnostics(){
     'GamePush sticky доступен: '+(d.gpStickyAvailable?'да':'нет'),
     'ВК подтверждён: '+(d.vkHostConfirmed?'да':'нет'),
     'Попыток показа: '+d.attempts+' | результат: '+d.result,
+    'Повтор после отказа: '+(retryTimer!==null?'запланирован':retryCount>=STICKY_RETRY_DELAYS_MS.length?'лимит исчерпан':'нет'),
     'Причина: '+(STATUS_TEXT[d.reason]||d.reason),
     'Фото этой панели поможет найти проблему'
   ];
@@ -118,6 +150,7 @@ async function reconcile(){
   const allow=Boolean(scene);
   renderDiagnostics();
   if(!allow){
+    resetStickyRetry();
     attemptedScene=null;attemptedProviderState=null;
     if(wanted||platform.ads.banner.active){
       wanted=false;
@@ -128,6 +161,10 @@ async function reconcile(){
     return;
   }
   const providerState=bannerProviderState();
+  if(retryScene!==scene||retryProviderState!==providerState){
+    resetStickyRetry();
+    retryScene=scene;retryProviderState=providerState;
+  }
   if(!shouldAttemptBanner(scene,providerState,attemptedScene,
     attemptedProviderState,platform.ads.banner.active))return;
   // Set before await so overlapping scene/resize callbacks cannot queue
@@ -142,6 +179,9 @@ async function reconcile(){
     lastResult='error';lastAttempt='unexpected-error';
     console.warn('[RPChess] sticky banner show failed',error);
   }
+  if(lastResult==='shown')cancelStickyRetry();
+  else if(chooseStickyScene()===scene&&bannerProviderState()===providerState)
+    queueStickyRetry(scene,providerState);
   renderDiagnostics();
 }
 function schedule(){
@@ -171,11 +211,13 @@ function installStickyBanner(){
   globalThis.addEventListener('rpchess:gamepush-status',schedule);
   globalThis.addEventListener('rpchess:vk-ad-host-verified',schedule);
   globalThis.addEventListener('resize',schedule);
-  globalThis.addEventListener('pagehide',()=>{wanted=false;void platform.ads.banner.hide();});
+  globalThis.addEventListener('pagehide',()=>{
+    resetStickyRetry();wanted=false;void platform.ads.banner.hide();
+  });
   globalThis.RPChessStickyBanner=Object.freeze({
     get diagnostics(){return diagnosticSnapshot();}
   });
   schedule();
 }
 
-export {chooseStickyScene,shouldAttemptBanner,installStickyBanner};
+export {chooseStickyScene,shouldAttemptBanner,shouldRetrySticky,installStickyBanner};
