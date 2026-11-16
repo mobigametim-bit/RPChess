@@ -82,7 +82,7 @@ let verifiedVKHost = false;
 async function discoverVKHost({ timeoutMs = 1800, requireTrustedOrigin = false } = {}) {
   if (requireTrustedOrigin) {
     if (verifiedVKHost || isKnownVKAppHosting()
-      || /(^|\\.)vk\\.(com|ru)$/i.test(referrerHost())
+      || /(^|\.)vk\.(com|ru)$/i.test(referrerHost())
       || Boolean(globalThis.AndroidBridge?.VKWebAppInit)
       || Boolean(globalThis.webkit?.messageHandlers?.VKWebAppInit?.postMessage))
       return true;
