@@ -283,7 +283,7 @@ function continueRun() {
     try{
       const id=activeRun.id;
       if(!activeRun.kingdomMap){await beginJourney();return;}
-      const {openMap}=await import('./kingdom-map-app.mjs?v=20261116-trade-sliders-v4');
+      const {openMap}=await import('./kingdom-map-app.mjs?v=20261116-trade-fx-v5');
       if(readRun()?.id!==id)return;
       openMap({detail:{source:'run-continue',runId:id}});
       if(document.querySelector('[data-kingdom-map-screen]')?.hidden!==false)
@@ -352,7 +352,7 @@ async function beginJourney() {
       if(document.querySelector('[data-settlement-screen]')?.hidden!==false)
         throw new Error('Saved Settlement scene did not become active');
     } else if (!legacyTravel && !activeRun.activeTravelChoice) {
-      const { openMap } = await import('./kingdom-map-app.mjs?v=20261116-trade-sliders-v4');
+      const { openMap } = await import('./kingdom-map-app.mjs?v=20261116-trade-fx-v5');
       const current = readRun();
       if (!current || current.ended || current.id !== runId) return;
       openMap({ detail:{ source:'roster', runId } });
