@@ -342,7 +342,7 @@ async function beginJourney() {
     if (settled) {
       // Recover the exact save produced by older broken "Services" clicks.
       // Do not wait for the whole combat-route bootstrap to reach a completed Settlement.
-      await import('./settlement-app.mjs');
+      await import('./settlement-app.mjs?v=20261116-trade-sliders-v4');
       const current=readRun();
       if (!current || current.ended || current.id!==runId ||
           current.activeTravelChoice?.id!==resume.id) return;
