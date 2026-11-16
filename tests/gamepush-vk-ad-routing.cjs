@@ -5,6 +5,16 @@ const assert=require('node:assert/strict');
 const {pathToFileURL}=require('node:url');
 const path=require('node:path');
 const mode=process.argv[2];
+// The PR focused selector runs this existing file without CLI args. In that
+// case execute all its isolated SDK-state scenarios in child processes.
+if(!mode){
+  const {spawnSync}=require('node:child_process');
+  for(const scenario of ['ready','failed','untrusted']){
+    const child=spawnSync(process.execPath,[__filename,scenario],{stdio:'inherit'});
+    if(child.status!==0)process.exit(child.status||1);
+  }
+  process.exit(0);
+}
 if(!['ready','failed','untrusted'].includes(mode))throw Error('Unknown ad case');
 
 (async()=>{
