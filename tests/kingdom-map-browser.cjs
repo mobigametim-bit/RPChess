@@ -165,8 +165,9 @@ async function assertTileImage(page,cellId){
   // UI integration: one slider changes resource amount, while its action
   // exchanges the WHOLE selected amount atomically through the real core.
   await page.evaluate(async()=>{
-    const {readRun,writeRun}=await import('./js/run-persistence.mjs');
-    const run=readRun();globalThis.__tradeFixtureOriginal=run;
+    const {readRun,writeRun,RUN_STORAGE_KEY}=await import('./js/run-persistence.mjs');
+    const run=readRun();
+    globalThis.__tradeFixtureOriginal=localStorage.getItem(RUN_STORAGE_KEY);
     writeRun({...run,gold:150,supplies:4,kingdomMap:{...run.kingdomMap,
       tradePosts:[{id:'0,0',level:1,builtWeek:0,pendingGold:0}],
       tradeProcessedWeek:0}});
@@ -192,8 +193,10 @@ async function assertTileImage(page,cellId){
   assert.equal(tradeResult.gold,132,'buying two Supplies debits exactly 30 Gold');
   assert.equal(tradeResult.supplies,4,'buying two Supplies credits exactly two Supplies');
   await page.evaluate(async()=>{
-    const {writeRun}=await import('./js/run-persistence.mjs');
-    writeRun(globalThis.__tradeFixtureOriginal);
+    const {RUN_STORAGE_KEY}=await import('./js/run-persistence.mjs');
+    // Restore exact storage bytes. writeRun() would update the timestamp and
+    // contaminate independent persistence assertions later in this test.
+    localStorage.setItem(RUN_STORAGE_KEY,globalThis.__tradeFixtureOriginal);
     delete globalThis.__tradeFixtureOriginal;
     globalThis.RPChessKingdomMap.open();
   });
