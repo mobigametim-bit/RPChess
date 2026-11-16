@@ -11,7 +11,66 @@ const QUIET_SCENES=Object.freeze({
   'travelChoiceScreen':'journey-choice'
 });
 let installed=false,observer=null,bodyObserver=null,scheduled=false,wanted=false,currentScene='none';
-let lifecycleActive=true;
+let lifecycleActive=true,lastAttempt='not-requested',lastResult='idle';
+let diagnosticPanel=null;
+const previewHost=globalThis.location?.hostname==='rpchess-vk-sticky-preview.mobigametim.workers.dev';
+const STATUS_TEXT={
+  'not-requested':'Запрос ещё не отправлен',
+  'sdk-loading-or-not-vk':'SDK загружается или запуск не распознан',
+  'gamepush-sticky-unavailable':'GamePush: sticky недоступен в настройках или нет рекламы',
+  'gamepush-banner-unavailable':'GamePush отказал в показе',
+  'gamepush-error':'Ошибка показа GamePush',
+  'gamepush-banner-accepted':'GamePush принял запрос на показ',
+  'vk-host-unverified':'Не подтверждено окружение VK Bridge',
+  'vk-no-banner-inventory':'ВК: сейчас нет доступных баннеров',
+  'vk-bridge-timeout':'ВК не ответил на рекламный запрос',
+  'vk-bridge-error':'ВК вернул ошибку',
+  'vk-request-failed':'Не удалось выполнить запрос к ВК',
+  'vk-banner-rejected':'ВК отказал в показе баннера',
+  'vk-banner-accepted':'ВК принял запрос на показ',
+  'already-visible':'Баннер уже запрошен',
+  'scene-changed':'Экран сменился'
+};
+function diagnosticSnapshot(){
+  const banner=platform.ads.banner.diagnostics;
+  return Object.freeze({
+    scene:currentScene,
+    requested:wanted,
+    lifecycleActive,
+    result:lastResult,
+    ...banner
+  });
+}
+function renderDiagnostics(){
+  if(!diagnosticPanel)return;
+  const d=diagnosticSnapshot();
+  const lines=[
+    'ДИАГНОСТИКА STICKY (это не баннер)',
+    'Экран: '+d.scene+' | запрос: '+(d.requested?'да':'нет'),
+    'Провайдер: '+d.selectedBackend+' | GP: '+d.gpStatus,
+    'GamePush sticky доступен: '+(d.gpStickyAvailable?'да':'нет'),
+    'ВК подтверждён: '+(d.vkHostConfirmed?'да':'нет'),
+    'Попыток показа: '+d.attempts+' | результат: '+d.result,
+    'Причина: '+(STATUS_TEXT[d.reason]||d.reason),
+    'Фото этой панели поможет найти проблему'
+  ];
+  diagnosticPanel.textContent=lines.join('\n');
+}
+function installDiagnostics(){
+  if(!previewHost||diagnosticPanel||!document.body)return;
+  diagnosticPanel=document.createElement('pre');
+  diagnosticPanel.dataset.rpchessBannerDiagnostics='';
+  diagnosticPanel.setAttribute('role','status');
+  diagnosticPanel.style.cssText=[
+    'position:fixed','left:10px','top:58px','z-index:2147482000',
+    'padding:10px','border:1px solid #ba9554','border-radius:6px',
+    'background:rgba(8,12,16,.94)','color:#f5d8a1',
+    'font:12px/1.5 monospace','white-space:pre-wrap',
+    'max-width:min(380px,92vw)','pointer-events:none'
+  ].join(';');
+  document.body.appendChild(diagnosticPanel);
+  renderDiagnostics();
+}
 
 function overlayOpen(){
   return Boolean(document.querySelector(
@@ -45,17 +104,27 @@ async function reconcile(){
   const scene=chooseStickyScene();
   currentScene=scene||'none';
   const allow=Boolean(scene);
+  renderDiagnostics();
   if(!allow){
     if(wanted||platform.ads.banner.active){
       wanted=false;
       await platform.ads.banner.hide();
     }
+    lastAttempt='hidden';lastResult='hidden';
+    renderDiagnostics();
     return;
   }
   if(wanted && platform.ads.banner.active)return;
   wanted=true;
-  try{await platform.ads.banner.show();}
-  catch(error){console.warn('[RPChess] sticky banner show failed',error);}
+  try{
+    const result=await platform.ads.banner.show();
+    lastResult=result?.status||'unknown';
+    lastAttempt=platform.ads.banner.diagnostics.reason;
+  }catch(error){
+    lastResult='error';lastAttempt='unexpected-error';
+    console.warn('[RPChess] sticky banner show failed',error);
+  }
+  renderDiagnostics();
 }
 function schedule(){
   if(scheduled)return;
@@ -70,6 +139,7 @@ function schedule(){
 function installStickyBanner(){
   if(installed||!globalThis.document?.body)return;
   installed=true;
+  installDiagnostics();
   // Hidden toggles track every top-level scene and the game's modal overlays.
   // Watching only the body's class prevents repaint-heavy board DOM mutations
   // from triggering repeated calls to the native ad provider.
@@ -84,12 +154,7 @@ function installStickyBanner(){
   globalThis.addEventListener('resize',schedule);
   globalThis.addEventListener('pagehide',()=>{wanted=false;void platform.ads.banner.hide();});
   globalThis.RPChessStickyBanner=Object.freeze({
-    get diagnostics(){return Object.freeze({
-      scene:currentScene,
-      requested:wanted,
-      active:platform.ads.banner.active,
-      backend:platform.ads.banner.backend
-    });}
+    get diagnostics(){return diagnosticSnapshot();}
   });
   schedule();
 }
