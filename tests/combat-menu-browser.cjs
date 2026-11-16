@@ -35,7 +35,7 @@ async function openEncounter(page, type) {
   await page.locator('[data-reboot-foundation]:not([hidden])').waitFor();
   assert.equal((await page.evaluate(runKey => JSON.parse(localStorage.getItem(runKey)), key)).activeTravelChoice, null);
   await page.locator('[data-continue-run]').click();await page.locator('[data-journey-choice-modal]:not([hidden]) [data-journey-continue]').click();
-  await page.locator('[data-roster-travel]').click();
+  await page.locator('[data-travel-choice-screen]:not([hidden])').waitFor();
   await page.locator(`[data-travel-type="${type}"]`).first().click();
   await acceptMercenariesBeforeArtifact(page);
   await page.locator('[data-artifact-choice-modal]').waitFor();

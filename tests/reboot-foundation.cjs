@@ -7,7 +7,7 @@ for(const key of ['data-journey-choice-modal','data-journey-new','data-journey-c
 assert(html.includes('role="dialog"')&&js.includes("const active=Boolean(readRun()&&!readRun().ended)"),
  'Journey picker must use an accessible dialog and live saved-run status');
 assert(!html.includes('class="reboot-wordmark"'),'Main-menu brand logo must be absent');
-assert(html.includes('css/hud-nav-icons.css?v=20261110-roster-icons-v5'),
+assert(html.includes('css/hud-nav-icons.css?v=20261116-rival-button-v2'),
  'The shared top-HUD pictograms must be included after scene styling');
 const hudNavCss=fs.readFileSync(path.join(game,'css/hud-nav-icons.css'),'utf8');
 for(const relative of ['assets/ui/hud-main-menu.png','assets/ui/hud-squad.png','assets/ui/main-menu-settings.png'])
@@ -73,5 +73,27 @@ for(const token of ['NON_COMMERCIAL_MUSIC',"'epic_music3.mp3'","fs.rmSync(path.j
 assert(html.includes('const releasePages=location.hostname'),'First paint must use canonical release origin for profile settings');
 assert(platform.includes("query.get('rpchess_profile')==='0'"),'D1 release must allow explicit legacy rollback');
 assert(gamepushSource.includes("query.get('rpchess_gamepush')==='0'"),'GamePush release must allow explicit native ads rollback');
+
+// One canonical URL is required: differing query strings create distinct ES
+// module instances with competing map screens, save handlers and selection.
+const kingdomSceneOwners=['roster-app.mjs','travel-choice-app.mjs','arena-app.mjs','settlement-app.mjs'];
+const mapModuleRefs=kingdomSceneOwners.flatMap(filename=>{
+  const source=fs.readFileSync(path.join(game,'js',filename),'utf8');
+  const imports=[...source.matchAll(/\.\/kingdom-map-app\.mjs\?v=([a-zA-Z0-9-]+)/g)].map(match=>match[1]);
+  assert(imports.length>=1,filename+' must import the canonical Kingdom map module');
+  return imports;
+});
+assert.equal(new Set(mapModuleRefs).size,1,
+ 'All Kingdom scene owners must share a single versioned ES module URL');
+
+// The battle router imports the Settlement scene eagerly. Dynamic entry
+// points must share its exact unversioned URL to avoid duplicate scene owners.
+for(const filename of ['battle-route.mjs','roster-app.mjs','kingdom-map-app.mjs']){
+  const ownerSource=fs.readFileSync(path.join(game,'js',filename),'utf8');
+  const refs=[...ownerSource.matchAll(/['"]\.\/settlement-app\.mjs(?:\?v=[^'"]+)?['"]/g)]
+    .map(match=>match[0]);
+  assert(refs.length>=1&&refs.every(ref=>ref.includes("./settlement-app.mjs'")),
+    'Settlement scene must have one ES-module owner: '+filename);
+}
 
 console.log('Reboot Foundation, profile release flags and noncommercial music exclusion: PASS');

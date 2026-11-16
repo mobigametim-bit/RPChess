@@ -51,5 +51,12 @@ const {pathToFileURL}=require('url');
     assert.strictEqual(classify(fullPinRay,[square]).length,0,`obstacle must suppress full pin ice (${square})`);
   }
 
+  const fs=require('node:fs');
+  const weeklySource=fs.readFileSync(path.join(root,'game/js/weekly-defenders-app.mjs'),'utf8');
+  assert(weeklySource.includes('applyPinIce(board,snap)'),
+    'weekly autoplay must apply pin overlays after re-rendering all squares');
+  assert(weeklySource.includes("button.classList.add('classic-square--check')"),
+    'weekly autoplay must mark checked king for the shared red aura');
+
   console.log('King pin ice: PASS — full/partial absolute pins for both sides, with obstacle-blocked rays suppressed');
 })().catch(error=>{console.error(error.stack||error);process.exitCode=1;});

@@ -379,3 +379,31 @@ body.compact-combat-active .wd-battle-screen .classic-party-panel{
  body.compact-combat-active .wd-battle-screen .wd-battle-party{
   display:flex!important;flex-direction:column!important;min-height:0!important}
 }
+
+/* Weekly Auto Battle uses the SAME royal checkmate ceremony as the other
+   modes (king-mate-polish.css); this is only the frozen-board shimmer. */
+.wd-battle-screen.wd-mate-ceremony [data-wd-board]{
+ position:relative;
+ pointer-events:none;
+}
+.wd-battle-screen.wd-mate-ceremony [data-wd-board]::before{
+ content:'';
+ position:absolute;
+ inset:0;
+ z-index:5;
+ pointer-events:none;
+ background:linear-gradient(128deg,transparent 15%,rgba(151,208,238,.21) 43%,
+   rgba(219,242,253,.3) 49%,rgba(122,178,225,.14) 55%,transparent 82%);
+ opacity:.45;
+ animation:wd-checkmate-freeze 1.05s ease-out both;
+}
+@keyframes wd-checkmate-freeze{
+ 0%{opacity:0;transform:translateX(-20%)}
+ 40%{opacity:.58;transform:translateX(0)}
+ 100%{opacity:.2;transform:translateX(0)}
+}
+@media(prefers-reduced-motion:reduce){
+ .wd-battle-screen.wd-mate-ceremony [data-wd-board]::before{
+  animation:none;opacity:.15;transform:none;
+ }
+}

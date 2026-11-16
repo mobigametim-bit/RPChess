@@ -5,6 +5,18 @@
 .arena-topbar{border-bottom:1px solid #caa65b;padding-bottom:10px}
 .arena-topbar h1{margin:0;font-size:clamp(28px,4vw,50px)}
 .arena-nav-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.arena-nav-actions .arena-nav-illustrated{
+  width:clamp(46px,5.1vw,74px);height:clamp(42px,6.5vh,66px);
+  display:grid;place-items:center;padding:2px;
+  background:transparent;border:0;box-shadow:none;
+}
+.arena-nav-actions .arena-nav-illustrated[hidden]{display:none!important}
+.arena-nav-actions .arena-nav-illustrated img{
+  width:100%;height:100%;object-fit:contain;pointer-events:none;
+}
+.arena-nav-actions .arena-nav-illustrated:hover:not(:disabled){
+  filter:drop-shadow(0 0 6px rgba(255,213,128,.6));
+}
 .arena-balance{display:flex;align-items:center;gap:8px;font-size:18px;font-weight:bold;color:#ffe6a3}
 .arena-shard{width:42px;height:42px;object-fit:contain}
 .arena-catalog h2{font-size:clamp(19px,2.2vw,30px);margin:15px 0 9px}

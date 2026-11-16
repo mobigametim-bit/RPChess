@@ -16,11 +16,13 @@ import {buyCastleRecruit,addArmyRecruits} from './kingdom-army-core.mjs';
 import {createSettlementState} from './settlement-core.mjs';
 import {FLAVOR_POOLS} from './travel-choice-core.mjs';
 import {isUnprotectedBanditAmbush,resolveUnprotectedBanditAmbush} from './kingdom-bandit-core.mjs';
+import {canBuildTradePost,buildTradePost,pendingTradeGold,collectTradeGold,
+ tradeLimits,exchangeAtTradePost,GOLD_TO_SUPPLY,SUPPLY_TO_GOLD} from './kingdom-trade-core.mjs?v=20261116-castle-trade-v4';
 import {captureMercenaryEntry,rollbackMercenaryEntry} from './kingdom-entry-rollback.mjs';
 import {translateLegacy} from './i18n.mjs';
 import {commanderPortrait,commanderTitle} from './commander-portraits.mjs';
 import {kingdomMapSprite,kingdomEncounterSprite} from './kingdom-map-assets.mjs';
-import {renderParchment,renderParchmentFog,visibleThroughFog} from './kingdom-parchment-app.mjs?v=20261114-fog-events-v1';
+import {renderParchment,renderParchmentFog,visibleThroughFog} from './kingdom-parchment-app.mjs?v=20261116-pond-river-trail-v4';
 import {drawKingdomOverlay} from './kingdom-map-overlay.mjs?v=20261114-corridor-joints-v2';
 import {animateTravelers,stopTravelers} from './kingdom-traveler-renderer.mjs?v=20261111-npc-floor-v1';
 import {industrySprite,industrySpriteIndex,industryYield,industryLevel,industryPending,collectIndustry,BUILDING_TYPES} from './kingdom-industry-core.mjs';
@@ -31,7 +33,7 @@ import {runtimeT} from '../localization/runtime-ui.mjs';
 import {createKingdomMap,validateKingdomMap,updatePeak,randomEncounter,enterCell,
  finishEncounter,matchesCombatReceipt,migrateKingdomMap,territoryCapacity,playerTerritoryCount,castleLevel,revealAround,
  collectProduction,canBuildOutpost,buildOutpost,canBuildSettlement,buildSettlement,
- romanForStars,keyOf,adjacent,shortestKingRoute,acknowledgeReturn,isOwned,borderEdges,weekForDay} from './kingdom-map-core.mjs?v=20261112-province-colors-v1';
+ romanForStars,keyOf,adjacent,shortestKingRoute,acknowledgeReturn,isOwned,borderEdges,weekForDay,advanceDay} from './kingdom-map-core.mjs?v=20261112-province-colors-v1';
 
 const COPY={
  ru:{day:'День',shards:'Осколки чести',castle:'Замок',supply:'Припасы',power:'Мощь',points:'Очки присоединения',
@@ -44,6 +46,9 @@ const COPY={
    outpostNeed:'Недостаточно осколков чести',outpostBuilt:'Аванпост построен',
    moveKing:'Перетащите короля для перемещения',collect:'Собрать',battleReady:'Защитник вернулся. Войди в клетку для нового боя.',
    needCompanion:'Стычка отложена: нужен хотя бы один боец помимо короля. Пополните отряд.',
+   tradeTent:'Торговая палатка',buildTrade:'Поставить торговую палатку',
+   tradeWeekly:'золота в неделю',tradeBuy:'Купить припасы: 15 золота за 1 припас',
+   tradeSell:'Продать припасы: 1 припас за 6 золота',tradeExchange:'Обменять',
 
    productionSite:'Строится',productionWeekly:'за неделю',productionSupplies:'припасов',productionGold:'золота',
  zoomGroup:'Масштаб карты',zoomIn:'Увеличить масштаб',zoomOut:'Уменьшить масштаб',zoomReset:'Сбросить масштаб карты'},
@@ -57,6 +62,9 @@ const COPY={
    outpostNeed:'Not enough Honor shards',outpostBuilt:'Outpost constructed',
    moveKing:'Drag the king to move',collect:'Collect',battleReady:'Defender returned. Enter the cell for a rematch.',
    needCompanion:'Skirmish postponed: recruit at least one fighter besides your King.',
+   tradeTent:'Trading tent',buildTrade:'Build trading tent',
+   tradeWeekly:'Gold per week',tradeBuy:'Buy supplies: 15 Gold per 1 Supply',
+   tradeSell:'Sell supplies: 1 Supply for 6 Gold',tradeExchange:'Exchange',
 
    productionSite:'Under construction',productionWeekly:'per week',productionSupplies:'Supplies',productionGold:'Gold',
  zoomGroup:'Map zoom',zoomIn:'Zoom in',zoomOut:'Zoom out',zoomReset:'Reset map zoom'}
@@ -217,6 +225,7 @@ const GOLD_ICON='generated_assets/reward_gold.png';
 const SUPPLIES_ICON='generated_assets/reward_supplies.png';
 const OUTPOST_ACTION_ICON='assets/ui/build_outpost_128.png';
 const SETTLEMENT_ACTION_ICON='assets/ui/build_settlement_128.png';
+const TRADING_TENT_ICON='assets/ui/trading-tent-64.png';
 const ARENA_ACTION_ICON='assets/ui/main-menu-arena.png';
 // Reuse Arena's canonical Power icon; already included in the optimized build.
 const POWER_ICON='generated_assets/node_battle.png';
@@ -411,7 +420,7 @@ function report(text){const node=screen?.querySelector('[data-kingdom-toast]');i
  node.textContent=text;node.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>{node.hidden=true},2400);}
 function cssReady(){
  if(document.querySelector('[data-kingdom-style]'))return;
- const link=document.createElement('link');link.rel='stylesheet';link.href='css/kingdom-map.css?v=20261114-polish-ten-v1';link.dataset.kingdomStyle='';
+ const link=document.createElement('link');link.rel='stylesheet';link.href='css/kingdom-map.css?v=20261116-trade-fx-v5';link.dataset.kingdomStyle='';
  link.addEventListener('load',()=>{if(screen&&!screen.hidden)render();});
  document.head.append(link);
 }
@@ -451,13 +460,33 @@ function screenReady(){
  <div class="km-inspector-buttons"><button type="button" data-kingdom-annex hidden></button>
  <button class="km-inspector-action" type="button" data-kingdom-outpost hidden></button>
  <button class="km-inspector-action" type="button" data-kingdom-build-settlement hidden></button>
+ <button class="km-inspector-action" type="button" data-kingdom-build-trade hidden></button>
  <button class="km-inspector-action km-inspector-action--arena" type="button" data-kingdom-earn-shards hidden></button></div>
- <p class="km-hint" data-kingdom-hint></p></aside></section></div>`;
+ <div class="km-trade-controls" data-kingdom-trade-controls hidden>
+  <section class="km-trade-row km-trade-row--sell" data-kingdom-trade-sell-label>
+   <div class="km-trade-slider-wrap">
+    <input id="km-trade-sell" class="km-trade-slider km-trade-slider--supplies" type="range" min="0" max="0" step="1" value="0" data-kingdom-trade-sell>
+    <output for="km-trade-sell" data-kingdom-trade-sell-selected>0</output>
+   </div>
+   <button class="reboot-button reboot-button--primary km-trade-action" type="button" data-kingdom-trade-sell-apply>
+    <strong data-kingdom-trade-sell-count>0</strong><img src="generated_assets/reward_gold.png" alt="" aria-hidden="true">
+   </button>
+  </section>
+  <section class="km-trade-row km-trade-row--buy" data-kingdom-trade-buy-label>
+   <div class="km-trade-slider-wrap">
+    <input id="km-trade-buy" class="km-trade-slider km-trade-slider--gold" type="range" min="0" max="0" step="15" value="0" data-kingdom-trade-buy>
+    <output for="km-trade-buy" data-kingdom-trade-buy-selected>0</output>
+   </div>
+   <button class="reboot-button reboot-button--primary km-trade-action" type="button" data-kingdom-trade-buy-apply>
+    <strong data-kingdom-trade-buy-count>0</strong><img src="generated_assets/reward_supplies.png" alt="" aria-hidden="true">
+   </button>
+  </section>
+ </div><p class="km-hint" data-kingdom-hint></p></aside></section></div>`;
  screen.style.setProperty('--km-event-size-px',(MAP_LAYOUT.cellPx*MAP_LAYOUT.eventScalePercent/100)+'px');
  screen.style.setProperty('--km-king-px',MAP_LAYOUT.kingPx+'px');
  screen.style.setProperty('--km-inspector-width',MAP_LAYOUT.inspectorWidthPercent+'%');
  (document.querySelector('#app')||document.body).append(screen);
- screen.querySelector('[data-kingdom-roster]').addEventListener('click',()=>{hideMap();globalThis.dispatchEvent(new CustomEvent('rpchess:run-continue'));});
+ screen.querySelector('[data-kingdom-roster]').addEventListener('click',()=>{if(globalThis.RPChessRoster?.openRoster?.())hideMap();});
  screen.querySelector('[data-kingdom-settings]').addEventListener('click',()=>globalThis.RPChessOpenSettings?.());
  screen.querySelector('[data-kingdom-menu]').addEventListener('click',()=>{hideMap();globalThis.RPChessRoster?.returnToMenu?.();});
  // No manual annex clicks: the growing border follows persistent Power and wins.
@@ -473,6 +502,13 @@ function screenReady(){
  });
  screen.querySelector('[data-kingdom-outpost]').addEventListener('click',constructOutpost);
  screen.querySelector('[data-kingdom-build-settlement]').addEventListener('click',constructSettlement);
+ screen.querySelector('[data-kingdom-build-trade]').addEventListener('click',constructTradePost);
+ for(const direction of ['sell','buy']){
+   const slider=screen.querySelector('[data-kingdom-trade-'+direction+']');
+   slider.addEventListener('input',()=>updateTradeSlider(direction));
+   screen.querySelector('[data-kingdom-trade-'+direction+'-apply]')
+     .addEventListener('click',()=>applyTradeExchange(direction));
+ }
  screen.querySelector('[data-kingdom-earn-shards]').addEventListener('click',goToArena);
  screen.querySelector('[data-kingdom-world]').addEventListener('click',onWorldClick);
  const frame=screen.querySelector('.km-map-frame');
@@ -731,6 +767,7 @@ function render(){
  const tileUrls=new Map(); // Reuse resolved CSS URLs across the visible grid.
  const outpostCenters=new Set((map.outposts||[]).map(post=>post.id));
  const industrySites=new Map((map.industry?.buildings||[]).map(site=>[site.id,site]));
+ const tradeSites=new Map((map.tradePosts||[]).map(site=>[site.id,site]));
  const industryWeek=weekForDay(map.day);
  for(let row=-CENTER_Y;row<HEIGHT-CENTER_Y;row++)
   for(let col=-CENTER_X;col<WIDTH-CENTER_X;col++){
@@ -815,6 +852,7 @@ function render(){
    }
    if(resourceBurst?.id===id){
     const group=document.createElement('span');group.className='km-resource-bursts';
+    if(resourceBurst.origin==='king')group.classList.add('km-resource-bursts--king');
     group.setAttribute('role','status');
     resourceBurst.changes.forEach((change,index)=>{
      const burst=document.createElement('span');burst.className='km-resource-burst';
@@ -830,6 +868,28 @@ function render(){
     const tower=document.createElement('img');tower.className='km-object km-object--outpost';
     tower.src='assets/kingdom-parchment/decor_minor_landmarks/04_watchtower.png';
     tower.alt='';tower.loading='lazy';btn.append(tower);
+   }
+   const tradeSite=tradeSites.get(id);
+   if(visible&&tradeSite){
+    const tent=document.createElement('img');
+    tent.src=TRADING_TENT_ICON;tent.alt='';
+    tent.className='km-object km-object--trade';
+    btn.append(tent);
+    btn.setAttribute('aria-label',tr('tradeTent'));
+    const level=document.createElement('small');level.className='km-industry-level';
+    level.textContent=['','I','II','III','IV','V'][tradeSite.level]||'I';
+    btn.append(level);
+    const amount=pendingTradeGold(map,id);
+    if(owned&&amount>0){
+     const pickup=document.createElement('button');pickup.type='button';
+     pickup.className='km-production-marker';pickup.dataset.kingdomCollect=id;
+     pickup.dataset.kingdomTradeCollect=id;pickup.dataset.productionKind='gold';
+     pickup.style.left=((col+CENTER_X+.62)*100/WIDTH)+'%';
+     pickup.style.top=((row+CENTER_Y+.13)*100/HEIGHT)+'%';
+     const icon=document.createElement('img');icon.src=GOLD_ICON;icon.alt='';
+     const label=document.createElement('strong');label.textContent=String(amount);
+     pickup.append(icon,label);productions.append(pickup);
+    }
    }
    const industrySite=industrySites.get(id);
    if(visible&&industrySite){
@@ -977,6 +1037,7 @@ function render(){
    knownChosen.status==='completed'&&knownChosen.selectedEncounter?.type==='settlement')));
  else{
   slot.replaceChildren();
+  const tradeSite=tradeSites.get(selectedId);
   const industrySite=industrySites.get(selectedId);
   const industryBuilding=industrySite&&BUILDING_TYPES[industrySite.kind];
   const industryActive=Boolean(industryBuilding&&industrySite.builtWeek<industryWeek);
@@ -991,8 +1052,10 @@ function render(){
    info?.type==='empty'?'':
    info?.status==='completed'?tr('complete'):tr('discover');
   screen.querySelector('[data-kingdom-inspector-title]').textContent=
-   industrySite?industryName(industrySite.kind):header;
-  screen.querySelector('[data-kingdom-inspector-text]').textContent=industryDetail??description;
+   tradeSite?tr('tradeTent'):industrySite?industryName(industrySite.kind):header;
+  screen.querySelector('[data-kingdom-inspector-text]').textContent=tradeSite?
+    tr('level')+' '+['','I','II','III','IV','V'][tradeSite.level]+' · +'+
+    (tradeSite.level*3)+' '+tr('tradeWeekly'):industryDetail??description;
  }
  const ann=screen.querySelector('[data-kingdom-annex]'),outpost=screen.querySelector('[data-kingdom-outpost]'),earn=screen.querySelector('[data-kingdom-earn-shards]'),settlementBuild=screen.querySelector('[data-kingdom-build-settlement]');
  const id=selectedId;
@@ -1022,6 +1085,25 @@ function render(){
  earn.replaceChildren(actionArtwork(ARENA_ACTION_ICON,true));
  earn.title=tr('earn')+' '+tr('shards')+' '+tr('onArena');
  earn.setAttribute('aria-label',earn.title);
+ const buildTrade=screen.querySelector('[data-kingdom-build-trade]');
+ buildTrade.hidden=!selectedPoint||!canBuildTradePost(map,selectedPoint);
+ buildTrade.replaceChildren(actionArtwork(TRADING_TENT_ICON));
+ buildTrade.title=tr('buildTrade');
+ buildTrade.setAttribute('aria-label',buildTrade.title);
+ const controls=screen.querySelector('[data-kingdom-trade-controls]');
+ const limits=tradeLimits(run,selectedId);
+ controls.hidden=!limits.available;
+ if(limits.available){
+  for(const direction of ['sell','buy']){
+   const slider=screen.querySelector('[data-kingdom-trade-'+direction+']');
+   slider.max=String(direction==='sell'?limits.sellSupplies:limits.buySupplies*GOLD_TO_SUPPLY);
+   slider.disabled=Number(slider.max)<1;
+   const value=Number(slider.value),step=Number(slider.step);
+   slider.value=String(slider.disabled?0:Math.min(Number(slider.max),Math.max(step,value||step)));
+   slider.setAttribute('aria-label',tr(direction==='sell'?'tradeSell':'tradeBuy'));
+   updateTradeSlider(direction);
+  }
+ }
   const hint=screen.querySelector('[data-kingdom-hint]');
  hint.hidden=!map.pendingCell;
  hint.textContent=map.pendingCell?tr('pending'):'';
@@ -1030,20 +1112,25 @@ function parsePoint(id){if(!/^-?\d+,-?\d+$/.test(id||''))return null;const [x,y]
 function onWorldClick(event){
  const resume=event.target.closest('[data-kingdom-resume-weekly]');
  if(resume){event.preventDefault();event.stopPropagation();
-  void import('./weekly-defenders-app.mjs').then(mod=>mod.resumeWeekly());return;
+  void import('./weekly-defenders-app.mjs?v=20261116-pin-ice-v2').then(mod=>mod.resumeWeekly());return;
  }
  const marker=event.target.closest('[data-kingdom-collect]');
  if(marker){event.preventDefault();event.stopPropagation();
   claimWeekly(marker.dataset.kingdomCollect);return;}
  onCell(event);
 }
-function showEconomyBurst(id,kind,amount){
- const icon={gold:GOLD_ICON,supplies:SUPPLIES_ICON,shards:SHARD_ICON}[kind];
- if(!icon)return;
- resourceBurst={id,changes:[{kind,icon,delta:amount}]};
+function showEconomyBursts(id,changes,origin='waypoint'){
+ const icons={gold:GOLD_ICON,supplies:SUPPLIES_ICON,shards:SHARD_ICON};
+ const visible=changes.filter(change=>change.delta!==0&&icons[change.kind])
+  .map(change=>({...change,icon:icons[change.kind]}));
+ if(!visible.length)return;
+ resourceBurst={id,changes:visible,origin};
  clearTimeout(resourceTimer);
  resourceTimer=setTimeout(()=>{resourceBurst=null;
   if(screen&&!screen.hidden)render();},RESOURCE_FX_MS);
+}
+function showEconomyBurst(id,kind,amount){
+ showEconomyBursts(id,[{kind,delta:amount}]);
 }
 let weeklyOpening=false;
 async function beginWeeklyPuzzle(id,item){
@@ -1109,6 +1196,13 @@ function expireWeeklyPuzzleOnReturn(){
 function claimWeekly(id){
  const run=readRun();
  if(!run||run.ended||run.activeTravelChoice||run.kingdomMap?.pendingCell)return;
+ const trade=collectTradeGold(run.kingdomMap,id);
+ if(trade.ok){
+  writeRun({...run,kingdomMap:trade.map,gold:run.gold+trade.amount});
+  selected=id;showEconomyBurst(id,'gold',trade.amount);render();
+  globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated',{detail:{source:'kingdom-trade-income'}}));
+  return;
+ }
  const industry=collectIndustry(run.kingdomMap,id);
  if(industry.ok){
   const next={...run,kingdomMap:industry.map,
@@ -1127,7 +1221,7 @@ function claimWeekly(id){
  }
  if(item.kind==='battle'){
   // Direct assignment from this marker: no extra notification or king movement.
-  void import('./weekly-defenders-app.mjs').then(mod=>mod.openWeekly(id));
+  void import('./weekly-defenders-app.mjs?v=20261116-pin-ice-v2').then(mod=>mod.openWeekly(id));
   return;
  }
  const result=collectProduction(run.kingdomMap,id);if(!result.ok)return;
@@ -1242,6 +1336,61 @@ function refreshEconomyControls(){
   outpost.setAttribute('aria-label',outpost.title);
   if(earn)earn.hidden=!place||!needs;
  }
+}
+// The top slider spends Supplies and returns Gold; the bottom spends Gold
+// (in multiples of 15) and returns Supplies. The thumb itself is resource art.
+function updateTradeSlider(direction){
+ const slider=screen?.querySelector('[data-kingdom-trade-'+direction+']');
+ const selectedOutput=screen?.querySelector('[data-kingdom-trade-'+direction+'-selected]');
+ const rewardOutput=screen?.querySelector('[data-kingdom-trade-'+direction+'-count]');
+ const button=screen?.querySelector('[data-kingdom-trade-'+direction+'-apply]');
+ if(!slider||!selectedOutput||!rewardOutput||!button)return;
+ const budget=Math.min(Number(slider.max)||0,Math.max(0,Number(slider.value)||0));
+ const spend=direction==='sell'?budget:Math.floor(budget/GOLD_TO_SUPPLY)*GOLD_TO_SUPPLY;
+ const reward=direction==='sell'?spend*SUPPLY_TO_GOLD:spend/GOLD_TO_SUPPLY;
+ selectedOutput.textContent=String(spend);
+ rewardOutput.textContent=String(reward);
+ const label=lang()==='en'?
+  (direction==='sell'?'Sell '+spend+' Supplies for '+reward+' Gold':
+   'Spend '+spend+' Gold for '+reward+' Supplies'):
+  (direction==='sell'?'Продать '+spend+' припасов за '+reward+' золота':
+   'Обменять '+spend+' золота на '+reward+' припасов');
+ button.disabled=reward<1;
+ button.setAttribute('aria-disabled',String(button.disabled));
+ button.title=label;button.setAttribute('aria-label',label);
+ slider.setAttribute('aria-valuetext',label);
+}
+function applyTradeExchange(direction){
+ const run=readRun(),id=selected||'';
+ if(!run)return;
+ const slider=screen?.querySelector('[data-kingdom-trade-'+direction+']');
+ const budget=Math.max(0,Number(slider?.value)||0);
+ const amount=direction==='sell'?budget:budget/GOLD_TO_SUPPLY;
+ const result=exchangeAtTradePost(run,id,direction,amount);
+ if(!result.ok)return;
+ writeRun(result.run);
+ // Reuse the waypoint's existing icon + signed amount flyout.
+ // Both the spent and received resources fly up from the king's cell.
+ const king=result.run.kingdomMap.king;
+ showEconomyBursts(keyOf(king.x,king.y),[
+  {kind:direction==='sell'?'supplies':'gold',
+   delta:direction==='sell'?result.supplyDelta:result.goldDelta},
+  {kind:direction==='sell'?'gold':'supplies',
+   delta:direction==='sell'?result.goldDelta:result.supplyDelta}
+ ],'king');
+ render();
+ globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated',{detail:{source:'kingdom-trade-exchange'}}));
+}
+function constructTradePost(){
+ const run=readRun(),point=parsePoint(selected);
+ if(!run||run.ended||!point)return;
+ const result=buildTradePost(run.kingdomMap,point);
+ if(!result.ok)return;
+ const id=keyOf(point.x,point.y);
+ const map=advanceDay(result.map,'build-trade:'+id);
+ writeRun({...run,kingdomMap:map});selected=id;render();
+ report(tr('tradeTent')+' · '+tr('level')+' '+['','I','II','III','IV','V'][result.post.level]);
+ globalThis.dispatchEvent(new CustomEvent('rpchess:run-updated',{detail:{source:'kingdom-trading-tent'}}));
 }
 function constructSettlement(){
  const run=readRun(),map=run?.kingdomMap,point=parsePoint(selected);

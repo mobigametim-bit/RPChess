@@ -135,6 +135,118 @@ async function assertTileImage(page,cellId){
     'reopening a v6 save must never downgrade or regenerate its world');
   assert.equal(reopened.kingdomMap.seed,before.kingdomMap.seed,
     'world seed and scouted events remain stable across reopen');
+  // The original real range controls are restored, with art on each thumb
+  // and an exact-price currency icon inside each exchange button.
+  const tradeVisual=await page.evaluate(async()=>{
+    const tent=new Image();tent.src='assets/ui/trading-tent-64.png';
+    await tent.decode();
+    const controls=document.querySelector('[data-kingdom-trade-controls]');
+    return {width:tent.naturalWidth,height:tent.naturalHeight,
+      sliders:[...controls.querySelectorAll('input[type="range"]')].map(slider=>({
+        direction:slider.hasAttribute('data-kingdom-trade-sell')?'sell':'buy',step:slider.step
+      })),
+      buttons:[...controls.querySelectorAll('.km-trade-action img')].map(img=>img.getAttribute('src'))
+    };
+  });
+  assert.deepEqual([tradeVisual.width,tradeVisual.height],[64,64],
+    'Trading Tent must decode from the supplied 64px PNG');
+  assert.deepEqual(tradeVisual.sliders,[{direction:'sell',step:'1'},{direction:'buy',step:'15'}],
+    'Top range spends Supplies; bottom range spends Gold in 15-Gold increments');
+  assert.deepEqual(tradeVisual.buttons,[
+    'generated_assets/reward_gold.png','generated_assets/reward_supplies.png'
+  ],'Exchange buttons display the received currency icons, not text');
+  const tradeCss=fs.readFileSync(path.join(__dirname,'../game/css/kingdom-map.css'),'utf8');
+  assert(tradeCss.includes('.km-trade-slider--gold::-webkit-slider-thumb') &&
+    tradeCss.includes("url('../generated_assets/reward_supplies.png')") &&
+    tradeCss.includes("url('../generated_assets/reward_gold.png')"),
+    'Both actual slider thumbs must display the correct resource artwork');
+  assert(tradeCss.includes('width:calc(var(--km-event-size-px,103px)*.64)') &&
+    tradeCss.includes('height:calc(var(--km-event-size-px,103px)*.64)'),
+    'Trading tent must be 20% smaller than its prior 80% size');
+  // UI integration: one slider changes resource amount, while its action
+  // exchanges the WHOLE selected amount atomically through the real core.
+  await page.evaluate(async()=>{
+    const {readRun,writeRun,RUN_STORAGE_KEY}=await import('./js/run-persistence.mjs');
+    const run=readRun();
+    globalThis.__tradeFixtureOriginal=localStorage.getItem(RUN_STORAGE_KEY);
+    writeRun({...run,gold:150,supplies:4,kingdomMap:{...run.kingdomMap,
+      tradePosts:[{id:'0,0',level:1,builtWeek:0,pendingGold:0}],
+      tradeProcessedWeek:0}});
+    globalThis.RPChessKingdomMap.open();
+  });
+  await page.locator('[data-kingdom-trade-controls]:visible').waitFor();
+  await page.locator('[data-kingdom-trade-sell]').evaluate(slider=>{
+    slider.value='2';slider.dispatchEvent(new Event('input',{bubbles:true}));
+  });
+  assert.equal(await page.locator('[data-kingdom-trade-sell-count]').textContent(),'12',
+    'selling two Supplies must return 12 Gold');
+  await page.locator('[data-kingdom-trade-sell-apply]').click();
+  let tradeResult=await read(page);
+  assert.equal(tradeResult.gold,162,'selling two Supplies credits exactly 12 Gold');
+  assert.equal(tradeResult.supplies,2,'selling two Supplies debits exactly two Supplies');
+  const sellFx=await page.locator('[data-kingdom-cell="0,0"] .km-resource-bursts--king .km-resource-burst')
+    .evaluateAll(items=>items.map(item=>({
+      amount:item.querySelector('strong')?.textContent,
+      icon:item.querySelector('img')?.getAttribute('src')
+    })));
+  assert.deepEqual(sellFx,[
+    {amount:'-2',icon:'generated_assets/reward_supplies.png'},
+    {amount:'+12',icon:'generated_assets/reward_gold.png'}
+  ],'selling must show spent Supplies and gained Gold flying from the King');
+  await page.locator('[data-kingdom-trade-buy]').evaluate(slider=>{
+    slider.value='30';slider.dispatchEvent(new Event('input',{bubbles:true}));
+  });
+  assert.equal(await page.locator('[data-kingdom-trade-buy-count]').textContent(),'2',
+    'spending 30 Gold must award two Supplies');
+  await page.locator('[data-kingdom-trade-buy-apply]').click();
+  tradeResult=await read(page);
+  assert.equal(tradeResult.gold,132,'buying two Supplies debits exactly 30 Gold');
+  assert.equal(tradeResult.supplies,4,'buying two Supplies credits exactly two Supplies');
+  const buyFx=await page.locator('[data-kingdom-cell="0,0"] .km-resource-bursts--king .km-resource-burst')
+    .evaluateAll(items=>items.map(item=>({
+      amount:item.querySelector('strong')?.textContent,
+      icon:item.querySelector('img')?.getAttribute('src')
+    })));
+  assert.deepEqual(buyFx,[
+    {amount:'-30',icon:'generated_assets/reward_gold.png'},
+    {amount:'+2',icon:'generated_assets/reward_supplies.png'}
+  ],'buying must show spent Gold and gained Supplies flying from the King');
+  await page.evaluate(async()=>{
+    const {RUN_STORAGE_KEY}=await import('./js/run-persistence.mjs');
+    // Restore exact storage bytes. writeRun() would update the timestamp and
+    // contaminate independent persistence assertions later in this test.
+    localStorage.setItem(RUN_STORAGE_KEY,globalThis.__tradeFixtureOriginal);
+    delete globalThis.__tradeFixtureOriginal;
+    globalThis.RPChessKingdomMap.open();
+  });
+  const tradeCore=await page.evaluate(async()=>{
+    const {synchronizeTradeLevels,tradeLevel,settleTradeWeek}=await import('./js/kingdom-trade-core.mjs');
+    const map=globalThis.RPChessKingdomMap.map,level=tradeLevel(map);
+    const stale={...map,tradePosts:[{id:'3,0',level:5,builtWeek:0,pendingGold:12}],
+      tradeProcessedWeek:0};
+    const synced=synchronizeTradeLevels(stale);
+    const settled=settleTradeWeek(synced,1);
+    return {level,actual:synced.tradePosts[0].level,
+      retained:synced.tradePosts[0].pendingGold,
+      produced:settled.tradePosts[0].pendingGold};
+  });
+  assert.equal(tradeCore.actual,tradeCore.level,'legacy high-level tents sync to castle level');
+  assert.equal(tradeCore.retained,12,'migration must preserve already-earned Gold');
+  assert.equal(tradeCore.produced,12+3*tradeCore.level,
+    'new weekly production must use the synchronized castle level');
+  const parchmentCode=fs.readFileSync(path.join(__dirname,'../game/js/kingdom-parchment-app.mjs'),'utf8');
+  const terrainPasses=[
+    "drawTerrainSymbols(detailCtx,seed,left,top,columns,rows,repaint,map,'background')",
+    "drawOptionalNature(detailCtx,seed,left,top,columns,rows,map,repaint,'marsh')",
+    "drawOptionalNature(detailCtx,seed,left,top,columns,rows,map,repaint,'pond')",
+    "drawTerrainSymbols(detailCtx,seed,left,top,columns,rows,repaint,map,'forest')",
+    "drawOptionalNature(detailCtx,seed,left,top,columns,rows,map,repaint,'landmarks')"
+  ].map(token=>parchmentCode.indexOf(token));
+  assert(terrainPasses.every(index=>index>=0) &&
+    terrainPasses.every((index,i)=>!i||terrainPasses[i-1]<index),
+    'Dry land, marshes and ponds must render underneath trees and forest');
+  assert(parchmentCode.includes("'fish-visible'")&&parchmentCode.includes("'trail-mark'"),
+    'Natural river waves/fish and earth trail scuffs must be rendered');
   // The castle hire list uses shipped race chess-piece art and the real Gold icon.
   const recruitArt=await page.locator('.km-castle-recruit').evaluateAll(async rows=>Promise.all(rows.map(async row=>{
     const piece=row.querySelector('.km-castle-recruit__piece'),coin=row.querySelector('.km-castle-recruit__gold');
@@ -187,9 +299,16 @@ async function assertTileImage(page,cellId){
     localStorage.setItem(storage,JSON.stringify(run));globalThis.RPChessKingdomMap.open();
     return chosen;
   },key);
-  await page.locator('[data-kingdom-cell="'+settlementCellId+'"]').evaluate(cell=>cell.click());
   const settlementButton=page.locator('[data-kingdom-build-settlement]');
-  assert.equal(await settlementButton.isVisible(),true,'an eligible explored empty cell can host a Settlement');
+  // A map re-open may inherit the 650ms suppression window from a prior
+  // pan/drag. Re-select once it expires instead of racing a synthetic click.
+  for(let attempt=0;attempt<4;attempt++){
+    await page.locator('[data-kingdom-cell="'+settlementCellId+'"]').evaluate(cell=>cell.click());
+    if(await settlementButton.isVisible())break;
+    await page.waitForTimeout(300);
+  }
+  assert.equal(await settlementButton.isVisible(),true,
+    'an eligible explored empty cell can host a Settlement');
   assert.equal(await settlementButton.isDisabled(),true,'insufficient Gold must block construction');
   assert.equal(await settlementButton.getAttribute('aria-disabled'),'true');
   const settlementIcon=await settlementButton.locator('.km-action-illustration').getAttribute('src');
@@ -526,7 +645,7 @@ async function assertTileImage(page,cellId){
     drawWaterRoads(ctx,'kingdom-test-seed',-5,-3,11,7);
     const pixels=ctx.getImageData(0,0,canvas.width,canvas.height).data;
     let painted=0;for(let k=3;k<pixels.length;k+=32)if(pixels[k]>0)painted++;
-    return {river:paintedStrokes.has('#849a9e'),road:paintedStrokes.has('#b6a17c'),painted};
+    return {river:paintedStrokes.has('#638b92'),road:paintedStrokes.has('#b8a077'),painted};
   });
   assert(lineArt.river&&lineArt.road&&lineArt.painted>10,
     'real procedural Canvas strokes must render roads and rivers without retired SVGs');
@@ -1038,6 +1157,12 @@ async function assertTileImage(page,cellId){
     function assertReceipt(ok,message){if(!ok)throw new Error(message)}
    },{runKey:key,type:kind,choice:encounter});
    await page.locator('[data-kingdom-map-screen]:not([hidden])').waitFor({timeout:15000});
+   // Scene visibility can precede the asynchronous battle-aftermath save.
+   // Wait for the actual persisted outcome, not just the map becoming visible.
+   await page.waitForFunction(runKey=>{
+     const run=JSON.parse(localStorage.getItem(runKey)||'null');
+     return run?.kingdomMap?.cells?.['1,0']?.status==='failed';
+   },key,{timeout:15000});
    const lost=await read(page);
    assert.equal(lost.kingdomMap.cells['1,0'].status,'failed');
    // Scene visibility may precede the inspector's asynchronous final paint.
@@ -1775,16 +1900,14 @@ async function assertTileImage(page,cellId){
   await servicesPage.locator('[data-reboot-foundation]:not([hidden])').waitFor();
   await servicesPage.locator('[data-new-game]').click();
   await servicesPage.locator('[data-journey-continue]').click();
-  await servicesPage.locator('[data-roster-screen]:not([hidden])').waitFor();
-  await servicesPage.locator('[data-roster-travel]').click();
-  await servicesPage.locator('[data-settlement-screen]:not([hidden])').waitFor({timeout:18000});
-  assert.equal((await read(servicesPage)).supplies,provisionsBefore,
-    'Resuming a cleared Settlement must not charge Supplies again');
-  await servicesPage.locator('[data-settlement-continue]').click();
+  // The owner-approved Continue Journey now opens the Kingdom immediately,
+  // without the formerly mandatory roster -> travel screen.
   await servicesPage.locator('[data-kingdom-map-screen]:not([hidden])').waitFor({timeout:18000});
+  assert.equal(await servicesPage.locator('[data-roster-screen]:not([hidden])').count(),0,
+    'Continue Journey must not detour through the roster');
+  assert.equal((await read(servicesPage)).supplies,provisionsBefore,
+    'Returning directly to Kingdom from a cleared Settlement must not charge again');
   const finishedServices=await read(servicesPage);
-  assert.equal(finishedServices.activeTravelChoice,null,
-    'Settlement exit must clear the saved active choice');
   assert.equal(finishedServices.supplies,provisionsBefore,
     'Settlement exit must preserve provisions after reload');
   assert.equal(finishedServices.kingdomMap.cells['1,0'].status,'completed');
@@ -2004,9 +2127,9 @@ async function assertTileImage(page,cellId){
   await productionPage.locator('[data-reboot-foundation]:not([hidden])').waitFor();
   await productionPage.locator('[data-new-game]').click();
   await productionPage.locator('[data-journey-continue]').click();
-  await productionPage.locator('[data-roster-screen]:not([hidden])').waitFor();
-  await productionPage.locator('[data-roster-travel]').click();
   await productionPage.locator('[data-kingdom-map-screen]:not([hidden])').waitFor();
+  assert.equal(await productionPage.locator('[data-roster-screen]:not([hidden])').count(),0,
+    'reloaded Journey must open the map directly, retaining collectible production');
   const restored=productionPage.locator('[data-kingdom-industry-collect="'+industryResult.id+'"]');
   await restored.waitFor({state:'visible'});
   const beforePickup=await read(productionPage);
@@ -2036,6 +2159,68 @@ async function assertTileImage(page,cellId){
   assert.equal((await atlasResponse.body()).subarray(0,8).toString('hex'),'89504e470d0a1a0a',
     'production atlas must be a genuine PNG');
   await productionPage.close();
+  // Reuse the Kingdom browser regression to exercise a REAL completed
+  // Auto Battle. Its board must freeze with the shared mate aura/fall,
+  // then open the outcome only AFTER the 3-second ceremony.
+  const matePage=await browser.newPage({viewport:{width:1280,height:720}});
+  await matePage.goto(url,{waitUntil:'networkidle'});
+  await startNewRun(matePage,{legacyTravel:false});
+  await matePage.evaluate(async()=>{
+    const {ClassicChessEngine}=await import('./js/classic-chess-engine.mjs');
+    const fen='7k/6Q1/5K2/8/8/8/8/8 b - - 0 1';
+    if(new ClassicChessEngine(fen).status().type!=='checkmate')
+      throw new Error('Weekly ceremony regression must start from true checkmate');
+    const {readRun,writeRun}=await import('./js/run-persistence.mjs');
+    const {createKingdomMap}=await import('./js/kingdom-map-core.mjs');
+    const original=readRun(),hero=original.roster.find(c=>!c.isRunKing);
+    const map=original.kingdomMap||createKingdomMap(original,400);
+    if(!hero||!map)throw new Error('Weekly Auto Battle regression fixture incomplete');
+    const active={
+      receiptId:'weekly:checkmate-ceremony:'+original.id,week:1,
+      cellId:'1,0',heroId:hero.id,heroName:hero.name,
+      mode:'auto',playerColor:'w',enemyLevel:1,heroLevel:1,heroXp:0,
+      paid:{chargedGold:0,chargedSupplies:0,unpaidValue:0},
+      selectionIds:['weekly:free-king'],formation:[{id:'weekly:free-king',square:'f6'}],
+      enemyFormation:[{id:'test:enemy-king',square:'h8'}],
+      encounter:{raceTag:'humans',enemyRaceTag:'humans'},
+      fen,moves:[],status:'playing'
+    };
+    writeRun({...original,kingdomMap:map,weeklyDefenders:{active,receipts:[]}});
+    const {resumeWeekly}=await import('./js/weekly-defenders-app.mjs');
+    if(!resumeWeekly())throw new Error('Cannot open saved weekly checkmate');
+  });
+  await matePage.locator('.wd-battle-screen.wd-mate-ceremony:not([hidden])')
+    .waitFor({timeout:12000});
+  const ceremony=await matePage.evaluate(()=>{
+    const board=document.querySelector('[data-wd-board]');
+    const loser=board.querySelector('.rpchess-king-defeated');
+    const winner=board.querySelector('.rpchess-king-victorious');
+    return {
+      loser:!!loser,winner:!!winner,
+      aura:loser?getComputedStyle(loser,'::after').backgroundImage:'',
+      fall:loser?getComputedStyle(loser.querySelector('.classic-piece')).animationName:'',
+      freeze:getComputedStyle(board,'::before').animationName,
+      boardVisible:document.querySelector('.wd-battle-screen')?.hidden===false,
+      resultVisible:document.querySelector('[data-wd-results]')?.hidden===false
+    };
+  });
+  assert(ceremony.winner&&ceremony.loser&&ceremony.aura.includes('aura_red.png'),
+    'weekly Auto Battle must reuse green/red royal checkmate aura classes');
+  assert(ceremony.fall.includes('rpchess-mate-king-fall')&&
+    ceremony.freeze.includes('wd-checkmate-freeze'),
+    'losing King falls and board freezes in weekly Auto Battle');
+  assert(ceremony.boardVisible&&!ceremony.resultVisible,
+    'final mating position must stay visible before the outcome');
+  await matePage.waitForTimeout(1100);
+  assert.equal(await matePage.locator('.wd-battle-screen:not([hidden])').count(),1,
+    'Auto Battle must hold its frozen board longer than one second');
+  await matePage.locator('[data-wd-results]:not([hidden])').waitFor({timeout:9000});
+  const settled=await read(matePage);
+  assert.equal(settled.weeklyDefenders.active,null);
+  assert.equal(settled.weeklyDefenders.receipts.length,1,
+    'weekly Auto Battle settlement must occur once after checkmate ceremony');
+  await matePage.close();
+  console.log('WEEKLY AUTO MATE PASS — royal auras, loser fall, freeze, 3s result hold and single reward');
   console.log('KINGDOM PRODUCTION PASS — manual icon collection, reload persistence, atlas, scale, biome and Castle II');
   console.log('KINGDOM MAP PASS — click-inspect, king drag, shortest routes, event stop, map pan, step supplies, red provinces');
  }finally{await browser.close()}

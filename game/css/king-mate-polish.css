@@ -1,5 +1,18 @@
 /* Shared checkmate ceremony for Classic, Battle, Skirmish, Caravan, Arena and Tournament.
  * Same red aura asset and 90° loser fall as Mentor; never used by Puzzle screens. */
+/* All chess boards (including Weekly autoplay) place the check aura behind king art. */
+.classic-board:not(.puzzle-board) .classic-square--check:not(.rpchess-king-defeated):not(.rpchess-king-victorious)::after{
+ content:'';position:absolute;inset:0;
+ background:url('../assets/vfx/aura_red.png') center/100% 100% no-repeat!important;
+ opacity:.72!important;z-index:1;pointer-events:none;
+}
+.classic-board:not(.puzzle-board) .classic-square > :is(
+ .classic-piece,.rpchess-fantasy-piece,.rpchess-piece-symbol,.classic-piece-marker
+){z-index:2}
+.wd-battle-screen .classic-square > :is(.wd-battle-unit,.wd-battle-simple){
+ position:relative;z-index:2;
+}
+
 .classic-board:not(.puzzle-board) .classic-square.rpchess-king-defeated::after,
 .classic-board:not(.puzzle-board) .classic-square.rpchess-king-victorious::after{
  content:'';position:absolute;inset:0;

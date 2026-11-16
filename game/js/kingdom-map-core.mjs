@@ -10,6 +10,7 @@ import {KINGDOM_OUTPOST_SHARD_COST} from './arena-core.mjs?v=20261109-kingdom-ec
 import {DEFAULT_KINGDOM_ECONOMY,weeklyResourceProduction} from './kingdom-economy-config.mjs';
 import {synchronizeRoyalRoads} from './kingdom-road-network.mjs?v=20261111-polish-v1';
 import {initialIndustry,validIndustry,settleIndustryWeek,realignLandlockedPiers} from './kingdom-industry-core.mjs';
+import {validTradePosts,initializeTrade,settleTradeWeek,synchronizeTradeLevels} from './kingdom-trade-core.mjs?v=20261116-castle-trade-v4';
 
 // Live defaults mirror Atlas Lab's canonical economy; change only after acceptance.
 const production=DEFAULT_KINGDOM_ECONOMY.production;
@@ -75,12 +76,20 @@ function isOwned(map,point){
 // Persist per-Battle hues; blue belongs exclusively to the player.
 const BATTLE_PROVINCE_HUES=Object.freeze([0,18,36,55,75,95,115,135,155,175,247,265,283,301,319,337]);
 function nextProvinceColorIndex(seed,id,used){
- const start=(hashString(seed+':province-color:'+id)>>>0)%BATTLE_PROVINCE_HUES.length;
- for(let n=0;n<BATTLE_PROVINCE_HUES.length;n++){
-  const index=(start+n)%BATTLE_PROVINCE_HUES.length;
-  if(!used.has(index)){used.add(index);return index;}
- }
- return start;
+ const seedIndex=(hashString(seed+':province-color:'+id)>>>0)%BATTLE_PROVINCE_HUES.length;
+ const free=BATTLE_PROVINCE_HUES.map((hue,index)=>({hue,index}))
+  .filter(({index})=>!used.has(index));
+ const pool=free.length?free:BATTLE_PROVINCE_HUES.map((hue,index)=>({hue,index}));
+ const circular=(a,b)=>Math.min(Math.abs(a-b),360-Math.abs(a-b));
+ pool.sort((a,b)=>{
+  const minDist=item=>used.size?Math.min(...[...used].map(index=>
+   circular(item.hue,BATTLE_PROVINCE_HUES[index]))):180;
+  const diff=minDist(b)-minDist(a);
+  if(diff)return diff;
+  const rank=index=>(index-seedIndex+BATTLE_PROVINCE_HUES.length)%BATTLE_PROVINCE_HUES.length;
+  return rank(a.index)-rank(b.index);
+ });
+ const chosen=pool[0].index;used.add(chosen);return chosen;
 }
 const CARDINAL=Object.freeze([[0,-1],[1,0],[0,1],[-1,0]]);
 function growTerritory(map){
@@ -122,9 +131,11 @@ function growTerritory(map){
 // stolen. The reservation may extend beyond fog but stays hidden until scouted.
 function reserveBattleTerritories(map){
  const usedColors=new Set();
- let recolored=false;
+ const recolorLegacy=map.provincePaletteVersion!==2;
+ let recolored=recolorLegacy;
  // Upgrade old saves once and keep enemy hues stable after conquest/reload.
  const existing=(map.battleTerritories||[]).map(p=>{
+  if(recolorLegacy)return {...p,colorIndex:nextProvinceColorIndex(map.seed,p.id,usedColors)};
   const index=p.colorIndex;
   if(Number.isInteger(index)&&index>=0&&index<BATTLE_PROVINCE_HUES.length&&
       (!usedColors.has(index)||usedColors.size===BATTLE_PROVINCE_HUES.length)){
@@ -137,7 +148,7 @@ function reserveBattleTerritories(map){
  const newBattles=Object.entries(map.cells||{}).filter(([id,c])=>
   c?.selectedEncounter?.type==='battle'&&!c.completedOnce&&c.status!=='completed'&&
   !existingIds.has(id)).sort(([a],[b])=>a.localeCompare(b,'en'));
- if(!newBattles.length)return recolored?{...map,battleTerritories:existing}:map;
+ if(!newBattles.length)return recolored?{...map,battleTerritories:existing,provincePaletteVersion:2}:map;
  const committed=playerTerritoryKeys(map);
  const newCenters=new Set(newBattles.map(([id])=>id));
  const allCenters=new Set([...existingIds,...newCenters]);
@@ -182,7 +193,7 @@ function reserveBattleTerritories(map){
   territories.push(allocate(id,cell.selectedEncounter.id,
    Math.max(1,Math.floor(difficultyForStars(cell.selectedEncounter.stars).elo/200)),
    nextProvinceColorIndex(map.seed,id,usedColors)));
- return {...map,battleTerritories:territories};
+ return {...map,battleTerritories:territories,provincePaletteVersion:2};
 }
 function migrateKingdomMap(map,run=null){
  if(!validateKingdomMap(map))return map;
@@ -200,6 +211,7 @@ function migrateKingdomMap(map,run=null){
  // Old run saves do not receive backdated buildings or free resources.
  if(!result.industry)result={...result,industry:initialIndustry(weekForDay(result.day))};
  result=realignLandlockedPiers(result);
+ result=synchronizeTradeLevels(initializeTrade(result));
  if(!Array.isArray(result.outposts))result={...result,outposts:[]};
  if(!Array.isArray(result.builtSettlements))result={...result,builtSettlements:[]};
  if(!Array.isArray(result.outpostRoads))result={...result,outpostRoads:[]};
@@ -237,7 +249,7 @@ function productionFor(map,id,type,week){
 function settleWeeklyProduction(map){
  const week=weekForDay(map.day);
  const seeded=map.industry?map:{...map,industry:initialIndustry(weekForDay(Math.max(1,map.day-1)))};
- const staged=settleIndustryWeek(seeded,week);
+ const staged=settleTradeWeek(settleIndustryWeek(seeded,week),week);
  if(week<=Math.max(0,staged.processedThroughWeek||0))return staged;
  let cells=staged.cells;
  for(const [id,cell] of Object.entries(staged.cells)){
@@ -285,6 +297,7 @@ function canBuildSettlement(map,point){
   !cell.selectedEncounter&&id!==keyOf(map.castle.x,map.castle.y)&&
   !(map.outposts||[]).some(post=>post.id===id||post.cells?.includes(id))&&
   !(map.industry?.buildings||[]).some(site=>site.id===id)&&
+  !(map.tradePosts||[]).some(site=>site.id===id)&&
   !(map.builtSettlements||[]).some(site=>site.id===id));
  // Roads, rivers and decorative landmarks are not construction blockers for
  // manual Settlements. Only automatic industry needs clear geography.
@@ -313,7 +326,8 @@ function canBuildOutpost(map,point){
   (cell.type==='empty'||cell.completedOnce===true)&&
   !(map.outposts||[]).some(post=>post.id===id)&&
    !(map.builtSettlements||[]).some(site=>site.id===id)&&
-   !(map.industry?.buildings||[]).some(site=>site.id===id));
+   !(map.industry?.buildings||[]).some(site=>site.id===id)&&
+   !(map.tradePosts||[]).some(site=>site.id===id));
  // An Outpost can stand on a completed road event; natural features and roads
  // are intentionally not blockers. Owned/enemy land and other sites remain so.
 }
@@ -387,8 +401,8 @@ function createKingdomMap(run,playerPower=400,raceTag='humans'){
   cells:{'0,0':{status:'completed',type:'castle',annexed:true}},pendingCell:null,
   peakKingPower:power,annexationPointsSpent:0,battlePointsEarned:0,legacyBonusLands:0,
   creditedBattleEncounterIds:[],uniqueFirstConquests:[],centralOwnedCells:[],
-  battleTerritories:[],battleConqueredCells:[],
-  day:1,calendarActions:[],processedThroughWeek:0,industry:initialIndustry(),outposts:[],builtSettlements:[],productionClaims:[],
+  battleTerritories:[],battleConqueredCells:[],provincePaletteVersion:2,
+  day:1,calendarActions:[],processedThroughWeek:0,industry:initialIndustry(),tradePosts:[],tradeProcessedWeek:0,outposts:[],builtSettlements:[],productionClaims:[],
   completedRoads:[],lastCompletedRouteCell:null,outpostRoads:[],royalRoads:[],
   completedNewEncounterCount:0,productionCyclesResolved:0});
 }
@@ -401,7 +415,7 @@ function validateKingdomMap(map){
     !Number.isInteger(map.battlePointsEarned)||map.battlePointsEarned<0||
     !Array.isArray(map.creditedBattleEncounterIds))return false;
  if(map.day!=null&&(!Number.isSafeInteger(map.day)||map.day<1))return false;
- if(!validIndustry(map.industry))return false;
+ if(!validIndustry(map.industry)||!validTradePosts(map))return false;
  if(map.outposts!=null&&(!Array.isArray(map.outposts)||
    !map.outposts.every(p=>p&&typeof p.id==='string'&&
      /^-?[0-9]+,-?[0-9]+$/.test(p.id)&&Array.isArray(p.cells)&&
@@ -451,7 +465,7 @@ function validateKingdomMap(map){
 function updatePeak(map,power){
  const next=Math.max(map.peakKingPower,Math.max(0,Math.floor(Number(power)||0)));
  if(next===map.peakKingPower)return map;
- return growTerritory({...map,peakKingPower:next});
+ return growTerritory(synchronizeTradeLevels({...map,peakKingPower:next}));
 }
 function randomEncounter(run,point,power,planned=null){
  const coord=keyOf(point.x,point.y),worldSeed=run.kingdomMap?.seed||run.id,

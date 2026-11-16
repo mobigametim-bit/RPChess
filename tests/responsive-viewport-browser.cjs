@@ -204,7 +204,7 @@ async function auditViewport(browser, width, height, language) {
     await assertPageFitsViewport(page, `${label} Chronicle`);
 
     await page.locator('[data-continue-run]').click();await page.locator('[data-journey-choice-modal]:not([hidden]) [data-journey-continue]').click();
-    await page.locator('[data-roster-travel]').click();
+    // Legacy Travel fixture resumes its card screen directly, not via Roster.
     await page.locator('[data-travel-choice-screen]:not([hidden])').waitFor();
     await assertPageFitsViewport(page, `${label} Travel`);
     await assertViewportContained(page, '[data-travel-choice-screen]:not([hidden])', `${label} Travel screen`);

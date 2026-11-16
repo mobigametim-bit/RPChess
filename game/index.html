@@ -55,7 +55,7 @@
   <link rel="stylesheet" href="css/arena.css?v=20260924-6">
   <link rel="stylesheet" href="css/tournament.css?v=20261103-gold-flight-1">
   <link rel="stylesheet" href="css/finished-game-review.css?v=20261108-piece-verdicts-1">
-  <link rel="stylesheet" href="css/combat-centered-layout.css?v=20261110-icon-rail-v4">
+  <link rel="stylesheet" href="css/combat-centered-layout.css?v=20261116-arena-left-v1">
   <link rel="stylesheet" href="css/piece-drag.css?v=20261018-drag1">
   <link rel="stylesheet" href="css/roster-formation.css?v=20261017-1">
   <link rel="stylesheet" href="css/portrait-ui.css?v=20261022-portrait-motion1" data-portrait-ui-css>
@@ -63,10 +63,10 @@
   <link rel="stylesheet" href="css/tournament-v4.css?v=20261107-portrait-toolbar-1">
   <link rel="stylesheet" href="css/font-goznak.css?v=20261106-goznak-release-1" data-goznak-ui>
   <link rel="stylesheet" href="css/mentor-training.css?v=20261108-king-check-aura-v2">
-  <link rel="stylesheet" href="css/king-mate-polish.css?v=20261114-king-ceremony-1">
+  <link rel="stylesheet" href="css/king-mate-polish.css?v=20261116-aura-layer-v2">
   <link rel="stylesheet" href="css/main-menu-approved.css?v=20261110-journey-choice-v1">
-  <link rel="stylesheet" href="css/hud-nav-icons.css?v=20261110-roster-icons-v5">
-  <link rel="stylesheet" href="css/kingdom-roster-polish.css?v=20261111-r1">
+  <link rel="stylesheet" href="css/hud-nav-icons.css?v=20261116-rival-button-v2">
+  <link rel="stylesheet" href="css/kingdom-roster-polish.css?v=20261116-army-grid-v2">
 </head>
 <body>
   <div class="game-loading-screen" data-game-loading role="status" aria-live="polite" aria-label="Загрузка игры">
@@ -109,7 +109,7 @@
 
     <main class="arena-screen" data-arena-screen aria-label="Арена" hidden>
       <div class="arena-shell">
-        <header class="arena-topbar"><h1 data-arena-title>Арена</h1><div class="arena-balance" data-arena-shards></div><div class="arena-nav-actions"><button class="classic-mini-button" type="button" data-arena-rivals hidden>К соперникам</button><button class="classic-mini-button" type="button" data-arena-back>Главное меню</button></div></header>
+        <header class="arena-topbar"><h1 data-arena-title>Арена</h1><div class="arena-balance" data-arena-shards></div><div class="arena-nav-actions"><button class="classic-mini-button arena-nav-illustrated" type="button" data-arena-rivals hidden aria-label="К соперникам" title="К соперникам"><img src="assets/ui/main-menu-arena.png" alt="" aria-hidden="true"></button><button class="classic-mini-button" type="button" data-arena-back>Главное меню</button><button class="classic-mini-button" type="button" data-arena-journey hidden aria-label="Путешествие" title="Путешествие">Путешествие</button></div></header>
         <section class="arena-catalog" data-arena-catalog>
           <h2 data-arena-squad-label>Ваш отряд</h2><div class="arena-squads" data-arena-squads></div>
           <div class="arena-section-nav"><h2 data-arena-enemy-label>Соперники</h2><strong data-arena-section></strong></div>
@@ -427,9 +427,9 @@
   <script type="module" src="js/pwa-install.mjs?v=20261104-2"></script>
   <script type="module" src="js/screen-loading.mjs?v=20261111-menu-texture-gate-v1"></script>
   <script type="module" src="js/reboot-foundation.mjs?v=20261111-polish-v1"></script>
-  <script type="module" src="js/roster-app.mjs?v=20261111-polish-v1"></script>
+  <script type="module" src="js/roster-app.mjs?v=20261116-trade-fx-v5"></script>
   <script type="module" src="js/classic-chess-app.mjs?v=20261111-polish-v1"></script>
-  <script type="module" src="js/arena-app.mjs?v=20261110-icon-preserve"></script>
+  <script type="module" src="js/arena-app.mjs?v=20261116-trade-fx-v5"></script>
   <script type="module" src="js/skirmish-app.mjs?v=20261111-polish-v1"></script>
   <script type="module" src="js/tournament-app.mjs?v=20261110-icon-preserve"></script>
   <script type="module" src="js/board-view-toggle.mjs?v=20261103-board-switch-tournament-1"></script>

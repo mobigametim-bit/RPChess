@@ -7,14 +7,11 @@ const url = process.env.RPCHESS_ACCEPTANCE_URL || 'http://127.0.0.1:4173';
 const RUN_KEY = 'rpchess.reboot.v1.run';
 
 async function resumeCaravan(page, selector) {
-  const inCombat = await page.evaluate(key => JSON.parse(localStorage.getItem(key))?.currentCaravan?.phase === 'combat', RUN_KEY);
   await page.reload({ waitUntil:'networkidle' });
   await page.locator('[data-continue-run]').click();await page.locator('[data-journey-choice-modal]:not([hidden]) [data-journey-continue]').click();
-  if (!inCombat) {
-    await page.locator('[data-roster-screen]:not([hidden])').waitFor();
-    await page.locator('[data-roster-travel]').click();
-  }
   await page.locator(selector).waitFor();
+  assert.strictEqual(await page.locator('[data-roster-screen]:not([hidden])').count(),0,
+    'Caravan resume must not detour through Roster');
 }
 
 async function openCaravan(page) {

@@ -25,6 +25,25 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     await page.locator('[data-game-loading]').waitFor({state:'hidden',timeout:25000});
     await page.locator('[data-arena-screen]:not([hidden])').waitFor();
     assert.strictEqual(await page.locator('[data-arena-foes] button').count(),84);
+    // The Journey icon in the catalog must use the same transparent HUD
+    // hitbox as the adjacent Castle exit, not its previous gold tile.
+    const journeyIconStyling=await page.evaluate(()=>{
+      const journey=document.querySelector('[data-arena-journey]');
+      const castle=document.querySelector('[data-arena-back]');
+      const a=getComputedStyle(journey),b=getComputedStyle(castle);
+      return {hasImage:journey.querySelector('img')!==null,
+        bg:a.backgroundImage,border:a.borderWidth,shadow:a.boxShadow,
+        background:a.backgroundColor,width:a.width,castleWidth:b.width,
+        castleBorder:b.borderWidth,castleShadow:b.boxShadow,
+        castleBackground:b.backgroundColor};
+    });
+    assert.equal(journeyIconStyling.hasImage,false,'Journey icon uses the shared CSS HUD artwork');
+    assert(journeyIconStyling.bg.includes('main-menu-journey.png'),'Journey nav must show the real menu pictogram');
+    assert.equal(journeyIconStyling.border,journeyIconStyling.castleBorder,'Journey and Castle need identical borderless hitboxes');
+    assert.equal(journeyIconStyling.shadow,journeyIconStyling.castleShadow,'Journey and Castle need identical shadow treatment');
+    assert.equal(journeyIconStyling.background,journeyIconStyling.castleBackground,'Journey and Castle need identical transparent backing');
+    assert.equal(journeyIconStyling.width,journeyIconStyling.castleWidth,'Journey and Castle icons need identical sizing');
+
     assert.strictEqual(await page.locator('[data-arena-prev], [data-arena-next]').count(),0,'section arrows are removed');
     assert.strictEqual(await page.locator('.arena-foe--section-start').count(),12,'12 section snap points');
     assert.strictEqual(await page.locator('[data-arena-foes] button:not([disabled])').count(),1);
@@ -153,6 +172,16 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
     const combatBoard=await page.locator('[data-arena-board]').boundingBox();
     assert(Math.abs(combatBoard.x+combatBoard.width/2-950)<=2 && Math.abs(combatBoard.y+combatBoard.height/2-454.5)<=2 && Math.abs(combatBoard.width-909)<=2 && Math.abs(combatBoard.height-909)<=2,'Arena board must center on the full landscape viewport');
     assert.strictEqual(await page.locator('.arena-nav-actions button').first().getAttribute('data-arena-rivals'),'','opponents button must precede main menu');
+    const rivalsIcon=await page.locator('[data-arena-rivals]').evaluate(button=>{
+      const css=getComputedStyle(button);
+      return {src:button.querySelector('img')?.getAttribute('src'),
+        bg:css.backgroundImage,bgColor:css.backgroundColor,visible:!button.hidden};
+    });
+    assert(rivalsIcon.visible && rivalsIcon.src==='assets/ui/main-menu-arena.png',
+      'Return to rivals must use exactly the main-menu Arena icon');
+    assert.equal(rivalsIcon.bg,'none','Arena icon must not receive text-button background artwork');
+    assert.equal(rivalsIcon.bgColor,'rgba(0, 0, 0, 0)','Arena icon background must remain transparent');
+
     assert(await page.locator('[data-arena-battle-title]').isVisible() && await page.locator('[data-arena-moves]').isVisible(),'battle summary and move journal must both be visible');
     const railBackground=await page.locator('.arena-shell').evaluate(element=>getComputedStyle(element).backgroundImage);
     assert(railBackground.includes('ashen_dominion/boss_arena.webp'),'Arena combat should use the repository arena backdrop');
@@ -173,6 +202,8 @@ const url=process.env.RPCHESS_ACCEPTANCE_URL||'http://127.0.0.1:4173';
       assert(Math.abs(frame.board.width-frame.board.height)<=2,`Arena board remains square ${tag}`);
       assert(frame.pageWidth<=width+1,`Arena does not create page horizontal overflow ${tag}`);
       assert(frame.rivals.right<=frame.back.left+1 && frame.back.right<=frame.board.left+1,`Arena navigation stays in left rail ${tag}`);
+      assert(frame.rivals.left<=frame.head.left+24,
+        `Arena rival/Home icons must dock at the left edge, not the right of the info rail ${tag}`);
       assert(frame.head.left>=-1 && frame.head.right<=frame.board.left+1 && frame.head.top>=-1,`Arena summary stays in left rail ${tag}`);
       assert(Math.abs(frame.journal.top-frame.head.bottom)<=3,`Arena journal immediately follows the summary ${tag}`);
       assert(frame.journal.left>=-1 && frame.journal.right<=frame.board.left+1 && frame.journal.bottom<=height+1 && frame.journal.height>38,`Arena journal fits remaining height ${tag}`);
