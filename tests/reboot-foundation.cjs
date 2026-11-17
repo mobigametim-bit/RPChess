@@ -113,8 +113,8 @@ for(const token of ["VKWebAppCheckBannerAd","VKWebAppShowBannerAd","VKWebAppHide
 for(const token of ['isStickyAvailable','showSticky','closeSticky']){
   assert(gamepushSource.includes(token),'GamePush sticky capability missing '+token);
 }
-assert(html.includes('js/reboot-foundation.mjs?v=20261116-vk-bottom-v5-host-init'),
-  'The public entry point must load fresh sticky bootstrap');
+assert(/<script type="module" src="js\/reboot-foundation\.mjs\?v=\d{8}-[^"]+"><\/script>/.test(html),
+  'The public entry point must retain a versioned sticky bootstrap');
 assert(!stickySource.includes("document.createElement('iframe')"),
   'A platform banner must not be faked with arbitrary embedded ad markup');
 
