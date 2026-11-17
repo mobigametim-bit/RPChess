@@ -24,7 +24,7 @@ import {commanderPortrait,commanderTitle} from './commander-portraits.mjs';
 import {kingdomMapSprite,kingdomEncounterSprite} from './kingdom-map-assets.mjs';
 import {renderParchment,renderParchmentFog,visibleThroughFog} from './kingdom-parchment-app.mjs?v=20261116-pond-river-trail-v4';
 import {drawKingdomOverlay} from './kingdom-map-overlay.mjs?v=20261114-corridor-joints-v2';
-import {animateTravelers,stopTravelers} from './kingdom-traveler-renderer.mjs?v=20261111-npc-floor-v1';
+import {animateTravelers,stopTravelers} from './kingdom-traveler-renderer.mjs?v=20261117-mobile-perf-v1';
 import {industrySprite,industrySpriteIndex,industryYield,industryLevel,industryPending,collectIndustry,BUILDING_TYPES} from './kingdom-industry-core.mjs';
 import {worldAt} from './kingdom-world-core.mjs';
 import {ATLAS_VIEW} from './kingdom-world-config.mjs?v=20261109-atlas-visual5';
@@ -99,9 +99,19 @@ function savedZoom(){
 let zoomPx=savedZoom(),zoomFrame=0,ignoreCellClicksUntil=0,pinch=null;
 let pan=null,kingDrag=null,routeQueue=[];
 const activeTouches=new Map();
-function updateZoom(value){
+function updateZoom(value,{preview=false}={}){
  const next=clampZoom(value);if(next===zoomPx)return;
- zoomPx=next;try{localStorage.setItem(ZOOM_KEY,String(zoomPx));}catch{}
+ zoomPx=next;
+ if(preview){
+  // Pinch updates only the CSS transform; the full map is rebuilt on release.
+  const world=screen?.querySelector('.km-world');
+  if(world&&!screen.hidden){
+   world.style.transform=`translate(-50%,-50%) scale(${zoomPx/MAP_LAYOUT.cellPx})`;
+   screen.querySelector('[data-kingdom-zoom-value]').textContent=zoomPx+' px';
+  }
+  return;
+ }
+ try{localStorage.setItem(ZOOM_KEY,String(zoomPx));}catch{}
  if(!zoomFrame)zoomFrame=requestAnimationFrame(()=>{
   zoomFrame=0;if(screen&&!screen.hidden)render();
  });
@@ -131,7 +141,7 @@ function zoomPointerMove(e){
   activeTouches.set(e.pointerId,{x:e.clientX,y:e.clientY});
   if(pinch&&activeTouches.size>=2){
    e.preventDefault();ignoreCellClicksUntil=Date.now()+650;
-   updateZoom(pinch.zoom*touchDistance()/pinch.distance);
+   updateZoom(pinch.zoom*touchDistance()/pinch.distance,{preview:true});
    return;
   }
  }
@@ -152,7 +162,14 @@ function zoomPointerEnd(e){
  if(e.pointerType==='touch'){
   if(pinch)ignoreCellClicksUntil=Date.now()+650;
   activeTouches.delete(e.pointerId);
-  if(activeTouches.size<2)pinch=null;
+  if(pinch&&activeTouches.size<2){
+   const changed=zoomPx!==pinch.zoom;
+   pinch=null;
+   if(changed){
+    try{localStorage.setItem(ZOOM_KEY,String(zoomPx));}catch{}
+    if(screen&&!screen.hidden)render();
+   }
+  }
  }
  if(!pan||pan.id!==e.pointerId)return;
  const finished=pan;pan=null;
@@ -261,7 +278,7 @@ function oddCoverCount(pixels,minimum,cellPixels=zoomPx){
 // The camera is independent of the king: keep world cells stationary when he
 // moves inside the viewport. Only pan after he reaches its inner edge.
 let screen=null,selected=null,movement=null,camera=null,flightTimer=null,launchTimer=null,runId=null,toastTimer=null,flavorBurst=null,flavorTimer=null;
-let resourceBurst=null,resourceTimer=null;
+let resourceBurst=null,resourceTimer=null,staticMapKey=null;
 function followCamera(point){
  if(!camera)camera={...point};
  // With 2x zoom, follow vertically each step so the next row remains clickable.
@@ -699,6 +716,7 @@ function fitDayHeading(dayNode){
  }
 }
 function render(){
+ const started=performance.now();
  const run=readRun();if(!run||!validateKingdomMap(run.kingdomMap)||!screen||screen.hidden)return;
  const map=run.kingdomMap;const view=camera||map.king;
  const parchment=true;
@@ -951,37 +969,57 @@ function render(){
    }
    cells.append(btn);
   }
+ // Preserve existing Canvas backing stores on repeat renders. Repaint static
+ // terrain/borders/fog only when the camera or world geometry really changes.
+ const layers={
+  atlas:world.querySelector('.km-parchment-canvas'),
+  overlay:world.querySelector('.km-kingdom-overlay'),
+  details:world.querySelector('.km-parchment-details'),
+  travelers:world.querySelector('.km-travelers-layer'),
+  fog:world.querySelector('.km-parchment-fog')
+ };
+ const staticKey=JSON.stringify([map.seed,map.worldGeneratorVersion,
+  view.x,view.y,WIDTH,HEIGHT,map.royalRoadsSignature,map.royalRoads,
+  map.completedRoads,map.outpostRoads,map.centralOwnedCells,
+  map.battleConqueredCells,map.outposts,map.battleTerritories,
+  Object.entries(map.cells).map(([id,cell])=>
+   [id,cell?.explored===true,cell?.annexed===true,cell?.status||''])]);
+ const reuseStatic=staticMapKey===staticKey&&Boolean(
+  layers.atlas&&layers.overlay&&layers.details&&layers.fog);
  stopTravelers();
  world.replaceChildren(cells);
  if(parchment){
-  const atlas=document.createElement('canvas');atlas.className='km-parchment-canvas';
+  const atlas=layers.atlas||document.createElement('canvas');atlas.className='km-parchment-canvas';
   atlas.dataset.kingdomParchment='';atlas.setAttribute('aria-hidden','true');
   world.prepend(atlas);
  }
- const overlay=document.createElement('canvas');overlay.className='km-kingdom-overlay';
+ const overlay=layers.overlay||document.createElement('canvas');overlay.className='km-kingdom-overlay';
  overlay.dataset.kingdomOverlay='';overlay.setAttribute('aria-hidden','true');
  world.append(overlay);
  // Paper < political tint and both sets of borders < roads/nature < sites.
  // The transparent foreground canvas prevents borders from painting over
  // water, paving, natural landmarks, pieces and resource markers.
  if(parchment){
-  const details=document.createElement('canvas');details.className='km-parchment-details';
+  const details=layers.details||document.createElement('canvas');details.className='km-parchment-details';
   details.dataset.kingdomTerrainDetails='';details.setAttribute('aria-hidden','true');
   world.append(details);
-  renderParchment(world.querySelector('.km-parchment-canvas'),
+  if(!reuseStatic)renderParchment(world.querySelector('.km-parchment-canvas'),
    {seed:map.seed,view,columns:WIDTH,rows:HEIGHT,map,detailCanvas:details});
  }
- drawKingdomOverlay(overlay,{map,view,columns:WIDTH,rows:HEIGHT,drawBorder:true,drawRoads:!parchment});
+ if(!reuseStatic)drawKingdomOverlay(overlay,{map,view,columns:WIDTH,rows:HEIGHT,drawBorder:true,drawRoads:!parchment});
   // One independent, noninteractive animation layer: no run state writes.
-  const travelers=document.createElement('canvas');travelers.className='km-travelers-layer';
+  const travelers=layers.travelers||document.createElement('canvas');travelers.className='km-travelers-layer';
   travelers.dataset.kingdomTravelers='';travelers.setAttribute('aria-hidden','true');
   world.append(travelers);
   animateTravelers(travelers,{map,view,columns:WIDTH,rows:HEIGHT,parchment});
   if(parchment){
-   const fog=document.createElement('canvas');fog.className='km-parchment-fog';
+   const fog=layers.fog||document.createElement('canvas');fog.className='km-parchment-fog';
    fog.dataset.kingdomFog='';fog.setAttribute('aria-hidden','true');
-   world.append(fog);renderParchmentFog(fog,{view,columns:WIDTH,rows:HEIGHT,map});
+   world.append(fog);
+   if(!reuseStatic)renderParchmentFog(fog,{view,columns:WIDTH,rows:HEIGHT,map});
   }
+ staticMapKey=staticKey;
+ world.dataset.staticMapReused=String(reuseStatic);
  world.append(productions);
  const avatar=document.createElement('img');avatar.className='km-king'+(movement?.phase==='moving'?' km-king--moving':'');
  avatar.src=kingArt(run);avatar.alt='';avatar.setAttribute('aria-hidden','true');
@@ -1019,6 +1057,14 @@ function render(){
  kingHandle.addEventListener('pointerdown',kingPointerDown);
  // Move and up handlers live on the persistent map frame (screenReady).
  world.append(kingHandle);
+ renderInspector(run,map);
+ world.dataset.lastRenderMs=(performance.now()-started).toFixed(2);
+}
+function renderInspector(run,map){
+ // A selection only refreshes its inspector; it does not reallocate the map.
+ const industrySites=new Map((map.industry?.buildings||[]).map(site=>[site.id,site]));
+ const tradeSites=new Map((map.tradePosts||[]).map(site=>[site.id,site]));
+ const industryWeek=weekForDay(map.day);
  const chosen=selected?map.cells[selected]:null;
  const current=map.cells[keyOf(map.king.x,map.king.y)];
  const knownChosen=chosen&&
@@ -1107,6 +1153,17 @@ function render(){
   const hint=screen.querySelector('[data-kingdom-hint]');
  hint.hidden=!map.pendingCell;
  hint.textContent=map.pendingCell?tr('pending'):'';
+}
+function selectCellWithoutRedraw(id,run,map){
+ const previous=selected;
+ selected=id;
+ const world=screen?.querySelector('[data-kingdom-world]');
+ if(previous!==id){
+  if(previous)world?.querySelector('[data-kingdom-cell="'+previous+'"]')
+   ?.classList.remove('km-cell--selected');
+  world?.querySelector('[data-kingdom-cell="'+id+'"]')?.classList.add('km-cell--selected');
+ }
+ renderInspector(run,map);
 }
 function parsePoint(id){if(!/^-?\d+,-?\d+$/.test(id||''))return null;const [x,y]=id.split(',').map(Number);return {x,y};}
 function onWorldClick(event){
@@ -1523,8 +1580,7 @@ function onCell(event){
  if(!target||!screen||screen.hidden)return;
  const run=readRun(),map=run?.kingdomMap,id=target.dataset.kingdomCell;
  if(!map||map.pendingCell||pinch||Date.now()<ignoreCellClicksUntil)return;
- selected=id;
- render(); // A single click is inspection only, regardless of distance.
+ selectCellWithoutRedraw(id,run,map); // Inspection does not rebuild terrain/NPCs.
  if(id===keyOf(map.castle.x,map.castle.y))
   globalThis.dispatchEvent(new CustomEvent('rpchess:kingdom-castle-inspected'));
 }

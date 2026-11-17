@@ -125,11 +125,33 @@ async function assertTileImage(page,cellId){
   });
   assert.equal(await page.locator('[data-kingdom-cell]').count(),expectedViewportCells,
     'atlas 117px zoom selects an odd full-bleed grid for the viewport');
+  // Inspector-only selection must not tear down Canvas textures or walkers.
+  const selectionReuse=await page.evaluate(()=>{
+    const atlas=document.querySelector('.km-parchment-canvas');
+    const fog=document.querySelector('.km-parchment-fog');
+    const travelers=document.querySelector('.km-travelers-layer');
+    document.querySelector('[data-kingdom-cell="1,0"]').click();
+    return {terrain:atlas===document.querySelector('.km-parchment-canvas'),
+      fog:fog===document.querySelector('.km-parchment-fog'),
+      travelers:travelers===document.querySelector('.km-travelers-layer'),
+      selected:document.querySelector('[data-kingdom-cell="1,0"]')
+        ?.classList.contains('km-cell--selected')};
+  });
+  assert(selectionReuse.terrain&&selectionReuse.fog&&selectionReuse.travelers,
+    'inspector selection must preserve existing map Canvas');
+  assert(selectionReuse.selected,'inspected tile remains visibly selected');
   const before=await read(page);
   assert(before.kingdomMap&&before.kingdomMap.cells['0,0'].annexed);
   assert.equal(before.kingdomMap.worldGeneratorVersion,6,
     'new Kingdom run uses the v6 deterministic world generator');
-  await page.evaluate(()=>globalThis.RPChessKingdomMap.open());
+  const reopenReuse=await page.evaluate(()=>{
+    const before=document.querySelector('.km-parchment-canvas');
+    const fog=document.querySelector('.km-parchment-fog');
+    globalThis.RPChessKingdomMap.open();
+    return before===document.querySelector('.km-parchment-canvas')&&
+      fog===document.querySelector('.km-parchment-fog');
+  });
+  assert(reopenReuse,'reopening a Kingdom map must retain its Canvas backing stores');
   const reopened=await read(page);
   assert.equal(reopened.kingdomMap.worldGeneratorVersion,6,
     'reopening a v6 save must never downgrade or regenerate its world');

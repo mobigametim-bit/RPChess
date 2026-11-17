@@ -1,11 +1,67 @@
 /* Five purely decorative 4-frame 64px road walkers.
  * Single atlas/image decode, single view-canvas, no interaction or persistence. */
-import {createTravelers,travelerMotion,visibleTraveler} from './kingdom-road-travelers.mjs?v=20261111-npc-floor-v1';
+import {createTravelers,travelerMotion,visibleTraveler,naturalRoadY} from './kingdom-road-travelers.mjs?v=20261111-npc-floor-v1';
 import {PARCHMENT_TILE} from './kingdom-parchment-core.mjs';
 const SRC='assets/kingdom-travelers/walkers_64.png';
 const FRAMES=4,FRAME_SIDE=64,ANIM_MS=175,DISPLAY_PX=66;
 const FRAME_ROWS=Object.freeze({merchant:0,convoy:1,courier:2,patrol:3,builders:4});
 let image=null,loading=null,active=null,walkClockMs=0;
+// Gameplay state can be rewritten for every King step while the road graph stays
+// unchanged. Keep a tiny geometry-keyed route cache instead of re-running BFS
+// for every decorative walker on every map render.
+const ROUTE_CACHE_LIMIT=3,routeCache=new Map();
+function routeKey(map,parchment){
+ const roadCells=Object.entries(map.cells||{})
+  .filter(([,cell])=>cell?.annexed||cell?.selectedEncounter)
+  .map(([id,cell])=>[id,cell.annexed===true,cell.status||'',cell.selectedEncounter?.type||'']);
+ return JSON.stringify([map.seed,map.worldGeneratorVersion,parchment,
+  map.castle,map.centralOwnedCells,map.outposts,map.battleConqueredCells,
+  map.completedRoads,map.outpostRoads,map.royalRoadsVersion,
+  map.royalRoadsSignature,map.royalRoads,map.builtSettlements,roadCells]);
+}
+function cachedTravelers(map,parchment){
+ const key=routeKey(map,parchment);
+ const existing=routeCache.get(key);
+ if(existing){
+  routeCache.delete(key);routeCache.set(key,existing);
+  return {walkers:existing,hit:true};
+ }
+ const walkers=createTravelers(map,{parchment});
+ routeCache.set(key,walkers);
+ if(routeCache.size>ROUTE_CACHE_LIMIT)routeCache.delete(routeCache.keys().next().value);
+ return {walkers,hit:false};
+}
+// Conservative route envelope: skip per-frame path evaluation for walkers whose
+// entire trip remains offscreen, without changing spawn count or route semantics.
+function routeEnvelope(map,walker){
+ let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+ const include=(x,y)=>{
+  if(!Number.isFinite(x)||!Number.isFinite(y))return;
+  minX=Math.min(minX,x);maxX=Math.max(maxX,x);
+  minY=Math.min(minY,y);maxY=Math.max(maxY,y);
+ };
+ for(const leg of walker.legs||[]){
+  if(leg.kind==='natural'){
+   const steps=Math.max(2,Math.ceil(Math.abs(leg.toX-leg.fromX)*2));
+   for(let i=0;i<=steps;i++){
+    const x=leg.fromX+(leg.toX-leg.fromX)*i/steps;
+    include(x,naturalRoadY(map,walker.index,x));
+   }
+  }else for(const part of leg.route||[]){
+   for(const id of [part.from,part.to]){
+    const [x,y]=String(id).split(',').map(Number);
+    include(x+.5,y+.5);
+   }
+  }
+ }
+ return {minX,minY,maxX,maxY};
+}
+function mayCrossViewport(bounds,view,columns,rows){
+ const margin=2.5; // covers 1.15-cell road Bezier bends plus sprite extent
+ const left=view.x-Math.floor(columns/2),top=view.y-Math.floor(rows/2);
+ return bounds.maxX>=left-margin&&bounds.minX<=left+columns+margin&&
+  bounds.maxY>=top-margin&&bounds.minY<=top+rows+margin;
+}
 function loadAtlas(){
  if(image?.complete&&image.naturalWidth===256&&image.naturalHeight===320)return Promise.resolve(image);
  if(loading)return loading;
@@ -33,8 +89,12 @@ function animateTravelers(canvas,{map,view,columns,rows,parchment=true,resolutio
  if(!ctx)return;
  ctx.setTransform(resolution,0,0,resolution,0,0);
  ctx.clearRect(0,0,width,height);
- const walkers=createTravelers(map,{parchment});
+ const {walkers,hit}=cachedTravelers(map,parchment);
+ canvas.dataset.walkerCache=hit?'hit':'miss';
  canvas.dataset.walkerCount=String(walkers.length);
+ const viewportWalkers=walkers.filter(walker=>
+  mayCrossViewport(routeEnvelope(map,walker),view,columns,rows));
+ canvas.dataset.viewportWalkerCount=String(viewportWalkers.length);
  canvas.dataset.decorativeOnly='true';
  canvas.dataset.atlasStatus='loading';
  const controller={cancelled:false,frame:null,canvas};
@@ -65,7 +125,7 @@ function animateTravelers(canvas,{map,view,columns,rows,parchment=true,resolutio
   const elapsed=walkClockMs/1000,walkingFrame=Math.floor(walkClockMs/ANIM_MS)%FRAMES;
   ctx.clearRect(0,0,width,height);
   ctx.imageSmoothingEnabled=false;
-  for(const walker of walkers){
+  for(const walker of viewportWalkers){
    const motion=travelerMotion(map,walker,elapsed);
    // Enter a site and disappear for the entire rest period; reappear only
    // when beginning the next leg. Do not keep a static sprite at waypoints.
