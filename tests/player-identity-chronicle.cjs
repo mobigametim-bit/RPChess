@@ -208,6 +208,17 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(k){return this.map.
   // A locally finished Journey and a D1 rank are separate states.
   assert(ui.includes('leaderboard.syncConflict')&&ui.includes('leaderboard.syncPending')
     &&ui.includes('leaderboard.savedNotRanked'), 'Chronicle must distinguish sync failures from no rank');
+  assert(ui.includes("retry.dataset.chronicleConflictRecovery=''")&&
+    ui.includes('recoverCompletedChronicleRanking()'),
+    'a verified conflicted Chronicle should offer explicit completed-run-only recovery');
+  const conflictSource=fs.readFileSync(path.join(game,'js/profile-client.mjs'),'utf8');
+  for(const contract of ['recoverCompletedChronicleRanking','status!==\'conflict\'',
+    "request('/v1/profile')","method:'PUT'","revision:remote.revision",
+    'history.length>=20',"error?.status===409","request('/v1/leaderboard/refresh'"])
+    assert(conflictSource.includes(contract),'safe D1 conflict recovery missing '+contract);
+  assert(translations.includes("'leaderboard.recoverBest':'Отправить лучший поход'")&&
+    translations.includes("'leaderboard.recoverBest':'Publish best journey'"),
+    'conflict recovery controls must be localized RU and EN');
   assert(ui.includes('retry.dataset.chronicleRankRetry')&&ui.includes('loadLeaderboard({force:true})'),
     'saved Journey should offer a no-replay leaderboard retry');
   const leaderboardClientSource=fs.readFileSync(path.join(game,'js/leaderboard-client.mjs'),'utf8');

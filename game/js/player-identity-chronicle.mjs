@@ -21,7 +21,7 @@ function ensureCss() {
   if (document.querySelector('[data-player-identity-chronicle-css]')) return;
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.href = 'css/player-identity-chronicle.css?v=20261117-rank-retry-v1';
+  link.href = 'css/player-identity-chronicle.css?v=20261117-conflict-recovery-v1';
   link.dataset.playerIdentityChronicleCss = '';
   document.head.append(link);
   if(!document.querySelector('[data-chronicle-v2-css]')){
@@ -391,21 +391,44 @@ function renderChronicle() {
       profile.append(avatar,ownLabel);own.append(profile,ownRank);
     }else own.append(ownLabel,ownRank);
     bestRoot.append(own);
-    if(platform.profileEnabled&&best&&!leaderboard.me&&syncState!=='conflict'){
-      // Explicit retry re-reads the existing completed Chronicle; it never
-      // asks the player to finish a second run or invents a local rank.
+    if(platform.profileEnabled&&best&&!leaderboard.me){
+      const conflictRecovery=syncState==='conflict';
+      // Conflict recovery explicitly publishes only the locally completed
+      // best Chronicle entry. It cannot overwrite the remote run/Power/Arena.
       const retry=document.createElement('button');
       retry.type='button';retry.className='chronicle-leaderboard-retry';
       retry.dataset.chronicleRankRetry='';
-      retry.textContent=l('leaderboard.retry');
+      if(conflictRecovery)retry.dataset.chronicleConflictRecovery='';
+      const buttonLabel=conflictRecovery?l('leaderboard.recoverBest'):l('leaderboard.retry');
+      retry.textContent=buttonLabel;
+      const feedback=document.createElement('p');
+      feedback.className='chronicle-leaderboard-recovery-note';
+      feedback.dataset.chronicleRecoveryNote='';
+      if(conflictRecovery)feedback.textContent=l('leaderboard.recoverExplanation');
       retry.addEventListener('click',async()=>{
         retry.disabled=true;retry.textContent=l('leaderboard.retrying');
-        try{await loadLeaderboard({force:true});}
-        finally{if(retry.isConnected){
-          retry.disabled=false;retry.textContent=l('leaderboard.retry');
+        try{
+          if(!conflictRecovery)await loadLeaderboard({force:true});
+          else {
+            const {recoverCompletedChronicleRanking}=await import('./profile-client.mjs');
+            const result=await recoverCompletedChronicleRanking();
+            if(result.status==='ranked'||result.status==='not-ranked')
+              await loadLeaderboard({force:true});
+            const current=root.querySelector('[data-chronicle-recovery-note]');
+            if(current&&result.status!=='ranked'){
+              const key=result.status==='not-ranked'?'leaderboard.recoverNotRanked'
+                :result.status==='history-full'?'leaderboard.recoverFull'
+                :result.status==='ineligible'?'leaderboard.recoverIneligible'
+                :'leaderboard.recoverFailed';
+              current.textContent=l(key);
+            }
+          }
+        }finally{if(retry.isConnected){
+          retry.disabled=false;retry.textContent=buttonLabel;
         }}
       });
       bestRoot.append(retry);
+      if(conflictRecovery)bestRoot.append(feedback);
     }
 
     if (leaderboard.status==='ready' && leaderboard.top.length) {

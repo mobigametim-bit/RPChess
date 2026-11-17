@@ -52,6 +52,8 @@ async function verifyVKRecovery(browser){
   'Content-Type':'application/json'
  };
  let verifiedLaunches=0,queueJoins=0,profileWrites=0,authorizedBoardReads=0;
+ let recoveryTestMode=false,injectRecovery409Once=false;
+ const recoveryWrites=[];
  await page.route('**/v1/**',route=>{
   const request=route.request(),url=new URL(request.url());
   if(![profileHost,tournamentHost].includes(url.hostname))return route.continue();
@@ -69,16 +71,35 @@ async function verifyVKRecovery(browser){
    }
    if(pathname==='/v1/profile'&&method==='PUT'){
     profileWrites++;
+    if(recoveryTestMode){
+     const body=JSON.parse(request.postData()||'{}');
+     recoveryWrites.push(body);
+     if(injectRecovery409Once){
+      injectRecovery409Once=false;
+      // A concurrent device updates only tutorials before first PUT.
+      profileResult={...profileResult,revision:profileResult.revision+1,
+       snapshot:{...profileResult.snapshot,tutorial:{schemaVersion:1,activated:true}}};
+      return reply(409,{error:'revision_conflict',profile:profileResult});
+     }
+     if(body.revision!==profileResult.revision)
+      return reply(409,{error:'revision_conflict',profile:profileResult});
+     profileResult={...profileResult,revision:profileResult.revision+1,snapshot:body.snapshot};
+     return reply(200,{profile:profileResult});
+    }
     return reply(200,{profile:{...profileResult,revision:profileResult.revision+1}});
    }
    if(pathname==='/v1/profile'&&method==='GET')
     return reply(200,{profile:profileResult});
+   const recovered=profileResult.snapshot?.chronicle?.history?.some(x=>x.runId==='local-only');
+   const board=recovered
+    ?{top:[{rank:1,name:'Тестовый воин',glory:373}],
+      me:{rank:1,name:'Тестовый воин',glory:373,power:898},viewerAuthenticated:true}
+    :{top:[],me:null,viewerAuthenticated:true};
    if(pathname==='/v1/leaderboard'){
     if(request.headers().authorization==='Bearer '+profileToken)authorizedBoardReads++;
-    return reply(200,{top:[],me:null,viewerAuthenticated:true});
+    return reply(200,board);
    }
-   if(pathname==='/v1/leaderboard/refresh')
-    return reply(200,{top:[],me:null,viewerAuthenticated:true});
+   if(pathname==='/v1/leaderboard/refresh')return reply(200,board);
   }else{
    if(pathname==='/v1/session')return reply(200,{token:tournamentToken,kind:'vk'});
    if(pathname==='/v1/profile')return reply(200,{power:500,ratedGames:0});
@@ -132,7 +153,9 @@ async function verifyVKRecovery(browser){
    ]}
   }};
   const localHistory={schemaVersion:1,history:[
-   {runId:'local-only',week:3,power:650,glory:4,completedAt:30}
+   {runId:'local-only',scoreVersion:2,playerName:'Тестовый воин',
+    week:71,day:72,power:898,adventure:279,kingdom:0,
+    achievementCount:20,glory:373,completedAt:30}
   ]};
   await page.evaluate(({id,localHistory})=>{
    const prefix='rpchess.profile.v1.vk.'+id+'.';
@@ -177,6 +200,41 @@ async function verifyVKRecovery(browser){
   assert.equal(profileWrites,beforeWrites,'Tournament search must not upload unresolved conflict');
   await page.locator('[data-tour-action="cancel"]').click();
   console.log('VK SAVE CONFLICT PASS: D1 achievements untouched, local run preserved, authenticated leaderboard and Tournament search usable');
+  // Explicit conflict recovery must append only a valid finished Chronicle,
+  // never replace the D1 rating or the unrelated local game progress.
+  recoveryTestMode=true;injectRecovery409Once=true;
+  const recovered=await page.evaluate(async id=>{
+   const profile=await import('./js/profile-client.mjs');
+   const key='rpchess.profile.v1.vk.'+id+'.rpchess.reboot.v1.chronicle';
+   const before=localStorage.getItem(key);
+   const first=await profile.recoverCompletedChronicleRanking();
+   const second=await profile.recoverCompletedChronicleRanking();
+   return {first,second,unchangedLocal:before===localStorage.getItem(key),
+    status:profile.statusInfo().status,
+    board:await profile.unifiedLeaderboard({refresh:true})};
+  },profileId);
+  assert.equal(recovered.first.status,'ranked','explicit Chronicle recovery must publish a D1 rank');
+  assert.equal(recovered.second.status,'ranked','repeating must be idempotent');
+  assert.equal(recoveryWrites.length,2,'one 409 CAS retry and one success; no duplicate writes');
+  assert.equal(profileResult.snapshot.rating.power,780,'remote Power must not be overwritten');
+  assert.equal(profileResult.snapshot.tutorial.activated,true,'concurrent server changes must survive');
+  assert.deepEqual(profileResult.snapshot.chronicle.history.map(x=>x.runId),
+    ['remote-one','remote-two','local-only'],'all previous D1 records must survive');
+  assert.equal(recovered.unchangedLocal,true,'local Chronicle must never be overwritten');
+  assert.equal(recovered.status,'conflict','the unrelated save conflict must remain unresolved');
+  assert.equal(recovered.board.me.glory,373,'ranking must reflect the recovered completed run');
+  const beforeFull=profileWrites;
+  // No silent eviction when the server Chronicle already holds 20 records.
+  profileResult={...profileResult,revision:profileResult.revision+1,
+   snapshot:{...profileResult.snapshot,chronicle:{schemaVersion:1,
+    history:Array.from({length:20},(_,i)=>({
+     runId:'remote-full-'+i,week:i+1,power:780,glory:i+1
+    }))}}};
+  const full=await page.evaluate(async()=>(
+   await import('./js/profile-client.mjs')).recoverCompletedChronicleRanking());
+  assert.equal(full.status,'history-full');
+  assert.equal(profileWrites,beforeFull,'full server Chronicle must remain unmodified');
+  console.log('CHRONICLE CONFLICT RECOVERY PASS: 373 Glory, safe CAS 409 retry, D1 and local progress preserved, no full-history eviction');
  }catch(error){
   const status=await page.evaluate(()=>({
    profile:globalThis.RPChessProfileStatus,
