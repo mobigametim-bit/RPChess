@@ -21,12 +21,12 @@ function ensureCss() {
   if (document.querySelector('[data-player-identity-chronicle-css]')) return;
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.href = 'css/player-identity-chronicle.css?v=20261104-profile-chronicle-1';
+  link.href = 'css/player-identity-chronicle.css?v=20261117-rank-retry-v1';
   link.dataset.playerIdentityChronicleCss = '';
   document.head.append(link);
   if(!document.querySelector('[data-chronicle-v2-css]')){
     const v2=document.createElement('link');
-    v2.rel='stylesheet';v2.href='css/chronicle-v2.css?v=20261115-glory2';
+    v2.rel='stylesheet';v2.href='css/chronicle-v2.css?v=20261117-rank-retry-v1';
     v2.setAttribute('data-chronicle-v2-css','');
     document.head.append(v2);
   }
@@ -371,10 +371,18 @@ function renderChronicle() {
     const ownLabel=document.createElement('span');
     ownLabel.textContent=l('leaderboard.yourRank');
     const ownRank=document.createElement('strong');
+    const syncState=leaderboard.profileSyncStatus;
+    // A locally archived record is not proof of server submission. Distinguish
+    // unsynced data from a genuine empty personal ranking.
     ownRank.textContent=leaderboard.me
       ? '#'+leaderboard.me.rank+' · '+leaderboard.me.glory+' '+l('chronicle.glory')
+      : syncState==='conflict' ? l('leaderboard.syncConflict')
+      : syncState==='offline' ? l('leaderboard.syncPending')
       : leaderboard.status!=='ready' ? '—'
-      : l(leaderboard.viewerAuthenticated?'leaderboard.notRanked':'leaderboard.notAuthenticated');
+      : best&&platform.profileEnabled&&leaderboard.viewerAuthenticated
+        ?l('leaderboard.savedNotRanked')
+        :l(leaderboard.viewerAuthenticated?'leaderboard.notRanked':'leaderboard.notAuthenticated');
+    if(!leaderboard.me&&best)ownRank.classList.add('chronicle-rank-status');
     if(leaderboard.me||best){
       const avatar=document.createElement('img');
       avatar.src=commanderPortrait(leaderboard.me?.commanderId||best?.commanderId);
@@ -383,6 +391,22 @@ function renderChronicle() {
       profile.append(avatar,ownLabel);own.append(profile,ownRank);
     }else own.append(ownLabel,ownRank);
     bestRoot.append(own);
+    if(platform.profileEnabled&&best&&!leaderboard.me&&syncState!=='conflict'){
+      // Explicit retry re-reads the existing completed Chronicle; it never
+      // asks the player to finish a second run or invents a local rank.
+      const retry=document.createElement('button');
+      retry.type='button';retry.className='chronicle-leaderboard-retry';
+      retry.dataset.chronicleRankRetry='';
+      retry.textContent=l('leaderboard.retry');
+      retry.addEventListener('click',async()=>{
+        retry.disabled=true;retry.textContent=l('leaderboard.retrying');
+        try{await loadLeaderboard({force:true});}
+        finally{if(retry.isConnected){
+          retry.disabled=false;retry.textContent=l('leaderboard.retry');
+        }}
+      });
+      bestRoot.append(retry);
+    }
 
     if (leaderboard.status==='ready' && leaderboard.top.length) {
       const list=document.createElement('ol');

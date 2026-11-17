@@ -195,6 +195,9 @@
 .chronicle-leaderboard-name{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .chronicle-leaderboard-glory{text-align:right;color:#ffdb8a;font-variant-numeric:tabular-nums}
 .chronicle-leaderboard-note{margin:10px 1px;font:clamp(11px,1vw,14px)/1.35 Georgia,serif;text-align:center;color:#f0d5a2}
+.chronicle-leaderboard-self .chronicle-rank-status{white-space:normal;text-align:right;max-width:54%;font-size:clamp(9px,.9vw,12px);line-height:1.15}
+.chronicle-leaderboard-retry{display:block;margin:2px auto;padding:2px 8px;border:1px solid #b98f50;background:#213c62;color:#ffdaa0;font:700 clamp(10px,.9vw,12px)/1.2 Georgia,serif;border-radius:4px;cursor:pointer}
+.chronicle-leaderboard-retry:disabled{opacity:.5;cursor:wait}
 @media(orientation:landscape) and (max-height:600px){
  html[data-landscape-ui='1'] .chronicle-leaderboard-row{min-height:17px!important;font-size:11px}
  html[data-landscape-ui='1'] .chronicle-commanders-title{font-size:18px}

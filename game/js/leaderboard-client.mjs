@@ -69,7 +69,9 @@ function normalize(data){
     ?{rank:data.me.rank,name:String(data.me.name||'').slice(0,24),glory:data.me.glory,commanderId:normalizeCommanderId(data.me.commanderId),
       week:Number.isSafeInteger(data.me.week)?data.me.week:null,
       power:Number.isSafeInteger(data.me.power)?data.me.power:null}:null;
-  return {top,me,status:'ready',viewerAuthenticated:Boolean(data.viewerAuthenticated||me)};
+  return {top,me,status:'ready',viewerAuthenticated:Boolean(data.viewerAuthenticated||me),
+    profileSyncStatus:['ready','conflict','offline','read-only','unauthenticated'].includes(data.profileSyncStatus)
+      ?data.profileSyncStatus:'unknown'};
 }
 async function request(path,body=null){
   const root=apiRoot();
