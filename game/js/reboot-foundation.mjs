@@ -110,7 +110,7 @@ void Promise.all([onboardingReady, identityReady]).then(async ([onboarding]) => 
 
 // The read-only map attaches after the authoritative cloud-state reconciliation.
 const menuReady=cloudReady
- .then(()=>import('./kingdom-menu-preview.mjs?v=20261112-owned-bounds-v1'))
+ .then(()=>import('./kingdom-menu-preview.mjs?v=20261117-mobile-perf-v1'))
  .then(async module=>{module.install();await module.waitForTextures();})
  .catch(error=>console.error('[RPChess] Main-menu kingdom preview failed',error));
 globalThis.RPChessMainMenuReady=menuReady;

@@ -1,0 +1,6 @@
+name = "rpchess-kingdom-mobile-perf-preview"
+compatibility_date = "2026-11-17"
+# Isolated QA worker only; never modify GitHub Pages, VK app or production APIs.
+[assets]
+directory = "../dist"
+not_found_handling = "single-page-application"

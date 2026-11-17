@@ -1,0 +1,106 @@
+name: Kingdom mobile performance — isolated QA preview
+on:
+  push:
+    branches: [perf/kingdom-mobile-rendering]
+    paths:
+      - 'game/**'
+      - 'tests/**'
+      - 'kingdom-mobile-perf-preview/**'
+      - '.github/workflows/kingdom-mobile-perf-preview.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+concurrency:
+  group: rpchess-kingdom-mobile-perf-qa-preview
+  cancel-in-progress: true
+jobs:
+  preview:
+    name: Validate and deploy Kingdom mobile performance QA
+    if: github.repository == 'mobigametim-bit/RPChess' && github.ref == 'refs/heads/perf/kingdom-mobile-rendering'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 65
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm/rpchess-runtime-assets-v1
+          key: rpchess-runtime-assets-v1-${{ runner.os }}-${{ hashFiles('game/assets/**/*.png', 'game/generated_assets/*.png', 'scripts/*asset*.cjs', 'scripts/runtime-assets-build.cjs') }}
+          restore-keys: rpchess-runtime-assets-v1-${{ runner.os }}-
+      - name: Install dependencies and verified Stockfish 18
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund
+          npm pack stockfish@18.0.0 --silent --pack-destination /tmp
+          mkdir -p /tmp/rpchess-stockfish-package /tmp/rpchess-stockfish-verified
+          tar -xzf /tmp/stockfish-18.0.0.tgz -C /tmp/rpchess-stockfish-package
+          package=/tmp/rpchess-stockfish-package/package
+          for name in stockfish-18-lite-single.js stockfish-18-lite-single.wasm; do
+            source=$(find "$package" -type f -name "$name" -print -quit)
+            test -n "$source"
+            cp "$source" "/tmp/rpchess-stockfish-verified/$name"
+          done
+          license=$(find "$package" -type f -iname 'Copying.txt' -print -quit)
+          test -n "$license"
+          cp "$license" /tmp/rpchess-stockfish-verified/COPYING.txt
+      - name: Canonical Node gate and production build
+        env:
+          RPCHESS_STOCKFISH_ASSET_DIR: /tmp/rpchess-stockfish-verified
+        run: npm run gate:local
+      - name: Install pinned Chromium for existing Kingdom regression
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
+          npx playwright install chromium
+      - name: Test Kingdom map, route selection and navigation in Chromium
+        env:
+          RPCHESS_BROWSER_TEST: kingdom-map-browser.cjs,reboot-foundation-browser.cjs,travel-choice-browser.cjs,arena-browser.cjs
+          RPCHESS_GATE_PREFIX: /RPChess
+        run: npm run test:browser
+      - name: Deploy isolated Kingdom mobile performance QA Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          npx wrangler deploy --config kingdom-mobile-perf-preview/wrangler.toml
+      - name: Smoke-test optimized Kingdom map modules
+        run: |
+          node <<'NODE'
+          const assert=require('node:assert/strict');
+          const root='https://rpchess-kingdom-mobile-perf-preview.mobigametim.workers.dev';
+          (async()=>{
+            for(let attempt=0;attempt<12;attempt++){
+              try{
+                for(const [path,token] of [
+                  ['/','data-reboot-foundation'],
+                  ['/js/kingdom-map-app.mjs','selectCellWithoutRedraw'],
+                  ['/js/kingdom-traveler-renderer.mjs','viewportWalkerCount'],
+                  ['/js/kingdom-menu-preview.mjs','kingdom-traveler-renderer']]){
+                    const response=await fetch(root+path,{cache:'no-store'});
+                    assert.equal(response.status,200,path);
+                    if(token)assert((await response.text()).includes(token),path+' is not the polish-nine build');
+                  }
+                console.log('Kingdom mobile performance QA preview smoke: PASS '+root);
+                return;
+              }catch(error){
+                if(attempt===11)throw error;
+                await new Promise(resolve=>setTimeout(resolve,3000));
+              }
+            }
+          })().catch(error=>{console.error(error);process.exitCode=1;});
+          NODE
+      - name: Save existing Kingdom browser screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kingdom-mobile-perf-screenshots
+          path: test-results/
+          retention-days: 7
+          if-no-files-found: ignore

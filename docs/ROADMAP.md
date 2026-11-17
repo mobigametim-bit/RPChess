@@ -1,5 +1,16 @@
 # RPChess Reboot Roadmap
 
+## Active priority — 17.11.2026: mobile Kingdom map performance
+
+- [x] Dedicated `perf/kingdom-mobile-rendering` branch from accepted `main`.
+- [x] Targeted rendering, pinch and traveler-route optimizations prepared for QA.
+- [ ] Existing Node/Chromium checks and isolated Cloudflare QA deployment.
+- [ ] Manual Android phone/tablet acceptance (FPS and appearance, long-run, VK).
+- [ ] Explicit owner-approved Release Gate, merge and production deployment.
+- [ ] Resume the earlier post-Kingdom work: Tournament RU API gateway verification, then Region Content Framework.
+
+Scope/verification: [KINGDOM_MOBILE_RENDERING_PERF_2026-11-17.md](features/KINGDOM_MOBILE_RENDERING_PERF_2026-11-17.md).
+
 ## Completed
 
 - [x] Reboot Foundation — production-ready visual shell. **DONE**.
