@@ -210,6 +210,10 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(k){return this.map.
     &&ui.includes('leaderboard.savedNotRanked'), 'Chronicle must distinguish sync failures from no rank');
   assert(ui.includes('retry.dataset.chronicleRankRetry')&&ui.includes('loadLeaderboard({force:true})'),
     'saved Journey should offer a no-replay leaderboard retry');
+  const profileClientSource=fs.readFileSync(path.join(game,'js/profile-client.mjs'),'utf8');
+  assert(profileClientSource.includes('flushLatestChronicleForRanking')&&
+    profileClientSource.includes('lastFingerprint===payloadFingerprint(localPayload())'),
+    'profile leaderboard refresh must wait until the latest completed-run snapshot reaches D1');
   assert(translations.includes("'leaderboard.retry':'Повторить отправку'")
     &&translations.includes("'leaderboard.retry':'Retry upload'"),
     'rank recovery controls must be localized RU/EN');

@@ -12,6 +12,12 @@ The locally archived `chronicle` and the server-owned `rpchess_leaderboard_v3` a
 
 `game/js/profile-client.mjs::unifiedLeaderboard({refresh:true})` calls `syncNow()` before server `/v1/leaderboard/refresh`. On failed profile sync (including conflict), it falls back to authenticated **read-only GET** `/v1/leaderboard`. `game/js/leaderboard-client.mjs::normalize()` previously lost this distinction; Chronicle could therefore say `Нет результата` instead of reporting that the new finished run **was never uploaded**. This is a user-facing error independent of what originally blocked this specific player's upload.
 
+## Potential additional race, confirmed in control flow
+
+`syncNow()` reuses an already in-flight PUT. If the run ends and Chronicle is archived while that earlier PUT is still running, `unifiedLeaderboard({refresh:true})` could await the earlier request and refresh the leaderboard before the newly completed record has been uploaded; the subsequent scheduled save alone does not recalculate the ranking.
+
+`flushLatestChronicleForRanking()` now retries synchronization (at most 3 passes) until the acknowledged server fingerprint matches the **current** local snapshot. Only then may the client call server-side `/v1/leaderboard/refresh`. If progress keeps changing or profile sync fails, only the read-only leaderboard is fetched and the UI reports an unsynced state. This avoids redundant or fabricated scores and preserves conflict safety. Exact incidence in the owner's session remains unproven.
+
 ## Safe fix
 
 - Carry a non-sensitive `profileSyncStatus` on leaderboard responses: `ready` on successful server refresh, `offline` or `conflict` on uncommitted profile changes, `read-only` or `unauthenticated` otherwise.
