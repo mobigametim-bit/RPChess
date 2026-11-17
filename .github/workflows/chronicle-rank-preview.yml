@@ -151,7 +151,11 @@ jobs:
                 !!document.querySelector('.chronicle-leaderboard-self')?.textContent?.includes('Не опубликован'),
                 null,{timeout:20000});
               assert.equal((await page.locator('.chronicle-v2-personal-score').textContent()).trim(),'373');
-              await retry.click({timeout:20000,force:true});
+              // A synthetic Chronicle may render before the game's loading
+              // splash disappears. Never force-click through that overlay:
+              // use normal user actionability to verify the retry is tappable.
+              await page.locator('[data-game-loading]').waitFor({state:'hidden',timeout:35000});
+              await retry.click({timeout:20000});
               await page.waitForTimeout(500);
               const afterRetry=await page.evaluate(async()=>{
                 const {currentLeaderboard}=await import('./js/leaderboard-client.mjs');
