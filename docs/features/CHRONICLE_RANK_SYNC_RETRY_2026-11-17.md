@@ -22,7 +22,7 @@ The locally archived `chronicle` and the server-owned `rpchess_leaderboard_v3` a
 
 - Carry a non-sensitive `profileSyncStatus` on leaderboard responses: `ready` on successful server refresh, `offline` or `conflict` on uncommitted profile changes, `read-only` or `unauthenticated` otherwise.
 - Chronicle never invents rank. For a local completed best with no `me`, show `Не опубликован` / `Not published`; for failed sync distinguish `Не синхронизировано` / `Not synced` from `Конфликт сохранений` / `Save conflict`.
-- Offer `Повторить отправку` / `Retry upload` for an eligible saved Chronicle record. The action reuses the existing authenticated `loadLeaderboard({force:true})` path: local snapshot -> conditional profile PUT -> server-authoritative v3 refresh -> rerender. **No new run** is needed.
+- Offer `Повторить отправку` / `Retry upload` for an eligible saved Chronicle record. Explicit forced retries await an already in-flight leaderboard request, then execute their own refresh rather than silently returning the older result. The action reuses the existing authenticated `loadLeaderboard({force:true})` path: local snapshot -> conditional profile PUT -> server-authoritative v3 refresh -> rerender. **No new run** is needed.
 - Never overwrite a conflicted save or submit directly to legacy leaderboard Worker. Never send secrets, identity, or claimed rank in request metadata or public diagnostics.
 - Extend existing Node and browser regressions by a few assertions; no new permanent suite, no gameplay/score/save schema changes.
 

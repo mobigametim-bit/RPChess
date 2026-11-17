@@ -100,7 +100,14 @@ async function loadLeaderboard({force=false}={}){
   // legacy VK leaderboard entries; never call the old production leaderboard.
   if(platform.profileEnabled){
     if(!force&&Date.now()-cachedAt<CACHE_MS&&board.status==='ready')return board;
-    if(pending)return pending;
+    if(pending){
+      if(!force)return pending;
+      // A completed run can be archived while an earlier menu GET/refresh is
+      // still resolving. An explicit Retry must not be swallowed by that
+      // previous request: await its completion, then send a NEW forced refresh.
+      await pending;
+      return loadLeaderboard({force:true});
+    }
     pending=(async()=>{
       try{
         const {unifiedLeaderboard}=await import('./profile-client.mjs');

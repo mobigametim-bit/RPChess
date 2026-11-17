@@ -152,6 +152,16 @@ jobs:
                 null,{timeout:20000});
               assert.equal((await page.locator('.chronicle-v2-personal-score').textContent()).trim(),'373');
               await retry.click({timeout:20000,force:true});
+              await page.waitForTimeout(500);
+              const afterRetry=await page.evaluate(async()=>{
+                const {currentLeaderboard}=await import('./js/leaderboard-client.mjs');
+                return {
+                  board:currentLeaderboard(),
+                  ownText:document.querySelector('.chronicle-leaderboard-self')?.textContent,
+                  mock:globalThis.RPChessChronicleQADemo
+                };
+              });
+              console.log('CHRONICLE QA AFTER RETRY',JSON.stringify(afterRetry));
               await page.waitForFunction(()=>
                 !!document.querySelector('.chronicle-leaderboard-self strong')?.textContent?.includes('#1'),
                 null,{timeout:20000});

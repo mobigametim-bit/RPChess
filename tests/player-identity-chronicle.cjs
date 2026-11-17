@@ -210,6 +210,10 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(k){return this.map.
     &&ui.includes('leaderboard.savedNotRanked'), 'Chronicle must distinguish sync failures from no rank');
   assert(ui.includes('retry.dataset.chronicleRankRetry')&&ui.includes('loadLeaderboard({force:true})'),
     'saved Journey should offer a no-replay leaderboard retry');
+  const leaderboardClientSource=fs.readFileSync(path.join(game,'js/leaderboard-client.mjs'),'utf8');
+  assert(leaderboardClientSource.includes('await pending;')&&
+    leaderboardClientSource.includes('return loadLeaderboard({force:true});'),
+    'explicit retry must not reuse an old in-flight leaderboard request');
   const profileClientSource=fs.readFileSync(path.join(game,'js/profile-client.mjs'),'utf8');
   assert(profileClientSource.includes('flushLatestChronicleForRanking')&&
     profileClientSource.includes('lastFingerprint===payloadFingerprint(localPayload())'),
