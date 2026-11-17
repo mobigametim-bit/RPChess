@@ -25,6 +25,11 @@
   localStorage.setItem('rpchess.profile.auth.web.v1',token);
   localStorage.setItem(key+'rpchess.reboot.v1.chronicle',JSON.stringify({schemaVersion:1,history:[archived]}));
   localStorage.setItem(key+'rpchess.reboot.v1.player-rating',JSON.stringify({schemaVersion:1,power:898,receipts:[]}));
+  // This demo represents a returning player with a completed Journey.
+  // Do not show first-install onboarding over the test Retry button.
+  localStorage.setItem(key+'rpchess.reboot.v1.tutorial',JSON.stringify({
+   schemaVersion:1,activated:true,dismissed:{welcome:true,identity:true,chronicle:true}
+  }));
   localStorage.setItem(key+'rpchess.reboot.v1.settings',JSON.stringify({language:qs.get('lang')==='en'?'en':'ru'}));
  }catch(error){console.error('Chronicle QA storage unavailable',error);}
  document.addEventListener('click',event=>{
