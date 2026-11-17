@@ -135,6 +135,18 @@ jobs:
               await page.locator('[data-chronicle-qa-notice]').waitFor({timeout:45000});
               const retry=page.locator('[data-chronicle-rank-retry]');
               await retry.waitFor({state:'visible',timeout:45000});
+              const initial=await page.evaluate(async()=>{
+                const {currentLeaderboard}=await import('./js/leaderboard-client.mjs');
+                return {
+                  profileStatus:globalThis.RPChessProfileStatus?.status,
+                  profileReason:String(globalThis.RPChessProfileStatus?.reason||'').slice(0,130),
+                  board:currentLeaderboard(),
+                  ownText:document.querySelector('.chronicle-leaderboard-self')?.textContent,
+                  bestText:document.querySelector('.chronicle-v2-personal-score')?.textContent,
+                  mock:globalThis.RPChessChronicleQADemo
+                };
+              });
+              console.log('CHRONICLE QA DIAGNOSTIC',JSON.stringify(initial));
               await page.waitForFunction(()=>
                 !!document.querySelector('.chronicle-leaderboard-self')?.textContent?.includes('Не опубликован'),
                 null,{timeout:20000});
