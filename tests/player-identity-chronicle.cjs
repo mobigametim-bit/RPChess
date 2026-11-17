@@ -205,6 +205,22 @@ class MemoryStorage{constructor(){this.map=new Map()}getItem(k){return this.map.
   assert(fs.readFileSync(path.join(game,'../leaderboard-worker/src/index.mjs'),'utf8').includes('viewerAuthenticated:Boolean(id)'),
     'the API must distinguish verified users with no ranking from unsigned reads');
 
+  // A locally finished Journey and a D1 rank are separate states.
+  assert(ui.includes('leaderboard.syncConflict')&&ui.includes('leaderboard.syncPending')
+    &&ui.includes('leaderboard.savedNotRanked'), 'Chronicle must distinguish sync failures from no rank');
+  assert(ui.includes('retry.dataset.chronicleRankRetry')&&ui.includes('loadLeaderboard({force:true})'),
+    'saved Journey should offer a no-replay leaderboard retry');
+  const leaderboardClientSource=fs.readFileSync(path.join(game,'js/leaderboard-client.mjs'),'utf8');
+  assert(leaderboardClientSource.includes('await pending;')&&
+    leaderboardClientSource.includes('return loadLeaderboard({force:true});'),
+    'explicit retry must not reuse an old in-flight leaderboard request');
+  const profileClientSource=fs.readFileSync(path.join(game,'js/profile-client.mjs'),'utf8');
+  assert(profileClientSource.includes('flushLatestChronicleForRanking')&&
+    profileClientSource.includes('lastFingerprint===payloadFingerprint(localPayload())'),
+    'profile leaderboard refresh must wait until the latest completed-run snapshot reaches D1');
+  assert(translations.includes("'leaderboard.retry':'Повторить отправку'")
+    &&translations.includes("'leaderboard.retry':'Retry upload'"),
+    'rank recovery controls must be localized RU/EN');
   assert(ui.includes('chronicle-leaderboard-self')&&ui.includes('chronicle-leaderboard-list'));
   console.log('Player Identity, Chronicle, Great Commanders UI and server Glory checks: PASS');
 })().catch(e=>{console.error(e.stack||e);process.exitCode=1});

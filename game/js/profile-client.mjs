@@ -463,14 +463,32 @@ function statusInfo() {return Object.freeze({
 });}
 // Profile API owns leaderboard writes and re-derives candidate Glory from the
 // server-stored D1 snapshot. Browser-supplied arbitrary scores are never sent.
+// A run may finish while an earlier profile PUT is still in flight. Waiting
+// for that PUT alone does not guarantee the just-archived Chronicle reached D1:
+// syncNow() deliberately queues a newer save for the changed fingerprint.
+async function flushLatestChronicleForRanking() {
+  for(let attempt=0;attempt<3;attempt++){
+    if(!await syncNow())return false;
+    if(lastFingerprint===payloadFingerprint(localPayload()))return true;
+  }
+  // Continuous local changes: do not advertise the old server snapshot as ranked.
+  return false;
+}
 async function unifiedLeaderboard({refresh=false}={}) {
   if(refresh&&sessionReady&&token){
-    // The menu can open before the autosave debounce fires. Flush the actual
-    // Journey/Chronicle snapshot first, then let the server derive best Glory.
-    if(!await syncNow())return request('/v1/leaderboard');
-    return request('/v1/leaderboard/refresh',{method:'POST',data:{}});
+    // Chronicle is local first: never describe an authenticated, read-only
+    // board as proof that the completed Journey was submitted.
+    if(!await flushLatestChronicleForRanking()){
+      // Preserve public TOP-10 and any previously committed personal rank.
+      // A D1 conflict is NOT permission to overwrite the other device.
+      const result=await request('/v1/leaderboard');
+      return {...result,profileSyncStatus:status==='conflict'?'conflict':'offline'};
+    }
+    const result=await request('/v1/leaderboard/refresh',{method:'POST',data:{}});
+    return {...result,profileSyncStatus:'ready'};
   }
-  return request('/v1/leaderboard',{auth:sessionReady});
+  const result=await request('/v1/leaderboard',{auth:sessionReady});
+  return {...result,profileSyncStatus:sessionReady?'read-only':'unauthenticated'};
 }
 // The existing Tournament client sends this credential ONLY to our staging
 // Tournament Worker. Never log it, include it in URLs, or expose it in UI.

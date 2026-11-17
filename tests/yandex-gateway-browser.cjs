@@ -153,7 +153,8 @@ async function verifyVKRecovery(browser){
     reason:globalThis.RPChessProfileStatus?.reason,
     credentialPresent:profile.tournamentCredential().length===43,
     savedRuns:persisted?.history?.map(row=>row.runId),
-    boardAuthenticated:board.viewerAuthenticated
+    boardAuthenticated:board.viewerAuthenticated,
+    boardSyncStatus:board.profileSyncStatus
    };
   },profileId);
   assert.equal(state.status,'conflict');
@@ -161,6 +162,8 @@ async function verifyVKRecovery(browser){
   assert(state.credentialPresent,'Signed VK user must stay authorized despite unrelated save conflict');
   assert.deepEqual(state.savedRuns,['local-only'],'Local save must not be overwritten');
   assert(state.boardAuthenticated,'Leaderboard should use verified RPChess identity');
+  assert.equal(state.boardSyncStatus,'conflict',
+    'verified but conflicted Chronicle must report an unsynced ranking');
   assert(authorizedBoardReads>0,'Leaderboard API must receive verified bearer');
   assert.equal(profileWrites,beforeWrites,'Conflicted local snapshot must never overwrite D1');
   await page.locator('[data-game-loading]').waitFor({state:'hidden',timeout:30000});
