@@ -1,7 +1,9 @@
 /* Test feature JS in actual github.io-origin Chromium without publishing game files. */
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const {chromium}=require('playwright');
-const base='https://mobigametim-bit.github.io/RPChess/';
+const base=process.env.RPCHESS_VK_AUTH_MOCK_ONLY==='1'
+ ?'https://rpchess-chronicle-rank-qa-preview.mobigametim.workers.dev/'
+ :'https://mobigametim-bit.github.io/RPChess/';
 const gateway='https://d5ds3hf0ei1mlkgjrnlm.d8epmcec.apigw.yandexcloud.net';
 const names=['api-route.mjs','profile-client.mjs','tournament-app.mjs'];
 const modules=new Map(names.map(n=>[n,fs.readFileSync(path.resolve(__dirname,'../game/js',n),'utf8')]));
@@ -31,14 +33,16 @@ async function verifyVKRecovery(browser){
  const pageErrors=[],apiRequests=[],patchedModules=new Set();
  // Exercise the proposed branch modules on the public GitHub Pages origin.
  // Without this route Chromium would silently load unpatched main instead.
- await page.route('**/RPChess/js/*',route=>{
+ const interceptBranchModule=route=>{
   const name=new URL(route.request().url()).pathname.split('/').pop();
   if(!modules.has(name))return route.continue();
   patchedModules.add(name);
   return route.fulfill({status:200,contentType:'text/javascript',body:modules.get(name)});
- });
+ };
+ await page.route('**/RPChess/js/*',interceptBranchModule);
+ await page.route('**/js/*',interceptBranchModule);
  page.on('pageerror',e=>pageErrors.push(String(e)));
- const origin='https://mobigametim-bit.github.io';
+ const origin=new URL(base).origin;
  const profileHost='rpchess-profile-preview.mobigametim.workers.dev';
  const tournamentHost='rpchess-tournament-profile-preview.mobigametim.workers.dev';
  const profileId='00000000-0000-4000-8000-000000000123';
