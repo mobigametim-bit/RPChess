@@ -26,6 +26,16 @@ The locally archived `chronicle` and the server-owned `rpchess_leaderboard_v3` a
 - Never overwrite a conflicted save or submit directly to legacy leaderboard Worker. Never send secrets, identity, or claimed rank in request metadata or public diagnostics.
 - Extend existing Node and browser regressions by a few assertions; no new permanent suite, no gameplay/score/save schema changes.
 
+## Isolated QA — explicitly synthetic, zero production impact
+
+Workflow: `.github/workflows/chronicle-rank-preview.yml`; branch: `fix/chronicle-rank-sync-retry-20261117`. The Cloudflare static Worker name is `rpchess-chronicle-rank-qa-preview`; production Pages, VK Hosting, Profile API Worker, D1 data, and other Workers are not changed.
+
+- Ordinary preview game (separate localStorage): https://rpchess-chronicle-rank-qa-preview.mobigametim.workers.dev/
+- **Synthetic Chronicle demo:** https://rpchess-chronicle-rank-qa-preview.mobigametim.workers.dev/?chronicle_qa=1&rpchess_profile=1&rpchess_api_route=direct
+- Test-only `chronicle-rank-preview/demo.js` is injected **into the dist/index.html build artifact only**, never into `game/index.html` or the production bundle. It seeds a fake Web-only local Chronicle with 373 Glory and 898 Power, intercepts its isolated mock Profile API calls, first renders **«Не опубликован»**, and then simulates an authoritative `#1` response after the user presses **«Повторить отправку»**. The fixed banner prominently labels all data as **QA DEMO**.
+- QA browser smoke verifies the actual button path and blocks any accidental HTTP requests to the real D1 Profile API. Fake records are NOT inserted into D1 and the synthetic rank is never represented as a real score.
+- This preview cannot authenticate as the owner or access their real VK saved game because the origin differs. The real 373-point account's ranking can only be validated in the main VK game **after** explicit release approval and production rollout. Preserve owner save and do not clear browser storage.
+
 ## Automated verification and device acceptance
 
 - Run PR Focused Checks and Release Gate only after explicit owner acceptance.
