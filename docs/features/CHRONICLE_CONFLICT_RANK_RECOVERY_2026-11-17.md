@@ -31,6 +31,15 @@ No Profile Worker changes, D1 migrations, old leaderboard writes, Tournament red
 - Trigger isolated VK profile mock browser workflow `.github/workflows/yandex-gateway-browser.yml` on the feature branch. All API requests in the test are intercepted and synthetic, not sent to real D1.
 - PR Focused Checks plus full Release Gate only after explicit human approval.
 
+## Isolated QA build (synthetic, no real D1 data)
+
+- Isolated Cloudflare static Worker: https://rpchess-chronicle-conflict-qa-preview.mobigametim.workers.dev/
+- **Demo deep link:** https://rpchess-chronicle-conflict-qa-preview.mobigametim.workers.dev/?chronicle_conflict_qa=1&rpchess_profile=1&rpchess_api_route=direct
+- Workflow: `.github/workflows/chronicle-conflict-preview.yml`.
+- The test-only `chronicle-conflict-preview/demo.js` is injected into **QA dist/index.html only**, not into production `game/index.html` or build. It sets up fake local 373 Glory and a newer remote D1 snapshot with 780 Power, intercepts its Profile API, and displays a conspicuous QA DEMO banner.
+- Real Chromium must confirm `Конфликт сохранений` -> explicit `Отправить лучший поход` click -> **synthetic** `#1`, with unchanged local Chronicle, remote 780 Power and remote old run, while full profile status stays conflicted.
+- QA cannot read the user's signed VK identity or real finished run; only the post-release VK check can prove the actual 373-point row was ranked.
+
 ## Owner acceptance
 
 Before production: code review and green synthetic Chromium/PR tests. Separate QA preview may show the recovery control, but cannot access the owner's genuine signed VK data and cannot prove that the user's real 373 record will be accepted.

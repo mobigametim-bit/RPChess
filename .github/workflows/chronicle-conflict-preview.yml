@@ -1,0 +1,175 @@
+name: Chronicle conflict — isolated QA and safe recovery demo
+on:
+  push:
+    branches: [fix/chronicle-conflict-safe-rank-recovery-20261117]
+    paths:
+      - 'game/**'
+      - 'tests/**'
+      - 'chronicle-conflict-preview/**'
+      - '.github/workflows/chronicle-conflict-preview.yml'
+      - 'scripts/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rpchess-chronicle-conflict-qa-preview
+  cancel-in-progress: true
+
+jobs:
+  qa:
+    if: github.repository == 'mobigametim-bit/RPChess' && github.ref == 'refs/heads/fix/chronicle-conflict-safe-rank-recovery-20261117'
+    name: Verify and publish isolated Chronicle conflict QA
+    runs-on: ubuntu-24.04
+    timeout-minutes: 65
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm/rpchess-runtime-assets-v1
+          key: rpchess-runtime-assets-v1-${{ runner.os }}-${{ hashFiles('game/assets/**/*.png', 'game/generated_assets/*.png', 'scripts/*asset*.cjs', 'scripts/runtime-assets-build.cjs') }}
+          restore-keys: rpchess-runtime-assets-v1-${{ runner.os }}-
+      - name: Install dependencies and SHA-verified Stockfish 18
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund
+          npm pack stockfish@18.0.0 --silent --pack-destination /tmp
+          mkdir -p /tmp/rpchess-stockfish-package /tmp/rpchess-stockfish-verified
+          tar -xzf /tmp/stockfish-18.0.0.tgz -C /tmp/rpchess-stockfish-package
+          package=/tmp/rpchess-stockfish-package/package
+          for name in stockfish-18-lite-single.js stockfish-18-lite-single.wasm; do
+            source=$(find "$package" -type f -name "$name" -print -quit)
+            test -n "$source"
+            cp "$source" "/tmp/rpchess-stockfish-verified/$name"
+          done
+          license=$(find "$package" -type f -iname 'Copying.txt' -print -quit)
+          test -n "$license"
+          cp "$license" /tmp/rpchess-stockfish-verified/COPYING.txt
+      - name: Canonical Node checks and production-equivalent build
+        env:
+          RPCHESS_STOCKFISH_ASSET_DIR: /tmp/rpchess-stockfish-verified
+        run: npm run gate:local
+      - name: Install pinned Chromium
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.54.2
+          npx playwright install chromium
+      - name: Regression — Chronicle and authenticated profile browser paths
+        env:
+          RPCHESS_BROWSER_TEST: chronicle-localization-browser.cjs
+          RPCHESS_GATE_PREFIX: /RPChess
+        run: npm run test:browser
+      - name: Add synthetic test-only Chronicle demo to isolated dist
+        run: |
+          set -euo pipefail
+          cp chronicle-conflict-preview/demo.js dist/chronicle-qa-demo.js
+          node <<'NODE'
+          const fs=require('node:fs'),assert=require('node:assert/strict');
+          const file='dist/index.html';
+          let html=fs.readFileSync(file,'utf8');
+          assert(html.includes('<head>')&&!html.includes('chronicle-qa-demo.js'));
+          html=html.replace('<head>','<head>\n<script src="chronicle-qa-demo.js"></script>');
+          fs.writeFileSync(file,html);
+          assert(html.includes('chronicle-qa-demo.js'));
+          console.log('Isolated QA-only demo injection complete; source game/ untouched');
+          NODE
+      - name: Deploy standalone Chronicle QA game (no profile/D1 Worker deploy)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          npx wrangler deploy --config chronicle-conflict-preview/wrangler.toml
+      - name: Verify isolated build assets on Cloudflare
+        run: |
+          node <<'NODE'
+          const assert=require('node:assert/strict');
+          const root='https://rpchess-chronicle-conflict-qa-preview.mobigametim.workers.dev';
+          (async()=>{
+            for(let attempt=0;attempt<12;attempt++){
+              try{
+                for(const [file,token] of [
+                  ['/','chronicle-qa-demo.js'],
+                  ['/chronicle-qa-demo.js','RPChessChronicleConflictQADemo'],
+                  ['/js/profile-client.mjs','recoverCompletedChronicleRanking'],
+                  ['/js/player-identity-chronicle.mjs','chronicleConflictRecovery'],
+                  ['/js/leaderboard-client.mjs','profileSyncStatus']]){
+                    const response=await fetch(root+file,{cache:'no-store'});
+                    assert.equal(response.status,200,file);
+                    assert((await response.text()).includes(token),file+' is not accepted PR #215 QA build');
+                }
+                console.log('Isolated Chronicle QA build: LIVE '+root);
+                return;
+              }catch(error){
+                if(attempt===11)throw error;
+                await new Promise(done=>setTimeout(done,3000));
+              }
+            }
+          })().catch(error=>{console.error(error);process.exitCode=1});
+          NODE
+      - name: Verify synthetic conflict, safe score recovery and no D1 HTTP in Chromium
+        run: |
+          node <<'NODE'
+          const assert=require('node:assert/strict');
+          const {chromium}=require('playwright');
+          const root='https://rpchess-chronicle-conflict-qa-preview.mobigametim.workers.dev/';
+          (async()=>{
+            const browser=await chromium.launch({headless:true});
+            try{
+              const page=await browser.newPage({viewport:{width:1240,height:800}});
+              let realProfileRequests=0;
+              page.on('request',req=>{
+                if(req.url().startsWith('https://rpchess-profile-preview.mobigametim.workers.dev'))
+                  realProfileRequests++;
+              });
+              page.on('pageerror',e=>console.error('QA PAGE ERROR',String(e)));
+              await page.goto(root+'?chronicle_conflict_qa=1&rpchess_profile=1&rpchess_api_route=direct',
+                {waitUntil:'domcontentloaded',timeout:45000});
+              await page.locator('[data-chronicle-conflict-qa-notice]').waitFor({timeout:45000});
+              const retry=page.locator('[data-chronicle-conflict-recovery]');
+              await retry.waitFor({state:'visible',timeout:45000});
+              await page.waitForFunction(()=>globalThis.RPChessProfileStatus?.status==='conflict'
+                &&document.querySelector('.chronicle-leaderboard-self')?.textContent?.includes('Конфликт сохранений'),
+                null,{timeout:25000});
+              assert.equal((await page.locator('.chronicle-v2-personal-score').textContent()).trim(),'373');
+              const localBefore=await page.evaluate(()=>{
+                const id='00000000-0000-4000-8000-000000000216';
+                return localStorage.getItem('rpchess.profile.v1.web.'+id+'.rpchess.reboot.v1.chronicle');
+              });
+              await page.locator('[data-game-loading]').waitFor({state:'hidden',timeout:30000});
+              await retry.click({timeout:20000});
+              await page.waitForFunction(()=>
+                document.querySelector('.chronicle-leaderboard-self')?.textContent?.includes('#1'),
+                null,{timeout:25000});
+              const result=await page.evaluate(()=>{
+                const id='00000000-0000-4000-8000-000000000216';
+                return {state:globalThis.RPChessChronicleConflictQADemo,
+                  status:globalThis.RPChessProfileStatus?.status,
+                  saved:localStorage.getItem('rpchess.profile.v1.web.'+id+'.rpchess.reboot.v1.chronicle')};
+              });
+              assert(result.state.attemptedRecovery&&result.state.syncWrites===1
+                &&result.state.refreshRequests>=1,'the real click must cause one mock D1 CAS and refresh');
+              assert.equal(result.state.remotePower,780,'remote Power must not be replaced by local 898');
+              assert.equal(result.state.remoteHistory,2,'server completed history must retain older entry plus 373');
+              assert.equal(result.saved,localBefore,'local completed Journey must be untouched');
+              assert.equal(result.status,'conflict','the unrelated cross-device conflict must remain');
+              assert.equal(realProfileRequests,0,'no real D1 HTTP requests permitted from demo');
+              console.log('CHRONICLE CONFLICT QA PASS: 373, conflict -> fake #1 on real click; remote and local saves unchanged except additive remote Chronicle; no real D1 calls');
+            }finally{await browser.close();}
+          })().catch(e=>{console.error(e.stack||e);process.exitCode=1});
+          NODE
+      - name: Archive QA debug screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: chronicle-rank-qa-screenshots
+          path: test-results/
+          retention-days: 7
+          if-no-files-found: ignore
