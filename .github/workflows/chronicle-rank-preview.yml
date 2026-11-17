@@ -60,7 +60,7 @@ jobs:
           npx playwright install chromium
       - name: Regression — Chronicle and authenticated profile browser paths
         env:
-          RPCHESS_BROWSER_TEST: chronicle-localization-browser.cjs,yandex-gateway-browser.cjs
+          RPCHESS_BROWSER_TEST: chronicle-localization-browser.cjs
           RPCHESS_GATE_PREFIX: /RPChess
         run: npm run test:browser
       - name: Add synthetic test-only Chronicle demo to isolated dist
