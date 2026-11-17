@@ -1,0 +1,6 @@
+name = "rpchess-chronicle-conflict-qa-preview"
+compatibility_date = "2026-11-17"
+# Isolated synthetic UI only; never publish Profile API/D1 or production Pages.
+[assets]
+directory = "../dist"
+not_found_handling = "single-page-application"

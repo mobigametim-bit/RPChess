@@ -4,6 +4,8 @@
 import { platform, discoverVKHost } from './platform.mjs';
 import { apiBase, invalidateRoute } from './api-route.mjs';
 import { localPayload, payloadFingerprint, payloadHasProgress, restoreLocalEnvelope, readCloudEnvelope } from './cloud-save.mjs';
+import {bestChronicleRun,readChronicle} from './chronicle-core.mjs';
+import {scoreFromCompletedRecord} from './glory-v2.mjs';
 
 const AUTH_PREFIX='rpchess.profile.auth.';
 const SYNC_REV_KEY='rpchess.reboot.v1.profile-revision';
@@ -492,10 +494,65 @@ async function unifiedLeaderboard({refresh=false}={}) {
 }
 // The existing Tournament client sends this credential ONLY to our staging
 // Tournament Worker. Never log it, include it in URLs, or expose it in UI.
+// Explicit, additive recovery of ONE completed run for ranking when D1 and
+// this device diverged. Never upload the local run, rating, arena or resources
+// over newer server data. The user must click the special recovery button.
+// This does not resolve the underlying cross-device save conflict.
+function rankableCompletedRun(record){
+  return Boolean(record?.scoreVersion===2&&
+    /^[\w.:-]{1,128}$/.test(record.runId||'')&&
+    Number.isSafeInteger(record.adventure)&&record.adventure>0&&
+    Number.isSafeInteger(record.power)&&record.power>=0&&record.power<=1000000&&
+    Number.isSafeInteger(record.day)&&record.day>=0&&record.day<=100000&&
+    scoreFromCompletedRecord(record)===record.glory);
+}
+async function recoverCompletedChronicleRanking(){
+  if(!enabled()||!sessionReady||!token||status!=='conflict')
+    return {status:'unavailable'};
+  const best=bestChronicleRun(readChronicle());
+  if(!rankableCompletedRun(best))return {status:'ineligible'};
+  // GET the server's live, authenticated revision before each CAS attempt.
+  // A 409 means another device won: re-read, never force the older revision.
+  for(let attempt=0;attempt<2;attempt++){
+    try{
+      const current=await request('/v1/profile');
+      const remote=current?.profile;
+      if(!remote||remote.id!==profileId||remote.provider!==provider||
+         !Number.isSafeInteger(remote.revision)||remote.revision<0)
+        return {status:'unavailable'};
+      const snapshot=remote.snapshot||{schemaVersion:1};
+      if(snapshot.schemaVersion!==1||
+        snapshot.chronicle!=null&&!Array.isArray(snapshot.chronicle?.history))
+        return {status:'unavailable'};
+      const history=snapshot.chronicle?.history||[];
+      if(!history.some(record=>record?.runId===best.runId)){
+        // D1 limits Chronicle to 20 records. Do not evict another device's
+        // historical entries just to publish a score from this device.
+        if(history.length>=20)return {status:'history-full'};
+        const patched={...snapshot,chronicle:{
+          schemaVersion:1,history:[...history,best]
+        }};
+        await request('/v1/profile',{method:'PUT',data:{
+          revision:remote.revision,snapshot:patched
+        }});
+      }
+      // Ranking is always derived by the Worker from the committed snapshot;
+      // never submit a claimed position or arbitrary score as a leaderboard row.
+      const ranked=await request('/v1/leaderboard/refresh',{method:'POST',data:{}});
+      return {status:ranked?.me?'ranked':'not-ranked'};
+    }catch(error){
+      if(error?.status===409)continue;
+      // After an ambiguous timeout, the next click starts with a fresh GET.
+      // Never replay a potentially committed PUT using a stale revision.
+      return {status:'offline'};
+    }
+  }
+  return {status:'retry'};
+}
 // Verified RPChess identity stays usable even if D1 autosave is offline or
 // a local-versus-server save conflict is unresolved. Tournament must not
 // log out a player because their separate game-progress sync is paused.
 // The Tournament Worker independently redeems and verifies this bearer;
 // before sessionReady there is never a credential to expose.
 function tournamentCredential() { return sessionReady&&token?token:''; }
-export {bootstrapProfile,syncNow,statusInfo,signedParams,legacyVKMeta,hasCompletedMeta,needsLegacyEnrichment,profileRestoreMatches,summaryOfMeta,unifiedLeaderboard,tournamentCredential};
+export {bootstrapProfile,syncNow,statusInfo,signedParams,legacyVKMeta,hasCompletedMeta,needsLegacyEnrichment,profileRestoreMatches,summaryOfMeta,unifiedLeaderboard,recoverCompletedChronicleRanking,tournamentCredential};
