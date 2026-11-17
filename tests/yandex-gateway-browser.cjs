@@ -17,6 +17,11 @@ async function verifyVKRecovery(browser){
  // the production VK platform can independently reject forged host params.
  await page.addInitScript(()=>{
   window.__testVKLaunchFresh=localStorage.getItem('__rpchess_test_launch_fresh')==='1';
+  // This is a returning player's save-conflict regression, not a fresh
+  // install; first-launch tutorials would mask the Tournament / Chronicle UI.
+  const tutorial=JSON.stringify({schemaVersion:1,activated:true,dismissed:{welcome:true}});
+  for(const scope of ['pending','00000000-0000-4000-8000-000000000123'])
+    localStorage.setItem('rpchess.profile.v1.vk.'+scope+'.rpchess.reboot.v1.tutorial',tutorial);
   window.AndroidBridge={
    VKWebAppInit(){},
    VKWebAppGetLaunchParams(raw){
