@@ -34,7 +34,7 @@ jobs:
       - name: Exercise ranked Elo and Honor shard payout (disposable local Durable Objects)
         run: |
           set -euo pipefail
-          npx wrangler dev --local --config tournament-worker/wrangler.toml --ip 127.0.0.1 --port 8789 \
+          npx wrangler dev --local --config tournament-worker/wrangler-profile-local.toml --ip 127.0.0.1 --port 8789 \
             --var PVP_SESSION_SECRET:rpchess-local-session-secret-for-ci-only-12345678901234567890 \
             --var VK_APP_SECRET:rpchess-local-vk-secret-for-ci-only-do-not-deploy \
             >/tmp/rpchess-tournament-elo-shards-local.log 2>&1 &
