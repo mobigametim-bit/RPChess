@@ -71,6 +71,11 @@ for(let round=1;round<=3;round++){
   if(round===1)assert.equal(sum,0,'Equal 500 vs 500: +16/-16');
   assert.equal(ended.rating.delta,round===1?-16:ended.rating.delta);
   assert.equal(winner.rating.delta,round===1?16:winner.rating.delta);
+  assert.equal(ended.rating.shards,0,'losing Elo must not debit Honor Shards');
+  assert.equal(winner.rating.shards,Math.max(0,winner.rating.delta),
+   'server-side rated victory awards exactly gained Elo as Honor Shards');
+  assert.deepEqual((await ok('/v1/match/'+game.id+'/snapshot',game.black)).rating,winner.rating,
+   're-reading a winning receipt must not reprice or reissue shards');
   assert.deepEqual((await ok('/v1/match/'+game.id+'/snapshot',game.white)).rating,ended.rating,
    'Re-reading a completed result cannot change settled rating');
   const ratingA=await ok('/v1/profile',a);
@@ -81,7 +86,7 @@ for(let round=1;round<=3;round++){
   assert.equal(ratingB.power,game.b.playerColor==='w'?ended.rating.after:winner.rating.after);
  }else{
   assert.equal(ended.rating,null,'Third repeat encounter must not mint Elo');
-  assert.equal(winner.rating,null);
+  assert.equal(winner.rating,null,'third same-pair casual meeting grants no shards');
   assert.equal((await ok('/v1/profile',a)).ratedGames,2);
   assert.equal((await ok('/v1/profile',b)).ratedGames,2);
  }
@@ -93,6 +98,7 @@ const room=await ok('/v1/room/create',a,{squad:'humans'});
 const invited=await ok('/v1/room/join',b,{code:room.code,squad:'orcs'});
 const invitedSnapshot=await ok('/v1/match/'+invited.matchId+'/snapshot',a);
 assert.equal(invitedSnapshot.rated,false,'Even two VK players in a private invitation remain casual');
-await ok('/v1/match/'+invited.matchId+'/resign',a);
+const invitedEnd=await ok('/v1/match/'+invited.matchId+'/resign',a);
+assert.equal(invitedEnd.rating,null,'private invites must never issue Honor Shards');
 assert.equal((await ok('/v1/profile',a)).ratedGames,2);
-console.log('RANKED LOCAL PASS: VK HMAC+freshness, no client Power claims, account ledger, once-only Elo, pair anti-farming, casual invites');
+console.log('RANKED LOCAL PASS: VK HMAC+freshness, immutable win shards = positive Elo, no loser debit, once-only account receipts, pair anti-farming, casual invites');

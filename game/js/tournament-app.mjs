@@ -1,7 +1,7 @@
 /* Tournament MVP: first production-integrated screen.
    Real matchmaking is enabled only after a verified tournament API is configured.
    This UI never creates fictitious opponents, receipts or ranked results. */
-import { arenaSummary, normalizeArena, ARENA_KEY, SHARD_ICON } from './arena-core.mjs';
+import { arenaSummary, normalizeArena, creditTournamentWin, ARENA_KEY, SHARD_ICON } from './arena-core.mjs';
 import { ClassicChessEngine } from './classic-chess-engine.mjs';
 import { attachPieceDrag } from './piece-drag.mjs';
 import { fantasyPieceMarkup } from './fantasy-piece.mjs';
@@ -73,7 +73,28 @@ const ROLE={p:'pawn',n:'knight',b:'bishop',r:'rook',q:'queen',k:'king'};
 function lang(){return currentLanguage()==='en'?'en':'ru';}
 function t(key){return words[lang()][key]||key;}
 function esc(text){return String(text??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
-function arena(){try{return arenaSummary(normalizeArena(JSON.parse(platform.storage.local?.getItem(ARENA_KEY)||'null')));}catch{return {owned:new Set(['humans']),balance:0};}}
+function arena(){try{return arenaSummary(normalizeArena(JSON.parse(platform.storage.local?.getItem(ARENA_KEY)||'null')));}catch{return {owned:new Set(['humans']),balance:0,accepted:new Set()};}}
+// Server-earned shards share the Arena/Kingdom event ledger. Only an already
+// verified, server-settled rated WIN receipt can mint this one-time event.
+// Retrying a finished snapshot does not duplicate it, even after reload.
+function settleTournamentShardAward(receipt){
+ const storage=platform.storage.local;
+ if(!storage||!receipt)return 0;
+ try{
+  const old=normalizeArena(JSON.parse(storage.getItem(ARENA_KEY)||'null'));
+  const next=creditTournamentWin(old,receipt),eventId=receipt.id+':shards';
+  if(!arenaSummary(next).accepted.has(eventId))return 0;
+  if(!arenaSummary(old).accepted.has(eventId)){
+   storage.setItem(ARENA_KEY,JSON.stringify(next));
+   if(!arena().accepted.has(eventId))return 0;
+   globalThis.dispatchEvent(new CustomEvent('rpchess:arena-updated'));
+  }
+  return receipt.shards;
+ }catch(error){
+  console.error('[RPChess] Tournament shard award pending local storage',error);
+  return 0;
+ }
+}
 function saved(){try{return JSON.parse(platform.storage.local?.getItem(STORAGE_KEY)||'{}');}catch{return {};}}
 function remember(){platform.storage.local?.setItem(STORAGE_KEY,JSON.stringify({squad}));}
 function raceLabel(r){return lang()==='en'?EN[RACE_TAGS.indexOf(r)]||r:RACE_LABELS[r]||r;}
@@ -208,10 +229,22 @@ function resultView(){
  const ratingMarkup=rating
   ?'<div class="tournament-rating-result" data-tour-rating><span>'+(lang()==='ru'?'Мощь':'Power')+'</span><strong>'+rating.before+' → '+rating.after+'</strong><b class="'+(rating.delta<0?'is-loss':rating.delta>0?'is-win':'')+'">'+(rating.delta>0?'+':'')+rating.delta+'</b></div>'
   :'';
+ const awarded=rating?.result===1&&rating?.shards>0&&
+   arena().accepted?.has(rating.id+':shards')?rating.shards:0;
+ const shardNotice=!matchState.rated
+   ?(lang()==='ru'?'Товарищеская партия: Мощь и Осколки чести не изменяются.':'Casual match: Power and Honor shards remain unchanged.')
+   :rating?.result===1&&rating?.shards>0
+     ?awarded
+       ?(lang()==='ru'?'Осколки чести: +':'Honor shards: +')+awarded
+       :(lang()==='ru'?'Награда осколками ожидает сохранения. Повторите вход в Турнир.':'Shard award not saved yet. Reopen Tournament to retry.')
+     :rating?.result===1&&rating?.shards===0
+       ?(lang()==='ru'?'Осколки чести: +0 (Elo не вырос).':'Honor shards: +0 (no Elo gain).')
+       :rating?.result===1
+         ?(lang()==='ru'?'Сервер не подтвердил награду осколками.':'Server did not confirm the shard award.')
+         :(lang()==='ru'?'Осколки чести не списываются при ничьей или поражении.':'Honor shards are never deducted for a draw or defeat.');
+ const shardIcon=awarded?'<img src="'+SHARD_ICON+'" alt="" aria-hidden="true" width="22" height="22"> ':'';
  return '<section class="tournament-card tournament-center"><h2>'+title+'</h2><p>'+esc(outcome?.kind||'')+'</p>'+ratingMarkup+
-  '<p class="tournament-muted">'+(matchState.rated
-   ?(lang()==='ru'?'Рейтинговый результат подтверждён сервером. Осколки чести пока не начисляются.':'Rated result confirmed by server. Honor shards are still disabled.')
-   :(lang()==='ru'?'Товарищеская партия: Мощь и Осколки чести не изменяются.':'Casual match: Power and Honor shards remain unchanged.'))+'</p>'+
+  '<p class="tournament-muted" data-tour-shards>'+shardIcon+esc(shardNotice)+'</p>'+
   '<div class="tournament-actions">'+(matchState?.moves?.length?action('review',t('review')):'')+action('again',t('again'))+action('cancel',t('leave'))+'</div></section>';
 }
 function showBattle(){
@@ -415,9 +448,14 @@ async function syncMatch(){
     if(!response.rated||rating.id!==expected||!opponent||!self||
       rating.opponentElo!==opponent.power||
       rating.result!==score||rating.after!==Math.max(0,rating.before+ratingDelta(rating.before,rating.opponentElo,score))||
-      rating.delta!==rating.after-rating.before)
+      rating.delta!==rating.after-rating.before||
+      (Object.hasOwn(rating,'shards')&&(!Number.isSafeInteger(rating.shards)||
+        rating.shards!==(score===1?Math.max(0,rating.delta):0))))
      throw Error('Invalid server rating receipt');
     importTournamentRatingReceipt(rating);
+    // Run on every trusted finished snapshot, including reloads where the
+    // Elo receipt was already present but the shard ledger write had failed.
+    if(response.rated&&score===1)settleTournamentShardAward(rating);
     ratedReceipt=rating;
     tournamentProfile={ranked:true,power:rating.after};
    }

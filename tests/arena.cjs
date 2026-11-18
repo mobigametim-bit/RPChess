@@ -68,6 +68,30 @@ const { pathToFileURL } = require('url');
   const unpaidOutpost=core.addEvent(core.emptyArena(),outpostSpend);
   assert(!core.arenaSummary(unpaidOutpost).applied.has(outpostSpend.id),
     'an unaffordable outpost event must not charge shards or grant a free purchase');
+  // One authenticated Tournament win pays exactly the positive server Elo gain.
+  // Its match/color receipt is stable across reconnects and cloud merges.
+  const id='tournament:12345678-aaaa-bbbb-cccc-123456789abc:w';
+  const ratedWin={id,before:500,after:516,delta:16,opponentElo:500,result:1,shards:16};
+  const paid=core.creditTournamentWin(core.emptyArena(),ratedWin);
+  assert.equal(core.tournamentWinShardAmount(ratedWin),16);
+  assert.equal(core.arenaSummary(paid).balance,16,'+16 Elo must pay +16 Honor Shards');
+  assert.equal(core.arenaSummary(core.creditTournamentWin(paid,ratedWin)).balance,16,
+    'reconnect must never pay one Tournament match twice');
+  assert.equal(core.arenaSummary(core.mergeArena(paid,core.creditTournamentWin(core.emptyArena(),ratedWin))).balance,16,
+    'cross-device event union must not duplicate an Honor payout');
+  assert.equal(core.arenaSummary(core.normalizeArena(JSON.parse(JSON.stringify(paid)))).balance,16,
+    'Tourament shards must survive storage and cloud normalization');
+  for(const [label,receipt] of [
+    ['loss',{...ratedWin,id:'tournament:12345678-aaaa-bbbb-cccc-123456789abd:w',
+      result:0,delta:-16,after:484,shards:0}],
+    ['draw',{...ratedWin,id:'tournament:12345678-aaaa-bbbb-cccc-123456789abe:w',
+      result:.5,delta:0,after:500,shards:0}],
+    ['legacy',{...ratedWin,id:'tournament:12345678-aaaa-bbbb-cccc-123456789abf:w',shards:undefined}],
+    ['forged amount',{...ratedWin,shards:32}],
+    ['forged Elo',{...ratedWin,delta:32,after:532,shards:32}]
+  ])assert.equal(core.arenaSummary(core.creditTournamentWin(core.emptyArena(),receipt)).balance,0,
+    label+' must never mint Honor Shards');
+
 
   assert.strictEqual(core.newMatch(state,foes[1].id,'skip'),state,'locked opponent');
   const blackMatch=core.newMatch(state,foes[0].id,'match:black','b');

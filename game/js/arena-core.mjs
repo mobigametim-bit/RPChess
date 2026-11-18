@@ -1,6 +1,7 @@
 import { RACE_TAGS, PIECE_TYPES, racePiecePath } from './race-assets.mjs';
 import { ARTIFACTS } from './artifact-core.mjs';
 import {DEFAULT_KINGDOM_ECONOMY} from './kingdom-economy-config.mjs';
+import {ratingDelta} from './power-elo.mjs';
 
 const ARENA_KEY = 'rpchess.reboot.v1.arena';
 const SHARD_ICON = 'assets/arena/mirror_shard.png';
@@ -16,10 +17,27 @@ const SQUAD_PRICES=Object.freeze({...DEFAULT_KINGDOM_ECONOMY.arena.squadShards})
 const ARTIFACT_PRICES=Object.freeze({...DEFAULT_KINGDOM_ECONOMY.arena.artifactShards});
 function emptyArena(){ return { version:1, events:[], squad:'humans', match:null, updatedAt:0 }; }
 function safeInt(n){ return Number.isSafeInteger(n) && n >= 0 ? n : 0; }
+// Only actual server-issued rated-win receipts from the Tournament response
+// may enter this client ledger. Field-level validation ensures the synced
+// history remains mathematically consistent; it is NOT a cryptographic proof
+// against manually edited localStorage (the Arena ledger already is local).
+function tournamentWinShardAmount(receipt){
+  if(!receipt||!/^tournament:[0-9a-f-]{36}:[wb]$/.test(receipt.id||'')||
+     receipt.result!==1||
+     ![receipt.before,receipt.after,receipt.delta,receipt.opponentElo,receipt.shards].every(Number.isSafeInteger)||
+     receipt.before<0||receipt.after<0||receipt.opponentElo<0||
+     receipt.shards<=0||receipt.shards>32)return 0;
+  const delta=ratingDelta(receipt.before,receipt.opponentElo,1);
+  if(delta!==receipt.delta||receipt.after!==Math.max(0,receipt.before+delta)||
+     receipt.shards!==delta)return 0;
+  return receipt.shards;
+}
 function validEvent(event){
-  if(!event || typeof event.id!=='string' || !/^[\w:.\-]{1,100}$/.test(event.id) || !['win','loss','draw','ad','squad','artifact','kingdom-outpost','kingdom-settlement','kingdom-production'].includes(event.kind) || !Number.isSafeInteger(event.at) || event.at<0) return false;
+  if(!event || typeof event.id!=='string' || !/^[\w:.\-]{1,100}$/.test(event.id) || !['win','loss','draw','ad','squad','artifact','kingdom-outpost','kingdom-settlement','kingdom-production','tournament-win'].includes(event.kind) || !Number.isSafeInteger(event.at) || event.at<0) return false;
   if(['win','loss','draw'].includes(event.kind)) return OPPONENT_BY_ID.has(event.foe) && safeInt(event.amount)===event.amount && event.amount<=500;
   if(event.kind==='ad') return OPPONENT_BY_ID.has(event.foe) && safeInt(event.amount)===event.amount && event.amount<=500;
+  if(event.kind==='tournament-win')return Boolean(tournamentWinShardAmount(event.receipt))&&
+    event.id===event.receipt.id+':shards'&&event.amount===event.receipt.shards;
   if(event.kind==='kingdom-outpost')
     return event.amount===KINGDOM_OUTPOST_SHARD_COST&&typeof event.runId==='string'&&event.runId.length>0&&
      typeof event.cellId==='string'&&/^-?[0-9]+,-?[0-9]+$/.test(event.cellId);
@@ -55,7 +73,7 @@ function arenaSummary(state){
     if(event.kind==='kingdom-outpost'||event.kind==='kingdom-settlement'){
       if(balance<event.amount){accepted.add(event.id);continue;}
       balance-=event.amount;applied.add(event.id);
-    }else if(event.kind==='kingdom-production'){
+    }else if(event.kind==='kingdom-production'||event.kind==='tournament-win'){
       balance+=event.amount;applied.add(event.id);
     }else if(event.kind==='squad'){
       if(owned.has(event.race)||balance<event.amount)continue;
@@ -100,6 +118,17 @@ function mergeArena(local,remote){
   if(merged.match?.artifactId && !arenaSummary(merged).accepted.has(`${merged.match.id}:artifact`))merged.match.artifactId=null;
   return merged;
 }
+// Idempotent credit: the immutable server rating receipt is the event key,
+ // including the player's color. Reconnect and cloud union cannot duplicate it.
+function creditTournamentWin(state,receipt){
+  const current=normalizeArena(state),amount=tournamentWinShardAmount(receipt);
+  if(amount===0)return current; // loss/draw/casual/legacy/invalid: never debit
+  const proof={id:receipt.id,before:receipt.before,after:receipt.after,
+    delta:receipt.delta,opponentElo:receipt.opponentElo,
+    result:receipt.result,shards:receipt.shards};
+  return addEvent(current,{id:receipt.id+':shards',kind:'tournament-win',
+    amount,receipt:proof,at:spendingTime(current)});
+}
 function rewardFor(foe,first){const e=DEFAULT_KINGDOM_ECONOMY.arena;return (first?e.firstWinShardsBase:e.repeatWinShardsBase)+Math.floor(foe.index/7)*(first?e.firstWinShardsPer7:e.repeatWinShardsPer7);}
 function newMatch(state,foeId,id,playerColor=Math.random()<.5?'w':'b'){
   const summary=arenaSummary(state),foe=OPPONENT_BY_ID.get(foeId);
@@ -132,4 +161,4 @@ function purchaseSquad(state,race,transactionId=globalThis.crypto?.randomUUID?.(
   const price=SQUAD_PRICES[race];if(!price||arenaSummary(state).owned.has(race)||arenaSummary(state).balance<price)return state;
   return addEvent(state,{id:`squad:${race}:${transactionId}`,kind:'squad',race,amount:price,at:spendingTime(state)});
 }
-export { ARENA_KEY,SHARD_ICON,KINGDOM_OUTPOST_SHARD_COST,spendingTime,PIECE_CODE,OPPONENTS,OPPONENT_BY_ID,SQUAD_PRICES,ARTIFACT_PRICES,emptyArena,normalizeArena,arenaSummary,addEvent,mergeArena,rewardFor,newMatch,chooseArtifact,finishMatch,claimDouble,purchaseSquad };
+export { ARENA_KEY,SHARD_ICON,KINGDOM_OUTPOST_SHARD_COST,spendingTime,PIECE_CODE,OPPONENTS,OPPONENT_BY_ID,SQUAD_PRICES,ARTIFACT_PRICES,emptyArena,normalizeArena,arenaSummary,addEvent,mergeArena,tournamentWinShardAmount,creditTournamentWin,rewardFor,newMatch,chooseArtifact,finishMatch,claimDouble,purchaseSquad };

@@ -4,9 +4,14 @@ on:
   push:
     branches:
       - feature/tournament-pvp-mvp-20261022
+      - feature/tournament-elo-honor-shards-20261118
     paths:
       - tournament-worker/**
       - game/js/classic-chess-engine.mjs
+      - game/js/arena-core.mjs
+      - game/js/tournament-app.mjs
+      - game/js/power-elo.mjs
+      - tests/tournament-rated-local.mjs
       - .github/workflows/tournament-worker-check.yml
 
 permissions:
@@ -25,3 +30,19 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - name: Verify dedicated Worker bundling and SQLite Durable Object migration
         run: npx wrangler deploy --config tournament-worker/wrangler.toml --dry-run --outdir /tmp/rpchess-tournament-worker
+
+      - name: Exercise ranked Elo and Honor shard payout (disposable local Durable Objects)
+        run: |
+          set -euo pipefail
+          npx wrangler dev --local --config tournament-worker/wrangler.toml --ip 127.0.0.1 --port 8789 \
+            --var PVP_SESSION_SECRET:rpchess-local-session-secret-for-ci-only-12345678901234567890 \
+            --var VK_APP_SECRET:rpchess-local-vk-secret-for-ci-only-do-not-deploy \
+            >/tmp/rpchess-tournament-elo-shards-local.log 2>&1 &
+          pid=$!
+          trap 'kill "$pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 40); do
+            if curl -fsS --max-time 2 http://127.0.0.1:8789/health >/dev/null; then break; fi
+            if [ "$attempt" -eq 40 ]; then tail -100 /tmp/rpchess-tournament-elo-shards-local.log; exit 1; fi
+            sleep 1
+          done
+          node tests/tournament-rated-local.mjs || { tail -100 /tmp/rpchess-tournament-elo-shards-local.log; exit 1; }

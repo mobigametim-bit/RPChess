@@ -55,7 +55,9 @@ function allowedOrigin(origin,env){
  }catch{return false;}
 }
 /* Result + score are authoritative inside this match Durable Object; the
- * same immutable receipt is exposed on reconnect. Shards remain disabled.
+ * same immutable receipt is exposed on reconnect. Rated wins receive an
+ * immutable Honor Shard entitlement equal to their positive Elo gain.
+ * Casual/invite/shadow games and losses/draws never issue shards.
  */
 function ratedResult(match,player){
  if(!match.result||match.ratingVersion!==1)return null;
@@ -435,7 +437,11 @@ export class TournamentAccount extends DurableObject {
    const opponentElo=safePower(body.opponentElo);
    const delta=ratingDelta(before,opponentElo,body.result);
    const after=Math.max(0,before+delta);
-   const record={id,before,after,delta:after-before,opponentElo,result:body.result};
+   // Record the honor award in the SAME server-owned, idempotent settlement
+   // as Elo. Only a verified rated win receives shards. Historical receipts
+   // keep their old shape (no retroactive award on reconnect).
+   const awarded=body.result===1?Math.max(0,after-before):0;
+   const record={id,before,after,delta:after-before,opponentElo,result:body.result,shards:awarded};
    await tx.put('receipt:'+id,record);
    await tx.put('profile',{power:after,ratedGames:profile.ratedGames+1,updatedAt:Date.now()});
    return record;
