@@ -7,12 +7,15 @@ import {createHmac} from 'node:crypto';
 const API='http://127.0.0.1:8789';
 const ID_VK='00000000-0000-4000-8000-000000000201';
 const ID_WEB='00000000-0000-4000-8000-000000000202';
+const ID_VK2='00000000-0000-4000-8000-000000000203';
+const VK_TOKEN2='D'.repeat(43);
 const VK_TOKEN='A'.repeat(43),WEB_TOKEN='B'.repeat(43);
 const VK_SECRET='rpchess-local-vk-secret-for-ci-only-do-not-deploy';
 const profile=createServer((req,res)=>{
   if(req.url!=='/v1/tournament-binding'){res.writeHead(404);res.end();return;}
   const bearer=(req.headers.authorization||'').replace(/^Bearer /,'');
   const response=bearer===VK_TOKEN?{id:ID_VK,provider:'vk',vkUserId:'234567810',name:'Грегори',commanderId:'ash_regent',displayPower:812}
+    :bearer===VK_TOKEN2?{id:ID_VK2,provider:'vk',vkUserId:'234567811',name:'Тест-2',commanderId:'pilgrim',displayPower:700}
     :bearer===WEB_TOKEN?{id:ID_WEB,provider:'web',vkUserId:null,name:'Йо',commanderId:'pilgrim',displayPower:623}:null;
   res.writeHead(response?200:401,{'Content-Type':'application/json'});
   res.end(JSON.stringify(response||{error:'unauthorized'}));
@@ -95,7 +98,34 @@ try{
  assert.equal(byName['Грегори'].displayPower,812);
  assert.equal(byName['Грегори'].race,'orcs');
  assert.equal(byName['Грегори'].power,500,'shared Power never replaces server-controlled Elo');
- console.log('TOURNAMENT RPCHESS LINK PASS: verified VK, Web casual, stable ID, invalid/mismatched tokens, server Power');
+ // Two separately verified RPChess-ID VK users must settle ranked results.
+ // Account settlement must accept the server-selected rpchess:<uuid> opponent
+ // (legacy vk:<number> identities were the only ones accepted previously).
+ const vk2=await request('/v1/session',{nick:'Cannot spoof',power:3900,profileCredential:VK_TOKEN2});
+ assert.equal(vk2.status,200);
+ assert.equal(vk2.data.ranked,true);
+ const queued=await request('/v1/queue/join',{squad:'humans',newSearch:true},vk.data.token);
+ assert.equal(queued.status,200);
+ assert.equal(queued.data.status,'waiting');
+ const paired=await request('/v1/queue/join',{squad:'elves',newSearch:true},vk2.data.token);
+ assert.equal(paired.data.status,'matched');
+ const linkedGame=await request('/v1/match/'+paired.data.matchId+'/snapshot',{},vk.data.token);
+ assert.equal(linkedGame.data.rated,true,'a verified RPChess-ID pair is ranked');
+ const firstColor=linkedGame.data.playerColor;
+ const tokenWhite=firstColor==='w'?vk.data.token:vk2.data.token;
+ const tokenBlack=firstColor==='b'?vk.data.token:vk2.data.token;
+ const lost=await request('/v1/match/'+paired.data.matchId+'/resign',{},tokenWhite);
+ assert.equal(lost.status,200,'linked-RPChess ranked result must settle');
+ assert.equal(lost.data.rating.delta,-16);
+ assert.equal(lost.data.rating.shards,0,'a losing player must never lose Honor Shards');
+ const won=await request('/v1/match/'+paired.data.matchId+'/snapshot',{},tokenBlack);
+ assert.equal(won.status,200);
+ assert.equal(won.data.rating.delta,16);
+ assert.equal(won.data.rating.shards,16,'linked VK profiles earn their server-awarded +Elo as shards');
+ const again=await request('/v1/match/'+paired.data.matchId+'/snapshot',{},tokenBlack);
+ assert.deepEqual(again.data.rating,won.data.rating,'ranked linked receipt is immutable on reconnect');
+
+ console.log('TOURNAMENT RPCHESS LINK PASS: verified VK, Web casual, stable ID, linked two-VK rated settlement and +16 Honor Shards, no loser debit');
 }finally{
  await new Promise(resolve=>profile.close(resolve));
 }

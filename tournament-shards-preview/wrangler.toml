@@ -1,0 +1,6 @@
+name = "rpchess-tournament-shards-qa-preview"
+compatibility_date = "2026-09-15"
+# Dist-only demo. Never deploy canonical Tournament Worker / its Durable Objects.
+[assets]
+directory = "../dist"
+not_found_handling = "single-page-application"

@@ -55,7 +55,9 @@ function allowedOrigin(origin,env){
  }catch{return false;}
 }
 /* Result + score are authoritative inside this match Durable Object; the
- * same immutable receipt is exposed on reconnect. Shards remain disabled.
+ * same immutable receipt is exposed on reconnect. Rated wins receive an
+ * immutable Honor Shard entitlement equal to their positive Elo gain.
+ * Casual/invite/shadow games and losses/draws never issue shards.
  */
 function ratedResult(match,player){
  if(!match.result||match.ratingVersion!==1)return null;
@@ -118,7 +120,7 @@ export default {
   if(request.method==='OPTIONS')return new Response(null,{status:allowed?204:403,headers:{...cors,'Access-Control-Allow-Methods':'GET, POST, OPTIONS','Access-Control-Allow-Headers':'Authorization, Content-Type','Access-Control-Max-Age':'600'}});
   if(!allowed)return problem('origin_forbidden',403);
   const url=new URL(request.url),path=url.pathname;
-  if(path==='/health')return json({ok:true,service:'tournament',version:1},200,cors);
+  if(path==='/health')return json({ok:true,service:'tournament',version:1,honorShardsVersion:1},200,cors);
   if(!env.PVP_SESSION_SECRET)return json({error:'tournament_session_secret_required'},503,cors);
   if(request.method!=='POST')return json({error:'method_not_allowed'},405,cors);
   const body=await parse(request);
@@ -424,7 +426,7 @@ export class TournamentAccount extends DurableObject {
   }
   if(path!=='/settle')return problem('not_found',404);
   const id=String(body.receiptId||''),opponent=String(body.opponentId||'');
-  if(!/^tournament:[0-9a-f-]{36}:[wb]$/.test(id)||!/^vk:[1-9]\d*$/.test(opponent)||
+  if(!/^tournament:[0-9a-f-]{36}:[wb]$/.test(id)||!(/^(?:vk:[1-9]\d*|rpchess:[0-9a-f-]{36})$/i.test(opponent))||
     ![0,.5,1].includes(body.result)||!Number.isInteger(body.opponentElo))
    return problem('invalid_receipt',400);
   const receipt=await this.ctx.storage.transaction(async tx=>{
@@ -435,7 +437,11 @@ export class TournamentAccount extends DurableObject {
    const opponentElo=safePower(body.opponentElo);
    const delta=ratingDelta(before,opponentElo,body.result);
    const after=Math.max(0,before+delta);
-   const record={id,before,after,delta:after-before,opponentElo,result:body.result};
+   // Record the honor award in the SAME server-owned, idempotent settlement
+   // as Elo. Only a verified rated win receives shards. Historical receipts
+   // keep their old shape (no retroactive award on reconnect).
+   const awarded=body.result===1?Math.max(0,after-before):0;
+   const record={id,before,after,delta:after-before,opponentElo,result:body.result,shards:awarded};
    await tx.put('receipt:'+id,record);
    await tx.put('profile',{power:after,ratedGames:profile.ratedGames+1,updatedAt:Date.now()});
    return record;
