@@ -12,6 +12,7 @@ on:
       - game/js/tournament-app.mjs
       - game/js/power-elo.mjs
       - tests/tournament-rated-local.mjs
+      - tests/tournament-profile-link-local.mjs
       - .github/workflows/tournament-worker-check.yml
 
 permissions:
@@ -37,6 +38,8 @@ jobs:
           npx wrangler dev --local --config tournament-worker/wrangler-profile-local.toml --ip 127.0.0.1 --port 8789 \
             --var PVP_SESSION_SECRET:rpchess-local-session-secret-for-ci-only-12345678901234567890 \
             --var VK_APP_SECRET:rpchess-local-vk-secret-for-ci-only-do-not-deploy \
+            --var ALLOW_LOCAL_PROFILE_API:1 \
+            --var RPCHESS_PROFILE_API:http://127.0.0.1:8788 \
             >/tmp/rpchess-tournament-elo-shards-local.log 2>&1 &
           pid=$!
           trap 'kill "$pid" 2>/dev/null || true' EXIT
@@ -46,3 +49,4 @@ jobs:
             sleep 1
           done
           node tests/tournament-rated-local.mjs || { tail -100 /tmp/rpchess-tournament-elo-shards-local.log; exit 1; }
+          node tests/tournament-profile-link-local.mjs || { tail -100 /tmp/rpchess-tournament-elo-shards-local.log; exit 1; }

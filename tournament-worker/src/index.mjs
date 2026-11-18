@@ -426,7 +426,7 @@ export class TournamentAccount extends DurableObject {
   }
   if(path!=='/settle')return problem('not_found',404);
   const id=String(body.receiptId||''),opponent=String(body.opponentId||'');
-  if(!/^tournament:[0-9a-f-]{36}:[wb]$/.test(id)||!/^vk:[1-9]\d*$/.test(opponent)||
+  if(!/^tournament:[0-9a-f-]{36}:[wb]$/.test(id)||!(/^(?:vk:[1-9]\d*|rpchess:[0-9a-f-]{36})$/i.test(opponent))||
     ![0,.5,1].includes(body.result)||!Number.isInteger(body.opponentElo))
    return problem('invalid_receipt',400);
   const receipt=await this.ctx.storage.transaction(async tx=>{

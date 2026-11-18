@@ -29,10 +29,16 @@ Examples: 500 vs 500 rated win: **+16 Elo, +16 Honor Shards**. Equal-rated loss:
 - Display earned shards in the RU/EN result screen. In losses/draws explicitly tell players shards are **not deducted**. Historical server receipts without award fields show no confirmed payment.
 - **Trust boundary note:** server account receipts and ranked settlement are authoritative. The shared Arena/Journey ledger is currently a client-side local/cloud event ledger; field-consistency checks are not cryptographic attestation against manually editing localStorage. A future fully server-enforced shard balance / purchase model would need a server-owned economy ledger and profile-level redemption. This feature does not pretend otherwise or open a public minting endpoint.
 
+## Confirmed linked VK identity settlement defect
+
+Existing `TournamentAccount /settle` allowed only a legacy opponent identity `vk:<numericUserId>`, while the canonical Profile-linked Tournament issues **verified** `rpchess:<uuid>` account IDs. The match was rightly ranked, but its final Elo settlement could reject the opponent ID before recording a reward. Without addressing this, the requested shard rewards could not reliably work for real linked VK accounts.
+
+The internal-only settlement now accepts both server-created verified identity formats. It never accepts a client-injected arbitrary identity or exposes this endpoint publicly. An additional assertion sequence in existing `tests/tournament-profile-link-local.mjs` settles a real locally simulated two-profile ranked match, verifies +16 Elo/+16 shards to the winner and -16 Elo/0 shards to the loser, and confirms immutable receipts on reconnect. Local CI starts the disposable profile-linked Worker with a fake profile origin; no real account/D1 is contacted.
+
 ## Tests (minimal expansion of existing suites)
 
 - Extend `tests/arena.cjs`: +16 rated-win award and unique receipt across reload and cloud merge; no subtraction on losses, draws or unsigned/ineligible historical receipts.
-- Extend `tests/tournament-rated-local.mjs`: actual local Wrangler DOs with disposable VK signatures; first ranked same-rating win returns `shards=16`, loss `shards=0`, repeated snapshot is immutable, third same-pair match and invites mint no rating or shards.
+- Extend `tests/tournament-rated-local.mjs` and existing `tests/tournament-profile-link-local.mjs`: actual local Wrangler DOs with disposable VK signatures; first ranked same-rating win returns `shards=16`, loss `shards=0`, repeated snapshot is immutable, third same-pair match and invites mint no rating or shards.
 - Extend existing `.github/workflows/tournament-worker-check.yml` on feature branch to dry-run Worker and run existing local ranked test on disposable DO storage. PR Focused Checks handles the normal game tests. No new permanent test suite.
 
 ## Deployment order / safeguards
