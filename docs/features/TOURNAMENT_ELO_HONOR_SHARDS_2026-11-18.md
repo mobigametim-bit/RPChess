@@ -41,6 +41,16 @@ The internal-only settlement now accepts both server-created verified identity f
 - Extend `tests/tournament-rated-local.mjs` and existing `tests/tournament-profile-link-local.mjs`: actual local Wrangler DOs with disposable VK signatures; first ranked same-rating win returns `shards=16`, loss `shards=0`, repeated snapshot is immutable, third same-pair match and invites mint no rating or shards.
 - Extend existing `.github/workflows/tournament-worker-check.yml` on feature branch to dry-run Worker and run existing local ranked test on disposable DO storage. PR Focused Checks handles the normal game tests. No new permanent test suite.
 
+## Synthetic interactive QA — no real ratings, accounts or backend writes
+
+The branch-only workflow `.github/workflows/tournament-shards-preview.yml` builds the real game client and publishes it on an **isolated static** Cloudflare Worker `rpchess-tournament-shards-qa-preview`. The `tournament-shards-preview/demo.js` fixture is injected **only into QA dist**, not `game/index.html` or the production build. It mocks a verified rated 500 vs 500 Tournament finish and displays a prominent QA DEMO label.
+
+- Demo link: https://rpchess-tournament-shards-qa-preview.mobigametim.workers.dev/?tournament_shards_qa=1&rpchess_profile=0&rpchess_gamepush=0&rpchess_api_route=direct
+- Open Tournament → Find opponent. The synthetic server immediately completes a result with **+16 Elo and +16 shards**; the same real client code writes into the Arena/Kingdom event ledger.
+- Click **Find another opponent**; the mock deliberately replays the *same* match receipt. The balance must remain **16**, not 32.
+- A Chromium smoke check asserts one award event, local Power 516, no duplicate, and **zero calls to the real canonical Tournament API**.
+- This demo cannot verify genuine VK server reward delivery or D1 permissions; only the safe, disposable local Wrangler tests check server issuance.
+
 ## Deployment order / safeguards
 
 1. Review server+client changes and inspect green focused, local Worker and full Gate tests.
