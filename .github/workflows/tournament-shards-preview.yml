@@ -113,7 +113,7 @@ jobs:
             }
           })().catch(error=>{console.error(error);process.exitCode=1});
           NODE
-      - name: Real-click Chromium QA: rated win +16 Elo +16 shards, no duplicate, no live API
+      - name: Real-click Chromium QA for rated +16 Elo and +16 shards, no duplicate or live API
         run: |
           node <<'NODE'
           const assert=require('node:assert/strict');
