@@ -11,6 +11,17 @@ CREATE TABLE IF NOT EXISTS rpchess_profile_v1 (
   updated_at INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_rpchess_profile_updated ON rpchess_profile_v1(updated_at DESC);
+-- OK identities are stored separately because rpchess_profile_v1's existing
+-- provider CHECK('web','vk') must not be rebuilt on a live D1 database.
+-- The OK-owned profile row uses internal provider='web'; authenticated
+-- reads resolve provider='ok' through this one-to-one mapping.
+CREATE TABLE IF NOT EXISTS rpchess_profile_platform_v1 (
+  provider TEXT NOT NULL CHECK(provider = 'ok'),
+  platform_user_id TEXT NOT NULL,
+  profile_id TEXT NOT NULL UNIQUE REFERENCES rpchess_profile_v1(id),
+  PRIMARY KEY (provider, platform_user_id)
+);
+
 CREATE TABLE IF NOT EXISTS rpchess_profile_token_v1 (
   token_hash TEXT PRIMARY KEY,
   profile_id TEXT NOT NULL REFERENCES rpchess_profile_v1(id),
