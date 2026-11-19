@@ -5,8 +5,15 @@ on:
     branches:
       - feature/tournament-pvp-mvp-20261022
       - feature/tournament-elo-honor-shards-20261118
+      - feature/rpchess-cross-platform-ranked-20261119
     paths:
       - tournament-worker/**
+      - profile-worker/**
+      - game/js/platform.mjs
+      - game/js/profile-client.mjs
+      - game/js/gamepush-sdk.mjs
+      - tests/profile-worker.cjs
+      - tests/cloud-save.cjs
       - game/js/classic-chess-engine.mjs
       - game/js/arena-core.mjs
       - game/js/tournament-app.mjs
