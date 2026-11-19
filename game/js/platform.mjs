@@ -71,8 +71,8 @@ function referrerHost(referrer = globalThis.document?.referrer || '') {
 function isOKLaunch() {
   const params=parseLaunchParams();
   return params.get('vk_client')==='ok' &&
-    /^[1-9]\\d*$/.test(params.get('vk_app_id')||'') &&
-    /^[1-9]\\d*$/.test(params.get('vk_user_id')||'') &&
+    /^[1-9]\d*$/.test(params.get('vk_app_id')||'') &&
+    /^[1-9]\d*$/.test(params.get('vk_user_id')||'') &&
     Boolean(params.get('sign'));
 }
 function isVKLaunch() {
