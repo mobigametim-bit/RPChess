@@ -24,6 +24,9 @@ let failureCode = '';
 function isEnabled() {
   try {
     const query=new URLSearchParams(globalThis.location?.search||'');
+    // This GamePush project is VK-configured. OK must never reuse VK player
+    // auth or ads even when a developer accidentally adds the opt-in flag.
+    if(query.get('vk_client')==='ok')return false;
     if(query.get('rpchess_gamepush')==='0')return false; // Safe VK Bridge rollback.
     if(query.get('rpchess_gamepush')==='1')return true; // Isolated preview opt-in.
     // The isolated sticky QA URL must use the same VK GamePush backend as
