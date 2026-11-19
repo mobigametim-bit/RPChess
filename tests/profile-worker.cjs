@@ -7,13 +7,20 @@ const path=require('node:path');
 const root=path.resolve(__dirname,'..');
 const workerPath=pathToFileURL(path.join(root,'profile-worker/src/index.mjs')).href;
 class FakeD1 {
- constructor(){this.players=new Map();this.vk=new Map();this.tokens=new Map();}
+ constructor(){this.players=new Map();this.vk=new Map();this.ok=new Map();this.okByProfile=new Map();this.tokens=new Map();}
  prepare(statement){
   const sql=statement.replace(/\s+/g,' ').trim();
   return {bind:(...values)=>({
    first:async()=>{
     if(sql.includes('FROM rpchess_profile_token_v1')){
       const t=this.tokens.get(values[0]);return t&&t.expires_at>values[1]?{profile_id:t.profile_id}:null;
+    }
+    if(sql.includes('FROM rpchess_profile_platform_v1')){
+      if(sql.includes('WHERE profile_id=')){
+        return this.okByProfile.has(values[0])?{provider:'ok'}:null;
+      }
+      const linked=this.ok.get(values[1]);
+      return linked?{profile_id:linked}:null;
     }
     if(sql.includes('FROM rpchess_profile_v1')){
       const id=sql.includes('WHERE vk_user_id=')?this.vk.get(values[0]):values[0];
@@ -31,6 +38,13 @@ class FakeD1 {
         snapshot_json:hasVk?values[3]:values[2],
         revision:0,migrated_vk_v1:0,created_at:date,updated_at:date};
       this.players.set(id,entry);if(entry.vk_user_id)this.vk.set(entry.vk_user_id,id);
+      return {meta:{changes:1}};
+    }
+    if(sql.startsWith('INSERT INTO rpchess_profile_platform_v1')){
+      const [provider,userId,profileId]=values;
+      assert.equal(provider,'ok');
+      if(this.ok.has(userId))return {meta:{changes:0}};
+      this.ok.set(userId,profileId);this.okByProfile.set(profileId,userId);
       return {meta:{changes:1}};
     }
     if(sql.startsWith('INSERT INTO rpchess_profile_token_v1')){
@@ -114,6 +128,41 @@ const origin='https://rpchess-profile-game-preview.mobigametim.workers.dev';
  assert.equal(boundVK.body.id,verified.body.profile.id);
  assert.equal(boundVK.body.provider,'vk');
  assert.equal(boundVK.body.vkUserId,'12345');
+ const okParams=new URLSearchParams({vk_app_id:'76543210',vk_user_id:'12345',
+   vk_ts:String(ts),vk_platform:'desktop_web',vk_client:'ok'});
+ const okSigned=new URLSearchParams([...okParams].filter(([k])=>k.startsWith('vk_'))
+   .sort(([a],[b])=>a.localeCompare(b))).toString();
+ const okDigest=await crypto.subtle.sign('HMAC',key,new TextEncoder().encode(okSigned));
+ const okSignature=btoa(String.fromCharCode(...new Uint8Array(okDigest)))
+   .replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+ const okLaunch='?'+okParams.toString()+'&sign='+okSignature;
+ assert.equal((await call('/v1/session',{data:{okLaunch:okLaunch.replace('12345','12346')}})).status,401,
+   'OK cannot impersonate another user');
+ assert.equal((await call('/v1/session',{data:{okLaunch:okLaunch.replace('76543210','54754579')}})).status,401,
+   'OK must not overwrite an existing VK identity');
+ assert.equal((await call('/v1/session',{data:{vkLaunch:okLaunch}})).status,401,
+   'signed OK launch cannot be passed through the VK endpoint');
+ assert.equal((await call('/v1/session',{data:{okLaunch:launch}})).status,401,
+   'signed VK launch cannot enter the OK endpoint');
+ assert.equal((await call('/v1/session',{data:{okLaunch, vkLaunch:launch}})).status,400,
+   'ambiguous credentials must be rejected');
+ const okSession=await call('/v1/session',{data:{okLaunch}});
+ assert.equal(okSession.status,200);
+ assert.equal(okSession.body.profile.provider,'ok');
+ assert.notEqual(okSession.body.profile.id,verified.body.profile.id,
+   'same numeric social user ID belongs to a DIFFERENT platform');
+ assert.notEqual(okSession.body.profile.id,profile.id,'OK must not reuse an anonymous Web profile');
+ const okRepeat=await call('/v1/session',{data:{okLaunch}});
+ assert.equal(okRepeat.body.profile.id,okSession.body.profile.id,'OK profile is stable across sessions');
+ const okBound=await call('/v1/tournament-binding',{method:'GET',token:okSession.body.token});
+ assert.equal(okBound.status,200);
+ assert.equal(okBound.body.provider,'ok');
+ assert.equal(okBound.body.vkUserId,null);
+ const okReload=await call('/v1/session',{data:{accessToken:okSession.body.token}});
+ assert.equal(okReload.body.profile.provider,'ok');
+ assert.equal(okReload.body.profile.id,okSession.body.profile.id);
+ assert.equal((await call('/v1/vk-import',{data:{meta:{rating:{power:845}}},token:okSession.body.token})).status,403,
+   'OK cannot invoke the legacy VK import');
  const legacy={rating:{power:845,receipts:[]},chronicle:{history:[{runId:'old-1',playerName:'Player',completedAt:500}]},
    arena:{version:1,events:[{id:'old-win:1',kind:'win',amount:30,at:500}],match:{id:'unfinished'}},
    run:{id:'old-unfinished'}};

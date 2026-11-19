@@ -8,6 +8,8 @@ const API='http://127.0.0.1:8789';
 const ID_VK='00000000-0000-4000-8000-000000000201';
 const ID_WEB='00000000-0000-4000-8000-000000000202';
 const ID_VK2='00000000-0000-4000-8000-000000000203';
+const ID_OK='00000000-0000-4000-8000-000000000204';
+const OK_TOKEN='E'.repeat(43);
 const VK_TOKEN2='D'.repeat(43);
 const VK_TOKEN='A'.repeat(43),WEB_TOKEN='B'.repeat(43);
 const VK_SECRET='rpchess-local-vk-secret-for-ci-only-do-not-deploy';
@@ -16,7 +18,8 @@ const profile=createServer((req,res)=>{
   const bearer=(req.headers.authorization||'').replace(/^Bearer /,'');
   const response=bearer===VK_TOKEN?{id:ID_VK,provider:'vk',vkUserId:'234567810',name:'Грегори',commanderId:'ash_regent',displayPower:812}
     :bearer===VK_TOKEN2?{id:ID_VK2,provider:'vk',vkUserId:'234567811',name:'Тест-2',commanderId:'pilgrim',displayPower:700}
-    :bearer===WEB_TOKEN?{id:ID_WEB,provider:'web',vkUserId:null,name:'Йо',commanderId:'pilgrim',displayPower:623}:null;
+    :bearer===WEB_TOKEN?{id:ID_WEB,provider:'web',vkUserId:null,name:'Йо',commanderId:'pilgrim',displayPower:623}
+    :bearer===OK_TOKEN?{id:ID_OK,provider:'ok',vkUserId:null,name:'Тимофей',commanderId:'oathkeeper',displayPower:710}:null;
   res.writeHead(response?200:401,{'Content-Type':'application/json'});
   res.end(JSON.stringify(response||{error:'unauthorized'}));
 });
@@ -73,12 +76,13 @@ try{
  assert.equal(legacyRow.power,500,'VK UI metadata must never set rated server Elo');
  const web=await request('/v1/session',{nick:'Web',power:1000,profileCredential:WEB_TOKEN});
  assert.equal(web.status,200);
- assert.equal(web.data.ranked,false,'Web profile is stable but unverified for rated PvP');
+ assert.equal(web.data.kind,'web');
+ assert.equal(web.data.ranked,true,'authenticated Web RPChess ID may play rated PvP');
  const webProfile=await request('/v1/profile',{},web.data.token);
  assert.equal(webProfile.data.rpchessId,ID_WEB);
  const webRepeat=await request('/v1/session',{previous:web.data.token,profileCredential:WEB_TOKEN});
  assert.equal((await request('/v1/profile',{},webRepeat.data.token)).data.rpchessId,ID_WEB);
- assert.equal(webRepeat.data.ranked,false);
+ assert.equal(webRepeat.data.ranked,true);
  assert.equal(web.data.name,'Йо','a signed server binding, not the browser nickname, sets player name');
  assert.equal(vk.data.name,'Грегори','VK player receives their D1 identity');
  // A real Durable Object match keeps a different portrait, race and shared
@@ -124,8 +128,34 @@ try{
  assert.equal(won.data.rating.shards,16,'linked VK profiles earn their server-awarded +Elo as shards');
  const again=await request('/v1/match/'+paired.data.matchId+'/snapshot',{},tokenBlack);
  assert.deepEqual(again.data.rating,won.data.rating,'ranked linked receipt is immutable on reconnect');
+ // Public-queue rated match also works between independent OK and Web
+ // accounts. Invitation matches remain casual even for authenticated IDs.
+ const okAccount=await request('/v1/session',{profileCredential:OK_TOKEN,power:3500,nick:'Spoof'});
+ assert.equal(okAccount.status,200);
+ assert.equal(okAccount.data.kind,'ok');
+ assert.equal(okAccount.data.ranked,true);
+ assert.equal(okAccount.data.name,'Тимофей');
+ const okReopen=await request('/v1/session',{previous:okAccount.data.token,profileCredential:OK_TOKEN});
+ assert.equal(okReopen.data.ranked,true);
+ assert.equal((await request('/v1/profile',{},okReopen.data.token)).data.rpchessId,ID_OK);
+ const queuedWeb=await request('/v1/queue/join',{squad:'humans',newSearch:true},web.data.token);
+ assert.equal(queuedWeb.data.status,'waiting');
+ const pairedOK=await request('/v1/queue/join',{squad:'orcs',newSearch:true},okAccount.data.token);
+ assert.equal(pairedOK.data.status,'matched');
+ const mixed=await request('/v1/match/'+pairedOK.data.matchId+'/snapshot',{},web.data.token);
+ assert.equal(mixed.data.rated,true,'OK/Web cross-platform public match must be rated');
+ const resigning=mixed.data.playerColor==='w'?web.data.token:okAccount.data.token;
+ const winner=mixed.data.playerColor==='w'?okAccount.data.token:web.data.token;
+ const forfeited=await request('/v1/match/'+pairedOK.data.matchId+'/resign',{},resigning);
+ assert.equal(forfeited.status,200);
+ assert.equal(forfeited.data.rating.shards,0);
+ const earned=await request('/v1/match/'+pairedOK.data.matchId+'/snapshot',{},winner);
+ assert.equal(earned.data.rating.delta,16);
+ assert.equal(earned.data.rating.shards,16,'cross-platform rating pays exact positive Elo');
+ assert.deepEqual((await request('/v1/match/'+pairedOK.data.matchId+'/snapshot',{},winner)).data.rating,
+   earned.data.rating,'cross-platform result is idempotent');
 
- console.log('TOURNAMENT RPCHESS LINK PASS: verified VK, Web casual, stable ID, linked two-VK rated settlement and +16 Honor Shards, no loser debit');
+ console.log('TOURNAMENT RPCHESS LINK PASS: verified VK/OK/Web ranked, guest casual, cross-platform +16 Elo/+16 shards, no loser debit');
 }finally{
  await new Promise(resolve=>profile.close(resolve));
 }

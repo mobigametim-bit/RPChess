@@ -79,12 +79,12 @@ async function accountCall(env,id,path,data={}){
  return await result.json();
 }
 function isVerified(user,env){
- // Historic signed VK sessions stay ranked; new RPChess IDs are ranked only
- // after independent verification against the Profile Worker.
- return user?.kind==='vk'&&(
-   (/^vk:[1-9]\d*$/.test(user.id||'')&&Boolean(env.VK_APP_SECRET))
-   || (user.profileVerified===true&&/^rpchess:[0-9a-f-]{36}$/i.test(user.id||''))
- );
+ // Server-verified RPChess IDs from any supported platform are rated.
+ if(user?.profileVerified===true&&['vk','ok','web'].includes(user.kind)&&
+    /^rpchess:[0-9a-f-]{36}$/i.test(user.id||''))return true;
+ // Keep existing signed VK Tournament accounts compatible.
+ return user?.kind==='vk'&&/^vk:[1-9]\d*$/.test(user.id||'')&&
+   Boolean(env.VK_APP_SECRET);
 }
 async function profileBinding(credential,env){
  if(typeof credential!=='string'||!/^[A-Za-z0-9_-]{43}$/.test(credential))return null;
@@ -106,7 +106,7 @@ async function profileBinding(credential,env){
   if(!res.ok)throw Error('Profile identity service unavailable');
   const binding=await res.json();
   if(!/^[0-9a-f-]{36}$/i.test(binding?.id||''))return null;
-  if(binding.provider==='web'&&binding.vkUserId==null)return binding;
+  if(['web','ok'].includes(binding.provider)&&binding.vkUserId==null)return binding;
   if(binding.provider==='vk'&&/^[1-9]\d*$/.test(binding.vkUserId||''))return binding;
   return null;
  }finally{clearTimeout(timeout);}
@@ -120,7 +120,7 @@ export default {
   if(request.method==='OPTIONS')return new Response(null,{status:allowed?204:403,headers:{...cors,'Access-Control-Allow-Methods':'GET, POST, OPTIONS','Access-Control-Allow-Headers':'Authorization, Content-Type','Access-Control-Max-Age':'600'}});
   if(!allowed)return problem('origin_forbidden',403);
   const url=new URL(request.url),path=url.pathname;
-  if(path==='/health')return json({ok:true,service:'tournament',version:1,honorShardsVersion:1},200,cors);
+  if(path==='/health')return json({ok:true,service:'tournament',version:1,honorShardsVersion:1,crossPlatformRankedVersion:1},200,cors);
   if(!env.PVP_SESSION_SECRET)return json({error:'tournament_session_secret_required'},503,cors);
   if(request.method!=='POST')return json({error:'method_not_allowed'},405,cors);
   const body=await parse(request);
@@ -148,8 +148,8 @@ export default {
     id:linked||vk||'guest:'+crypto.randomUUID(),name:binding?playerName(binding.name):nickname,
     commanderId:safeCommander(binding?.commanderId??body.commanderId),displayPower:binding
       ?displayPower(binding.displayPower):displayPower(body.displayPower),
-    kind:binding?(binding.provider==='vk'?'vk':'guest'):(vk?'vk':'guest'),
-    profileVerified:Boolean(binding&&binding.provider==='vk'),
+    kind:binding?binding.provider:(vk?'vk':'guest'),
+    profileVerified:Boolean(binding),
     created:Date.now(),exp:Date.now()+30*86400000
    };
    session={...session,
@@ -170,12 +170,12 @@ export default {
   const verified=isVerified(user,env);
   const profile=verified?await accountCall(env,user.id,'/profile'):null;
   const serverPower=profile?.power??safePower(user.power);
-  if(path==='/v1/profile')return json({ranked:verified,power:serverPower,kind:verified?'vk':'guest',
+  if(path==='/v1/profile')return json({ranked:verified,power:serverPower,kind:verified?user.kind:'guest',
     rpchessId:/^rpchess:[0-9a-f-]{36}$/i.test(user.id||'')?user.id.slice(8):null,
     ratedGames:profile?.ratedGames||0},200,cors);
   // All server-internal user fields override browser input, including Power.
   const requestData={...body,user:{id:user.id,name:playerName(user.name),
-    commanderId:safeCommander(user.commanderId),displayPower:displayPower(user.displayPower),kind:verified?'vk':'guest',
+    commanderId:safeCommander(user.commanderId),displayPower:displayPower(user.displayPower),kind:verified?user.kind:'guest',
     profileVerified:verified&&user.profileVerified===true,power:serverPower},now:Date.now()};
   if(path==='/v1/queue/join')requestData.power=serverPower;
   let stub,pathDo;

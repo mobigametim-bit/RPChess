@@ -20,7 +20,7 @@ jobs:
     if: >-
       github.ref == 'refs/heads/main' &&
       (github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'push' && (startsWith(github.event.head_commit.message, 'deploy: active Glory menu sync') || startsWith(github.event.head_commit.message, 'deploy: yandex gateway client') || startsWith(github.event.head_commit.message, 'deploy: tournament routing recovery') || startsWith(github.event.head_commit.message, 'deploy: vk profile conflict recovery') || startsWith(github.event.head_commit.message, 'deploy: mobile vk profile transport and localization') || startsWith(github.event.head_commit.message, 'deploy: mentor training rollout') || startsWith(github.event.head_commit.message, 'deploy: kingdom map release') || startsWith(github.event.head_commit.message, 'deploy: glory v2 release') || startsWith(github.event.head_commit.message, 'deploy: tournament elo shards release'))))
+      (github.event_name == 'push' && (startsWith(github.event.head_commit.message, 'deploy: active Glory menu sync') || startsWith(github.event.head_commit.message, 'deploy: yandex gateway client') || startsWith(github.event.head_commit.message, 'deploy: tournament routing recovery') || startsWith(github.event.head_commit.message, 'deploy: vk profile conflict recovery') || startsWith(github.event.head_commit.message, 'deploy: mobile vk profile transport and localization') || startsWith(github.event.head_commit.message, 'deploy: mentor training rollout') || startsWith(github.event.head_commit.message, 'deploy: kingdom map release') || startsWith(github.event.head_commit.message, 'deploy: glory v2 release') || startsWith(github.event.head_commit.message, 'deploy: tournament elo shards release') || startsWith(github.event.head_commit.message, 'deploy: cross platform ranked release'))))
     # Keep Playwright 1.54 compatible with the runner OS for production deploys.
     runs-on: ubuntu-24.04
     timeout-minutes: 60
@@ -104,6 +104,105 @@ jobs:
             test-results/tournament-v4
           if-no-files-found: warn
           retention-days: 7
+
+      # Owner-approved cross-platform RPChess ID release. Apply ONLY additive
+      # D1 schema first; update the existing canonical Profile Worker, then
+      # existing canonical Tournament Worker, and verify the active versions
+      # and cross-platform Web rated binding before publishing the game.
+      # Do not touch legacy Tournament Worker, VK cloud or existing DO data.
+      - name: Publish cross-platform ranked RPChess ID and Tournament Workers
+        if: >-
+          github.ref == 'refs/heads/main' &&
+          github.event_name == 'push' &&
+          startsWith(github.event.head_commit.message, 'deploy: cross platform ranked release')
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          profile_config=profile-worker/wrangler.toml
+          tournament_config=tournament-worker/wrangler-profile.toml
+          npx wrangler secret list --config "$profile_config" |
+            grep -q 'VK_APP_SECRET' || { echo "::error::Existing Profile VK secret missing"; exit 1; }
+          npx wrangler secret list --config "$tournament_config" |
+            grep -q 'PVP_SESSION_SECRET' || { echo "::error::Existing Tournament signing secret missing"; exit 1; }
+          npx wrangler deploy --config "$profile_config" --dry-run --outdir /tmp/rpchess-cross-platform-profile
+          npx wrangler deploy --config "$tournament_config" --dry-run --outdir /tmp/rpchess-cross-platform-tournament
+          # Existing tables and indices are CREATE IF NOT EXISTS; the
+          # ONLY new identity object is rpchess_profile_platform_v1.
+          npx wrangler d1 execute rpchess-leaderboard --remote \
+            --file profile-worker/schema.sql --config "$profile_config" --yes
+          npx wrangler deploy --config "$profile_config"
+          node <<'NODE'
+          const assert=require('node:assert/strict');
+          const profile='https://rpchess-profile-preview.mobigametim.workers.dev';
+          const origin='https://mobigametim-bit.github.io';
+          const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+          (async()=>{
+            for(let i=1;i<=30;i++){
+              try{
+                const h=await fetch(profile+'/health?cross_platform_release='+i,{
+                  cache:'no-store',signal:AbortSignal.timeout(8000),
+                  headers:{'Cache-Control':'no-cache'}});
+                const health=await h.json();
+                if(h.ok&&health.service==='rpchess-profile-preview'&&
+                   health.crossPlatformRankedVersion===1){
+                  const guest=await fetch(profile+'/v1/session',{method:'POST',
+                    headers:{Origin:origin,'Content-Type':'application/json'},
+                    body:'{}',signal:AbortSignal.timeout(10000)});
+                  const session=await guest.json();
+                  assert.equal(guest.status,200,'Profile Worker Web session');
+                  assert.equal(session?.profile?.provider,'web');
+                  assert.match(session?.token||'',/^[a-zA-Z0-9_-]{43}$/);
+                  console.log('Canonical Profile Worker v1 cross-platform verified on attempt '+i);
+                  return;
+                }
+              }catch(e){console.log('Profile propagation probe '+i+': '+e.message);}
+              if(i<30)await sleep(3000);
+            }
+            assert.fail('Cross-platform Profile Worker not healthy; Tournament/Pages deployment BLOCKED');
+          })().catch(e=>{console.error(e);process.exitCode=1;});
+          NODE
+          npx wrangler deploy --config "$tournament_config"
+          node <<'NODE'
+          const assert=require('node:assert/strict');
+          const profile='https://rpchess-profile-preview.mobigametim.workers.dev';
+          const tour='https://rpchess-tournament-profile-preview.mobigametim.workers.dev';
+          const origin='https://mobigametim-bit.github.io';
+          const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+          (async()=>{
+            for(let i=1;i<=30;i++){
+              try{
+                const h=await fetch(tour+'/health?cross_platform_release='+i,{
+                  cache:'no-store',signal:AbortSignal.timeout(9000),
+                  headers:{'Cache-Control':'no-cache'}});
+                const health=await h.json();
+                if(!h.ok||health.service!=='tournament'||
+                   health.crossPlatformRankedVersion!==1)throw Error('Tournament version not propagated');
+                const first=await fetch(profile+'/v1/session',{method:'POST',
+                  headers:{Origin:origin,'Content-Type':'application/json'},
+                  body:'{}',signal:AbortSignal.timeout(10000)});
+                assert.equal(first.status,200,'Web Profile session');
+                const {token}=await first.json();
+                const auth=await fetch(tour+'/v1/session',{method:'POST',
+                  headers:{Origin:origin,'Content-Type':'application/json'},
+                  body:JSON.stringify({profileCredential:token}),
+                  signal:AbortSignal.timeout(10000)});
+                const result=await auth.json();
+                assert.equal(auth.status,200,'Tournament session');
+                assert.equal(result.kind,'web','Web RPChess ID identity');
+                assert.equal(result.ranked,true,'Web RPChess ID can play rated');
+                console.log('Canonical cross-platform Tournament Worker + Web rating verified on attempt '+i);
+                return;
+              }catch(e){console.log('Tournament propagation probe '+i+': '+e.message);}
+              if(i<30)await sleep(3000);
+            }
+            assert.fail('Cross-platform Tournament Worker not healthy; Pages deployment BLOCKED');
+          })().catch(e=>{console.error(e);process.exitCode=1;});
+          NODE
 
       # Mentor-only releases may publish Pages without redeploying profile/PvP Workers.
       # Keep public profile and BOTH PvP transports aligned with the v4 client.
@@ -238,7 +337,7 @@ jobs:
         if: >-
           github.ref == 'refs/heads/main' &&
           (github.event_name == 'workflow_dispatch' ||
-          (github.event_name == 'push' && (startsWith(github.event.head_commit.message, 'deploy: active Glory menu sync') || startsWith(github.event.head_commit.message, 'deploy: yandex gateway client') || startsWith(github.event.head_commit.message, 'deploy: tournament routing recovery') || startsWith(github.event.head_commit.message, 'deploy: vk profile conflict recovery') || startsWith(github.event.head_commit.message, 'deploy: mobile vk profile transport and localization') || startsWith(github.event.head_commit.message, 'deploy: mentor training rollout') || startsWith(github.event.head_commit.message, 'deploy: kingdom map release') || startsWith(github.event.head_commit.message, 'deploy: glory v2 release') || startsWith(github.event.head_commit.message, 'deploy: tournament elo shards release'))))
+          (github.event_name == 'push' && (startsWith(github.event.head_commit.message, 'deploy: active Glory menu sync') || startsWith(github.event.head_commit.message, 'deploy: yandex gateway client') || startsWith(github.event.head_commit.message, 'deploy: tournament routing recovery') || startsWith(github.event.head_commit.message, 'deploy: vk profile conflict recovery') || startsWith(github.event.head_commit.message, 'deploy: mobile vk profile transport and localization') || startsWith(github.event.head_commit.message, 'deploy: mentor training rollout') || startsWith(github.event.head_commit.message, 'deploy: kingdom map release') || startsWith(github.event.head_commit.message, 'deploy: glory v2 release') || startsWith(github.event.head_commit.message, 'deploy: tournament elo shards release') || startsWith(github.event.head_commit.message, 'deploy: cross platform ranked release'))))
         run: |
           node <<'NODE'
           const assert=require('node:assert/strict');
@@ -276,14 +375,14 @@ jobs:
         if: >-
           github.ref == 'refs/heads/main' &&
           (github.event_name == 'workflow_dispatch' ||
-          (github.event_name == 'push' && (startsWith(github.event.head_commit.message, 'deploy: active Glory menu sync') || startsWith(github.event.head_commit.message, 'deploy: yandex gateway client') || startsWith(github.event.head_commit.message, 'deploy: tournament routing recovery') || startsWith(github.event.head_commit.message, 'deploy: vk profile conflict recovery') || startsWith(github.event.head_commit.message, 'deploy: mobile vk profile transport and localization') || startsWith(github.event.head_commit.message, 'deploy: mentor training rollout') || startsWith(github.event.head_commit.message, 'deploy: kingdom map release') || startsWith(github.event.head_commit.message, 'deploy: glory v2 release') || startsWith(github.event.head_commit.message, 'deploy: tournament elo shards release'))))
+          (github.event_name == 'push' && (startsWith(github.event.head_commit.message, 'deploy: active Glory menu sync') || startsWith(github.event.head_commit.message, 'deploy: yandex gateway client') || startsWith(github.event.head_commit.message, 'deploy: tournament routing recovery') || startsWith(github.event.head_commit.message, 'deploy: vk profile conflict recovery') || startsWith(github.event.head_commit.message, 'deploy: mobile vk profile transport and localization') || startsWith(github.event.head_commit.message, 'deploy: mentor training rollout') || startsWith(github.event.head_commit.message, 'deploy: kingdom map release') || startsWith(github.event.head_commit.message, 'deploy: glory v2 release') || startsWith(github.event.head_commit.message, 'deploy: tournament elo shards release') || startsWith(github.event.head_commit.message, 'deploy: cross platform ranked release'))))
         uses: actions/configure-pages@v5
 
       - name: Upload Pages artifact
         if: >-
           github.ref == 'refs/heads/main' &&
           (github.event_name == 'workflow_dispatch' ||
-          (github.event_name == 'push' && (startsWith(github.event.head_commit.message, 'deploy: active Glory menu sync') || startsWith(github.event.head_commit.message, 'deploy: yandex gateway client') || startsWith(github.event.head_commit.message, 'deploy: tournament routing recovery') || startsWith(github.event.head_commit.message, 'deploy: vk profile conflict recovery') || startsWith(github.event.head_commit.message, 'deploy: mobile vk profile transport and localization') || startsWith(github.event.head_commit.message, 'deploy: mentor training rollout') || startsWith(github.event.head_commit.message, 'deploy: kingdom map release') || startsWith(github.event.head_commit.message, 'deploy: glory v2 release') || startsWith(github.event.head_commit.message, 'deploy: tournament elo shards release'))))
+          (github.event_name == 'push' && (startsWith(github.event.head_commit.message, 'deploy: active Glory menu sync') || startsWith(github.event.head_commit.message, 'deploy: yandex gateway client') || startsWith(github.event.head_commit.message, 'deploy: tournament routing recovery') || startsWith(github.event.head_commit.message, 'deploy: vk profile conflict recovery') || startsWith(github.event.head_commit.message, 'deploy: mobile vk profile transport and localization') || startsWith(github.event.head_commit.message, 'deploy: mentor training rollout') || startsWith(github.event.head_commit.message, 'deploy: kingdom map release') || startsWith(github.event.head_commit.message, 'deploy: glory v2 release') || startsWith(github.event.head_commit.message, 'deploy: tournament elo shards release') || startsWith(github.event.head_commit.message, 'deploy: cross platform ranked release'))))
         uses: actions/upload-pages-artifact@v4
         with:
           path: ./dist
@@ -292,7 +391,7 @@ jobs:
     if: >-
       github.ref == 'refs/heads/main' &&
       (github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'push' && (startsWith(github.event.head_commit.message, 'deploy: active Glory menu sync') || startsWith(github.event.head_commit.message, 'deploy: yandex gateway client') || startsWith(github.event.head_commit.message, 'deploy: tournament routing recovery') || startsWith(github.event.head_commit.message, 'deploy: vk profile conflict recovery') || startsWith(github.event.head_commit.message, 'deploy: mobile vk profile transport and localization') || startsWith(github.event.head_commit.message, 'deploy: mentor training rollout') || startsWith(github.event.head_commit.message, 'deploy: kingdom map release') || startsWith(github.event.head_commit.message, 'deploy: glory v2 release') || startsWith(github.event.head_commit.message, 'deploy: tournament elo shards release'))))
+      (github.event_name == 'push' && (startsWith(github.event.head_commit.message, 'deploy: active Glory menu sync') || startsWith(github.event.head_commit.message, 'deploy: yandex gateway client') || startsWith(github.event.head_commit.message, 'deploy: tournament routing recovery') || startsWith(github.event.head_commit.message, 'deploy: vk profile conflict recovery') || startsWith(github.event.head_commit.message, 'deploy: mobile vk profile transport and localization') || startsWith(github.event.head_commit.message, 'deploy: mentor training rollout') || startsWith(github.event.head_commit.message, 'deploy: kingdom map release') || startsWith(github.event.head_commit.message, 'deploy: glory v2 release') || startsWith(github.event.head_commit.message, 'deploy: tournament elo shards release') || startsWith(github.event.head_commit.message, 'deploy: cross platform ranked release'))))
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

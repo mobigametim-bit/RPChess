@@ -34,14 +34,14 @@ function rpchessProfileEnabled() {
 
 let activeProfileStore='';
 function setProfileStorageIdentity(kind,id) {
-  if(!['web','vk'].includes(kind)||!/^[0-9a-f-]{36}$/i.test(String(id)))return false;
+  if(!['web','vk','ok'].includes(kind)||!/^[0-9a-f-]{36}$/i.test(String(id)))return false;
   activeProfileStore='rpchess.profile.v1.'+kind+'.'+id+'.';
   try { globalThis.localStorage?.setItem('rpchess.profile.cached-id.'+kind,id); }catch{}
   return true;
 }
 function profileStoragePrefix() {
   if(activeProfileStore)return activeProfileStore;
-  const kind=isVKLaunch()?'vk':'web';
+  const kind=isOKLaunch()?'ok':isVKLaunch()?'vk':'web';
   // Never expose the previous VK user's cached progress before verification.
   if(kind==='vk')return 'rpchess.profile.v1.vk.pending.';
   let id='';
@@ -66,6 +66,15 @@ function referrerHost(referrer = globalThis.document?.referrer || '') {
   catch { return ''; }
 }
 
+// This is a platform hint only, never proof of identity. The Profile Worker
+// verifies the signed launch before returning an authenticated RPChess ID.
+function isOKLaunch() {
+  const params=parseLaunchParams();
+  return params.get('vk_client')==='ok' &&
+    /^[1-9]\d*$/.test(params.get('vk_app_id')||'') &&
+    /^[1-9]\d*$/.test(params.get('vk_user_id')||'') &&
+    Boolean(params.get('sign'));
+}
 function isVKLaunch() {
   const params = parseLaunchParams();
   return verifiedVKHost || isKnownVKAppHosting() || params.has('vk_app_id')
@@ -731,6 +740,7 @@ const lifecycle = createLifecycle();
 const launch = Object.freeze({
   params() { return Object.fromEntries(parseLaunchParams().entries()); },
   isVK:isVKLaunch,
+  isOK:isOKLaunch,
   isYandex() { return gamepushSdk.enabled && /YANDEX/i.test(gamepushSdk.platformType); }
 });
 
@@ -752,11 +762,12 @@ const capabilities = Object.freeze({
 
 const platform = Object.freeze({
   get kind() {
+    if(isOKLaunch())return 'ok';
     if (gamepushSdk.enabled && gamepushSdk.ready) {
       if (/YANDEX/i.test(gamepushSdk.platformType)) return 'yandex';
       if (/^VK(?:_|$)|VK_GAMES/i.test(gamepushSdk.platformType)) return 'vk';
     }
-    return isVKLaunch() ? 'vk' : 'web';
+    return isOKLaunch() ? 'ok' : isVKLaunch() ? 'vk' : 'web';
   },
   launch,
   bridge,
@@ -819,6 +830,7 @@ export {
   VK_AD_FORMATS,
   parseLaunchParams,
   isVKLaunch,
+  isOKLaunch,
   discoverVKHost,
   dispatchVK,
   sendVKRequest,

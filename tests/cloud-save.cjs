@@ -420,6 +420,27 @@ class MemoryStorage {
   assert.strictEqual(platformModule.platform.profileEnabled,true);
   assert.strictEqual(platformModule.platform.gamepush.enabled,false);
 
+  // OK uses compatible Bridge transport but owns an independent profile.
+  // Merely switching host contexts must never expose an existing VK save.
+  globalThis.location.search='?vk_app_id=76543210&vk_user_id=12345&vk_client=ok&sign=synthetic-ok-signature';
+  assert.strictEqual(platformModule.isOKLaunch(),true);
+  assert.strictEqual(platformModule.platform.kind,'ok');
+  assert.strictEqual(platformModule.platform.profileEnabled,true);
+  assert.strictEqual(platformModule.platform.gamepush.enabled,false,
+    'the VK-only GamePush project must not activate in OK');
+  assert.strictEqual(platformModule.platform.setProfileStorageIdentity('ok',
+    '00000000-0000-4000-8000-000000000333'),true);
+  assert.strictEqual(platformModule.storage.getItem('profile-account-test'),null,
+    'OK must not inherit the previous VK device save');
+  platformModule.storage.setItem('ok-only-save','private-to-OK');
+  assert.strictEqual(platformModule.platform.setProfileStorageIdentity('vk',secondId),true);
+  assert.strictEqual(platformModule.storage.getItem('ok-only-save'),null,
+    'VK must not inherit the previous OK device save');
+  assert.strictEqual(platformModule.platform.setProfileStorageIdentity('ok',
+    '00000000-0000-4000-8000-000000000333'),true);
+  assert.strictEqual(platformModule.storage.getItem('ok-only-save'),'private-to-OK');
+  globalThis.location.search='';
+
   // Separate Yandex and unrelated site deployments stay on their old code path.
   globalThis.location.hostname='yandex.ru';
   globalThis.location.pathname='/RPChess/';

@@ -1,5 +1,5 @@
 // RPChess unified profiles — a NEW Worker, not Tournament or leaderboard.
-// Only rpchess_profile_v1 and rpchess_profile_token_v1 in D1 may be accessed.
+// Only rpchess_profile_v1, rpchess_profile_platform_v1 and rpchess_profile_token_v1 in D1 may be accessed.
 // All credentials are opaque random capabilities; a public RPChess ID never grants access.
 // Client-supplied progress is UNVERIFIED, so it must not award rated PvP/leaderboard prizes.
 import { verifiedVKId } from '../../leaderboard-worker/src/index.mjs';
@@ -78,8 +78,37 @@ async function verifiedVKLaunch(raw,secret) {
   if(!Number.isSafeInteger(ts)||Math.abs(now()/1000-ts)>VK_LAUNCH_MAX_AGE)return null;
   return await verifiedVKId(raw,secret);
 }
+
+// OK uses VK Mini Apps signed launch parameters but a distinct app ID.
+// vk_client=ok itself is not signed; the app ID and user ID ARE covered
+// by the HMAC verified with the shared mini-app secret. Never treat an
+// unverified query flag as an identity or reuse VK user IDs.
+async function verifiedOKLaunch(raw,secret,configuredAppId='') {
+  if(!secret||typeof raw!=='string'||raw.length>3000)return null;
+  const p=new URLSearchParams(raw.startsWith('?')?raw.slice(1):raw);
+  const appId=p.get('vk_app_id');
+  if(p.get('vk_client')!=='ok'||!/^[1-9]\d*$/.test(appId||'')||
+     appId===APP_ID||(configuredAppId&&appId!==String(configuredAppId))||
+     !/^[1-9]\d*$/.test(p.get('vk_user_id')||'')||
+     !/^[A-Za-z0-9_-]{43}$/.test(p.get('sign')||''))return null;
+  if([...p.keys()].some(k=>(k.startsWith('vk_')||k==='sign'||k==='vk_client')&&p.getAll(k).length!==1))return null;
+  const ts=Number(p.get('vk_ts'));
+  if(!Number.isSafeInteger(ts)||Math.abs(now()/1000-ts)>VK_LAUNCH_MAX_AGE)return null;
+  const data=new URLSearchParams([...p.entries()].filter(([key])=>key.startsWith('vk_')).sort(([a],[b])=>a.localeCompare(b))).toString();
+  const key=await crypto.subtle.importKey('raw',bytes(secret),{name:'HMAC',hash:'SHA-256'},false,['sign']);
+  const mac=new Uint8Array(await crypto.subtle.sign('HMAC',key,bytes(data)));
+  const actual=encode(mac),expected=p.get('sign');
+  if(actual.length!==expected.length)return null;
+  let diff=0;for(let i=0;i<actual.length;i++)diff|=actual.charCodeAt(i)^expected.charCodeAt(i);
+  return diff===0?p.get('vk_user_id'):null;
+}
 async function readProfile(db,id) {
-  return db.prepare('SELECT id,provider,vk_user_id,snapshot_json,revision,migrated_vk_v1,created_at,updated_at FROM rpchess_profile_v1 WHERE id=?').bind(id).first();
+  const row=await db.prepare('SELECT id,provider,vk_user_id,snapshot_json,revision,migrated_vk_v1,created_at,updated_at FROM rpchess_profile_v1 WHERE id=?').bind(id).first();
+  if(row?.provider==='web'){
+    const linked=await db.prepare('SELECT provider FROM rpchess_profile_platform_v1 WHERE profile_id=?').bind(id).first();
+    if(linked?.provider==='ok')row.provider='ok';
+  }
+  return row;
 }
 async function tokenOwner(db,token) {
   if(typeof token!=='string'||!/^[A-Za-z0-9_-]{43}$/.test(token))return null;
@@ -96,6 +125,8 @@ async function mintToken(db,playerId) {
 }
 async function openSession(db,body,env) {
   let row=null,token='';
+  if(Object.hasOwn(body,'vkLaunch')&&Object.hasOwn(body,'okLaunch'))
+    return {error:'ambiguous_platform_launch',status:400};
   if(Object.hasOwn(body,'vkLaunch')) {
     const vkId=await verifiedVKLaunch(body.vkLaunch,env.VK_APP_SECRET);
     if(!vkId)return {error:'vk_signature_required',status:401};
@@ -104,6 +135,24 @@ async function openSession(db,body,env) {
       .bind(id,'vk',vkId,'{"schemaVersion":1}',date,date).run();
     row=await db.prepare('SELECT id,provider,vk_user_id,snapshot_json,revision,migrated_vk_v1,created_at,updated_at FROM rpchess_profile_v1 WHERE vk_user_id=?')
       .bind(vkId).first();
+    token=await mintToken(db,row.id);
+  } else if(Object.hasOwn(body,'okLaunch')){
+    const okId=await verifiedOKLaunch(body.okLaunch,env.VK_APP_SECRET,env.OK_APP_ID);
+    if(!okId)return {error:'ok_signature_required',status:401};
+    let linked=await db.prepare('SELECT profile_id FROM rpchess_profile_platform_v1 WHERE provider=? AND platform_user_id=?')
+      .bind('ok',okId).first();
+    if(!linked){
+      // Existing profiles stay intact: only create a new, independent
+      // identity when this OK account has never entered the game.
+      const id=crypto.randomUUID(),date=now();
+      await db.prepare('INSERT INTO rpchess_profile_v1(id,provider,snapshot_json,created_at,updated_at) VALUES(?,?,?,?,?)')
+        .bind(id,'web','{"schemaVersion":1}',date,date).run();
+      await db.prepare('INSERT INTO rpchess_profile_platform_v1(provider,platform_user_id,profile_id) VALUES(?,?,?) ON CONFLICT(provider,platform_user_id) DO NOTHING')
+        .bind('ok',okId,id).run();
+      linked=await db.prepare('SELECT profile_id FROM rpchess_profile_platform_v1 WHERE provider=? AND platform_user_id=?')
+        .bind('ok',okId).first();
+    }
+    row=await readProfile(db,linked.profile_id);
     token=await mintToken(db,row.id);
   } else if(Object.hasOwn(body,'accessToken')){
     row=await tokenOwner(db,body.accessToken);
@@ -204,7 +253,7 @@ async function handler(request,env) {
   }});
   const path=new URL(request.url).pathname;
   if(path==='/health'&&request.method==='GET')
-    return response({ok:Boolean(env.DB),service:'rpchess-profile-preview',version:1},env.DB?200:503,cors);
+    return response({ok:Boolean(env.DB),service:'rpchess-profile-preview',version:1,crossPlatformRankedVersion:1},env.DB?200:503,cors);
   if(!env.DB)return response({error:'d1_not_configured'},503,cors);
   // Public cross-platform TOP-10; a valid bearer additionally reveals own rank.
   if(path==='/v1/leaderboard'&&request.method==='GET'){
@@ -268,4 +317,4 @@ export default {async fetch(request,env) {
     return response({error:'server_unavailable'},503);
   }
 }};
-export {handler,hashToken,verifiedVKLaunch,originAllowed,cleanLegacyMeta,mergeLegacy,shapeOfSnapshot};
+export {handler,hashToken,verifiedVKLaunch,verifiedOKLaunch,originAllowed,cleanLegacyMeta,mergeLegacy,shapeOfSnapshot};
