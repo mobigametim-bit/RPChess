@@ -120,7 +120,7 @@ export default {
   if(request.method==='OPTIONS')return new Response(null,{status:allowed?204:403,headers:{...cors,'Access-Control-Allow-Methods':'GET, POST, OPTIONS','Access-Control-Allow-Headers':'Authorization, Content-Type','Access-Control-Max-Age':'600'}});
   if(!allowed)return problem('origin_forbidden',403);
   const url=new URL(request.url),path=url.pathname;
-  if(path==='/health')return json({ok:true,service:'tournament',version:1,honorShardsVersion:1},200,cors);
+  if(path==='/health')return json({ok:true,service:'tournament',version:1,honorShardsVersion:1,crossPlatformRankedVersion:1},200,cors);
   if(!env.PVP_SESSION_SECRET)return json({error:'tournament_session_secret_required'},503,cors);
   if(request.method!=='POST')return json({error:'method_not_allowed'},405,cors);
   const body=await parse(request);
