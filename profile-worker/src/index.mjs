@@ -253,7 +253,7 @@ async function handler(request,env) {
   }});
   const path=new URL(request.url).pathname;
   if(path==='/health'&&request.method==='GET')
-    return response({ok:Boolean(env.DB),service:'rpchess-profile-preview',version:1},env.DB?200:503,cors);
+    return response({ok:Boolean(env.DB),service:'rpchess-profile-preview',version:1,crossPlatformRankedVersion:1},env.DB?200:503,cors);
   if(!env.DB)return response({error:'d1_not_configured'},503,cors);
   // Public cross-platform TOP-10; a valid bearer additionally reveals own rank.
   if(path==='/v1/leaderboard'&&request.method==='GET'){
