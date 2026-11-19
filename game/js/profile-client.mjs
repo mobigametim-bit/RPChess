@@ -32,7 +32,7 @@ function root() {
   const value=String(globalThis.RPChessProfileAPI||fromPage).replace(/\/+$/,'');
   return /^https:\/\/[A-Za-z0-9.-]+(?::\d+)?$/.test(value)?value:'';
 }
-function localAuthKey(kind) { return AUTH_PREFIX+(kind==='vk'?'vk':'web')+'.v1'; }
+function localAuthKey(kind) { return AUTH_PREFIX+(['vk','ok'].includes(kind)?kind:'web')+'.v1'; }
 function readToken(kind) {
   try {return globalThis.localStorage?.getItem(localAuthKey(kind))||'';}catch{return '';}
 }
@@ -93,39 +93,48 @@ async function request(path,{method='GET',data=null,auth=true}={}) {
     throw error;
   }finally{clearTimeout(timeout);}
 }
-function signedParams(input) {
+function signedParams(input,kind='vk') {
   let p;
   try {
     if(typeof input==='string')p=new URLSearchParams(input.replace(/^\?/,''));
     else if(input&&typeof input==='object')p=new URLSearchParams(Object.entries(input)
-      .filter(([key,val])=>(key.startsWith('vk_')||key==='sign')&&val!=null)
+      .filter(([key,val])=>(key.startsWith('vk_')||key==='sign'||key==='vk_client')&&val!=null)
       .map(([key,val])=>[key,String(val)]));
     else return '';
   }catch{return '';}
-  if(p.get('vk_app_id')!=='54754579'||!/^[1-9]\d*$/.test(p.get('vk_user_id')||'')||!p.has('sign'))return '';
-  return '?'+new URLSearchParams([...p].filter(([key])=>key.startsWith('vk_')||key==='sign')).toString();
+  const appId=p.get('vk_app_id');
+  if(!/^[1-9]\d*$/.test(appId||'')||!/^[1-9]\d*$/.test(p.get('vk_user_id')||'')||!p.has('sign'))return '';
+  if(kind==='vk'&&(appId!=='54754579'||p.get('vk_client')==='ok'))return '';
+  if(kind==='ok'&&(appId==='54754579'||p.get('vk_client')!=='ok'))return '';
+  return '?'+new URLSearchParams([...p].filter(([key])=>key.startsWith('vk_')||key==='sign'||key==='vk_client')).toString();
 }
-async function signedVKLaunch() {
-  const direct=signedParams(globalThis.location?.search||'');
+async function signedMiniAppLaunch(kind) {
+  const direct=signedParams(globalThis.location?.search||'',kind);
   if(direct)return direct;
+  // OK does not implement VKWebAppGetLaunchParams; it supplies the signed
+  // parameters in the initial URL. Never guess an identity from Bridge data.
+  if(kind==='ok')return '';
   try{
     const answer=await platform.bridge.request('VKWebAppGetLaunchParams',{}, {timeoutMs:4500});
-    return signedParams(answer?.launchParams||answer?.launch_params||answer?.params||answer);
+    return signedParams(answer?.launchParams||answer?.launch_params||answer?.params||answer,kind);
   }catch{return '';}
 }
 async function openSession(kind) {
   const saved=readToken(kind);
-  if(kind==='vk'){
-    const launch=await signedVKLaunch();
-    if(launch) {
-      const result=await request('/v1/session',{method:'POST',auth:false,data:{vkLaunch:launch}});
-      if(result.profile?.provider!=='vk')throw Error(userMessage('Не удалось подтвердить игрока ВКонтакте','Could not verify the VK player'));
+  if(kind==='vk'||kind==='ok'){
+    const launch=await signedMiniAppLaunch(kind);
+    if(launch){
+      const data=kind==='ok'?{okLaunch:launch}:{vkLaunch:launch};
+      const result=await request('/v1/session',{method:'POST',auth:false,data});
+      if(result.profile?.provider!==kind)throw Error(userMessage(
+        'Не удалось подтвердить профиль игрока','Could not verify the player'));
       return result;
     }
-    // Never accept a cached VK bearer alone when the current launch identity
-    // is unknown: a different VK account on this browser could inherit the
-    // previous player's profile. Only freshly signed VK params may log in.
-    throw Error(userMessage('Нет подписанных параметров входа ВКонтакте. Откройте игру из ВКонтакте повторно.','Signed VK launch parameters are unavailable. Reopen the game from VK.'));
+    // Never trust a cached platform token without a fresh signed launch.
+    // Another VK/OK account on this device must not inherit prior progress.
+    throw Error(userMessage(
+      'Нет подписанных параметров входа. Откройте игру через свою площадку повторно.',
+      'Signed launch parameters are unavailable. Reopen the game from your platform.'));
   }
   // Guest Web: never silently replace an expired credential with a new identity.
   if(saved)return request('/v1/session',{method:'POST',auth:false,data:{accessToken:saved}});
@@ -353,7 +362,7 @@ async function boot() {
   if(!enabled())return {status:'disabled'};
   try{
     state('loading');
-    provider=platform.launch.isVK()||await discoverVKHost()?'vk':'web';
+    provider=platform.launch.isOK()?'ok':platform.launch.isVK()||await discoverVKHost()?'vk':'web';
     // A first-time Web visitor may have played offline before the server
     // issued an ID. Preserve the isolated pending save when it becomes online.
     const orphanWeb=provider==='web'&&!readToken('web')?localPayload():null;
