@@ -1,5 +1,5 @@
 // RPChess unified profiles — a NEW Worker, not Tournament or leaderboard.
-// Only rpchess_profile_v1 and rpchess_profile_token_v1 in D1 may be accessed.
+// Only rpchess_profile_v1, rpchess_profile_platform_v1 and rpchess_profile_token_v1 in D1 may be accessed.
 // All credentials are opaque random capabilities; a public RPChess ID never grants access.
 // Client-supplied progress is UNVERIFIED, so it must not award rated PvP/leaderboard prizes.
 import { verifiedVKId } from '../../leaderboard-worker/src/index.mjs';
