@@ -369,6 +369,45 @@ async function assertResponsiveStars(page, selector, cardSelector) {
       mobilePlacement.boardRight<=mobilePlacement.width+2&&mobilePlacement.controlsBottom<=mobilePlacement.panelBottom+2,
       'landscape defender rail and controls fit alongside board: '+JSON.stringify(mobilePlacement));
     await weekly.screenshot({path:'test-results/weekly-defender-mobile.png'});
+    const colors=await defenderScreen.locator('[data-wd-grade-legend] .mentor-grade').evaluateAll(nodes=>nodes.map(n=>getComputedStyle(n).color));
+    assert.deepStrictEqual(colors,['rgb(145, 228, 140)','rgb(145, 228, 140)','rgb(243, 214, 110)','rgb(255, 129, 122)','rgb(255, 129, 122)'],'weekly legend uses one green/yellow/red palette');
+    const skipAd=defenderScreen.locator('[data-wd-action="skip"]');
+    const adNotice=defenderScreen.locator('[data-wd-ad-notice]');
+    const pause=defenderScreen.locator('[data-wd-action="pause"]');
+    await skipAd.click();
+    await adNotice.waitFor({state:'visible'});
+    assert.equal(await skipAd.isEnabled(),true,'standalone web unavailable ad does not unlock fast-forward');
+    assert.equal(await pause.getAttribute('aria-label'),'Продолжить','unavailable ad preserves the prior pause');
+    // Use the actual platform adapter and a simulated native VK ad callback,
+    // installed AFTER the normal local run is initialized.
+    await weekly.evaluate(()=>{
+      globalThis.__weeklyAdCalls=[];
+      globalThis.AndroidBridge={
+        VKWebAppInit(){},
+        VKWebAppShowNativeAds(serialized){
+          const params=JSON.parse(serialized);
+          globalThis.__weeklyAdCalls.push(params.ad_format);
+          globalThis.__weeklyAdReply=(result)=>dispatchEvent(new CustomEvent('VKWebAppEvent',{
+            detail:{type:'VKWebAppShowNativeAdsResult',data:{request_id:params.request_id,result}}
+          }));
+        }
+      };
+    });
+    await skipAd.click();
+    await weekly.waitForFunction(()=>globalThis.__weeklyAdCalls.length===1);
+    assert.equal(await skipAd.isDisabled(),true,'rewarded request blocks repeated clicks');
+    assert.equal(await skipAd.getAttribute('aria-busy'),'true');
+    await weekly.evaluate(()=>globalThis.__weeklyAdReply(false));
+    await weekly.waitForFunction(()=>document.querySelector('[data-weekly-battle-screen] [data-wd-action="skip"]').disabled===false);
+    assert.equal(await pause.getAttribute('aria-label'),'Продолжить','negative ad result does not resume a paused battle');
+    await skipAd.click();
+    await weekly.waitForFunction(()=>globalThis.__weeklyAdCalls.length===2);
+    await weekly.evaluate(()=>globalThis.__weeklyAdReply(true));
+    await weekly.waitForFunction(()=>document.querySelector('[data-weekly-battle-screen] [data-wd-action="skip"]').getAttribute('aria-label')==='Ускоренное завершение боя');
+    assert.equal(await skipAd.isDisabled(),true,'completed reward unlocks fast-forward exactly once');
+    assert.equal(await pause.getAttribute('aria-label'),'Пауза','completed ad resumes the battle');
+    assert.deepStrictEqual(await weekly.evaluate(()=>globalThis.__weeklyAdCalls),['reward','reward']);
+    await weekly.close();
     assert.deepStrictEqual(weeklyErrors,[]);
 
     assert.deepStrictEqual(errors, []);
