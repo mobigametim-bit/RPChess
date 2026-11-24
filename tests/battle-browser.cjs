@@ -344,7 +344,31 @@ async function assertResponsiveStars(page, selector, cardSelector) {
       placement.board.bottom<=placement.viewport.height+2,
       'native Battle board must fit viewport with party panel on the left: '+
       JSON.stringify(placement));
+    const defenderScreen=weekly.locator('[data-weekly-battle-screen]');
+    assert.equal(await defenderScreen.locator('[data-wd-battle-week],[data-wd-battle-heading],[data-wd-battle-title]').count(),0,'obsolete headings removed');
+    assert.equal(await defenderScreen.locator('[data-wd-battle-versus] img').count(),2,'actual hero portrait and enemy figure');
+    assert.equal(await weekly.locator('[data-resource-hud]').isVisible(),false,'no Gold/Supplies HUD during defender combat');
+    for(const action of ['close','pause','speed','skip']){
+      const button=defenderScreen.locator('[data-wd-action="'+action+'"]');
+      assert.equal(await button.locator('svg,img').count(),1,'icon-only '+action);
+      assert(await button.getAttribute('aria-label'),'localized accessible '+action);
+    }
     await weekly.locator('[data-wd-action="pause"]').click();
+    await defenderScreen.locator('[data-wd-battle-versus] img').evaluateAll(imgs=>Promise.all(imgs.map(img=>img.decode())));
+    await weekly.screenshot({path:'test-results/weekly-defender-desktop.png'});
+    await weekly.setViewportSize({width:844,height:390});
+    await weekly.waitForTimeout(200);
+    const mobilePlacement=await defenderScreen.evaluate(screen=>{
+      const board=screen.querySelector('.wd-chess-board').getBoundingClientRect();
+      const panel=screen.querySelector('.wd-battle-party').getBoundingClientRect();
+      const controls=screen.querySelector('.wd-play-controls').getBoundingClientRect();
+      return {left:panel.right,boardX:board.x,boardBottom:board.bottom,boardRight:board.right,
+        controlsBottom:controls.bottom,panelBottom:panel.bottom,width:innerWidth,height:innerHeight};
+    });
+    assert(mobilePlacement.left<=mobilePlacement.boardX+3&&mobilePlacement.boardBottom<=mobilePlacement.height+2&&
+      mobilePlacement.boardRight<=mobilePlacement.width+2&&mobilePlacement.controlsBottom<=mobilePlacement.panelBottom+2,
+      'landscape defender rail and controls fit alongside board: '+JSON.stringify(mobilePlacement));
+    await weekly.screenshot({path:'test-results/weekly-defender-mobile.png'});
     assert.deepStrictEqual(weeklyErrors,[]);
 
     assert.deepStrictEqual(errors, []);
