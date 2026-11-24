@@ -344,7 +344,101 @@ async function assertResponsiveStars(page, selector, cardSelector) {
       placement.board.bottom<=placement.viewport.height+2,
       'native Battle board must fit viewport with party panel on the left: '+
       JSON.stringify(placement));
+    const defenderScreen=weekly.locator('[data-weekly-battle-screen]');
+    assert.equal(await defenderScreen.locator('[data-wd-battle-week],[data-wd-battle-heading],[data-wd-battle-title]').count(),0,'obsolete headings removed');
+    assert.equal(await defenderScreen.locator('[data-wd-battle-versus] img').count(),2,'actual hero portrait and enemy figure');
+    assert.equal(await weekly.locator('[data-resource-hud]').isVisible(),false,'no Gold/Supplies HUD during defender combat');
+    for(const action of ['close','pause','speed','skip']){
+      const button=defenderScreen.locator('[data-wd-action="'+action+'"]');
+      assert.equal(await button.locator('svg,img').count(),1,'icon-only '+action);
+      assert(await button.getAttribute('aria-label'),'localized accessible '+action);
+    }
+    // Capture the real ongoing battle, not the loading splash or empty log.
+    await weekly.locator('[data-wd-moves] .wd-move').first().waitFor({state:'visible',timeout:120000});
     await weekly.locator('[data-wd-action="pause"]').click();
+    await defenderScreen.locator('[data-wd-battle-versus] img').evaluateAll(imgs=>Promise.all(imgs.map(img=>img.decode())));
+    await weekly.waitForTimeout(800);
+    await weekly.screenshot({path:'test-results/weekly-defender-desktop.png'});
+    await weekly.setViewportSize({width:844,height:390});
+    await weekly.waitForTimeout(200);
+    const mobilePlacement=await defenderScreen.evaluate(screen=>{
+      const board=screen.querySelector('.wd-chess-board').getBoundingClientRect();
+      const panel=screen.querySelector('.wd-battle-party').getBoundingClientRect();
+      const controls=screen.querySelector('.wd-play-controls').getBoundingClientRect();
+      return {left:panel.right,boardX:board.x,boardBottom:board.bottom,boardRight:board.right,
+        controlsBottom:controls.bottom,panelBottom:panel.bottom,width:innerWidth,height:innerHeight};
+    });
+    assert(mobilePlacement.left<=mobilePlacement.boardX+3&&mobilePlacement.boardBottom<=mobilePlacement.height+2&&
+      mobilePlacement.boardRight<=mobilePlacement.width+2&&mobilePlacement.controlsBottom<=mobilePlacement.panelBottom+2,
+      'landscape defender rail and controls fit alongside board: '+JSON.stringify(mobilePlacement));
+    await weekly.screenshot({path:'test-results/weekly-defender-mobile.png'});
+    for(const [name,width,height] of [
+      ['mobile-portrait',390,844],
+      ['tablet-landscape',1280,800],
+      ['tablet-portrait',800,1280]
+    ]){
+      await weekly.setViewportSize({width,height});
+      await weekly.evaluate(()=>window.scrollTo(0,0));
+      await weekly.waitForTimeout(500);
+      if(height>width){
+        const bounds=await defenderScreen.evaluate(screen=>{
+          const board=screen.querySelector('[data-wd-board]').getBoundingClientRect();
+          const first=screen.querySelector('[data-wd-board] .wd-square').getBoundingClientRect();
+          const last=screen.querySelector('[data-wd-board] .wd-square:last-child').getBoundingClientRect();
+          return {left:board.left,right:board.right,width:board.width,height:board.height,
+            firstLeft:first.left,lastRight:last.right,viewport:document.documentElement.clientWidth,
+            scrollWidth:document.documentElement.scrollWidth};
+        });
+        assert(Math.abs(bounds.left)<=1&&Math.abs(bounds.right-bounds.viewport)<=1&&
+          Math.abs(bounds.width-bounds.height)<=1&&Math.abs(bounds.firstLeft)<=1&&
+          Math.abs(bounds.lastRight-bounds.viewport)<=1&&bounds.scrollWidth<=bounds.viewport+1,
+          'portrait playable board must be square and edge-to-edge without overflow: '+name+' '+JSON.stringify(bounds));
+        console.log('Defender portrait full-bleed '+name+': '+JSON.stringify(bounds));
+      }
+      await weekly.screenshot({path:'test-results/weekly-defender-'+name+'.png'});
+    }
+    await weekly.setViewportSize({width:844,height:390});
+    await weekly.evaluate(()=>window.scrollTo(0,0));
+    await weekly.waitForTimeout(200);
+    const colors=await defenderScreen.locator('[data-wd-grade-legend] .mentor-grade').evaluateAll(nodes=>nodes.map(n=>getComputedStyle(n).color));
+    assert.deepStrictEqual(colors,['rgb(145, 228, 140)','rgb(145, 228, 140)','rgb(243, 214, 110)','rgb(255, 129, 122)','rgb(255, 129, 122)'],'weekly legend uses one green/yellow/red palette');
+    const skipAd=defenderScreen.locator('[data-wd-action="skip"]');
+    const adNotice=defenderScreen.locator('[data-wd-ad-notice]');
+    const pause=defenderScreen.locator('[data-wd-action="pause"]');
+    await skipAd.click();
+    await adNotice.waitFor({state:'visible'});
+    assert.equal(await skipAd.isEnabled(),true,'standalone web unavailable ad does not unlock fast-forward');
+    assert.equal(await pause.getAttribute('aria-label'),'Продолжить','unavailable ad preserves the prior pause');
+    // Use the actual platform adapter and a simulated native VK ad callback,
+    // installed AFTER the normal local run is initialized.
+    await weekly.evaluate(()=>{
+      globalThis.__weeklyAdCalls=[];
+      globalThis.AndroidBridge={
+        VKWebAppInit(){},
+        VKWebAppShowNativeAds(serialized){
+          const params=JSON.parse(serialized);
+          globalThis.__weeklyAdCalls.push(params.ad_format);
+          globalThis.__weeklyAdReply=(result)=>dispatchEvent(new CustomEvent('VKWebAppEvent',{
+            detail:{type:'VKWebAppShowNativeAdsResult',data:{request_id:params.request_id,result}}
+          }));
+        }
+      };
+    });
+    await skipAd.click();
+    await weekly.waitForFunction(()=>globalThis.__weeklyAdCalls.length===1);
+    assert.equal(await skipAd.isDisabled(),true,'rewarded request blocks repeated clicks');
+    assert.equal(await skipAd.getAttribute('aria-busy'),'true');
+    await weekly.evaluate(()=>globalThis.__weeklyAdReply(false));
+    await weekly.waitForFunction(()=>document.querySelector('[data-weekly-battle-screen] [data-wd-action="skip"]').disabled===false);
+    assert.equal(await pause.getAttribute('aria-label'),'Продолжить','negative ad result does not resume a paused battle');
+    await skipAd.click();
+    await weekly.waitForFunction(()=>globalThis.__weeklyAdCalls.length===2);
+    await weekly.evaluate(()=>globalThis.__weeklyAdReply(true));
+    await weekly.waitForFunction(()=>document.querySelector('[data-weekly-battle-screen] [data-wd-action="skip"]').getAttribute('aria-label')==='Ускоренное завершение боя');
+    assert.equal(await skipAd.isDisabled(),true,'completed reward unlocks fast-forward exactly once');
+    assert.equal(await pause.getAttribute('aria-label'),'Пауза','completed ad resumes the battle');
+    assert.deepStrictEqual(await weekly.evaluate(()=>globalThis.__weeklyAdCalls),['reward','reward']);
+    await weekly.close();
     assert.deepStrictEqual(weeklyErrors,[]);
 
     assert.deepStrictEqual(errors, []);

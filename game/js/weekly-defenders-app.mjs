@@ -16,6 +16,7 @@ import {armyCandidates} from './kingdom-army-core.mjs';
 import {attachPieceDrag} from './piece-drag.mjs';
 import {applyPinIce} from './king-pin-ice.mjs';
 import {currentLanguage} from './i18n.mjs';
+import {platform} from './platform.mjs';
 
 const C={
  ru:{title:'Возрождённый защитник',choose:'Назначьте командира',enemy:'Защитник',commander:'Ваш командир',
@@ -26,10 +27,10 @@ const C={
   fromGold:'Золото',fromSupplies:'Припасы',debt:'Неоплаченный долг! После партии погибнет командир: ',
   kingDebt:'Гибель короля завершит путешествие!',confirm:'Подтвердить и начать',
   battle:'Битва защитников',thinking:'Движок обдумывает ход…',pause:'Пауза',resume:'Продолжить',
-  result:'К результату',battleManual:'Ваш ход',battleAuto:'Идёт автобой',move:'Ход',
+  result:'Смотреть рекламу — к результату',adPending:'Ожидание рекламы…',adFailed:'Реклама не завершена или недоступна. Бой можно продолжить.',adGranted:'Ускоренное завершение боя',battleManual:'Ваш ход',battleAuto:'Идёт автобой',move:'Ход',
   win:'Победа',draw:'Ничья',loss:'Поражение',return:'К карте',
   rewards:'Награда',mastery:'Мастерство',dead:'Командир погиб из-за долга',warning:'Потери обычных рекрутов постоянны',
-  error:'Не удалось начать сражение',noHeroes:'Нет доступных героев',back:'Закрыть'},
+  error:'Не удалось начать сражение',noHeroes:'Нет доступных героев',back:'К карте'},
  en:{title:'Returned defender',choose:'Assign a commander',enemy:'Defender',commander:'Your commander',
   empty:'Drag or select a hero',
   available:'Available heroes',cancel:'Cancel',fight:'Battle',auto:'Auto battle',week:'Week',
@@ -38,10 +39,10 @@ const C={
   fromGold:'Gold',fromSupplies:'Supplies',debt:'Unpaid debt! Commander will die after battle: ',
   kingDebt:'King death ends the run!',confirm:'Confirm and start',
   battle:'Defender battle',thinking:'Engine is thinking…',pause:'Pause',resume:'Resume',
-  result:'Skip to result',battleManual:'Your move',battleAuto:'Auto battle',move:'Move',
+  result:'Watch an ad — skip to result',adPending:'Waiting for ad…',adFailed:'Ad not completed or unavailable. You can continue the battle.',adGranted:'Fast-forwarding to result',battleManual:'Your move',battleAuto:'Auto battle',move:'Move',
   win:'Victory',draw:'Draw',loss:'Defeat',return:'To map',
   rewards:'Reward',mastery:'Mastery',dead:'Commander died from debt',warning:'Regular recruit losses are permanent',
-  error:'Could not start battle',noHeroes:'No available heroes',back:'Close'}
+  error:'Could not start battle',noHeroes:'No available heroes',back:'To map'}
 };
 function t(k){return C[currentLanguage()==='en'?'en':'ru'][k]||k;}
 const typeToCode={king:'K',queen:'Q',rook:'R',bishop:'B',knight:'N',pawn:'P'};
@@ -49,6 +50,7 @@ let root=null,battleScreen=null,selectedHeroId=null,cellId=null,engine=null,adap
 let identities=new Map(),capturedIds=new Set(),selectedSquare=null,paused=false,speed=1,skip=false,thinking=false;
 let turnTimer=null,session=0,lastResult=null,movePending=false,paymentModal=null,beforeFenForMove=null;
 let mateCeremonyTimer=null;
+let skipAdBusy=false,skipAdNotice='';
 const MATE_CEREMONY_MS=3000;
 function cancelMateCeremony(){
  clearTimeout(mateCeremonyTimer);mateCeremonyTimer=null;
@@ -78,7 +80,7 @@ function image(path,cls='',alt=''){
 }
 function ensure(){
  if(root)return root;
- const link=h('link');link.rel='stylesheet';link.href='css/weekly-defenders.css?v=20261115-mate-freeze-v1';
+ const link=h('link');link.rel='stylesheet';link.href='css/weekly-defenders.css?v=20261125-battle-layout-v4';
  document.head.append(link);
  root=h('div','wd-overlay');root.hidden=true;root.dataset.weeklyDefenders='';
  root.innerHTML='<section class="wd-dialog" role="dialog" aria-modal="true" aria-label="Weekly defender">'+
@@ -103,20 +105,21 @@ function ensure(){
  battleScreen.setAttribute('aria-label',t('battle'));
  battleScreen.innerHTML='<div class="classic-shell">'+
   '<header class="classic-topbar wd-battle-topbar">'+
-  '<div><small class="wd-eyebrow" data-wd-battle-week></small><h1 data-wd-battle-heading></h1></div>'+
-  '<div class="classic-toolbar"><button type="button" class="classic-mini-button" data-wd-action="close">×</button></div>'+
+  '<div class="classic-toolbar wd-battle-toolbar"><button type="button" class="wd-icon-button" data-wd-action="close"><img src="assets/ui/main-menu-journey.png" alt="" aria-hidden="true"></button></div>'+
   '</header>'+
   '<aside class="classic-panel classic-party-panel wd-battle-party wd-sidebar">'+
-  '<h2 data-wd-battle-title></h2><p class="classic-opponent" data-wd-battle-info></p>'+
+  '<div class="wd-battle-versus" data-wd-battle-versus><div class="wd-duelist"><img data-wd-hero-portrait alt=""><small data-wd-hero-name></small></div><span class="wd-versus-mark" aria-hidden="true">VS</span><div class="wd-duelist"><img data-wd-enemy-figure alt=""><small data-wd-enemy-name></small></div></div>'+
+  '<p class="classic-opponent" data-wd-battle-info></p>'+
   '<div class="wd-view-toggle" data-wd-view-toggle></div>'+
   '<section class="classic-panel classic-panel--moves wd-battle-journal">'+
   '<h3 data-wd-journal-heading></h3>'+
   '<div class="classic-moves wd-move-history" data-wd-moves></div></section>'+
   '<div class="wd-grade-legend" data-wd-grade-legend></div>'+
   '<div class="wd-play-controls">'+
-  '<button type="button" class="classic-mini-button wd-button" data-wd-action="pause"></button>'+
-  '<button type="button" class="classic-mini-button wd-button" data-wd-action="speed">×1</button>'+
-  '<button type="button" class="classic-mini-button wd-button" data-wd-action="skip"></button></div>'+
+  '<button type="button" class="wd-icon-button" data-wd-action="pause"></button>'+
+  '<button type="button" class="wd-icon-button wd-speed-button" data-wd-action="speed"></button>'+
+  '<button type="button" class="wd-icon-button" data-wd-action="skip"></button></div>'+
+  '<p class="wd-ad-notice" data-wd-ad-notice role="status" hidden></p>'+
   '</aside>'+
   '<section class="classic-main wd-battle-main">'+
   '<div class="classic-statusbar wd-battle-status"><span data-wd-board-status></span></div>'+
@@ -350,13 +353,13 @@ function resumeWeekly(){
  }catch(e){console.error(e);return false;}
  cancelMateCeremony();
  session++;paused=false;speed=1;skip=false;thinking=false;lastResult=null;
+ skipAdBusy=false;skipAdNotice='';
  adapter?.destroy?.();adapter=new ChessAIAdapter();movePending=false;
  showPane('play');
- setText('[data-wd-battle-week]',t('week')+' '+active.week);
- setText('[data-wd-battle-heading]',t('battle'));
- setText('[data-wd-battle-title]',active.heroName+' · '+t('enemy'));
+ renderVersus(run,active);
  setText('[data-wd-journal-heading]',t('move'));
- battleScreen.querySelector('[data-wd-action="close"]').setAttribute('aria-label',t('back'));
+ const closeButton=battleScreen.querySelector('[data-wd-action="close"]');
+ closeButton.setAttribute('aria-label',t('back'));closeButton.title=t('back');
  const legend=battleScreen.querySelector('[data-wd-grade-legend]');legend.replaceChildren();
  for(const grade of ['excellent','good','inaccuracy','mistake','blunder']){
   const sym={excellent:'!!',good:'!',inaccuracy:'?!',mistake:'?',blunder:'??'}[grade];
@@ -366,6 +369,36 @@ function resumeWeekly(){
  }
  battleScreen.querySelector('[data-wd-action="skip"]').hidden=active.mode==='manual';
  renderBattle();scheduleTurn();return true;
+}
+function renderVersus(run,active){
+ const hero=run.roster.find(c=>c.id===active.heroId);
+ const encounter=active.encounter||run.kingdomMap?.cells?.[active.cellId]?.selectedEncounter||{};
+ const role=['pawn','knight','bishop','rook','queen','king'][
+  Math.floor((Math.max(1,Math.min(12,Number(active.enemyLevel)||Number(encounter.stars)||1))-1)/2)];
+ const enemyColor=active.playerColor==='b'?'w':'b';
+ const enemyArt=boardPieceArtForTheme(encounter,role,enemyColor);
+ const own=battleScreen.querySelector('[data-wd-hero-portrait]');
+ own.src=heroPortraitArt(hero)||'generated_assets/unit_king_player.png';
+ own.alt=hero?.name||active.heroName||t('commander');
+ const foe=battleScreen.querySelector('[data-wd-enemy-figure]');
+ foe.src=enemyArt;foe.alt=t('enemy');
+ setText('[data-wd-hero-name]',own.alt);
+ setText('[data-wd-enemy-name]',t('enemy'));
+}
+// Use the existing gold HUD pictogram treatment, not native text buttons.
+// Playback actions have no pre-existing illustrated asset, so use simple
+// inline SVG pictograms with the same gold stroke and transparent hitbox.
+const PLAYBACK_ICONS={
+ pause:'<path d="M9 5h4v14H9zM15 5h4v14h-4z" fill="currentColor" stroke="none"/>',
+ resume:'<path d="M9 5l12 7-12 7z" fill="currentColor" stroke="none"/>',
+ speed:'<path d="M4 5l10 7-10 7zM13 5l10 7-10 7z" fill="currentColor" stroke="none"/>',
+ skip:'<rect x="2" y="5" width="20" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M9 8l7 4-7 4z" fill="currentColor" stroke="none"/><path d="M5 2v2m14-2v2M5 20v2m14-2v2" stroke="currentColor" stroke-width="1.5"/>'
+};
+function updatePlayback(action,kind,label,multiplier=''){
+ const button=battleScreen.querySelector('[data-wd-action="'+action+'"]');
+ button.setAttribute('aria-label',label);button.title=label;
+ button.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true">'+PLAYBACK_ICONS[kind]+'</svg>'+
+  (multiplier?'<span aria-hidden="true">'+multiplier+'</span>':'');
 }
 function renderBoard(){
  const board=battleScreen.querySelector('[data-wd-board]');board.replaceChildren();
@@ -412,7 +445,7 @@ function renderBoard(){
    button.append(image(fantasyPiecePath(piece.type,piece.color),'wd-battle-simple rpchess-fantasy-piece',''));
   }
   if(last?.uci.slice(2,4)===sq&&badgeMarks[last.grade]){
-   const grade=h('span','mentor-square-grade'+(['good','excellent'].includes(last.grade)?' mentor-square-grade--good':''),
+   const grade=h('span','mentor-square-grade mentor-square-grade--'+last.grade,
     badgeMarks[last.grade]);grade.title=gradeLabel(last.grade);
    button.append(grade);
   }
@@ -448,9 +481,17 @@ function renderBattle(){
   moves.append(item);
  });
  moves.scrollTop=moves.scrollHeight;
- battleScreen.querySelector('[data-wd-action="pause"]').textContent=paused?t('resume'):t('pause');
- battleScreen.querySelector('[data-wd-action="speed"]').textContent='×'+speed;
- battleScreen.querySelector('[data-wd-action="skip"]').textContent=t('result');
+ updatePlayback('pause',paused?'resume':'pause',paused?t('resume'):t('pause'));
+ updatePlayback('speed','speed',(currentLanguage()==='en'?'Playback speed':'Скорость боя')+' ×'+speed,'×'+speed);
+ updatePlayback('skip','skip',t(skip?'adGranted':'result'));
+ const skipButton=battleScreen.querySelector('[data-wd-action="skip"]');
+ skipButton.disabled=skipAdBusy||skip||mateCeremonyTimer!==null;
+ skipButton.setAttribute('aria-busy',String(skipAdBusy));
+ for(const action of ['close','pause','speed'])
+  battleScreen.querySelector('[data-wd-action="'+action+'"]').disabled=skipAdBusy;
+ const adNotice=battleScreen.querySelector('[data-wd-ad-notice]');
+ adNotice.hidden=!skipAdBusy&&!skipAdNotice;
+ adNotice.textContent=skipAdBusy?t('adPending'):(skipAdNotice?t(skipAdNotice):'');
  renderBoard();
 }
 function manualSquare(sq){
@@ -506,10 +547,12 @@ function scheduleTurn(){
  if(engine.status().over){finishWithMateCeremony();return;}
  if(mateCeremonyTimer!==null)return;
  if(active.mode==='manual'&&engine.turn()===active.playerColor){renderBattle();return;}
- if(paused)return;
+ if(paused||skipAdBusy)return;
  const stamp=session;
  turnTimer=setTimeout(async()=>{
-  if(stamp!==session||paused||thinking)return;thinking=true;renderBattle();
+  if(stamp!==session||paused||skipAdBusy)return;
+  if(thinking||movePending){scheduleTurn();return;}
+  thinking=true;renderBattle();
   try{
    const side=engine.turn(),elo=side===active.playerColor?threatRank(active.heroLevel).elo:threatRank(active.enemyLevel).elo;
    const uci=await adapter.chooseMove({fen:engine.fen(),elo,legalMoves:engine.legalMoves()});
@@ -615,14 +658,32 @@ function finishBattle(){
  };
  action.append(history,back);panel.append(action);
 }
+// A completed rewarded ad unlocks fast-forward for this active battle only.
+ // Never grant on a cancelled/unavailable ad, duplicate click or stale session.
+async function requestSkipToResult(){
+ const active=weeklyState(readRun()).active;
+ if(!active||active.mode!=='auto'||skip||skipAdBusy||mateCeremonyTimer!==null||!engine||engine.status().over)return;
+ const stamp=session,receipt=active.receiptId,wasPaused=paused;
+ skipAdBusy=true;skipAdNotice='';paused=true;clearTimeout(turnTimer);
+ renderBattle();
+ let completed=false;
+ try{completed=(await platform.ads.show('reward'))?.status==='completed';}
+ catch{}
+ if(stamp!==session||battleScreen.hidden||weeklyState(readRun()).active?.receiptId!==receipt)return;
+ skipAdBusy=false;
+ if(completed){skip=true;paused=false;skipAdNotice='';}
+ else{paused=wasPaused;skipAdNotice='adFailed';}
+ renderBattle();scheduleTurn();
+}
 function onAction(event){
  const button=event.target.closest('[data-wd-action]');if(!button)return;
  const act=button.dataset.wdAction;
+ if(skipAdBusy&&!battleScreen.hidden)return;
  if(act==='close')close();
  if(act==='prev'||act==='next')root.querySelector('[data-wd-carousel]').scrollBy({left:(act==='next'?1:-1)*400,behavior:'smooth'});
  if(act==='start')commitStart(false);
  if(act==='pause'&&mateCeremonyTimer===null){paused=!paused;if(!paused)scheduleTurn();renderBattle();}
  if(act==='speed'&&mateCeremonyTimer===null){speed=speed===1?2:speed===2?4:1;renderBattle();}
- if(act==='skip'&&mateCeremonyTimer===null){skip=true;paused=false;scheduleTurn();renderBattle();}
+ if(act==='skip')void requestSkipToResult();
 }
 export {openWeekly,resumeWeekly};

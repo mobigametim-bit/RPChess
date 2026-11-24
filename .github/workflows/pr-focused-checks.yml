@@ -86,3 +86,12 @@ jobs:
           RPCHESS_BROWSER_TEST: ${{ steps.scope.outputs.browser_tests }}
           RPCHESS_GATE_PREFIX: /RPChess
         run: npm run test:browser
+
+      - name: Upload defender battle screenshot evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: weekly-defender-screenshots
+          path: test-results/weekly-defender-*.png
+          if-no-files-found: ignore
+          retention-days: 14
