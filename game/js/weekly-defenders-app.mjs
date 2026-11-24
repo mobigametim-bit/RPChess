@@ -16,6 +16,7 @@ import {armyCandidates} from './kingdom-army-core.mjs';
 import {attachPieceDrag} from './piece-drag.mjs';
 import {applyPinIce} from './king-pin-ice.mjs';
 import {currentLanguage} from './i18n.mjs';
+import {platform} from './platform.mjs';
 
 const C={
  ru:{title:'Возрождённый защитник',choose:'Назначьте командира',enemy:'Защитник',commander:'Ваш командир',
@@ -26,7 +27,7 @@ const C={
   fromGold:'Золото',fromSupplies:'Припасы',debt:'Неоплаченный долг! После партии погибнет командир: ',
   kingDebt:'Гибель короля завершит путешествие!',confirm:'Подтвердить и начать',
   battle:'Битва защитников',thinking:'Движок обдумывает ход…',pause:'Пауза',resume:'Продолжить',
-  result:'К результату',battleManual:'Ваш ход',battleAuto:'Идёт автобой',move:'Ход',
+  result:'Смотреть рекламу — к результату',adPending:'Ожидание рекламы…',adFailed:'Реклама не завершена или недоступна. Бой можно продолжить.',adGranted:'Ускоренное завершение боя',battleManual:'Ваш ход',battleAuto:'Идёт автобой',move:'Ход',
   win:'Победа',draw:'Ничья',loss:'Поражение',return:'К карте',
   rewards:'Награда',mastery:'Мастерство',dead:'Командир погиб из-за долга',warning:'Потери обычных рекрутов постоянны',
   error:'Не удалось начать сражение',noHeroes:'Нет доступных героев',back:'К карте'},
@@ -38,7 +39,7 @@ const C={
   fromGold:'Gold',fromSupplies:'Supplies',debt:'Unpaid debt! Commander will die after battle: ',
   kingDebt:'King death ends the run!',confirm:'Confirm and start',
   battle:'Defender battle',thinking:'Engine is thinking…',pause:'Pause',resume:'Resume',
-  result:'Skip to result',battleManual:'Your move',battleAuto:'Auto battle',move:'Move',
+  result:'Watch an ad — skip to result',adPending:'Waiting for ad…',adFailed:'Ad not completed or unavailable. You can continue the battle.',adGranted:'Fast-forwarding to result',battleManual:'Your move',battleAuto:'Auto battle',move:'Move',
   win:'Victory',draw:'Draw',loss:'Defeat',return:'To map',
   rewards:'Reward',mastery:'Mastery',dead:'Commander died from debt',warning:'Regular recruit losses are permanent',
   error:'Could not start battle',noHeroes:'No available heroes',back:'To map'}
@@ -49,6 +50,7 @@ let root=null,battleScreen=null,selectedHeroId=null,cellId=null,engine=null,adap
 let identities=new Map(),capturedIds=new Set(),selectedSquare=null,paused=false,speed=1,skip=false,thinking=false;
 let turnTimer=null,session=0,lastResult=null,movePending=false,paymentModal=null,beforeFenForMove=null;
 let mateCeremonyTimer=null;
+let skipAdBusy=false,skipAdNotice='';
 const MATE_CEREMONY_MS=3000;
 function cancelMateCeremony(){
  clearTimeout(mateCeremonyTimer);mateCeremonyTimer=null;
@@ -78,7 +80,7 @@ function image(path,cls='',alt=''){
 }
 function ensure(){
  if(root)return root;
- const link=h('link');link.rel='stylesheet';link.href='css/weekly-defenders.css?v=20261125-battle-layout-v2';
+ const link=h('link');link.rel='stylesheet';link.href='css/weekly-defenders.css?v=20261125-battle-layout-v3';
  document.head.append(link);
  root=h('div','wd-overlay');root.hidden=true;root.dataset.weeklyDefenders='';
  root.innerHTML='<section class="wd-dialog" role="dialog" aria-modal="true" aria-label="Weekly defender">'+
@@ -117,6 +119,7 @@ function ensure(){
   '<button type="button" class="wd-icon-button" data-wd-action="pause"></button>'+
   '<button type="button" class="wd-icon-button wd-speed-button" data-wd-action="speed"></button>'+
   '<button type="button" class="wd-icon-button" data-wd-action="skip"></button></div>'+
+  '<p class="wd-ad-notice" data-wd-ad-notice role="status" hidden></p>'+
   '</aside>'+
   '<section class="classic-main wd-battle-main">'+
   '<div class="classic-statusbar wd-battle-status"><span data-wd-board-status></span></div>'+
@@ -350,6 +353,7 @@ function resumeWeekly(){
  }catch(e){console.error(e);return false;}
  cancelMateCeremony();
  session++;paused=false;speed=1;skip=false;thinking=false;lastResult=null;
+ skipAdBusy=false;skipAdNotice='';
  adapter?.destroy?.();adapter=new ChessAIAdapter();movePending=false;
  showPane('play');
  renderVersus(run,active);
@@ -388,7 +392,7 @@ const PLAYBACK_ICONS={
  pause:'<path d="M9 5h4v14H9zM15 5h4v14h-4z" fill="currentColor" stroke="none"/>',
  resume:'<path d="M9 5l12 7-12 7z" fill="currentColor" stroke="none"/>',
  speed:'<path d="M4 5l10 7-10 7zM13 5l10 7-10 7z" fill="currentColor" stroke="none"/>',
- skip:'<path d="M4 5l11 7-11 7zM17 5h3v14h-3z" fill="currentColor" stroke="none"/>'
+ skip:'<rect x="2" y="5" width="20" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M9 8l7 4-7 4z" fill="currentColor" stroke="none"/><path d="M5 2v2m14-2v2M5 20v2m14-2v2" stroke="currentColor" stroke-width="1.5"/>'
 };
 function updatePlayback(action,kind,label,multiplier=''){
  const button=battleScreen.querySelector('[data-wd-action="'+action+'"]');
@@ -441,7 +445,7 @@ function renderBoard(){
    button.append(image(fantasyPiecePath(piece.type,piece.color),'wd-battle-simple rpchess-fantasy-piece',''));
   }
   if(last?.uci.slice(2,4)===sq&&badgeMarks[last.grade]){
-   const grade=h('span','mentor-square-grade'+(['good','excellent'].includes(last.grade)?' mentor-square-grade--good':''),
+   const grade=h('span','mentor-square-grade mentor-square-grade--'+last.grade,
     badgeMarks[last.grade]);grade.title=gradeLabel(last.grade);
    button.append(grade);
   }
@@ -479,7 +483,15 @@ function renderBattle(){
  moves.scrollTop=moves.scrollHeight;
  updatePlayback('pause',paused?'resume':'pause',paused?t('resume'):t('pause'));
  updatePlayback('speed','speed',(currentLanguage()==='en'?'Playback speed':'Скорость боя')+' ×'+speed,'×'+speed);
- updatePlayback('skip','skip',t('result'));
+ updatePlayback('skip','skip',t(skip?'adGranted':'result'));
+ const skipButton=battleScreen.querySelector('[data-wd-action="skip"]');
+ skipButton.disabled=skipAdBusy||skip||mateCeremonyTimer!==null;
+ skipButton.setAttribute('aria-busy',String(skipAdBusy));
+ for(const action of ['close','pause','speed'])
+  battleScreen.querySelector('[data-wd-action="'+action+'"]').disabled=skipAdBusy;
+ const adNotice=battleScreen.querySelector('[data-wd-ad-notice]');
+ adNotice.hidden=!skipAdBusy&&!skipAdNotice;
+ adNotice.textContent=skipAdBusy?t('adPending'):(skipAdNotice?t(skipAdNotice):'');
  renderBoard();
 }
 function manualSquare(sq){
@@ -535,10 +547,12 @@ function scheduleTurn(){
  if(engine.status().over){finishWithMateCeremony();return;}
  if(mateCeremonyTimer!==null)return;
  if(active.mode==='manual'&&engine.turn()===active.playerColor){renderBattle();return;}
- if(paused)return;
+ if(paused||skipAdBusy)return;
  const stamp=session;
  turnTimer=setTimeout(async()=>{
-  if(stamp!==session||paused||thinking)return;thinking=true;renderBattle();
+  if(stamp!==session||paused||skipAdBusy)return;
+  if(thinking||movePending){scheduleTurn();return;}
+  thinking=true;renderBattle();
   try{
    const side=engine.turn(),elo=side===active.playerColor?threatRank(active.heroLevel).elo:threatRank(active.enemyLevel).elo;
    const uci=await adapter.chooseMove({fen:engine.fen(),elo,legalMoves:engine.legalMoves()});
@@ -644,14 +658,32 @@ function finishBattle(){
  };
  action.append(history,back);panel.append(action);
 }
+// A completed rewarded ad unlocks fast-forward for this active battle only.
+ // Never grant on a cancelled/unavailable ad, duplicate click or stale session.
+async function requestSkipToResult(){
+ const active=weeklyState(readRun()).active;
+ if(!active||active.mode!=='auto'||skip||skipAdBusy||mateCeremonyTimer!==null||!engine||engine.status().over)return;
+ const stamp=session,receipt=active.receiptId,wasPaused=paused;
+ skipAdBusy=true;skipAdNotice='';paused=true;clearTimeout(turnTimer);
+ renderBattle();
+ let completed=false;
+ try{completed=(await platform.ads.show('reward'))?.status==='completed';}
+ catch{}
+ if(stamp!==session||battleScreen.hidden||weeklyState(readRun()).active?.receiptId!==receipt)return;
+ skipAdBusy=false;
+ if(completed){skip=true;paused=false;skipAdNotice='';}
+ else{paused=wasPaused;skipAdNotice='adFailed';}
+ renderBattle();scheduleTurn();
+}
 function onAction(event){
  const button=event.target.closest('[data-wd-action]');if(!button)return;
  const act=button.dataset.wdAction;
+ if(skipAdBusy&&!battleScreen.hidden)return;
  if(act==='close')close();
  if(act==='prev'||act==='next')root.querySelector('[data-wd-carousel]').scrollBy({left:(act==='next'?1:-1)*400,behavior:'smooth'});
  if(act==='start')commitStart(false);
  if(act==='pause'&&mateCeremonyTimer===null){paused=!paused;if(!paused)scheduleTurn();renderBattle();}
  if(act==='speed'&&mateCeremonyTimer===null){speed=speed===1?2:speed===2?4:1;renderBattle();}
- if(act==='skip'&&mateCeremonyTimer===null){skip=true;paused=false;scheduleTurn();renderBattle();}
+ if(act==='skip')void requestSkipToResult();
 }
 export {openWeekly,resumeWeekly};
