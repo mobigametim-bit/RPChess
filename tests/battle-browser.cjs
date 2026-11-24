@@ -380,6 +380,21 @@ async function assertResponsiveStars(page, selector, cardSelector) {
       await weekly.setViewportSize({width,height});
       await weekly.evaluate(()=>window.scrollTo(0,0));
       await weekly.waitForTimeout(500);
+      if(height>width){
+        const bounds=await defenderScreen.evaluate(screen=>{
+          const board=screen.querySelector('[data-wd-board]').getBoundingClientRect();
+          const first=screen.querySelector('[data-wd-board] .wd-square').getBoundingClientRect();
+          const last=screen.querySelector('[data-wd-board] .wd-square:last-child').getBoundingClientRect();
+          return {left:board.left,right:board.right,width:board.width,height:board.height,
+            firstLeft:first.left,lastRight:last.right,viewport:document.documentElement.clientWidth,
+            scrollWidth:document.documentElement.scrollWidth};
+        });
+        assert(Math.abs(bounds.left)<=1&&Math.abs(bounds.right-bounds.viewport)<=1&&
+          Math.abs(bounds.width-bounds.height)<=1&&Math.abs(bounds.firstLeft)<=1&&
+          Math.abs(bounds.lastRight-bounds.viewport)<=1&&bounds.scrollWidth<=bounds.viewport+1,
+          'portrait playable board must be square and edge-to-edge without overflow: '+name+' '+JSON.stringify(bounds));
+        console.log('Defender portrait full-bleed '+name+': '+JSON.stringify(bounds));
+      }
       await weekly.screenshot({path:'test-results/weekly-defender-'+name+'.png'});
     }
     await weekly.setViewportSize({width:844,height:390});
