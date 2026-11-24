@@ -501,3 +501,37 @@ body.wd-combat-active .resource-hud{display:none!important}
 .wd-battle-screen .wd-ad-notice{flex:0 0 auto;margin:0;text-align:center;font-size:11px;line-height:1.25;color:#eace92}
 .wd-battle-screen .wd-ad-notice[hidden]{display:none!important}
 .wd-battle-screen .wd-icon-button:disabled{opacity:.45;cursor:default;filter:none}
+
+/* Owner-approved portrait board: the playable 8×8 surface fills the
+   viewport width. Remove both the shared 650px tablet cap and board-wrap
+   padding; retain ordinary gutters on the navigation and journal only. */
+@media (orientation:portrait){
+ body.wd-combat-active #app main.wd-battle-screen{
+  width:100%!important;max-width:none!important;
+  padding-inline:0!important;
+ }
+ body.wd-combat-active #app main.wd-battle-screen .classic-shell{
+  width:100%!important;max-width:none!important;min-width:0!important;
+  padding:0!important;margin-inline:0!important;
+  display:flex!important;flex-direction:column!important;
+ }
+ body.wd-combat-active #app main.wd-battle-screen .wd-battle-main{
+  width:100%!important;max-width:none!important;min-width:0!important;
+  height:auto!important;margin:0!important;padding:0!important;
+  display:flex!important;flex-direction:column!important;
+ }
+ body.wd-combat-active #app main.wd-battle-screen :is(.wd-chess-stage,.wd-chess-board){
+  position:relative!important;inset:auto!important;transform:none!important;
+  width:100%!important;min-width:0!important;max-width:none!important;
+  height:auto!important;min-height:0!important;max-height:none!important;
+  aspect-ratio:1/1!important;flex:none!important;
+  margin:0!important;padding:0!important;border:0!important;
+  border-radius:0!important;box-shadow:none!important;
+  box-sizing:border-box!important;
+ }
+ body.wd-combat-active #app main.wd-battle-screen .wd-battle-topbar,
+ body.wd-combat-active #app main.wd-battle-screen .wd-battle-party{
+  width:calc(100% - 2 * var(--portrait-gutter,12px))!important;
+  max-width:680px!important;margin-inline:auto!important;
+ }
+}
