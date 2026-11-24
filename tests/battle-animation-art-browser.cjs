@@ -30,6 +30,11 @@ function route(id) {
   const browser = await chromium.launch({ headless: true });
   try {
     const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+    // This regression intentionally asserts race-specific PNG art continuity.
+    // Explicitly opt out of the NEW default SVG-glyph mode for this test only.
+    await page.addInitScript(() => {
+      localStorage.setItem('rpchess.reboot.v1.settings', JSON.stringify({ simplePieces:false }));
+    });
     const errors = [];
     page.on('pageerror', (error) => errors.push(String(error.stack || error)));
 

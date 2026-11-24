@@ -163,11 +163,11 @@ function readSettings() {
       music: Number.isFinite(value.music) ? value.music : 20,
       sfx: Number.isFinite(value.sfx) ? value.sfx : 80,
       reducedMotion: Boolean(value.reducedMotion),
-      simplePieces: value.simplePieces === true,
+      simplePieces: value.simplePieces !== false,
       language: currentLanguage()
     };
   } catch {
-    return { music: 20, sfx: 80, reducedMotion: false, simplePieces:false, language: currentLanguage() };
+    return { music: 20, sfx: 80, reducedMotion: false, simplePieces:true, language: currentLanguage() };
   }
 }
 

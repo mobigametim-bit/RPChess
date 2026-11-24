@@ -54,7 +54,8 @@ async function drag(page,from,to){
     const errors=[];page.on('pageerror',e=>errors.push(e.message));
     await page.goto(url,{waitUntil:'domcontentloaded'});
     await page.locator('[data-game-loading]').waitFor({state:'hidden',timeout:45000});
-    assert.notEqual(await page.locator('html').getAttribute('data-simple-pieces'),'1','Detailed art default');
+    assert.equal(await page.locator('html').getAttribute('data-simple-pieces'),'1',
+      'New players see simplified glyphs by default');
     // Pin all twelve MIT-licensed Fantasy SVGs; no race-specific simplified art.
     const assets=await page.evaluate(async()=>{
       const roles=['P','N','B','R','Q','K'];
@@ -67,6 +68,16 @@ async function drag(page,from,to){
     assert(assets.every(asset=>asset.ok&&asset.svg),'Fantasy assets must be present and valid SVG');
     await page.locator('[data-reboot-foundation] [data-settings]').first().click();
     const toggle=page.locator('input[data-simple-pieces]');
+    assert.equal(await toggle.isChecked(),true,'Glyph setting is initially enabled');
+    await toggle.uncheck();
+    assert.equal(await page.locator('html').getAttribute('data-simple-pieces'),'0');
+    assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('rpchess.reboot.v1.settings')).simplePieces),false,
+      'A manually selected detailed-art preference is saved');
+    await page.reload({waitUntil:'domcontentloaded'});
+    await page.locator('[data-game-loading]').waitFor({state:'hidden',timeout:45000});
+    assert.equal(await page.locator('html').getAttribute('data-simple-pieces'),'0',
+      'Saved detailed-art choice remains active at first paint after reload');
+    await page.locator('[data-reboot-foundation] [data-settings]').first().click();
     assert.equal(await toggle.isChecked(),false);
     await toggle.check();
     assert.equal(await page.locator('html').getAttribute('data-simple-pieces'),'1');
