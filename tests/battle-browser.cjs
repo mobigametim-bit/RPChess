@@ -353,8 +353,11 @@ async function assertResponsiveStars(page, selector, cardSelector) {
       assert.equal(await button.locator('svg,img').count(),1,'icon-only '+action);
       assert(await button.getAttribute('aria-label'),'localized accessible '+action);
     }
+    // Capture the real ongoing battle, not the loading splash or empty log.
+    await weekly.locator('[data-wd-moves] .wd-move').first().waitFor({state:'visible',timeout:120000});
     await weekly.locator('[data-wd-action="pause"]').click();
     await defenderScreen.locator('[data-wd-battle-versus] img').evaluateAll(imgs=>Promise.all(imgs.map(img=>img.decode())));
+    await weekly.waitForTimeout(800);
     await weekly.screenshot({path:'test-results/weekly-defender-desktop.png'});
     await weekly.setViewportSize({width:844,height:390});
     await weekly.waitForTimeout(200);
@@ -369,6 +372,19 @@ async function assertResponsiveStars(page, selector, cardSelector) {
       mobilePlacement.boardRight<=mobilePlacement.width+2&&mobilePlacement.controlsBottom<=mobilePlacement.panelBottom+2,
       'landscape defender rail and controls fit alongside board: '+JSON.stringify(mobilePlacement));
     await weekly.screenshot({path:'test-results/weekly-defender-mobile.png'});
+    for(const [name,width,height] of [
+      ['mobile-portrait',390,844],
+      ['tablet-landscape',1280,800],
+      ['tablet-portrait',800,1280]
+    ]){
+      await weekly.setViewportSize({width,height});
+      await weekly.evaluate(()=>window.scrollTo(0,0));
+      await weekly.waitForTimeout(500);
+      await weekly.screenshot({path:'test-results/weekly-defender-'+name+'.png'});
+    }
+    await weekly.setViewportSize({width:844,height:390});
+    await weekly.evaluate(()=>window.scrollTo(0,0));
+    await weekly.waitForTimeout(200);
     const colors=await defenderScreen.locator('[data-wd-grade-legend] .mentor-grade').evaluateAll(nodes=>nodes.map(n=>getComputedStyle(n).color));
     assert.deepStrictEqual(colors,['rgb(145, 228, 140)','rgb(145, 228, 140)','rgb(243, 214, 110)','rgb(255, 129, 122)','rgb(255, 129, 122)'],'weekly legend uses one green/yellow/red palette');
     const skipAd=defenderScreen.locator('[data-wd-action="skip"]');
