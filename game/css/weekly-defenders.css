@@ -489,3 +489,15 @@ body.wd-combat-active .resource-hud{display:none!important}
  .wd-battle-screen .wd-battle-journal>h3{font-size:14px;margin:0 0 3px}
  .wd-battle-screen .wd-move-history .wd-move{min-height:22px;font-size:10px;padding:2px 3px}
 }
+
+/* One semantic palette in the board, move history and full legend.
+   The same grade names are used in saves and in the Mentor classifier. */
+.wd-battle-screen :is(.mentor-grade--excellent,.mentor-grade--good,.mentor-square-grade--excellent,.mentor-square-grade--good){color:#91e48c!important}
+.wd-battle-screen :is(.mentor-grade--inaccuracy,.mentor-square-grade--inaccuracy){color:#f3d66e!important}
+.wd-battle-screen :is(.mentor-grade--mistake,.mentor-grade--blunder,.mentor-square-grade--mistake,.mentor-square-grade--blunder){color:#ff817a!important}
+.wd-battle-screen .wd-grade-caption:has(:is(.mentor-grade--excellent,.mentor-grade--good)){color:#91e48c}
+.wd-battle-screen .wd-grade-caption:has(.mentor-grade--inaccuracy){color:#f3d66e}
+.wd-battle-screen .wd-grade-caption:has(:is(.mentor-grade--mistake,.mentor-grade--blunder)){color:#ff817a}
+.wd-battle-screen .wd-ad-notice{flex:0 0 auto;margin:0;text-align:center;font-size:11px;line-height:1.25;color:#eace92}
+.wd-battle-screen .wd-ad-notice[hidden]{display:none!important}
+.wd-battle-screen .wd-icon-button:disabled{opacity:.45;cursor:default;filter:none}
