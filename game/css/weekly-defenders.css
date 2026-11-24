@@ -407,3 +407,85 @@ body.compact-combat-active .wd-battle-screen .classic-party-panel{
   animation:none;opacity:.15;transform:none;
  }
 }
+
+/* Defender combat uses the existing centered chess layout and the actual
+   Journey/HUD icon art. Keep the board untouched; the left rail owns the
+   portrait matchup, scrollable journal and icon controls. */
+.wd-battle-screen .wd-battle-topbar h1,
+.wd-battle-screen .wd-battle-topbar .wd-eyebrow{display:none!important}
+.wd-battle-screen .wd-battle-versus{
+ display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);
+ align-items:center;gap:clamp(3px,.6vw,10px);flex:0 0 auto;min-width:0;
+}
+.wd-battle-screen .wd-duelist{display:flex;flex-direction:column;align-items:center;min-width:0;gap:4px}
+.wd-battle-screen .wd-duelist img{
+ display:block;width:100%;height:clamp(48px,14dvh,120px);
+ object-fit:contain;object-position:center;filter:drop-shadow(0 2px 4px #0009)
+}
+.wd-battle-screen .wd-duelist small{
+ display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;
+ white-space:nowrap;text-align:center;font-size:clamp(10px,1vw,14px);color:#f1dfba
+}
+.wd-battle-screen .wd-versus-mark{
+ color:#e5c480;font:400 clamp(16px,2.1vw,29px)/1 'BrahmsGotischCyr',Georgia,serif;
+ text-shadow:0 2px 4px #000
+}
+.wd-battle-screen .classic-opponent{text-align:center;color:#cbb897}
+.wd-battle-screen .wd-icon-button{
+ display:inline-flex!important;align-items:center;justify-content:center;gap:3px;
+ flex:0 0 auto!important;width:clamp(38px,4.1vw,60px)!important;
+ height:clamp(38px,4.1vw,60px)!important;min-width:0!important;min-height:0!important;
+ border:0!important;border-radius:0!important;padding:0!important;margin:0!important;
+ background:transparent!important;box-shadow:none!important;color:#eac57d;
+ cursor:pointer;filter:drop-shadow(0 3px 4px #0009)
+}
+.wd-battle-screen .wd-icon-button[hidden]{display:none!important}
+.wd-battle-screen .wd-icon-button:hover{filter:brightness(1.14) drop-shadow(0 4px 7px #000a)}
+.wd-battle-screen .wd-icon-button:focus-visible{outline:2px solid #f2d288;outline-offset:2px}
+.wd-battle-screen .wd-icon-button img{width:100%;height:100%;object-fit:contain;pointer-events:none}
+.wd-battle-screen .wd-icon-button svg{width:60%;height:60%;pointer-events:none;overflow:visible}
+.wd-battle-screen .wd-speed-button{width:clamp(55px,5.8vw,88px)!important}
+.wd-battle-screen .wd-speed-button svg{width:48%;height:60%}
+.wd-battle-screen .wd-speed-button span{font:700 clamp(12px,1.4vw,19px)/1 'GoznakUI',Georgia,serif}
+.wd-battle-screen .wd-play-controls{
+ flex:0 0 auto;justify-content:space-around;align-items:center;flex-wrap:nowrap;
+ border-top:1px solid #d8b15d40;padding-top:4px;margin:0
+}
+.wd-battle-screen .wd-grade-legend{flex:0 0 auto;margin-top:0}
+.wd-battle-screen .wd-view-toggle{flex:0 0 auto;justify-content:center;min-height:0}
+body.wd-combat-active .resource-hud{display:none!important}
+@media(orientation:landscape){
+ html[data-landscape-ui='1'] body.wd-combat-active #app main.wd-battle-screen .classic-shell{
+  grid-template-rows:clamp(44px,7dvh,66px) minmax(0,1fr)!important;
+ }
+ html[data-landscape-ui='1'] body.wd-combat-active #app main.wd-battle-screen .wd-battle-topbar{
+  justify-content:flex-start!important;align-items:center!important;
+ }
+ html[data-landscape-ui='1'] body.wd-combat-active #app main.wd-battle-screen .wd-battle-party{
+  grid-row:2!important;align-self:stretch!important;
+  width:calc(100% - 16px)!important;max-width:420px!important;
+  height:auto!important;max-height:none!important;min-height:0!important;
+  margin:0 8px 8px!important;padding:clamp(5px,1vw,15px)!important;
+  gap:clamp(3px,.75dvh,8px)!important;overflow:hidden!important;
+  border:1px solid #d8b15d45!important;border-radius:4px!important;
+ }
+ html[data-landscape-ui='1'] body.wd-combat-active #app main.wd-battle-screen .wd-battle-journal{
+  flex:1 1 0!important;width:100%!important;min-height:0!important;
+  max-height:none!important;margin:0!important;padding:5px 0 0!important;
+  background:transparent!important;border:0!important;border-top:1px solid #d8b15d40!important;
+  box-shadow:none!important;overflow:hidden!important;
+ }
+ html[data-landscape-ui='1'] body.wd-combat-active #app main.wd-battle-screen .wd-move-history{
+  flex:1 1 0!important;min-height:0!important;max-height:none!important;overflow:auto!important;
+ }
+ html[data-landscape-ui='1'] body.wd-combat-active #app main.wd-battle-screen .wd-battle-main{grid-row:1/3!important}
+}
+@media(orientation:landscape) and (max-height:490px){
+ .wd-battle-screen .wd-duelist img{height:clamp(34px,12dvh,58px)}
+ .wd-battle-screen .wd-duelist small{font-size:9px}
+ .wd-battle-screen .wd-icon-button{width:32px!important;height:32px!important}
+ .wd-battle-screen .wd-speed-button{width:50px!important}
+ .wd-battle-screen .wd-grade-caption{font-size:9px}
+ .wd-battle-screen .wd-battle-journal>h3{font-size:14px;margin:0 0 3px}
+ .wd-battle-screen .wd-move-history .wd-move{min-height:22px;font-size:10px;padding:2px 3px}
+}
