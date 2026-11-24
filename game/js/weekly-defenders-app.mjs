@@ -29,7 +29,7 @@ const C={
   result:'К результату',battleManual:'Ваш ход',battleAuto:'Идёт автобой',move:'Ход',
   win:'Победа',draw:'Ничья',loss:'Поражение',return:'К карте',
   rewards:'Награда',mastery:'Мастерство',dead:'Командир погиб из-за долга',warning:'Потери обычных рекрутов постоянны',
-  error:'Не удалось начать сражение',noHeroes:'Нет доступных героев',back:'Закрыть'},
+  error:'Не удалось начать сражение',noHeroes:'Нет доступных героев',back:'К карте'},
  en:{title:'Returned defender',choose:'Assign a commander',enemy:'Defender',commander:'Your commander',
   empty:'Drag or select a hero',
   available:'Available heroes',cancel:'Cancel',fight:'Battle',auto:'Auto battle',week:'Week',
@@ -41,7 +41,7 @@ const C={
   result:'Skip to result',battleManual:'Your move',battleAuto:'Auto battle',move:'Move',
   win:'Victory',draw:'Draw',loss:'Defeat',return:'To map',
   rewards:'Reward',mastery:'Mastery',dead:'Commander died from debt',warning:'Regular recruit losses are permanent',
-  error:'Could not start battle',noHeroes:'No available heroes',back:'Close'}
+  error:'Could not start battle',noHeroes:'No available heroes',back:'To map'}
 };
 function t(k){return C[currentLanguage()==='en'?'en':'ru'][k]||k;}
 const typeToCode={king:'K',queen:'Q',rook:'R',bishop:'B',knight:'N',pawn:'P'};
@@ -78,7 +78,7 @@ function image(path,cls='',alt=''){
 }
 function ensure(){
  if(root)return root;
- const link=h('link');link.rel='stylesheet';link.href='css/weekly-defenders.css?v=20261115-mate-freeze-v1';
+ const link=h('link');link.rel='stylesheet';link.href='css/weekly-defenders.css?v=20261125-battle-layout-v2';
  document.head.append(link);
  root=h('div','wd-overlay');root.hidden=true;root.dataset.weeklyDefenders='';
  root.innerHTML='<section class="wd-dialog" role="dialog" aria-modal="true" aria-label="Weekly defender">'+
@@ -103,20 +103,20 @@ function ensure(){
  battleScreen.setAttribute('aria-label',t('battle'));
  battleScreen.innerHTML='<div class="classic-shell">'+
   '<header class="classic-topbar wd-battle-topbar">'+
-  '<div><small class="wd-eyebrow" data-wd-battle-week></small><h1 data-wd-battle-heading></h1></div>'+
-  '<div class="classic-toolbar"><button type="button" class="classic-mini-button" data-wd-action="close">×</button></div>'+
+  '<div class="classic-toolbar wd-battle-toolbar"><button type="button" class="wd-icon-button" data-wd-action="close"><img src="assets/ui/main-menu-journey.png" alt="" aria-hidden="true"></button></div>'+
   '</header>'+
   '<aside class="classic-panel classic-party-panel wd-battle-party wd-sidebar">'+
-  '<h2 data-wd-battle-title></h2><p class="classic-opponent" data-wd-battle-info></p>'+
+  '<div class="wd-battle-versus" data-wd-battle-versus><div class="wd-duelist"><img data-wd-hero-portrait alt=""><small data-wd-hero-name></small></div><span class="wd-versus-mark" aria-hidden="true">VS</span><div class="wd-duelist"><img data-wd-enemy-figure alt=""><small data-wd-enemy-name></small></div></div>'+
+  '<p class="classic-opponent" data-wd-battle-info></p>'+
   '<div class="wd-view-toggle" data-wd-view-toggle></div>'+
   '<section class="classic-panel classic-panel--moves wd-battle-journal">'+
   '<h3 data-wd-journal-heading></h3>'+
   '<div class="classic-moves wd-move-history" data-wd-moves></div></section>'+
   '<div class="wd-grade-legend" data-wd-grade-legend></div>'+
   '<div class="wd-play-controls">'+
-  '<button type="button" class="classic-mini-button wd-button" data-wd-action="pause"></button>'+
-  '<button type="button" class="classic-mini-button wd-button" data-wd-action="speed">×1</button>'+
-  '<button type="button" class="classic-mini-button wd-button" data-wd-action="skip"></button></div>'+
+  '<button type="button" class="wd-icon-button" data-wd-action="pause"></button>'+
+  '<button type="button" class="wd-icon-button wd-speed-button" data-wd-action="speed"></button>'+
+  '<button type="button" class="wd-icon-button" data-wd-action="skip"></button></div>'+
   '</aside>'+
   '<section class="classic-main wd-battle-main">'+
   '<div class="classic-statusbar wd-battle-status"><span data-wd-board-status></span></div>'+
@@ -352,11 +352,10 @@ function resumeWeekly(){
  session++;paused=false;speed=1;skip=false;thinking=false;lastResult=null;
  adapter?.destroy?.();adapter=new ChessAIAdapter();movePending=false;
  showPane('play');
- setText('[data-wd-battle-week]',t('week')+' '+active.week);
- setText('[data-wd-battle-heading]',t('battle'));
- setText('[data-wd-battle-title]',active.heroName+' · '+t('enemy'));
+ renderVersus(run,active);
  setText('[data-wd-journal-heading]',t('move'));
- battleScreen.querySelector('[data-wd-action="close"]').setAttribute('aria-label',t('back'));
+ const closeButton=battleScreen.querySelector('[data-wd-action="close"]');
+ closeButton.setAttribute('aria-label',t('back'));closeButton.title=t('back');
  const legend=battleScreen.querySelector('[data-wd-grade-legend]');legend.replaceChildren();
  for(const grade of ['excellent','good','inaccuracy','mistake','blunder']){
   const sym={excellent:'!!',good:'!',inaccuracy:'?!',mistake:'?',blunder:'??'}[grade];
@@ -366,6 +365,36 @@ function resumeWeekly(){
  }
  battleScreen.querySelector('[data-wd-action="skip"]').hidden=active.mode==='manual';
  renderBattle();scheduleTurn();return true;
+}
+function renderVersus(run,active){
+ const hero=run.roster.find(c=>c.id===active.heroId);
+ const encounter=active.encounter||run.kingdomMap?.cells?.[active.cellId]?.selectedEncounter||{};
+ const role=['pawn','knight','bishop','rook','queen','king'][
+  Math.floor((Math.max(1,Math.min(12,Number(active.enemyLevel)||Number(encounter.stars)||1))-1)/2)];
+ const enemyColor=active.playerColor==='b'?'w':'b';
+ const enemyArt=boardPieceArtForTheme(encounter,role,enemyColor);
+ const own=battleScreen.querySelector('[data-wd-hero-portrait]');
+ own.src=heroPortraitArt(hero)||'generated_assets/unit_king_player.png';
+ own.alt=hero?.name||active.heroName||t('commander');
+ const foe=battleScreen.querySelector('[data-wd-enemy-figure]');
+ foe.src=enemyArt;foe.alt=t('enemy');
+ setText('[data-wd-hero-name]',own.alt);
+ setText('[data-wd-enemy-name]',t('enemy'));
+}
+// Use the existing gold HUD pictogram treatment, not native text buttons.
+// Playback actions have no pre-existing illustrated asset, so use simple
+// inline SVG pictograms with the same gold stroke and transparent hitbox.
+const PLAYBACK_ICONS={
+ pause:'<path d="M9 5h4v14H9zM15 5h4v14h-4z" fill="currentColor" stroke="none"/>',
+ resume:'<path d="M9 5l12 7-12 7z" fill="currentColor" stroke="none"/>',
+ speed:'<path d="M4 5l10 7-10 7zM13 5l10 7-10 7z" fill="currentColor" stroke="none"/>',
+ skip:'<path d="M4 5l11 7-11 7zM17 5h3v14h-3z" fill="currentColor" stroke="none"/>'
+};
+function updatePlayback(action,kind,label,multiplier=''){
+ const button=battleScreen.querySelector('[data-wd-action="'+action+'"]');
+ button.setAttribute('aria-label',label);button.title=label;
+ button.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true">'+PLAYBACK_ICONS[kind]+'</svg>'+
+  (multiplier?'<span aria-hidden="true">'+multiplier+'</span>':'');
 }
 function renderBoard(){
  const board=battleScreen.querySelector('[data-wd-board]');board.replaceChildren();
@@ -448,9 +477,9 @@ function renderBattle(){
   moves.append(item);
  });
  moves.scrollTop=moves.scrollHeight;
- battleScreen.querySelector('[data-wd-action="pause"]').textContent=paused?t('resume'):t('pause');
- battleScreen.querySelector('[data-wd-action="speed"]').textContent='×'+speed;
- battleScreen.querySelector('[data-wd-action="skip"]').textContent=t('result');
+ updatePlayback('pause',paused?'resume':'pause',paused?t('resume'):t('pause'));
+ updatePlayback('speed','speed',(currentLanguage()==='en'?'Playback speed':'Скорость боя')+' ×'+speed,'×'+speed);
+ updatePlayback('skip','skip',t('result'));
  renderBoard();
 }
 function manualSquare(sq){
