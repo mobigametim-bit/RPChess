@@ -63,6 +63,14 @@ jobs:
         env:
           RPCHESS_STOCKFISH_ASSET_DIR: /tmp/rpchess-stockfish-verified
         run: npm run build
+      - name: Opt-in technical audit measurements when audit script changes
+        if: steps.scope.outputs.has_runtime_changes == 'true'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || 'origin/main' }}
+        run: |
+          if git diff --name-only "$BASE_SHA"...HEAD | grep -Fxq 'scripts/audit-save-growth.cjs'; then
+            node scripts/audit-save-growth.cjs
+          fi
       - name: Run focused Node regression tests
         if: steps.scope.outputs.node_tests != ''
         env:
