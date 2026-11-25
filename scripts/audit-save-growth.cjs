@@ -5,6 +5,7 @@
 const assert=require('node:assert/strict');
 const {performance}=require('node:perf_hooks');
 const fs=require('node:fs');
+const {gzipSync,gunzipSync}=require('node:zlib');
 const path=require('node:path');
 const {pathToFileURL}=require('node:url');
 class MemoryStorage{
@@ -52,12 +53,23 @@ function medianMs(fn,count=5){
   assert.equal(p.readRun().kingdomMap.completedNewEncounterCount,target);
   const localBytes=bytes(localStorage.getItem(p.RUN_STORAGE_KEY));
   const payload=c.localPayload();
-  const profileBytes=bytes({...payload,schemaVersion:1});
+  const profileJson=JSON.stringify({...payload,schemaVersion:1});
+  const profileBytes=bytes(profileJson);
   const envelope=JSON.stringify({schemaVersion:1,revision:1,updatedAt:1000+target,payload});
+  // Candidate wire format only: compressed exact JSON, with ASCII transport.
+  // No change to actual client/server encoding or on-disk format.
+  const profileGzip=gzipSync(profileJson),vkGzip=gzipSync(envelope);
+  assert.equal(gunzipSync(profileGzip).toString('utf8'),profileJson,'lossless profile compression');
+  assert.equal(gunzipSync(vkGzip).toString('utf8'),envelope,'lossless VK compression');
+  const gzipProfileBase64Bytes=bytes(profileGzip.toString('base64url'));
+  const gzipVkChunks=Math.ceil(bytes(vkGzip.toString('base64url'))/c.CLOUD_CHUNK_BYTES);
   const vkBytes=bytes(c.encodeCloudPayload(envelope));
   const vkChunks=Math.ceil(vkBytes/c.CLOUD_CHUNK_BYTES);
   report.push({encounters:target,cells:Object.keys(cells).length,localBytes,profileBytes,
    profileFits:profileBytes<=profileLimit,vkChunks,vkFits:vkChunks<=chunkLimit,
+   gzipProfileBytes:profileGzip.length,gzipProfileBase64Bytes,gzipVkChunks,
+   gzipMedianMs:medianMs(()=>gzipSync(profileJson),3),
+   gunzipMedianMs:medianMs(()=>gunzipSync(profileGzip),3),
    readMedianMs:medianMs(()=>p.readRun()),
    writeMedianMs:medianMs(()=>p.writeRun(sample,null,1000+target))});
  }
@@ -79,5 +91,5 @@ function medianMs(fn,count=5){
  console.log('SAVE_GROWTH_AUDIT '+JSON.stringify({profileLimit,chunkLimit,report,
   replay:{plies:moves.length,oldEngineMoveCalls:moves.length*(moves.length+1)/2,
    incrementalEngineMoveCalls:moves.length,replayMs,incrementalMs},
-  limitations:'synthetic route-only cells; no fog/roads/hero match history; Node runner timings, not mobile browser or end-to-end battle'}));
+  limitations:'synthetic route-only cells; no fog/roads/hero match history; gzip sizes exclude protocol metadata and are not accepted by current server; Node runner timings, not mobile browser or end-to-end battle'}));
 })().catch(e=>{console.error(e);process.exitCode=1;});
