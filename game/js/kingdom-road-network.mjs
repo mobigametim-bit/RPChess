@@ -226,16 +226,20 @@ function visibleTravelRoads(map){
  for(const r of royal)for(const [a,b] of [[r.from,r.to],[r.to,r.from]]){
   if(!adj.has(a))adj.set(a,[]);adj.get(a).push(b);
  }
- function connected(a,b){
-  const queue=[a],visited=new Set([a]);
+ // Resolve each connected component at most once for this road snapshot.
+ // Include unowned intermediate vertices: the original BFS crossed them too.
+ const components=new Map();
+ function component(start){
+  if(components.has(start))return components.get(start);
+  const queue=[start];components.set(start,start);
   for(let i=0;i<queue.length;i++){
-   if(queue[i]===b)return true;
    for(const next of adj.get(queue[i])||[]){
-    if(!visited.has(next)){visited.add(next);queue.push(next);}
+    if(!components.has(next)){components.set(next,start);queue.push(next);}
    }
   }
-  return false;
+  return start;
  }
+ function connected(a,b){return component(a)===component(b);}
  for(const road of map?.completedRoads||[]){
   if(!point(road?.from)||!point(road?.to)||road.from===road.to)continue;
   const key=pairKey(road.from,road.to);

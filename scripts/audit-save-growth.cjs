@@ -26,6 +26,7 @@ function medianMs(fn,count=5){
  globalThis.localStorage=new MemoryStorage();
  const p=await load('game/js/run-persistence.mjs');
  const k=await load('game/js/kingdom-map-core.mjs');
+ const roadGraph=await load('game/js/kingdom-road-network.mjs');
  const c=await load('game/js/cloud-save.mjs');
  const {ClassicChessEngine}=await load('game/js/classic-chess-engine.mjs');
  const {shapeOfSnapshot}=await load('profile-worker/src/index.mjs');
@@ -43,7 +44,7 @@ function medianMs(fn,count=5){
  const map=k.createKingdomMap(run,600,'humans');
  const cells={...map.cells};
  const types=['battle','skirmish','caravan','event','settlement','puzzle'];
- const report=[],ownershipReport=[];
+ const report=[],ownershipReport=[],roadReport=[];
  let n=0;
  for(const target of [100,500,1000,5000,10000]){
   for(;n<target;n++){
@@ -73,6 +74,42 @@ function medianMs(fn,count=5){
   assert.deepStrictEqual(indexed(),direct(),'indexed map ownership and border parity');
   ownershipReport.push({territories:k.playerTerritoryCount(dense),viewportCells:points.length,
    directMedianMs:medianMs(direct),indexedMedianMs:medianMs(indexed)});
+  // Isolate worst-case repeated connectivity queries on a synthetic long
+  // cardinal chain. Same royal/travel inputs for historical BFS and new index.
+  const chain=Array.from({length:target+1},(_,i)=>i+',0');
+  const chainMap={...map,royalRoadsVersion:3,centralOwnedCells:chain,
+   royalRoads:chain.slice(1).map((id,i)=>({from:chain[i],to:id,bend:0})),
+   completedRoads:chain.slice(2).map((id,i)=>({id:'audit-road:'+i,from:chain[0],to:id,bend:.4}))};
+  const oldConnectedCount=()=>{
+   const royal=roadGraph.visibleRoyalRoads(chainMap),owned=roadGraph.ownedKeys(chainMap);
+   const adj=new Map();
+   for(const r of royal)for(const [a,b] of [[r.from,r.to],[r.to,r.from]]){
+    if(!adj.has(a))adj.set(a,[]);adj.get(a).push(b);
+   }
+   let visible=0;
+   for(const r of chainMap.completedRoads){
+    if(!owned.has(r.from)||!owned.has(r.to)){visible++;continue;}
+    const queue=[r.from],visited=new Set(queue);let connected=false;
+    for(let i=0;i<queue.length;i++){
+     if(queue[i]===r.to){connected=true;break;}
+     for(const next of adj.get(queue[i])||[])if(!visited.has(next)){visited.add(next);queue.push(next);}
+    }
+    if(!connected)visible++;
+   }
+   return visible;
+  };
+  // Cap the diagnostic's repeated BFS workload, while still exercising the
+  // full 10000-edge graph with the indexed production path.
+  if(target<=1000){
+   assert.equal(roadGraph.visibleTravelRoads(chainMap).length,oldConnectedCount());
+   roadReport.push({royalEdges:target,queries:target-1,
+    oldBfsMedianMs:medianMs(oldConnectedCount,3),
+    indexedMedianMs:medianMs(()=>roadGraph.visibleTravelRoads(chainMap),3)});
+  }else{
+   assert.equal(roadGraph.visibleTravelRoads(chainMap).length,0);
+   roadReport.push({royalEdges:target,queries:target-1,oldBfsMedianMs:null,
+    indexedMedianMs:medianMs(()=>roadGraph.visibleTravelRoads(chainMap),3)});
+  }
   const localBytes=bytes(localStorage.getItem(p.RUN_STORAGE_KEY));
   const payload=c.localPayload();
   const profileJson=JSON.stringify({...payload,schemaVersion:1});
@@ -124,7 +161,7 @@ function medianMs(fn,count=5){
  const replay=()=>{for(let i=1;i<=moves.length;i++){const e=new ClassicChessEngine();for(let j=0;j<i;j++)apply(e,moves[j]);}};
  const incremental=()=>{const e=new ClassicChessEngine();for(const uci of moves)apply(e,uci);assert.equal(e.fen(),seed.fen());};
  const replayMs=medianMs(replay,3),incrementalMs=medianMs(incremental,3);
- console.log('SAVE_GROWTH_AUDIT '+JSON.stringify({profileLimit,chunkLimit,codecLimits,codecChecks:'exact roundtrip and malformed/oversized rejection passed',report,ownershipReport,
+ console.log('SAVE_GROWTH_AUDIT '+JSON.stringify({profileLimit,chunkLimit,codecLimits,codecChecks:'exact roundtrip and malformed/oversized rejection passed',report,ownershipReport,roadReport,
   replay:{plies:moves.length,oldEngineMoveCalls:moves.length*(moves.length+1)/2,
    incrementalEngineMoveCalls:moves.length,replayMs,incrementalMs},
   limitations:'synthetic route-only cells; no fog/roads/hero match history; gzip sizes exclude protocol metadata and are not accepted by current server; Node runner timings, not mobile browser or end-to-end battle'}));

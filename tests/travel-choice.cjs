@@ -199,6 +199,16 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   const duplicateInside=roadGraph.visibleTravelRoads({...secondRoad,completedRoads:[
     {id:'covered:1',from:'0,0',to:'1,0',bend:.4}]});
   assert.equal(duplicateInside.length,0,'a completed road does not duplicate covered owned paving');
+  const graphFixture={...secondRoad,royalRoadsVersion:3,centralOwnedCells:['0,0','2,0','3,0','4,0','8,0','9,0'],cells:{'0,0':{annexed:true}},
+    royalRoads:[{from:'0,0',to:'1,0',bend:0},{from:'1,0',to:'2,0',bend:0},
+      {from:'2,0',to:'3,0',bend:0},{from:'3,0',to:'4,0',bend:0},{from:'8,0',to:'9,0',bend:0}],
+    completedRoads:[{id:'covered-through-unowned',from:'0,0',to:'2,0',bend:.4},
+      {id:'covered-repeat',from:'2,0',to:'4,0',bend:.4},
+      {id:'separate-components',from:'4,0',to:'8,0',bend:.4},
+      {id:'unowned-end',from:'1,0',to:'4,0',bend:.4},
+      {id:'reverse-duplicate',from:'8,0',to:'4,0',bend:.5}]};
+  assert.deepStrictEqual(roadGraph.visibleTravelRoads(graphFixture).map(r=>r.id),
+    ['separate-components','unowned-end'],'component index preserves historical BFS through unowned vertices, disconnected components and first-road ordering');
   const dedup=roadGraph.visibleRoyalRoads({...secondRoad,outpostRoads:[
     {id:'old-reverse',from:'2,0',to:'0,0',bend:.5}]});
   assert.equal(dedup.length,secondRoad.royalRoads.length,
