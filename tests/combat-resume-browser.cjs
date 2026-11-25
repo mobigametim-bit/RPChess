@@ -11,7 +11,7 @@ async function exercise(browser, type) {
   const errors = [];
   page.on('pageerror', error => errors.push(String(error.stack || error)));
   try {
-    await page.goto(url, { waitUntil:'networkidle' });
+    await page.goto(url, { waitUntil:'domcontentloaded' });
     await startNewRun(page);
     await page.evaluate(async ({ key, type }) => {
       const { createTravelChoices } = await import('./js/travel-choice-core.mjs');
@@ -58,7 +58,8 @@ async function exercise(browser, type) {
       run:JSON.parse(localStorage.getItem(key)),
       fen:globalThis.RPChessClassicChess.snapshot().fen
     }), runKey);
-    await page.reload({ waitUntil:'networkidle' });
+    await page.reload({ waitUntil:'domcontentloaded' });
+    await page.locator('[data-game-loading]').waitFor({state:'hidden',timeout:60000});
     await page.locator('[data-continue-run]').click();await page.locator('[data-journey-choice-modal]:not([hidden]) [data-journey-continue]').click();
     await page.locator('[data-classic-screen]:not([hidden])').waitFor();
     try {
@@ -121,7 +122,8 @@ async function exercise(browser, type) {
         return {ok:true};
       }, {key:runKey,moves});
       assert(inserted.ok,JSON.stringify(inserted));
-      await page.reload({waitUntil:'networkidle'});
+      await page.reload({waitUntil:'domcontentloaded'});
+    await page.locator('[data-game-loading]').waitFor({state:'hidden',timeout:60000});
       await page.locator('[data-continue-run]').click();await page.locator('[data-journey-choice-modal]:not([hidden]) [data-journey-continue]').click();
       await page.locator('[data-classic-screen]:not([hidden])').waitFor();
     try {
@@ -149,7 +151,8 @@ async function exercise(browser, type) {
         'Named pawn must change its sprite to her individual queen immediately on promotion');
       await page.waitForFunction(key=>
         JSON.parse(localStorage.getItem(key)).currentCombat?.moves.length>=9,runKey,{timeout:8000});
-      await page.reload({waitUntil:'networkidle'});
+      await page.reload({waitUntil:'domcontentloaded'});
+    await page.locator('[data-game-loading]').waitFor({state:'hidden',timeout:60000});
       await page.locator('[data-continue-run]').click();await page.locator('[data-journey-choice-modal]:not([hidden]) [data-journey-continue]').click();
       await page.locator('[data-classic-screen]:not([hidden])').waitFor();
     try {
