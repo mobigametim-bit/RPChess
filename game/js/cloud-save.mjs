@@ -49,9 +49,19 @@ function templateForCharacter(id) {
   return starterById.get(id) || recruitProfile(id) || null;
 }
 
+// Known templates provide static art/copy only. Commander progression is
+// mutable run state, not part of a template. Preserve it in both VK and D1.
+const HERO_PROGRESS_FIELDS = Object.freeze([
+  'threatLevel','threatXp','threatSource','weeklyCommandedWeek',
+  'weeklyBattleStats','weeklyBattleHistory','earnedMastery'
+]);
+function heroProgress(character) {
+  return Object.fromEntries(HERO_PROGRESS_FIELDS.filter(key=>Object.hasOwn(character,key))
+    .map(key=>[key,character[key]]));
+}
 function compactCharacter(character) {
   const template = templateForCharacter(character?.id);
-  if (template) return { id:template.id, status:character?.status || 'healthy' };
+  if (template) return { id:template.id, status:character?.status || 'healthy', ...heroProgress(character) };
   return character && typeof character === 'object' ? { ...character } : null;
 }
 
@@ -61,6 +71,7 @@ function expandCharacter(character) {
   if (!template) return { ...character };
   return {
     ...template,
+    ...heroProgress(character),
     status:character.status || 'healthy',
     isRunKing:Boolean(template.isRunKing)
   };
