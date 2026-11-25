@@ -6,6 +6,7 @@ const assert=require('node:assert/strict');
 const {performance}=require('node:perf_hooks');
 const fs=require('node:fs');
 const {gzipSync,gunzipSync}=require('node:zlib');
+const {pack,unpack}=require('./audit-save-codec.cjs');
 const path=require('node:path');
 const {pathToFileURL}=require('node:url');
 class MemoryStorage{
@@ -27,6 +28,12 @@ function medianMs(fn,count=5){
  const k=await load('game/js/kingdom-map-core.mjs');
  const c=await load('game/js/cloud-save.mjs');
  const {ClassicChessEngine}=await load('game/js/classic-chess-engine.mjs');
+ const {shapeOfSnapshot}=await load('profile-worker/src/index.mjs');
+ // Experimental budgets cover these synthetic fixtures only.
+ const codecLimits={maxDecodedBytes:16*1024*1024,maxEncodedBytes:2*1024*1024};
+ const validVKEnvelope=value=>Boolean(value?.schemaVersion===1&&Number.isSafeInteger(value.revision)&&value.revision>=0&&
+  Number.isFinite(value.updatedAt)&&value.payload&&typeof value.payload==='object'&&!Array.isArray(value.payload)&&
+  shapeOfSnapshot({...value.payload,schemaVersion:1}));
  const worker=fs.readFileSync(path.resolve(__dirname,'../profile-worker/src/index.mjs'),'utf8');
  const profileLimit=Number(worker.match(/const MAX_SAVE_BYTES=(\d+)/)?.[1]);
  const cloudSource=fs.readFileSync(path.resolve(__dirname,'../game/js/cloud-save.mjs'),'utf8');
@@ -61,6 +68,19 @@ function medianMs(fn,count=5){
   const profileGzip=gzipSync(profileJson),vkGzip=gzipSync(envelope);
   assert.equal(gunzipSync(profileGzip).toString('utf8'),profileJson,'lossless profile compression');
   assert.equal(gunzipSync(vkGzip).toString('utf8'),envelope,'lossless VK compression');
+  const packedProfile=pack(profileJson,codecLimits),packedVK=pack(envelope,codecLimits);
+  assert.equal(unpack(packedProfile,codecLimits,shapeOfSnapshot),profileJson,'bounded profile codec exact roundtrip');
+  assert.equal(unpack(packedVK,codecLimits,validVKEnvelope),envelope,'bounded VK codec exact roundtrip');
+  if(target===100){
+   assert.throws(()=>unpack({...packedProfile,codecVersion:2},codecLimits,shapeOfSnapshot));
+   assert.throws(()=>unpack({...packedProfile,sha256:'0'.repeat(64)},codecLimits,shapeOfSnapshot),/checksum/);
+   assert.throws(()=>unpack({...packedProfile,data:packedProfile.data.slice(0,-4)},codecLimits,shapeOfSnapshot));
+   assert.throws(()=>unpack({...packedProfile,decodedBytes:32},codecLimits,shapeOfSnapshot),'forged short length must stop inflate');
+   assert.throws(()=>unpack(packedProfile,{...codecLimits,maxDecodedBytes:packedProfile.decodedBytes-1},shapeOfSnapshot));
+   assert.throws(()=>unpack(packedProfile,{...codecLimits,maxEncodedBytes:packedProfile.data.length-1},shapeOfSnapshot));
+   assert.throws(()=>unpack(pack('{"schemaVersion":2}',codecLimits),codecLimits,shapeOfSnapshot),/shape/);
+   assert.throws(()=>unpack(pack('not JSON',codecLimits),codecLimits,shapeOfSnapshot),SyntaxError);
+  }
   const gzipProfileBase64Bytes=bytes(profileGzip.toString('base64url'));
   const gzipVkChunks=Math.ceil(bytes(vkGzip.toString('base64url'))/c.CLOUD_CHUNK_BYTES);
   const vkBytes=bytes(c.encodeCloudPayload(envelope));
@@ -68,6 +88,7 @@ function medianMs(fn,count=5){
   report.push({encounters:target,cells:Object.keys(cells).length,localBytes,profileBytes,
    profileFits:profileBytes<=profileLimit,vkChunks,vkFits:vkChunks<=chunkLimit,
    gzipProfileBytes:profileGzip.length,gzipProfileBase64Bytes,gzipVkChunks,
+   codecProfileEnvelopeBytes:bytes(packedProfile),codecVKEnvelopeBytes:bytes(packedVK),
    gzipMedianMs:medianMs(()=>gzipSync(profileJson),3),
    gunzipMedianMs:medianMs(()=>gunzipSync(profileGzip),3),
    readMedianMs:medianMs(()=>p.readRun()),
@@ -88,7 +109,7 @@ function medianMs(fn,count=5){
  const replay=()=>{for(let i=1;i<=moves.length;i++){const e=new ClassicChessEngine();for(let j=0;j<i;j++)apply(e,moves[j]);}};
  const incremental=()=>{const e=new ClassicChessEngine();for(const uci of moves)apply(e,uci);assert.equal(e.fen(),seed.fen());};
  const replayMs=medianMs(replay,3),incrementalMs=medianMs(incremental,3);
- console.log('SAVE_GROWTH_AUDIT '+JSON.stringify({profileLimit,chunkLimit,report,
+ console.log('SAVE_GROWTH_AUDIT '+JSON.stringify({profileLimit,chunkLimit,codecLimits,codecChecks:'exact roundtrip and malformed/oversized rejection passed',report,
   replay:{plies:moves.length,oldEngineMoveCalls:moves.length*(moves.length+1)/2,
    incrementalEngineMoveCalls:moves.length,replayMs,incrementalMs},
   limitations:'synthetic route-only cells; no fog/roads/hero match history; gzip sizes exclude protocol metadata and are not accepted by current server; Node runner timings, not mobile browser or end-to-end battle'}));
