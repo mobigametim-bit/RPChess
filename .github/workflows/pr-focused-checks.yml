@@ -93,6 +93,7 @@ jobs:
         env:
           RPCHESS_BROWSER_TEST: ${{ steps.scope.outputs.browser_tests }}
           RPCHESS_GATE_PREFIX: /RPChess
+          RPCHESS_AUDIT_SAVE_CODEC: '1'
         run: npm run test:browser
 
       - name: Upload defender battle screenshot evidence

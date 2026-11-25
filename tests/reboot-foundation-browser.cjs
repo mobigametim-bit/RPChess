@@ -43,10 +43,46 @@ async function reportStartup(page) {
   });
   console.log('STARTUP_AUDIT '+JSON.stringify(report));
 }
+// Opt-in technical diagnostic: serve the exact isolated source only through
+// Playwright interception. It is never copied into the shipped game.
+async function reportBrowserCodec(page){
+  const fs=require('node:fs'),path=require('node:path');
+  const {pack,unpack}=require('../scripts/audit-save-codec.cjs');
+  const source=fs.readFileSync(path.join(__dirname,'../scripts/audit-save-web-codec.mjs'),'utf8');
+  const moduleUrl=new URL('__audit-save-web-codec.mjs',page.url()).href;
+  const limits={maxDecodedBytes:16*1024*1024,maxEncodedBytes:2*1024*1024};
+  const json=JSON.stringify({schemaVersion:1,run:{playerName:'Шахматы ♟️ 👑',
+    cells:Array.from({length:10000},(_,i)=>({x:i%100,y:Math.floor(i/100),completed:true,receipt:'encounter:'+i}))}});
+  const shape=value=>value?.schemaVersion===1&&Array.isArray(value.run?.cells);
+  await page.route(moduleUrl,route=>route.fulfill({status:200,contentType:'text/javascript',body:source}));
+  try{
+    const result=await page.evaluate(async ({moduleUrl,limits,json,nodeEnvelope})=>{
+      const {supported,packWeb,unpackWeb}=await import(moduleUrl);
+      if(!supported())throw Error('Chromium Web codec unavailable');
+      const shape=value=>value?.schemaVersion===1&&Array.isArray(value.run?.cells);
+      const start=performance.now(),envelope=await packWeb(json,limits),packedAt=performance.now();
+      const restored=await unpackWeb(nodeEnvelope,limits,shape),unpackedAt=performance.now();
+      if(restored!==json||await unpackWeb(envelope,limits,shape)!==json)throw Error('Chromium codec roundtrip mismatch');
+      for(const damaged of [{...envelope,decodedBytes:32},{...envelope,sha256:'0'.repeat(64)}]){
+        let rejected=false;
+        try{await unpackWeb(damaged,limits,shape);}catch{rejected=true;}
+        if(!rejected)throw Error('Chromium accepted malformed codec envelope');
+      }
+      return {envelope,packMs:Math.round(packedAt-start),unpackMs:Math.round(unpackedAt-packedAt)};
+    },{moduleUrl,limits,json,nodeEnvelope:pack(json,limits)});
+    assert.strictEqual(unpack(result.envelope,limits,shape),json,'Chromium -> Node exact roundtrip');
+    console.log('BROWSER_CODEC_AUDIT '+JSON.stringify({decodedBytes:result.envelope.decodedBytes,
+      envelopeBytes:Buffer.byteLength(JSON.stringify(result.envelope)),packMs:result.packMs,unpackMs:result.unpackMs,
+      checks:'both directions exact; corruption and declared size rejected; synthetic fixture, not mobile'}));
+  }finally{await page.unroute(moduleUrl);}
+}
 async function clearState(page,{auditStartup=false}={}) {
   if(auditStartup)await page.addInitScript(()=>performance.setResourceTimingBufferSize(5000));
   await page.goto(url, { waitUntil:auditStartup?'domcontentloaded':'networkidle' });
-  if(auditStartup)await reportStartup(page);
+  if(auditStartup){
+    await reportStartup(page);
+    if(process.env.RPCHESS_AUDIT_SAVE_CODEC==='1')await reportBrowserCodec(page);
+  }
   await page.evaluate(([runKey, settingsKey]) => {
     localStorage.removeItem(runKey);
     localStorage.removeItem(settingsKey);
