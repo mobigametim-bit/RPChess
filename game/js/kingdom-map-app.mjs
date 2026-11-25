@@ -983,22 +983,43 @@ function render(){
  const reuseStatic=staticMapKey===staticKey&&Boolean(
   layers.atlas&&layers.overlay&&layers.details&&layers.fog);
  stopTravelers();
- world.replaceChildren(cells);
+ // Stable viewport: reconcile only changed cell subtrees, preserving live DOM
+ // identity and attached Canvas layers. Candidate cells are still built by the
+ // same renderer; do not reuse animated bursts or rely on a second visual key.
+ const oldCells=Array.from(world.querySelectorAll(':scope > [data-kingdom-cell]'));
+ const newCells=Array.from(cells.children);
+ const sameGrid=Object.values(layers).every(Boolean)&&oldCells.length===newCells.length&&
+  oldCells.every((node,i)=>node.dataset.kingdomCell===newCells[i].dataset.kingdomCell);
+ let reusedCells=0;
+ if(sameGrid){
+  for(let i=0;i<oldCells.length;i++){
+   const before=oldCells[i],after=newCells[i];
+   if(!before.querySelector('.km-resource-bursts,.km-flavor-flyout')&&before.isEqualNode(after)){
+    reusedCells++;
+   }else before.replaceWith(after);
+  }
+  const keepLayers=new Set(Object.values(layers));
+  for(const node of Array.from(world.children)){
+   if(!keepLayers.has(node)&&!node.hasAttribute('data-kingdom-cell'))node.remove();
+  }
+ }else world.replaceChildren(cells);
+ world.dataset.reusedCellCount=String(reusedCells);
+ world.dataset.viewportCellCount=String(newCells.length);
  if(parchment){
   const atlas=layers.atlas||document.createElement('canvas');atlas.className='km-parchment-canvas';
   atlas.dataset.kingdomParchment='';atlas.setAttribute('aria-hidden','true');
-  world.prepend(atlas);
+  if(atlas.parentNode!==world)world.prepend(atlas);
  }
  const overlay=layers.overlay||document.createElement('canvas');overlay.className='km-kingdom-overlay';
  overlay.dataset.kingdomOverlay='';overlay.setAttribute('aria-hidden','true');
- world.append(overlay);
+ if(overlay.parentNode!==world)world.append(overlay);
  // Paper < political tint and both sets of borders < roads/nature < sites.
  // The transparent foreground canvas prevents borders from painting over
  // water, paving, natural landmarks, pieces and resource markers.
  if(parchment){
   const details=layers.details||document.createElement('canvas');details.className='km-parchment-details';
   details.dataset.kingdomTerrainDetails='';details.setAttribute('aria-hidden','true');
-  world.append(details);
+  if(details.parentNode!==world)world.append(details);
   if(!reuseStatic)renderParchment(world.querySelector('.km-parchment-canvas'),
    {seed:map.seed,view,columns:WIDTH,rows:HEIGHT,map,detailCanvas:details});
  }
@@ -1006,12 +1027,12 @@ function render(){
   // One independent, noninteractive animation layer: no run state writes.
   const travelers=layers.travelers||document.createElement('canvas');travelers.className='km-travelers-layer';
   travelers.dataset.kingdomTravelers='';travelers.setAttribute('aria-hidden','true');
-  world.append(travelers);
+  if(travelers.parentNode!==world)world.append(travelers);
   animateTravelers(travelers,{map,view,columns:WIDTH,rows:HEIGHT,parchment});
   if(parchment){
    const fog=layers.fog||document.createElement('canvas');fog.className='km-parchment-fog';
    fog.dataset.kingdomFog='';fog.setAttribute('aria-hidden','true');
-   world.append(fog);
+   if(fog.parentNode!==world)world.append(fog);
    if(!reuseStatic)renderParchmentFog(fog,{view,columns:WIDTH,rows:HEIGHT,map});
   }
  staticMapKey=staticKey;
