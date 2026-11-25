@@ -44,7 +44,14 @@ function medianMs(fn,count=5){
  const map=k.createKingdomMap(run,600,'humans');
  const cells={...map.cells};
  const types=['battle','skirmish','caravan','event','settlement','puzzle'];
- const report=[],ownershipReport=[],roadReport=[],signatureReport=[];
+ const report=[],ownershipReport=[],roadReport=[],signatureReport=[],richSaveReport=[];
+ const historyEngine=new ClassicChessEngine(),historyMoves=[];
+ while(historyMoves.length<80&&!historyEngine.status().over){
+  const legal=historyEngine.legalMoves();if(!legal.length)break;
+  const m=legal[(historyMoves.length*73+17)%legal.length];
+  assert(historyEngine.move(m.from,m.uciTo||m.to,m.promotion||null).ok);
+  historyMoves.push({uci:[m.from,m.uciTo||m.to,m.promotion||''].join(''),grade:null});
+ }
  let n=0;
  for(const target of [100,500,1000,5000,10000]){
   for(;n<target;n++){
@@ -160,6 +167,82 @@ function medianMs(fn,count=5){
    gunzipMedianMs:medianMs(()=>gunzipSync(profileGzip),3),
    readMedianMs:medianMs(()=>p.readRun()),
    writeMedianMs:medianMs(()=>p.writeRun(sample,null,1000+target))});
+  // Separate enriched synthetic snapshot; not a replay of a real player's
+  // campaign. Keep the original baseline untouched for comparability.
+  const richCells={...sample.kingdomMap.cells},completedRoads=[],calendarActions=[],
+   productionClaims=[],uniqueFirstConquests=[],battleConqueredCells=[];
+  let previousId=null;
+  for(let i=0;i<target;i++){
+   const x=i%100+1,y=Math.floor(i/100)+1,id=k.keyOf(x,y),cell=richCells[id],choice=cell.selectedEncounter;
+   // Obtain the exact canonical single-edge geometry without O(n^2) copying
+   // of an ever-growing receipt array while constructing this fixture.
+   const linked=k.linkCompletedRoad({...map,lastCompletedRouteCell:previousId,completedRoads:[]},id);
+   if(linked.completedRoads.length)completedRoads.push(linked.completedRoads[0]);
+   previousId=id;calendarActions.push('complete:'+id+':1:success');
+   if(i%5===0){
+    const fogId=k.keyOf(x,-y);
+    richCells[fogId]={status:'revealed',explored:false,annexed:false,biome:'plains',
+     selectedEncounter:k.randomEncounter({...run,kingdomMap:map,journeyStep:i},
+      {x,y:-y},600,{type:'event',biome:'plains',landmark:null,raceTag:'humans'})};
+   }
+   if(['battle','skirmish','caravan'].includes(choice.type)){
+    const enemyPower=600,divisor={battle:200,skirmish:400,caravan:300}[choice.type];
+    uniqueFirstConquests.push({encounterId:choice.id,type:choice.type,enemyPower,
+     bonusLands:choice.type==='battle'?0:Math.floor(enemyPower/divisor)});
+    if(choice.type==='battle')battleConqueredCells.push(id);
+   }
+   if(i%12===0&&choice.type==='battle'){
+    const item=k.productionFor(sample.kingdomMap,id,choice.type,2);
+    if(item)richCells[id]={...cell,production:item,respawnReady:item.kind==='battle'};
+   }
+   if(i%12===3&&choice.type==='event'){
+    const item=k.productionFor(sample.kingdomMap,id,choice.type,2);
+    if(item){richCells[id]={...cell,annexed:true};productionClaims.push(item.id);}
+   }
+  }
+  const historyCount=Math.min(20,Math.ceil(target/100)),receipts=[];
+  let named=0;
+  const roster=run.roster.map(hero=>{
+   if(hero.isRunKing||named>=3)return hero;
+   named++;
+   const history=Array.from({length:historyCount},(_,i)=>{
+    const receiptId=[run.id,'weekly-battle',i+1,'1,1',hero.id].join(':');
+    receipts.push(receiptId);
+    return {receiptId,week:i+1,cellId:'1,1',enemyLevel:4,heroLevel:hero.threatLevel,
+     result:'draw',moves:historyMoves,gold:0,mastery:0};
+   });
+   return {...hero,weeklyCommandedWeek:historyCount,
+    weeklyBattleStats:{wins:0,draws:historyCount,losses:0,highestDefeatedThreat:0},
+    weeklyBattleHistory:history};
+  });
+  const richMap={...sample.kingdomMap,cells:richCells,day:Math.max(target+1,historyCount*7+1),
+   completedRoads,lastCompletedRouteCell:previousId,calendarActions,productionClaims,
+   uniqueFirstConquests,creditedBattleEncounterIds:uniqueFirstConquests.map(c=>c.encounterId),battleConqueredCells};
+  const rich={...sample,kingdomMap:richMap,roster,weeklyDefenders:{active:null,receipts}};
+  assert(p.isValidRun(rich),'enriched fixture passes production run validation');
+  const richStore=new MemoryStorage();
+  p.writeRun(rich,richStore,1000+target);
+  const restored=p.readRun(richStore);
+  assert.deepEqual(restored.kingdomMap,richMap,'local persistence preserves enriched map');
+  const compactRun=c.compactRun(restored),expanded=c.expandRun(compactRun);
+  for(const hero of roster.filter(h=>h.weeklyBattleHistory?.length)){
+   assert.deepEqual(restored.roster.find(h=>h.id===hero.id).weeklyBattleHistory,hero.weeklyBattleHistory);
+   assert.deepEqual(expanded.roster.find(h=>h.id===hero.id).weeklyBattleHistory,hero.weeklyBattleHistory);
+  }
+  const richPayload={...payload,run:compactRun};
+  const richProfile=JSON.stringify({...richPayload,schemaVersion:1});
+  const richVK=JSON.stringify({schemaVersion:1,revision:1,updatedAt:1000+target,payload:richPayload});
+  const packedRich=pack(richProfile,codecLimits),packedRichVK=pack(richVK,codecLimits);
+  assert.equal(unpack(packedRich,codecLimits,shapeOfSnapshot),richProfile);
+  assert.equal(unpack(packedRichVK,codecLimits,validVKEnvelope),richVK);
+  richSaveReport.push({encounters:target,cells:Object.keys(richCells).length,roads:completedRoads.length,
+   historyEntries:receipts.length,historyPlies:receipts.length*historyMoves.length,productionClaims:productionClaims.length,
+   localBytes:bytes(richStore.getItem(p.RUN_STORAGE_KEY)),profileBytes:bytes(richProfile),
+   codecProfileEnvelopeBytes:bytes(packedRich),codecVKEnvelopeBytes:bytes(packedRichVK),
+   rawVkChunks:Math.ceil(bytes(c.encodeCloudPayload(richVK))/c.CLOUD_CHUNK_BYTES),
+   hypotheticalCodecVkChunks:Math.ceil(bytes(packedRichVK)/c.CLOUD_CHUNK_BYTES),
+   readMedianMs:medianMs(()=>p.readRun(richStore),3),
+   writeMedianMs:medianMs(()=>p.writeRun(rich,richStore,1000+target),3)});
  }
  // Isolate the old replay cost from UI, analysis, and storage. Actual legal
  // moves, deterministic selection; record the exact number before game ends.
@@ -176,8 +259,8 @@ function medianMs(fn,count=5){
  const replay=()=>{for(let i=1;i<=moves.length;i++){const e=new ClassicChessEngine();for(let j=0;j<i;j++)apply(e,moves[j]);}};
  const incremental=()=>{const e=new ClassicChessEngine();for(const uci of moves)apply(e,uci);assert.equal(e.fen(),seed.fen());};
  const replayMs=medianMs(replay,3),incrementalMs=medianMs(incremental,3);
- console.log('SAVE_GROWTH_AUDIT '+JSON.stringify({profileLimit,chunkLimit,codecLimits,codecChecks:'exact roundtrip and malformed/oversized rejection passed',report,ownershipReport,roadReport,signatureReport,
+ console.log('SAVE_GROWTH_AUDIT '+JSON.stringify({profileLimit,chunkLimit,codecLimits,codecChecks:'exact roundtrip and malformed/oversized rejection passed',report,ownershipReport,roadReport,signatureReport,richSaveReport,
   replay:{plies:moves.length,oldEngineMoveCalls:moves.length*(moves.length+1)/2,
    incrementalEngineMoveCalls:moves.length,replayMs,incrementalMs},
-  limitations:'synthetic route-only cells; no fog/roads/hero match history; gzip sizes exclude protocol metadata and are not accepted by current server; Node runner timings, not mobile browser or end-to-end battle'}));
+  limitations:'baseline route-only; enriched fixture includes synthetic fog, canonical single-edge road geometry, conquest/production receipts and up to 3 hero histories (legal move prefixes, not actual played matches); not full world generation or economy simulation; codec envelopes include metadata but not transport manifest, not accepted by current server; Node timings, not mobile or end-to-end frame time'}));
 })().catch(e=>{console.error(e);process.exitCode=1;});
