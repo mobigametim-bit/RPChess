@@ -239,7 +239,6 @@ body.kingdom-map-active{overflow:hidden}
  .kingdom-map-screen .km-header{min-height:42px}
  .kingdom-map-screen .km-heading{flex-basis:130px;padding:4px 7px}
  .kingdom-map-screen .km-heading small{font-size:7px}
- .kingdom-map-screen .km-heading h1{font-size:19px}
  .km-commander-portrait{width:28px;height:28px}
  .km-power-group small{font-size:7px}
  .km-power-group strong{font-size:10px}

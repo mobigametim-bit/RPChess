@@ -1,7 +1,7 @@
 /* Decorative road walkers: pure route generation with no game-state effects.
  * Travelers are drawn on an independent canvas; they never advance the calendar,
  * trigger an encounter, alter resources or persist animation state. */
-import {visibleRoadSnapshot,eligibleRoadNodes,ownedKeys} from './kingdom-road-network.mjs?v=20261110-roadgrid-v3';
+import {visibleRoadSnapshot,eligibleRoadNodes,ownedKeys} from './kingdom-road-network.mjs?v=20261111-polish-v1';
 import {randomAt} from './kingdom-parchment-core.mjs';
 import {VISUAL} from './kingdom-world-config.mjs';
 import {roadYAt,roadDrift} from './kingdom-geography.mjs';
