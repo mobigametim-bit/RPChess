@@ -94,3 +94,8 @@ Proposed sequence for separate reviewable implementation:
 6. Release only after full restore/reconciliation evidence, Glory equivalence, older-client behavior, interrupted-write recovery and owner playtest. Until then ordinary saves and deployed Worker are unchanged.
 
 Next implementation gate: focused browser CI on the Classic readiness change, then combat ownership audit and the isolated storage fixtures/codec. Do not merge or deploy without the previously agreed acceptance gate.
+
+## Fifth batch — shared combat ownership, first extraction
+Focused run [45611150323](https://github.com/mobigametim-bit/RPChess/actions/runs/45611150323) passed all selected Node and real Chromium regressions after the Classic Chess readiness fix. Full Release Gate remains explicitly owner-gated.
+
+Static audit: Battle and Skirmish already share Classic Chess for board/AI, checkpoint serialization, artifact overlay and piece assets. Both duplicate deterministic encounter seed hashing, Event-vs-Travel override consumption and theme assembly; Caravan duplicates combat move serialization. Extract those identical contracts without changing seeds, IDs, difficulty, army selection, render ownership or persistence schema. Keep distinct army eligibility (Skirmish excludes army recruits), obstacle rules, identity maps, wound/outcome logic and Caravan settlement in their existing owners. Arena and weekly defenders have separate board and worker lifecycles; do not merge them with Classic until their contracts are individually proven. Extend existing event-combat-race test with three assertions for override consumption and cross-mode isolation. No new permanent suite. Pending focused CI for this extraction.

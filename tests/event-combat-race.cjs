@@ -11,6 +11,7 @@ const path=require('path'),assert=require('assert'),{pathToFileURL}=require('url
   globalThis.RPChessEvents={state:{combat:{type:'skirmish',seed:'event-dragonborn-skirmish',stars:6,enemyRaceTag:'dragonborn',enemyRoleRaces:dragonbornRoles,mixedArmy:false,playerColor:'w'}}};
   const skirmishEncounter=skirmish.createEncounter({seed:'fallback-skirmish',stars:1});
   assert.strictEqual(skirmishEncounter.seed,'event-dragonborn-skirmish','active Event combat must override stale Travel encounter state');
+  assert.strictEqual(globalThis.RPChessTravelEncounterOverride,undefined,'Skirmish consumes stale Travel override when Event wins');
   assert.strictEqual(skirmishEncounter.enemyRaceTag,'dragonborn','Skirmish enemy race must match source Event race');
   assert.deepStrictEqual({...skirmishEncounter.enemyRoleRaces},{...dragonbornRoles},'every Skirmish enemy role must use the source Event race');
   for(const pieceType of Object.keys(dragonbornRoles))assert(raceAssets.pieceArtForTheme(skirmishEncounter,pieceType,skirmishEncounter.enemyColor).includes('/dragonborn/'),`Skirmish ${pieceType} board art must use dragonborn assets`);
@@ -23,7 +24,12 @@ const path=require('path'),assert=require('assert'),{pathToFileURL}=require('url
   assert.deepStrictEqual({...battleEncounter.enemyRoleRaces},{...dragonbornRoles},'every Battle enemy role must use the source Event race');
   for(const pieceType of Object.keys(dragonbornRoles))assert(raceAssets.pieceArtForTheme(battleEncounter,pieceType,battleEncounter.enemyColor).includes('/dragonborn/'),`Battle ${pieceType} board art must use dragonborn assets`);
 
+  assert.strictEqual(globalThis.RPChessTravelEncounterOverride,undefined,'Battle consumes stale Travel override when Event wins');
   delete globalThis.RPChessEvents;
+  const next={type:'battle',seed:'pending-battle',stars:4};
+  globalThis.RPChessTravelEncounterOverride=next;
+  skirmish.createEncounter({seed:'unrelated-skirmish',stars:2});
+  assert.strictEqual(globalThis.RPChessTravelEncounterOverride,next,'Unrelated Skirmish must not consume pending Battle override');
   delete globalThis.RPChessTravelEncounterOverride;
   console.log('Event → Skirmish/Battle source race continuity and board art: PASS');
 })().catch((error)=>{delete globalThis.RPChessEvents;delete globalThis.RPChessTravelEncounterOverride;console.error(error.stack||error);process.exitCode=1;});

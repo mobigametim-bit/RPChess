@@ -1,28 +1,17 @@
 import {consumeCapturedRecruits} from './kingdom-army-core.mjs';
 import { MAX_ENCOUNTER_STARS, clampStars, difficultyForStars } from './encounter-difficulty.mjs';
-import { combatTheme, oppositeColor } from './race-assets.mjs';
+import { oppositeColor } from './race-assets.mjs';
+import { hashSeed, takeTravelEncounterOverride, resolveCombatTheme } from './combat-encounter-core.mjs';
 
 const BATTLE_PIECE_COUNT=16,BATTLE_ARMY_POINTS=39,STANDARD_FEN='rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 const TYPE_CODE=Object.freeze({pawn:'p',knight:'n',bishop:'b',rook:'r',queen:'q',king:'k'}),SLOT_CAPACITY=Object.freeze({king:1,queen:1,rook:2,bishop:2,knight:2,pawn:8}),TYPE_LABELS=Object.freeze({pawn:'Пешка',knight:'Конь',bishop:'Слон',rook:'Ладья',queen:'Ферзь',king:'Король'});
 const STANDARD_SLOTS=Object.freeze({w:Object.freeze({rook:Object.freeze(['a1','h1']),knight:Object.freeze(['b1','g1']),bishop:Object.freeze(['c1','f1']),queen:Object.freeze(['d1']),king:Object.freeze(['e1']),pawn:Object.freeze(['a2','b2','c2','d2','e2','f2','g2','h2'])}),b:Object.freeze({rook:Object.freeze(['a8','h8']),knight:Object.freeze(['b8','g8']),bishop:Object.freeze(['c8','f8']),queen:Object.freeze(['d8']),king:Object.freeze(['e8']),pawn:Object.freeze(['a7','b7','c7','d7','e7','f7','g7','h7'])})});
 const BATTLE_TIERS=Object.freeze(Object.fromEntries(Array.from({length:MAX_ENCOUNTER_STARS},(_,i)=>{const stars=i+1,d=difficultyForStars(stars);return[stars,Object.freeze({label:`${d.label} · полевая армия`,elo:d.elo,tactic:d.tactic})];})));
 
-function hashSeed(input){let h=2166136261;for(const c of String(input)){h^=c.charCodeAt(0);h=Math.imul(h,16777619);}return h>>>0;}
-function validEncounterOverride(value,expectedType){return Boolean(value&&value.type===expectedType&&value.seed);}
-function takeTravelEncounterOverride(expectedType){
-  if(typeof globalThis==='undefined')return null;
-  const eventOverride=globalThis.RPChessEvents?.state?.combat;
-  const travelOverride=globalThis.RPChessTravelEncounterOverride;
-  const o=validEncounterOverride(eventOverride,expectedType)?eventOverride:(validEncounterOverride(travelOverride,expectedType)?travelOverride:null);
-  if(!o)return null;
-  try{delete globalThis.RPChessTravelEncounterOverride;}catch{globalThis.RPChessTravelEncounterOverride=null;}
-  return o;
-}
 
 function createBattleEncounter({seed='rpchess-battle',stars=2}={}){
   const o=takeTravelEncounterOverride('battle'),resolvedSeed=o?.seed||seed,s=clampStars(o?.stars??stars),tier=BATTLE_TIERS[s];
-  const generatedTheme=combatTheme({seed:resolvedSeed,raceTag:o?.enemyRaceTag||null,playerColor:o?.playerColor,mixed:Boolean(o?.mixedArmy)});
-  const theme={...generatedTheme,...(o?.enemyRoleRaces?{enemyRoleRaces:o.enemyRoleRaces}:{}),...(o?.enemyRaceTag?{enemyRaceTag:o.enemyRaceTag}:{}),...(o?.sideNarrative?{sideNarrative:o.sideNarrative}:{})};
+  const theme=resolveCombatTheme(resolvedSeed,o);
   return Object.freeze({id:`battle-${hashSeed(resolvedSeed).toString(36)}-${s}`,seed:String(resolvedSeed),stars:s,label:tier.label,aiElo:tier.elo,tactic:tier.tactic,description:s<=3?'Впереди развёрнута полноценная армия.':s<=7?'Опытный противник вывел полный комплект фигур и готов к открытому сражению.':'Перед вами элитная армия. Каждый неточный ход будет наказан.',...theme});
 }
 

@@ -1,6 +1,7 @@
 import { PIECE_VALUES } from './roster-data.mjs';
 import { MAX_ENCOUNTER_STARS, clampStars, difficultyForStars } from './encounter-difficulty.mjs';
-import { combatTheme, oppositeColor } from './race-assets.mjs';
+import { oppositeColor } from './race-assets.mjs';
+import { hashSeed, takeTravelEncounterOverride, resolveCombatTheme } from './combat-encounter-core.mjs';
 import { generateSkirmishObstacles } from './skirmish-obstacles.mjs';
 import { placementForColor, squareColor } from './roster-formation-core.mjs';
 
@@ -8,25 +9,13 @@ const MIN_SKIRMISH_PIECES=2,MAX_SKIRMISH_PIECES=16,MAX_SKIRMISH_POINTS=39,TYPE_C
 const ENCOUNTER_TIERS=Object.freeze(Object.fromEntries(Array.from({length:MAX_ENCOUNTER_STARS},(_,i)=>{const stars=i+1,d=difficultyForStars(stars);const low=Math.max(4,Math.min(39,Math.round(4+stars*2.15))),high=Math.max(low,Math.min(39,low+7));return[stars,Object.freeze({label:`${d.label} · дорожный отряд`,stars,threat:`${low}–${high}`,elo:d.elo,tactic:d.tactic})];})));
 
 function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
-function hashSeed(input){let h=2166136261;for(const c of String(input)){h^=c.charCodeAt(0);h=Math.imul(h,16777619);}return h>>>0;}
 function seededRandom(seed){let v=hashSeed(seed)||1;return()=>{v+=0x6D2B79F5;let t=v;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296;};}
 function shuffle(values,seed){const result=[...values],random=seededRandom(seed);for(let i=result.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[result[i],result[j]]=[result[j],result[i]];}return result;}
 
-function validEncounterOverride(value,expectedType){return Boolean(value&&value.type===expectedType&&value.seed);}
-function takeTravelEncounterOverride(expectedType){
-  if(typeof globalThis==='undefined')return null;
-  const eventOverride=globalThis.RPChessEvents?.state?.combat;
-  const travelOverride=globalThis.RPChessTravelEncounterOverride;
-  const o=validEncounterOverride(eventOverride,expectedType)?eventOverride:(validEncounterOverride(travelOverride,expectedType)?travelOverride:null);
-  if(!o)return null;
-  try{delete globalThis.RPChessTravelEncounterOverride;}catch{globalThis.RPChessTravelEncounterOverride=null;}
-  return o;
-}
 
 function createEncounter({seed='rpchess-skirmish',stars=2}={}){
   const o=takeTravelEncounterOverride('skirmish'),resolvedSeed=o?.seed||seed,s=clampStars(o?.stars??stars),tier=ENCOUNTER_TIERS[s];
-  const generatedTheme=combatTheme({seed:resolvedSeed,raceTag:o?.enemyRaceTag||null,playerColor:o?.playerColor,mixed:Boolean(o?.mixedArmy)});
-  const theme={...generatedTheme,...(o?.enemyRoleRaces?{enemyRoleRaces:o.enemyRoleRaces}:{}),...(o?.enemyRaceTag?{enemyRaceTag:o.enemyRaceTag}:{}),...(o?.sideNarrative?{sideNarrative:o.sideNarrative}:{})};
+  const theme=resolveCombatTheme(resolvedSeed,o);
   return Object.freeze({id:`skirmish-${hashSeed(resolvedSeed).toString(36)}-${s}`,seed:String(resolvedSeed),stars:s,label:tier.label,threat:tier.threat,aiElo:tier.elo,tactic:tier.tactic,description:s<=3?'Небольшая вражеская группа перекрывает путь.':s<=7?'Опытный противник занял выгодную позицию впереди.':'Элитный отряд ждёт столкновения и почти не допускает ошибок.',...theme});
 }
 
