@@ -31,6 +31,16 @@ async function waitForMoveAnimation(page) {
   await page.locator('.classic-piece-flyer').waitFor({ state: 'detached', timeout: 2500 });
 }
 
+async function openReadyMenu(page) {
+  // The live platform/cloud SDK can keep network traffic active after the
+  // menu is usable. Wait for the actual owner and visible loading mask instead.
+  await page.goto(url, { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => Boolean(window.RPChessClassicChess && window.RPChessChessAI), null, { timeout: 60000 });
+  await page.locator('[data-game-loading][data-loader-initialized="1"]').waitFor({ state: 'attached', timeout: 60000 });
+  await page.locator('[data-game-loading]').waitFor({ state: 'hidden', timeout: 60000 });
+  await page.locator('[data-reboot-foundation]:not([hidden])').waitFor();
+}
+
 async function openSetup(page) {
   await page.evaluate(() => window.dispatchEvent(new CustomEvent('rpchess:new-game')));
   await page.locator('[data-game-setup-modal]:not([hidden])').waitFor();
@@ -53,7 +63,7 @@ async function startFromSetup(page, { mode = 'local', elo = '800', color = 'w' }
     const errors = [];
     page.on('pageerror', (error) => errors.push(String(error.stack || error)));
 
-    await page.goto(url, { waitUntil: 'networkidle' });
+    await openReadyMenu(page);
     const menu = page.locator('[data-reboot-foundation]');
     assert.strictEqual(await menu.isVisible(), true, 'menu scene must be visible before starting a game');
     assert.strictEqual(await page.locator('[data-classic-screen]').isHidden(), true, 'Classic Chess scene must start hidden');
@@ -223,7 +233,7 @@ async function startFromSetup(page, { mode = 'local', elo = '800', color = 'w' }
     const mobile = await browser.newPage({ viewport: { width: 844, height: 390 } });
     const mobileErrors = [];
     mobile.on('pageerror', (error) => mobileErrors.push(String(error.stack || error)));
-    await mobile.goto(url, { waitUntil: 'networkidle' });
+    await openReadyMenu(mobile);
     await openSetup(mobile);
     await startFromSetup(mobile, { mode: 'local' });
     // The scene loading mask fades after chess initialization; a raw mouse drag
@@ -245,7 +255,7 @@ async function startFromSetup(page, { mode = 'local', elo = '800', color = 'w' }
     const touchPage=await browser.newPage({viewport:{width:844,height:390},hasTouch:true});
     const touchErrors=[];
     touchPage.on('pageerror',e=>touchErrors.push(String(e.stack||e)));
-    await touchPage.goto(url,{waitUntil:'networkidle'});
+    await openReadyMenu(touchPage);
     await openSetup(touchPage);
     await startFromSetup(touchPage,{mode:'local'});
     // Raw CDP touches bypass Playwright's auto-wait for covering elements.
