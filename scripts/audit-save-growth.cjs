@@ -44,7 +44,7 @@ function medianMs(fn,count=5){
  const map=k.createKingdomMap(run,600,'humans');
  const cells={...map.cells};
  const types=['battle','skirmish','caravan','event','settlement','puzzle'];
- const report=[],ownershipReport=[],roadReport=[];
+ const report=[],ownershipReport=[],roadReport=[],signatureReport=[];
  let n=0;
  for(const target of [100,500,1000,5000,10000]){
   for(;n<target;n++){
@@ -110,6 +110,21 @@ function medianMs(fn,count=5){
    roadReport.push({royalEdges:target,queries:target-1,oldBfsMedianMs:null,
     indexedMedianMs:medianMs(()=>roadGraph.visibleTravelRoads(chainMap),3)});
   }
+  // Measure only signature construction on the same unchanged world, not
+  // Canvas repaint, DOM, or the cost of JSON parsing the save.
+  const signatureMap=sample.kingdomMap,view={x:0,y:0},WIDTH=15,HEIGHT=11;
+  const oldSignature=()=>JSON.stringify([signatureMap.seed,signatureMap.worldGeneratorVersion,
+   view.x,view.y,WIDTH,HEIGHT,signatureMap.royalRoadsSignature,signatureMap.royalRoads,
+   signatureMap.completedRoads,signatureMap.outpostRoads,signatureMap.centralOwnedCells,
+   signatureMap.battleConqueredCells,signatureMap.outposts,signatureMap.battleTerritories,
+   Object.entries(signatureMap.cells).map(([id,cell])=>
+    [id,cell?.explored===true,cell?.annexed===true,cell?.status||''])]);
+  const compactSignature=()=>k.staticMapSignature(signatureMap,view,WIDTH,HEIGHT);
+  const compact=compactSignature();
+  assert.equal(compact,k.staticMapSignature(JSON.parse(JSON.stringify(signatureMap)),view,WIDTH,HEIGHT));
+  signatureReport.push({cells:Object.keys(signatureMap.cells).length,
+   oldBytes:bytes(oldSignature()),compactBytes:bytes(compact),
+   oldMedianMs:medianMs(oldSignature),compactMedianMs:medianMs(compactSignature)});
   const localBytes=bytes(localStorage.getItem(p.RUN_STORAGE_KEY));
   const payload=c.localPayload();
   const profileJson=JSON.stringify({...payload,schemaVersion:1});
@@ -161,7 +176,7 @@ function medianMs(fn,count=5){
  const replay=()=>{for(let i=1;i<=moves.length;i++){const e=new ClassicChessEngine();for(let j=0;j<i;j++)apply(e,moves[j]);}};
  const incremental=()=>{const e=new ClassicChessEngine();for(const uci of moves)apply(e,uci);assert.equal(e.fen(),seed.fen());};
  const replayMs=medianMs(replay,3),incrementalMs=medianMs(incremental,3);
- console.log('SAVE_GROWTH_AUDIT '+JSON.stringify({profileLimit,chunkLimit,codecLimits,codecChecks:'exact roundtrip and malformed/oversized rejection passed',report,ownershipReport,roadReport,
+ console.log('SAVE_GROWTH_AUDIT '+JSON.stringify({profileLimit,chunkLimit,codecLimits,codecChecks:'exact roundtrip and malformed/oversized rejection passed',report,ownershipReport,roadReport,signatureReport,
   replay:{plies:moves.length,oldEngineMoveCalls:moves.length*(moves.length+1)/2,
    incrementalEngineMoveCalls:moves.length,replayMs,incrementalMs},
   limitations:'synthetic route-only cells; no fog/roads/hero match history; gzip sizes exclude protocol metadata and are not accepted by current server; Node runner timings, not mobile browser or end-to-end battle'}));

@@ -409,6 +409,27 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   assert(probes.some(item=>!item.type)&&probes.some(item=>item.type),
     'the map must contain both calm terrain and interesting encounters');
   const startMap=mapCore.createKingdomMap(mapRun,500);
+  const signatureFixture={...startMap,royalRoadsVersion:3,cells:{...startMap.cells,
+    '12,0':{status:'revealed',explored:false,annexed:false}}};
+  const staticKey=(map=signatureFixture,view={x:0,y:0},cols=9,rows=7)=>
+    mapCore.staticMapSignature(map,view,cols,rows);
+  assert.strictEqual(staticKey(),staticKey(JSON.parse(JSON.stringify(signatureFixture))),
+    'equivalent reloaded maps reuse static layers');
+  const changedCell=patch=>({...signatureFixture,cells:{...signatureFixture.cells,
+    '12,0':{...signatureFixture.cells['12,0'],...patch}}});
+  assert.strictEqual(staticKey(),staticKey(changedCell({production:{amount:9}})),
+    'dynamic marker data does not invalidate static layers');
+  for(const changed of [
+    changedCell({explored:true}),changedCell({explored:1}),changedCell({annexed:true}),
+    changedCell({status:'completed'}),changedCell({selectedEncounter:{type:'battle'}}),
+    {...signatureFixture,cells:{...signatureFixture.cells,'13,0':{status:'revealed'}}},
+    {...signatureFixture,castle:{...signatureFixture.castle,x:1}},
+    {...signatureFixture,royalRoadsVersion:2},
+    {...signatureFixture,completedRoads:[{from:'0,0',to:'12,0',bend:.5}]},
+    {...signatureFixture,battleTerritories:[{id:'12,0',cells:['12,0'],colorIndex:3}]}
+  ])assert.notStrictEqual(staticKey(),staticKey(changed),'static world change must invalidate');
+  assert.notStrictEqual(staticKey(),staticKey(signatureFixture,{x:1,y:0}));
+  assert.notStrictEqual(staticKey(),staticKey(signatureFixture,{x:0,y:0},11,7));
   assert(mapCore.validateKingdomMap(startMap));
   assert.strictEqual(startMap.day,1,'the independent calendar begins on Day 1');
    assert.equal(startMap.worldGeneratorVersion,6,'new Kingdom worlds must use shared v6 geography');

@@ -33,7 +33,7 @@ import {runtimeT} from '../localization/runtime-ui.mjs';
 import {createKingdomMap,validateKingdomMap,updatePeak,randomEncounter,enterCell,
  finishEncounter,matchesCombatReceipt,migrateKingdomMap,territoryCapacity,playerTerritoryKeys,castleLevel,revealAround,
  collectProduction,canBuildOutpost,buildOutpost,canBuildSettlement,buildSettlement,
- romanForStars,keyOf,adjacent,shortestKingRoute,acknowledgeReturn,isOwned,borderEdges,weekForDay,advanceDay} from './kingdom-map-core.mjs?v=20261112-province-colors-v1';
+ romanForStars,keyOf,adjacent,shortestKingRoute,acknowledgeReturn,isOwned,borderEdges,weekForDay,advanceDay,staticMapSignature} from './kingdom-map-core.mjs?v=20261112-province-colors-v1';
 
 const COPY={
  ru:{day:'День',shards:'Осколки чести',castle:'Замок',supply:'Припасы',power:'Мощь',points:'Очки присоединения',
@@ -979,12 +979,7 @@ function render(){
   travelers:world.querySelector('.km-travelers-layer'),
   fog:world.querySelector('.km-parchment-fog')
  };
- const staticKey=JSON.stringify([map.seed,map.worldGeneratorVersion,
-  view.x,view.y,WIDTH,HEIGHT,map.royalRoadsSignature,map.royalRoads,
-  map.completedRoads,map.outpostRoads,map.centralOwnedCells,
-  map.battleConqueredCells,map.outposts,map.battleTerritories,
-  Object.entries(map.cells).map(([id,cell])=>
-   [id,cell?.explored===true,cell?.annexed===true,cell?.status||''])]);
+ const staticKey=staticMapSignature(map,view,WIDTH,HEIGHT);
  const reuseStatic=staticMapKey===staticKey&&Boolean(
   layers.atlas&&layers.overlay&&layers.details&&layers.fog);
  stopTravelers();
