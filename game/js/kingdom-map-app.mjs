@@ -31,7 +31,7 @@ import {ATLAS_VIEW} from './kingdom-world-config.mjs?v=20261109-atlas-visual5';
 import {subscribe,currentLanguage,t} from './i18n.mjs';
 import {runtimeT} from '../localization/runtime-ui.mjs';
 import {createKingdomMap,validateKingdomMap,updatePeak,randomEncounter,enterCell,
- finishEncounter,matchesCombatReceipt,migrateKingdomMap,territoryCapacity,playerTerritoryCount,castleLevel,revealAround,
+ finishEncounter,matchesCombatReceipt,migrateKingdomMap,territoryCapacity,playerTerritoryKeys,castleLevel,revealAround,
  collectProduction,canBuildOutpost,buildOutpost,canBuildSettlement,buildSettlement,
  romanForStars,keyOf,adjacent,shortestKingRoute,acknowledgeReturn,isOwned,borderEdges,weekForDay,advanceDay} from './kingdom-map-core.mjs?v=20261112-province-colors-v1';
 
@@ -779,7 +779,8 @@ function render(){
  const gloryLabel=runtimeT(currentLanguage(),'chronicle.glory');
  const headingGlory=screen.querySelector('[data-kingdom-heading-glory]');
  headingGlory.title=gloryLabel;headingGlory.setAttribute('aria-label',gloryLabel);
- screen.querySelector('[data-kingdom-points]').textContent=String(playerTerritoryCount(map));
+ const ownedKeys=playerTerritoryKeys(map);
+ screen.querySelector('[data-kingdom-points]').textContent=String(ownedKeys.size);
  screen.querySelector('[data-kingdom-shards]').textContent=String(honorShards());
  const cells=document.createDocumentFragment(),productions=document.createDocumentFragment();
  const tileUrls=new Map(); // Reuse resolved CSS URLs across the visible grid.
@@ -791,12 +792,12 @@ function render(){
   for(let col=-CENTER_X;col<WIDTH-CENTER_X;col++){
    const point={x:view.x+col,y:view.y+row},id=keyOf(point.x,point.y);
    const cell=map.cells[id],isCastle=id===keyOf(map.castle.x,map.castle.y);
-   const owned=isOwned(map,point);
+   const owned=ownedKeys.has(id);
    const visible=Boolean(isCastle||owned||visibleThroughFog(map,point));
    // A Skirmish is a concealed bandit ambush until the king actually enters.
    const encounterKnown=visible&&!(cell?.selectedEncounter?.type==='skirmish'&&cell.explored!==true);
    const within=adjacent(visualKing,point),here=id===keyOf(visualKing.x,visualKing.y);
-   const edges=owned?borderEdges(map,point):[];
+   const edges=owned?borderEdges(map,point,ownedKeys):[];
    const btn=document.createElement('button');btn.type='button';btn.dataset.kingdomCell=id;
    const light=(point.x+point.y)%2===0;
    btn.setAttribute('role','gridcell');btn.className='km-cell'+

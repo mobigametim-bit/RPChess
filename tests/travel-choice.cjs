@@ -768,6 +768,21 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   assert.deepStrictEqual(new Set(conquered.map.battleConqueredCells),new Set(redA),
     'victory must transfer exactly the originally painted cells');
   assert(redA.every(id=>mapCore.isOwned(conquered.map,id)));
+  // The render-local index must match direct lookup and all four border edges
+  // across old annexed land, disconnected outposts and conquered provinces.
+  for(const fixture of [migrated,outpost.map,conquered.map,reserved]){
+    const owned=mapCore.playerTerritoryKeys(fixture);
+    const points=new Set([...Object.keys(fixture.cells),...owned]);
+    for(const id of [...points]){
+      const [x,y]=id.split(',').map(Number);
+      for(const [dx,dy] of [[0,-1],[1,0],[0,1],[-1,0]])points.add(mapCore.keyOf(x+dx,y+dy));
+    }
+    for(const id of points){
+      const [x,y]=id.split(',').map(Number),p={x,y};
+      assert.strictEqual(owned.has(id),mapCore.isOwned(fixture,p),'indexed ownership parity');
+      assert.deepStrictEqual(mapCore.borderEdges(fixture,p,owned),mapCore.borderEdges(fixture,p),'indexed border parity');
+    }
+  }
   assert.equal(conquered.map.centralOwnedCells.length,startMap.centralOwnedCells.length);
   assert.equal(conquered.map.uniqueFirstConquests[0].bonusLands,0);
   assert.equal(mapCore.playerTerritoryCount(conquered.map),

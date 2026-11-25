@@ -642,10 +642,13 @@ function annexCell(map,point){
  next.annexationPointsSpent++;
  return {ok:true,map:next};
 }
-function borderEdges(map,point){
- if(!isOwned(map,point))return [];
+function borderEdges(map,point,ownedKeys=null){
+ // A render may reuse a snapshot-local ownership index. Other callers keep
+ // the original direct lookup; never cache across mutable map revisions.
+ const owns=id=>ownedKeys?ownedKeys.has(id):isOwned(map,id);
+ if(!owns(keyOf(point.x,point.y)))return [];
  return [['n',0,-1],['e',1,0],['s',0,1],['w',-1,0]]
-  .filter(([_,dx,dy])=>!isOwned(map,keyOf(point.x+dx,point.y+dy)))
+  .filter(([_,dx,dy])=>!owns(keyOf(point.x+dx,point.y+dy)))
   .map(([edge])=>edge);
 }
 export {MAP_VERSION,TYPES,ROMANS,keyOf,isPoint,adjacent,orthogonal,shortestKingRoute,siteLevelForStars,romanForStars,castleLevel,

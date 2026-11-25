@@ -43,7 +43,7 @@ function medianMs(fn,count=5){
  const map=k.createKingdomMap(run,600,'humans');
  const cells={...map.cells};
  const types=['battle','skirmish','caravan','event','settlement','puzzle'];
- const report=[];
+ const report=[],ownershipReport=[];
  let n=0;
  for(const target of [100,500,1000,5000,10000]){
   for(;n<target;n++){
@@ -58,6 +58,21 @@ function medianMs(fn,count=5){
   assert(p.isValidRun(sample),'fixture must pass production validation');
   p.writeRun(sample,null,1000+target);
   assert.equal(p.readRun().kingdomMap.completedNewEncounterCount,target);
+  // Synthetic dense sovereignty fixture, separate from the route-only save
+  // baseline. Include index construction in the measured render operation.
+  const dense={...sample.kingdomMap,centralOwnedCells:Object.keys(cells)};
+  const points=Array.from({length:400},(_,i)=>({x:85+i%20,y:Math.max(0,Math.floor(target/100)-10)+Math.floor(i/20)}));
+  const direct=()=>({count:k.playerTerritoryCount(dense),tiles:points.map(point=>{
+   const owned=k.isOwned(dense,point);
+   return [owned,owned?k.borderEdges(dense,point):[]];
+  })});
+  const indexed=()=>{const keys=k.playerTerritoryKeys(dense);return {count:keys.size,tiles:points.map(point=>{
+   const owned=keys.has(k.keyOf(point.x,point.y));
+   return [owned,owned?k.borderEdges(dense,point,keys):[]];
+  })};};
+  assert.deepStrictEqual(indexed(),direct(),'indexed map ownership and border parity');
+  ownershipReport.push({territories:k.playerTerritoryCount(dense),viewportCells:points.length,
+   directMedianMs:medianMs(direct),indexedMedianMs:medianMs(indexed)});
   const localBytes=bytes(localStorage.getItem(p.RUN_STORAGE_KEY));
   const payload=c.localPayload();
   const profileJson=JSON.stringify({...payload,schemaVersion:1});
@@ -109,7 +124,7 @@ function medianMs(fn,count=5){
  const replay=()=>{for(let i=1;i<=moves.length;i++){const e=new ClassicChessEngine();for(let j=0;j<i;j++)apply(e,moves[j]);}};
  const incremental=()=>{const e=new ClassicChessEngine();for(const uci of moves)apply(e,uci);assert.equal(e.fen(),seed.fen());};
  const replayMs=medianMs(replay,3),incrementalMs=medianMs(incremental,3);
- console.log('SAVE_GROWTH_AUDIT '+JSON.stringify({profileLimit,chunkLimit,codecLimits,codecChecks:'exact roundtrip and malformed/oversized rejection passed',report,
+ console.log('SAVE_GROWTH_AUDIT '+JSON.stringify({profileLimit,chunkLimit,codecLimits,codecChecks:'exact roundtrip and malformed/oversized rejection passed',report,ownershipReport,
   replay:{plies:moves.length,oldEngineMoveCalls:moves.length*(moves.length+1)/2,
    incrementalEngineMoveCalls:moves.length,replayMs,incrementalMs},
   limitations:'synthetic route-only cells; no fog/roads/hero match history; gzip sizes exclude protocol metadata and are not accepted by current server; Node runner timings, not mobile browser or end-to-end battle'}));
