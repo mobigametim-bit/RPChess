@@ -39,3 +39,20 @@ No claim of performance improvement without before/after measurements. Distingui
 - First focused CI 45603045697 on head 520e9f6 passed. Release Gate 45603045853 stopped at owner-acceptance guard, not a failed gameplay test.
 - Added opt-in scripts/audit-save-growth.cjs: production route generation, validation, write/read and cloud payload measurement on synthetic 100/500/1000/5000/10000 completed sites; no real data or network. Reports exact UTF-8 size, D1 limit fit, VK chunk fit and Node read/write median. Also isolates legal chess replay vs incremental engine move cost. These are synthetic fixtures, not real playthroughs or mobile device measurements. Omitted fog, roads, conquests, production receipts and weekly histories, so do not infer a guaranteed encounter threshold. Run from a materialized checkout: node scripts/audit-save-growth.cjs. Focused CI runs the measurement only if the audit script changes.
 - Next: inspect new focused CI and measured results; design preservation-safe save budget mitigation before changing any server limit or format. No production deployment or schema migration.
+
+## Measured baseline and third batch
+Focused run [45605031360](https://github.com/mobigametim-bit/RPChess/actions/runs/45605031360) succeeded on 14872a5b. Existing cloud roundtrip, battle and portrait acceptance passed. Release Gate remains owner-gated.
+
+| Synthetic completed encounters | local bytes | D1 profile bytes | VK chunks | median read/write ms |
+|---:|---:|---:|---:|---:|
+|100|84174|81726|37|0.62 / 1.01|
+|500|393713|391265|174|1.40 / 2.81|
+|1000|781002|778554|347|2.99 / 5.58|
+|5000|3897635|3895187|1732|15.92 / 34.33|
+|10000|7797663|7795215|3465|31.97 / 79.82|
+
+Profile limit 260000 bytes, VK limit 128 chunks. Route-only fixture already fails both budgets by 500 encounters; not a universal real-game threshold. Node memory storage is not browser quota. Replay microbenchmark, 200 legal plies: 20100 move calls / 2003.05 ms vs 200 calls / 17.82 ms. This isolates replay, not end-to-end performance.
+
+TECH-12: UCI bestmove lines have no operation ID. Previously stop/timeout left an old worker alive; a delayed legal bestmove could resolve a newer search. Retire worker on cancellation/timeout/error, initialize fresh on next operation, keep existing legal fallback and normal strength profiles. Extend existing adapter regression with delayed old bestmove that is legal in the new search and a timeout followed by a fresh search.
+
+Save format design: measure gzip/base64url lossless roundtrip before migration. Do not ship a client-only compressed map: unified-board.mjs computes Glory and territory data from snapshot.run.kingdomMap; profile import and rollback clients expect normal JSON. Any new protocol needs version negotiation, old-reader compatibility, bounded decompression, exact readback, retention of last working snapshot and rollback plan. Compression alone does not make a finite storage budget infinite; investigate segmented persistent storage for truly long journeys. No server/DB mutation in this PR. Updated diagnostic records compression sizes and CPU timings only, with no production encoding changes.
