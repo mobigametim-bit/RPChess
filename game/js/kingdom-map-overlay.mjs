@@ -5,7 +5,7 @@ import {hashString} from './race-assets.mjs';
 import {BATTLE_PROVINCE_HUES} from './kingdom-map-core.mjs?v=20261112-province-colors-v1';
 import {visibleRoadSnapshot,ownedKeys} from './kingdom-road-network.mjs?v=20261111-polish-v1';
 import {drawSandstoneRoad,drawRoadJunction} from './kingdom-road-paving.mjs?v=20261114-corridor-joints-v2';
-import {VISUAL} from './kingdom-world-config.mjs?v=20261113-opaque-terrain-v1';
+import {VISUAL} from './kingdom-world-config.mjs';
 import {visibleThroughFog} from './kingdom-fog-visibility.mjs';
 
 const TILE=PARCHMENT_TILE;

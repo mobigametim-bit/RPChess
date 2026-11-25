@@ -27,7 +27,7 @@ import {drawKingdomOverlay} from './kingdom-map-overlay.mjs?v=20261114-corridor-
 import {animateTravelers,stopTravelers} from './kingdom-traveler-renderer.mjs?v=20261117-mobile-perf-v1';
 import {industrySprite,industrySpriteIndex,industryYield,industryLevel,industryPending,collectIndustry,BUILDING_TYPES} from './kingdom-industry-core.mjs';
 import {worldAt} from './kingdom-world-core.mjs';
-import {ATLAS_VIEW} from './kingdom-world-config.mjs?v=20261109-atlas-visual5';
+import {ATLAS_VIEW} from './kingdom-world-config.mjs';
 import {subscribe,currentLanguage,t} from './i18n.mjs';
 import {runtimeT} from '../localization/runtime-ui.mjs';
 import {createKingdomMap,validateKingdomMap,updatePeak,randomEncounter,enterCell,
