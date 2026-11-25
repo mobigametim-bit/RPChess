@@ -30,6 +30,9 @@ function medianMs(fn,count=5){
  const c=await load('game/js/cloud-save.mjs');
  const {ClassicChessEngine}=await load('game/js/classic-chess-engine.mjs');
  const {shapeOfSnapshot}=await load('profile-worker/src/index.mjs');
+ const {supported,packWeb,unpackWeb}=await load('scripts/audit-save-web-codec.mjs');
+ assert(supported(),'CI Web compression APIs must be available');
+ const webCodecReport=[];
  // Experimental budgets cover these synthetic fixtures only.
  const codecLimits={maxDecodedBytes:16*1024*1024,maxEncodedBytes:2*1024*1024};
  const validVKEnvelope=value=>Boolean(value?.schemaVersion===1&&Number.isSafeInteger(value.revision)&&value.revision>=0&&
@@ -235,6 +238,30 @@ function medianMs(fn,count=5){
   const packedRich=pack(richProfile,codecLimits),packedRichVK=pack(richVK,codecLimits);
   assert.equal(unpack(packedRich,codecLimits,shapeOfSnapshot),richProfile);
   assert.equal(unpack(packedRichVK,codecLimits,validVKEnvelope),richVK);
+  // Interoperate with the Node reference codec in both directions, using
+  // the actual Web Streams and SubtleCrypto APIs in the Node 22 runner.
+  const webStart=performance.now(),webPacked=await packWeb(richProfile,codecLimits);
+  const webPackMs=performance.now()-webStart,webReadStart=performance.now();
+  assert.equal(await unpackWeb(packedRich,codecLimits,shapeOfSnapshot),richProfile);
+  const webUnpackMs=performance.now()-webReadStart;
+  assert.equal(unpack(webPacked,codecLimits,shapeOfSnapshot),richProfile);
+  assert.equal(await unpackWeb(webPacked,codecLimits,shapeOfSnapshot),richProfile);
+  if(target===100){
+   assert.equal(await unpackWeb(await packWeb(richVK,codecLimits),codecLimits,validVKEnvelope),richVK);
+   const unicode=JSON.stringify({schemaVersion:1,run:{playerName:'Шахматы ♟️ 👑'}});
+   assert.equal(await unpackWeb(pack(unicode,codecLimits),codecLimits,shapeOfSnapshot),unicode);
+   assert.equal(unpack(await packWeb(unicode,codecLimits),codecLimits,shapeOfSnapshot),unicode);
+   await assert.rejects(unpackWeb({...webPacked,codecVersion:2},codecLimits,shapeOfSnapshot));
+   await assert.rejects(unpackWeb({...webPacked,sha256:'0'.repeat(64)},codecLimits,shapeOfSnapshot),/checksum/);
+   await assert.rejects(unpackWeb({...webPacked,data:webPacked.data.slice(0,-4)},codecLimits,shapeOfSnapshot));
+   await assert.rejects(unpackWeb({...webPacked,decodedBytes:32},codecLimits,shapeOfSnapshot),/budget/);
+   await assert.rejects(unpackWeb(webPacked,{...codecLimits,maxDecodedBytes:webPacked.decodedBytes-1},shapeOfSnapshot));
+   await assert.rejects(unpackWeb(webPacked,{...codecLimits,maxEncodedBytes:webPacked.data.length-1},shapeOfSnapshot));
+   await assert.rejects(packWeb(richProfile,{...codecLimits,maxEncodedBytes:32}),/budget/);
+   await assert.rejects(unpackWeb(await packWeb('{"schemaVersion":2}',codecLimits),codecLimits,shapeOfSnapshot),/shape/);
+  }
+  webCodecReport.push({encounters:target,decodedBytes:webPacked.decodedBytes,
+   envelopeBytes:bytes(webPacked),packMs:Number(webPackMs.toFixed(2)),unpackMs:Number(webUnpackMs.toFixed(2))});
   richSaveReport.push({encounters:target,cells:Object.keys(richCells).length,roads:completedRoads.length,
    historyEntries:receipts.length,historyPlies:receipts.length*historyMoves.length,productionClaims:productionClaims.length,
    localBytes:bytes(richStore.getItem(p.RUN_STORAGE_KEY)),profileBytes:bytes(richProfile),
@@ -259,7 +286,7 @@ function medianMs(fn,count=5){
  const replay=()=>{for(let i=1;i<=moves.length;i++){const e=new ClassicChessEngine();for(let j=0;j<i;j++)apply(e,moves[j]);}};
  const incremental=()=>{const e=new ClassicChessEngine();for(const uci of moves)apply(e,uci);assert.equal(e.fen(),seed.fen());};
  const replayMs=medianMs(replay,3),incrementalMs=medianMs(incremental,3);
- console.log('SAVE_GROWTH_AUDIT '+JSON.stringify({profileLimit,chunkLimit,codecLimits,codecChecks:'exact roundtrip and malformed/oversized rejection passed',report,ownershipReport,roadReport,signatureReport,richSaveReport,
+ console.log('SAVE_GROWTH_AUDIT '+JSON.stringify({profileLimit,chunkLimit,codecLimits,codecChecks:'exact roundtrip and malformed/oversized rejection passed',report,ownershipReport,roadReport,signatureReport,richSaveReport,webCodecReport,
   replay:{plies:moves.length,oldEngineMoveCalls:moves.length*(moves.length+1)/2,
    incrementalEngineMoveCalls:moves.length,replayMs,incrementalMs},
   limitations:'baseline route-only; enriched fixture includes synthetic fog, canonical single-edge road geometry, conquest/production receipts and up to 3 hero histories (legal move prefixes, not actual played matches); not full world generation or economy simulation; codec envelopes include metadata but not transport manifest, not accepted by current server; Node timings, not mobile or end-to-end frame time'}));
