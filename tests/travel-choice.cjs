@@ -25,7 +25,7 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   assert(overlaySource.includes("clipRoadSurface(inside)")&&
      overlaySource.includes("for(const [inside,tone] of [[false,'gravel'],[true,'sandstone']]"),
     'paved roads switch from sandstone to gravel exactly at owned-cell boundaries');
-  assert(overlaySource.includes('visibleTravelRoads(map)'),
+  assert(overlaySource.includes('visibleRoadSnapshot(map)')&&overlaySource.includes('roadSnapshot.travel.length'),
     'historic roads remain an independent visible layer');
   const rendererSource=fs.readFileSync(path.join(game,'js/kingdom-traveler-renderer.mjs'),'utf8');
   assert(rendererSource.includes('if(!motion?.moving)continue'),
@@ -193,6 +193,9 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
     'first completed encounter connects to Castle, subsequent one to previous event');
   assert(journeyRoads.every(r=>r.kind==='travel'&&r.bend!==0),
     'restored Journey roads retain curved geometry for gray stone paving');
+  assert.deepStrictEqual(roadGraph.visibleRoadSnapshot(outsideMap),
+    {royal:roadGraph.visibleRoyalRoads(outsideMap),travel:journeyRoads},
+    'shared road snapshot preserves both independent projections');
   const allRoads=walkers.adjacencyOf([...roadGraph.visibleRoyalRoads(outsideMap),...journeyRoads]);
   assert(walkers.findRoute(allRoads,'0,0','4,1')?.length>=2,
     'free travelers may use the outside Journey road network');

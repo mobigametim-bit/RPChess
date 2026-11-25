@@ -220,8 +220,8 @@ function linkNearbyOwnedEvents(map,edges,events){
  }
  return edges;
 }
-function visibleTravelRoads(map){
- const seen=new Set(),roads=[],royal=visibleRoyalRoads(map);
+function visibleTravelRoads(map,royal=visibleRoyalRoads(map)){
+ const seen=new Set(),roads=[];
  const owned=ownedKeys(map),adj=new Map(),direct=new Set(royal.map(r=>pairKey(r.from,r.to)));
  for(const r of royal)for(const [a,b] of [[r.from,r.to],[r.to,r.from]]){
   if(!adj.has(a))adj.set(a,[]);adj.get(a).push(b);
@@ -286,5 +286,10 @@ function visibleRoyalRoads(map){
  }
  return result;
 }
-export {eligibleRoadNodes,nearestNode,castleSector,castleSpokes,ownedKeys,
+// Compute both projections once within the caller's current map snapshot.
+function visibleRoadSnapshot(map){
+ const royal=visibleRoyalRoads(map);
+ return {royal,travel:visibleTravelRoads(map,royal)};
+}
+export {eligibleRoadNodes,nearestNode,castleSector,castleSpokes,ownedKeys,visibleRoadSnapshot,
  cardinalEdge,routeTo,generateRoads,linkNearbyOwnedEvents,synchronizeRoyalRoads,visibleRoyalRoads,visibleTravelRoads,pairKey};

@@ -1,7 +1,7 @@
 /* Decorative road walkers: pure route generation with no game-state effects.
  * Travelers are drawn on an independent canvas; they never advance the calendar,
  * trigger an encounter, alter resources or persist animation state. */
-import {visibleRoyalRoads,visibleTravelRoads,eligibleRoadNodes,ownedKeys} from './kingdom-road-network.mjs?v=20261110-roadgrid-v3';
+import {visibleRoadSnapshot,eligibleRoadNodes,ownedKeys} from './kingdom-road-network.mjs?v=20261110-roadgrid-v3';
 import {randomAt} from './kingdom-parchment-core.mjs';
 import {VISUAL} from './kingdom-world-config.mjs';
 import {roadYAt,roadDrift} from './kingdom-geography.mjs';
@@ -272,7 +272,7 @@ function createTravelers(map,{parchment=true,maxTravelers=MAX_TRAVELERS}={}){
  const castle=map.castle.x+','+map.castle.y;
  const settlements=settlementStops(map),insideSettlements=settlements.filter(id=>owned.has(id));
  const roadEvents=eligibleRoadNodes(map);
- const royal=visibleRoyalRoads(map),travel=visibleTravelRoads(map);
+ const {royal,travel}=visibleRoadSnapshot(map);
  const allRoads=[...royal,...travel];
  const inside=royal.filter(edge=>entirelyOwned(edge,owned));
  const ownedNodes=[...new Set(inside.flatMap(e=>[e.from,e.to]))].sort();
