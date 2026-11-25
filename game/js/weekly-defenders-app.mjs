@@ -523,7 +523,7 @@ async function playMove(uci){
   await adapter.analyzePosition({fen:beforeFen,depth:10});
  if(stamp!==session)return;
  const move=engine.move(uci.slice(0,2),uci.slice(2,4),uci[4]||null);
- if(!move.ok)return;
+ if(!move.ok)throw new Error('Weekly battle engine rejected move');
  const afterFen=engine.fen();
  const after=skip?null:await adapter.analyzePosition({fen:afterFen,depth:10});
  if(stamp!==session)return;
@@ -707,7 +707,7 @@ async function requestSkipToResult(){
    skip=true;paused=false;skipAdNotice='';
   }catch(error){
    console.error('[weekly-defenders] reward checkpoint',error);
-   paused=wasPaused;skipAdNotice='moveFailed';
+   paused=true;skipAdNotice='moveFailed';
   }
  }
  else{paused=wasPaused;skipAdNotice='adFailed';}
@@ -720,7 +720,7 @@ function onAction(event){
  if(act==='close')close();
  if(act==='prev'||act==='next')root.querySelector('[data-wd-carousel]').scrollBy({left:(act==='next'?1:-1)*400,behavior:'smooth'});
  if(act==='start')commitStart(false);
- if(act==='pause'&&mateCeremonyTimer===null){paused=!paused;if(!paused){if(skipAdNotice==='moveFailed')skipAdNotice='';scheduleTurn();}renderBattle();}
+ if(act==='pause'&&mateCeremonyTimer===null){paused=!paused;if(!paused){if(skipAdNotice==='moveFailed'){adapter?.destroy?.();adapter=new ChessAIAdapter();lastAnalysis=null;skipAdNotice='';}scheduleTurn();}renderBattle();}
  if(act==='speed'&&mateCeremonyTimer===null){speed=speed===1?2:speed===2?4:1;renderBattle();}
  if(act==='skip')void requestSkipToResult();
 }
