@@ -100,7 +100,7 @@ class ChessAIAdapter {
       if (this.worker !== worker || this.lifecycleEpoch !== lifecycleEpoch) return;
       const error = new Error(event?.message || 'Stockfish worker error');
       this.degraded = true;
-      this._rejectAll(error);
+      this._resetWorker(error);
     };
   }
 
@@ -207,8 +207,11 @@ class ChessAIAdapter {
     if (!search) return;
     this.activeSearch = null;
     clearTimeout(search.timer);
-    if (this.worker) this._send('stop');
+    // UCI bestmove/info lines carry no request identifier. A stopped
+    // search can still emit its final result after isready for the next
+    // search. Retire that worker instead of accepting a stale result.
     search.resolve(null);
+    this._resetWorker(new Error('Stockfish search cancelled'));
   }
 
   async init() {
@@ -230,7 +233,7 @@ class ChessAIAdapter {
     })().catch((error) => {
       if (lifecycleEpoch === this.lifecycleEpoch) {
         this.degraded = true;
-        if (this.initPromise === initPromise) this.initPromise = null;
+        this._resetWorker(error);
       }
       throw error;
     });
@@ -245,9 +248,9 @@ class ChessAIAdapter {
     const operationEpoch = ++this.operationEpoch;
 
     try {
+      this._stopActiveSearch();
       await this.init();
       if (operationEpoch !== this.operationEpoch) return null;
-      this._stopActiveSearch();
       this._send(`setoption name UCI_Chess960 value ${chess960 ? 'true' : 'false'}`);
       this._send(`setoption name MultiPV value ${profile.multiPv}`);
       this._send('setoption name UCI_LimitStrength value true');
@@ -271,7 +274,7 @@ class ChessAIAdapter {
           if (this.activeSearch !== search) return;
           this.activeSearch = null;
           this.degraded = true;
-          this._send('stop');
+          this._resetWorker(new Error('Stockfish move search timed out'));
           resolve([...legal][0]);
         }, this.timeoutMs);
         this.activeSearch = search;
@@ -280,6 +283,7 @@ class ChessAIAdapter {
     } catch (error) {
       if (operationEpoch !== this.operationEpoch) return null;
       this.degraded = true;
+      this._resetWorker(error);
       return [...legal][0];
     }
   }
@@ -290,9 +294,9 @@ class ChessAIAdapter {
     if(typeof fen!=='string'||!fen)return null;
     const epoch=++this.operationEpoch;
     try{
+      this._stopActiveSearch();
       await this.init();
       if(epoch!==this.operationEpoch)return null;
-      this._stopActiveSearch();
       this._send('setoption name UCI_Chess960 value false');
       this._send('setoption name MultiPV value 2');
       this._send('setoption name UCI_LimitStrength value false');
@@ -303,12 +307,15 @@ class ChessAIAdapter {
         const search={evaluateOnly:true,score:null,second:null,resolve,reject,timer:null};
         search.timer=setTimeout(()=>{
           if(this.activeSearch!==search)return;
-          this.activeSearch=null;this._send('stop');resolve(search.score||null);
+          this.activeSearch=null;
+          this._resetWorker(new Error('Stockfish analysis timed out'));
+          resolve(search.score||null);
         },this.timeoutMs);
         this.activeSearch=search;
         this._send('go depth '+Math.max(5,Math.min(16,Math.floor(depth)||8)));
       });
-    }catch{
+    }catch(error){
+      if(epoch===this.operationEpoch)this._resetWorker(error);
       return null;
     }
   }
@@ -318,15 +325,19 @@ class ChessAIAdapter {
     this._stopActiveSearch();
   }
 
-  destroy() {
-    this.operationEpoch += 1;
+  _resetWorker(error) {
     this.lifecycleEpoch += 1;
     const worker = this.worker;
     this.worker = null;
     this.initialized = false;
     this.initPromise = null;
-    this._rejectAll(new Error('Stockfish adapter destroyed'));
+    this._rejectAll(error);
     worker?.terminate?.();
+  }
+
+  destroy() {
+    this.operationEpoch += 1;
+    this._resetWorker(new Error('Stockfish adapter destroyed'));
   }
 
   snapshot() {
