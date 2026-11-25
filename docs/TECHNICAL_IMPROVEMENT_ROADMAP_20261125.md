@@ -56,3 +56,41 @@ Profile limit 260000 bytes, VK limit 128 chunks. Route-only fixture already fail
 TECH-12: UCI bestmove lines have no operation ID. Previously stop/timeout left an old worker alive; a delayed legal bestmove could resolve a newer search. Retire worker on cancellation/timeout/error, initialize fresh on next operation, keep existing legal fallback and normal strength profiles. Extend existing adapter regression with delayed old bestmove that is legal in the new search and a timeout followed by a fresh search.
 
 Save format design: measure gzip/base64url lossless roundtrip before migration. Do not ship a client-only compressed map: unified-board.mjs computes Glory and territory data from snapshot.run.kingdomMap; profile import and rollback clients expect normal JSON. Any new protocol needs version negotiation, old-reader compatibility, bounded decompression, exact readback, retention of last working snapshot and rollback plan. Compression alone does not make a finite storage budget infinite; investigate segmented persistent storage for truly long journeys. No server/DB mutation in this PR. Updated diagnostic records compression sizes and CPU timings only, with no production encoding changes.
+
+
+## Fourth batch — focused CI recovery and save design (2026-11-25)
+
+Evidence on head 7cdbfedb: [focused run 45607447046](https://github.com/mobigametim-bit/RPChess/actions/runs/45607447046) passed the build, audit, all selected Node tests (including the late-bestmove/timeout adapter contract), Arena browser and Battle browser. Classic Chess stopped at the initial page.goto(networkidle) timeout (tests/classic-chess-browser.cjs:56); later browser suites did not run. This is evidence of navigation timeout, not proof of a gameplay regression or of full browser correctness. [Release Gate 45607446928](https://github.com/mobigametim-bit/RPChess/actions/runs/45607446928) stopped at the explicit owner-acceptance guard before running tests.
+
+Commit 8ee25a5b replaces all three Classic Chess page navigation waits (desktop, mouse mobile, touch mobile) with DOMContentLoaded, initialized Classic/AI owners, initialized loader and hidden mask, and visible menu. Existing gameplay assertions remain unchanged. Recheck focused CI before proceeding. Static review found similar networkidle waits in Arena, Battle, Skirmish, Skirmish artifact, Cloud Continue, Roster, portrait scenes, Foundation and responsive viewport tests. Do not bulk-replace these without preserving their specific cloud, asset and interaction readiness contracts. Fix further demonstrated failures narrowly.
+
+### Lossless compression evidence
+
+Exact results of SAVE_GROWTH_AUDIT in focused run 45607447046 (bytes, medians in ms):
+| Encounters | Profile JSON | GZIP bytes | GZIP base64url bytes | GZIP VK chunks | GZIP / gunzip ms |
+|---:|---:|---:|---:|---:|---:|
+|100|81726|7141|9522|4|0.82 / 0.26|
+|500|391265|26211|34948|12|3.37 / 0.63|
+|1000|778554|50358|67144|23|6.60 / 1.12|
+|5000|3895187|250163|333551|112|33.26 / 6.98|
+|10000|7795215|500019|666692|223|67.10 / 7.05|
+
+Exact UTF-8 roundtrip succeeded for both profile JSON and VK envelope. Replay rerun: 2000.71 ms vs 18.96 ms / 20100 vs 200 move calls. Synthetic route-only data excludes fog, roads and hero histories; timings are Node CI, not mobile browsers. GZIP sizes exclude protocol metadata. D1's existing 260000-byte application cap applies to ordinary JSON, not compressed transport: a gzip binary size below that cap is not evidence the current server accepts the save. A base64url budget of 260000 would still be exceeded by the 5000 fixture. VK existing 128-chunk budget would fit the compressed 5000 fixture but not 10000; no actual VK quota/transport claim.
+
+### Proposed save architecture — design only; no schema or deployment changes
+
+Verified current contracts:
+- `run-persistence.mjs` synchronously stores the full validated run under a single key; local quota is independent of either cloud budget. Do not make asynchronous storage a drop-in change to this API.
+- `cloud-save.mjs` uses legacy JSON/base64url manifests, alternating slots, checksum and verified readback before switching the active manifest. Unknown encodings are rejected. Replacing that manifest with gzip would break old readers.
+- `profile-client.mjs` PUTs an ordinary snapshot to /v1/profile using a revision; it advances the local marker only after acknowledgment. Server save uses revision CAS. The Worker profile response, legacy VK import, leaderboard refresh and tournament binding all read snapshot_json, and unified-board directly reads the active kingdom map to compute Glory.
+- Never send a truncated active run, omit claimed territory/receipts, or treat a failed cloud write as synced. A stale v1 mirror must not silently override a newer v2 revision.
+
+Proposed sequence for separate reviewable implementation:
+1. Extend synthetic fixtures with actual populated map/fog/roads, production receipts, named hero histories and active combat. Measure real UTF-8 sizes, compression CPU and peak memory on representative mobile browsers, local storage failures and offline recovery. Add a soft budget warning with RU/EN and preserve last acknowledged revision; no automatic pruning.
+2. Prototype a bounded codec in isolation: versioned encoding, decoded length and checksum, fatal UTF-8, streaming byte cap before JSON parse, shape validation, exact roundtrip, malformed/truncated/oversized decode rejection. Choose gzip only when smaller and supported; no production writes. Establish byte/time caps from measurements, not guesswork.
+3. D1: add a versioned capability/endpoint and additive storage (not in-place reinterpretation of snapshot_json); stage immutable chunks scoped by authenticated profile and generation, verify completeness, then publish a manifest/revision using CAS. Keep one logical revision across versions, reject stale writes, and do not return a silently stale v1 run after a v2-only save. Define a client-upgrade response for old readers once v1 can no longer represent the full run. Keep v1 compatibility until explicit migration approval. Preserve a last verified generation and test rollback, interruption, concurrent devices, idempotent retries and garbage collection. Update Glory, tournament binding and legacy import to use the same authoritative decoded state before enabling writes. No schema migration on production without a separately approved rollout.
+4. For local storage, prototype IndexedDB-backed immutable segments with an atomic commit pointer and legacy import. Keep the last usable local state until durable readback and ensure callers do not proceed as if a failed save succeeded. Audit synchronous consumers before integration.
+5. VK: keep the existing manifest readable; compression/segmentation in VK alone is not an unlimited archive. For accounts using D1, retain existing legacy import/rollback behavior and designate one authoritative active run. Never dual-write incompatible active snapshots. Test live VK storage only in approved preview.
+6. Release only after full restore/reconciliation evidence, Glory equivalence, older-client behavior, interrupted-write recovery and owner playtest. Until then ordinary saves and deployed Worker are unchanged.
+
+Next implementation gate: focused browser CI on the Classic readiness change, then combat ownership audit and the isolated storage fixtures/codec. Do not merge or deploy without the previously agreed acceptance gate.
