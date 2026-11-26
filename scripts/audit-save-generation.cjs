@@ -52,19 +52,24 @@ function splitGeneration(envelope,limits){
  validateManifest(manifest,limits);
  return {manifest,chunks:parts.map((data,index)=>({generationId:manifest.generationId,index,data}))};
 }
+// Caller must validate manifest before validating individual chunks.
+function validateChunk(manifest,chunk,i){
+ const expected=Math.min(manifest.chunkBytes,manifest.encodedBytes-i*manifest.chunkBytes);
+ if(!Number.isSafeInteger(i)||i<0||i>=manifest.chunkHashes.length||
+    !chunk||chunk.generationId!==manifest.generationId||chunk.index!==i||
+    typeof chunk.data!=='string'||chunk.data.length!==expected||
+    !ascii(chunk.data)||hash(chunk.data)!==manifest.chunkHashes[i])
+  throw Error('invalid generation chunk '+i);
+}
 function restoreGeneration(manifest,chunks,limits,validateShape){
  validateManifest(manifest,limits);
  if(!Array.isArray(chunks)||chunks.length!==manifest.chunkHashes.length)
   throw Error('incomplete generation');
  const parts=[];
  for(let i=0;i<chunks.length;i++){
-  const chunk=chunks[i],expected=Math.min(manifest.chunkBytes,manifest.encodedBytes-i*manifest.chunkBytes);
-  if(!chunk||chunk.generationId!==manifest.generationId||chunk.index!==i||
-     typeof chunk.data!=='string'||chunk.data.length!==expected||
-     !ascii(chunk.data)||hash(chunk.data)!==manifest.chunkHashes[i])
-   throw Error('invalid generation chunk '+i);
-  parts.push(chunk.data);
+  validateChunk(manifest,chunks[i],i);
+  parts.push(chunks[i].data);
  }
  return unpack({...manifest.codec,data:parts.join('')},limits,validateShape);
 }
-module.exports={splitGeneration,restoreGeneration};
+module.exports={splitGeneration,restoreGeneration,validateManifest,validateChunk};

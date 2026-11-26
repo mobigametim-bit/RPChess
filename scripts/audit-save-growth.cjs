@@ -8,6 +8,7 @@ const fs=require('node:fs');
 const {gzipSync,gunzipSync}=require('node:zlib');
 const {pack,unpack}=require('./audit-save-codec.cjs');
 const {splitGeneration,restoreGeneration}=require('./audit-save-generation.cjs');
+const {MemoryGenerationStore}=require('./audit-save-publication.cjs');
 const path=require('node:path');
 const {pathToFileURL}=require('node:url');
 class MemoryStorage{
@@ -34,6 +35,8 @@ function medianMs(fn,count=5){
  const {supported,packWeb,unpackWeb}=await load('scripts/audit-save-web-codec.mjs');
  assert(supported(),'CI Web compression APIs must be available');
  const webCodecReport=[],generationReport=[];
+ const publicationFixtures=[];
+ let publicationReport=null;
  // Experimental budgets cover these synthetic fixtures only.
  const codecLimits={maxDecodedBytes:16*1024*1024,maxEncodedBytes:2*1024*1024};
  const validVKEnvelope=value=>Boolean(value?.schemaVersion===1&&Number.isSafeInteger(value.revision)&&value.revision>=0&&
@@ -280,6 +283,54 @@ function medianMs(fn,count=5){
    assert.throws(()=>restoreGeneration({...manifest,chunkHashes:manifest.chunkHashes.map(()=> '0'.repeat(64))},chunks,generationLimits,shapeOfSnapshot),/checksum/);
    assert.throws(()=>restoreGeneration(manifest,chunks,{...generationLimits,maxChunks:1},shapeOfSnapshot));
   }
+  if(target<=1000)publicationFixtures.push({manifest,chunks,json:richProfile});
+  if(target===1000){
+   const [first,competing,next]=publicationFixtures;
+   const store=new MemoryGenerationStore(generationLimits,shapeOfSnapshot);
+   const scope='audit-profile-A',otherScope='audit-profile-B';
+   const stage=(account,generation,parts=generation.chunks)=>{
+    store.stageManifest(account,generation.manifest);
+    for(const chunk of parts)store.stageChunk(account,chunk);
+   };
+   const request=(generation,expectedRevision,operationId)=>({generationId:generation.manifest.generationId,expectedRevision,operationId});
+   stage(scope,first);
+   assert.equal(store.publish(scope,request(first,0,'initial')).revision,1);
+   assert.equal(store.read(scope).json,first.json);
+   assert.equal(store.read(otherScope),null,'other account sees no committed data');
+   assert.throws(()=>store.publish(otherScope,request(first,0,'initial')),/unknown generation/);
+   stage(scope,next,next.chunks.slice(0,1));
+   assert.throws(()=>store.publish(scope,request(next,1,'upload-next')),/incomplete/);
+   assert.equal(store.read(scope).json,first.json,'interrupted upload preserves last published data');
+   assert.equal(store.head(scope).revision,1);
+   assert.equal(store.read(scope,2),null,'staged generation is not a committed revision');
+   const damaged={...next.chunks[1],data:'!'+next.chunks[1].data.slice(1)};
+   assert.throws(()=>store.stageChunk(scope,damaged),/chunk/);
+   stage(scope,competing);
+   stage(scope,next,next.chunks.slice(1));
+   store.stageChunk(scope,next.chunks[0]); // identical chunk retry is harmless
+   assert.equal(store.read(scope).json,first.json,'complete staging alone is not publication');
+   const nextRequest=request(next,1,'upload-next');
+   assert.equal(store.publish(scope,nextRequest).revision,2);
+   assert.equal(store.read(scope).json,next.json);
+   assert.equal(store.publish(scope,nextRequest).status,'replayed','lost acknowledgement cannot double-commit');
+   assert.equal(store.publish(scope,request(competing,1,'device-B')).status,'conflict');
+   assert.equal(store.read(scope).json,next.json,'stale writer cannot overwrite latest data');
+   assert.throws(()=>store.publish(scope,request(competing,2,'upload-next')),/operation ID conflict/);
+   assert.equal(store.publish(scope,request(competing,2,'device-B')).revision,3);
+   const lateRetry=store.publish(scope,nextRequest);
+   assert.equal(lateRetry.revision,2);
+   assert.equal(lateRetry.head.revision,3);
+   assert.equal(store.read(scope).json,competing.json,'late retry cannot roll back newer revision');
+   assert.equal(store.read(scope,1).json,first.json,'previous committed generation retained');
+   assert.equal(store.read(scope,2).json,next.json);
+   assert.equal(store.publish(scope,request(competing,3,'same-content')).revision,3);
+   stage(otherScope,first);
+   assert.equal(store.publish(otherScope,request(first,0,'initial')).revision,1);
+   assert.equal(store.read(otherScope).json,first.json);
+   assert.equal(store.read(scope).json,competing.json);
+   publicationReport={checks:'partial upload, corrupt chunk, immutable retry, stale writer, lost acknowledgement, late retry, operation conflict, prior revision, no-op, account isolation',
+    firstRevision:1,nextRevision:2,finalRevision:3,otherAccountRevision:1,scope:'in-memory sequential interleaving only'};
+  }
   generationReport.push({encounters:target,chunks:chunks.length,manifestBytes:bytes(manifest),
    largestChunkBytes:Math.max(...chunks.map(bytes)),totalStoredBytes:bytes(manifest)+chunks.reduce((sum,chunk)=>sum+bytes(chunk),0)});
   richSaveReport.push({encounters:target,cells:Object.keys(richCells).length,roads:completedRoads.length,
@@ -306,7 +357,7 @@ function medianMs(fn,count=5){
  const replay=()=>{for(let i=1;i<=moves.length;i++){const e=new ClassicChessEngine();for(let j=0;j<i;j++)apply(e,moves[j]);}};
  const incremental=()=>{const e=new ClassicChessEngine();for(const uci of moves)apply(e,uci);assert.equal(e.fen(),seed.fen());};
  const replayMs=medianMs(replay,3),incrementalMs=medianMs(incremental,3);
- console.log('SAVE_GROWTH_AUDIT '+JSON.stringify({profileLimit,chunkLimit,codecLimits,codecChecks:'exact roundtrip and malformed/oversized rejection passed',report,ownershipReport,roadReport,signatureReport,richSaveReport,webCodecReport,generationReport,
+ console.log('SAVE_GROWTH_AUDIT '+JSON.stringify({profileLimit,chunkLimit,codecLimits,codecChecks:'exact roundtrip and malformed/oversized rejection passed',report,ownershipReport,roadReport,signatureReport,richSaveReport,webCodecReport,generationReport,publicationReport,
   replay:{plies:moves.length,oldEngineMoveCalls:moves.length*(moves.length+1)/2,
    incrementalEngineMoveCalls:moves.length,replayMs,incrementalMs},
   limitations:'baseline route-only; enriched fixture includes synthetic fog, canonical single-edge road geometry, conquest/production receipts and up to 3 hero histories (legal move prefixes, not actual played matches); not full world generation or economy simulation; codec envelopes include metadata but not transport manifest, not accepted by current server; Node timings, not mobile or end-to-end frame time'}));
