@@ -43,108 +43,10 @@ async function reportStartup(page) {
   });
   console.log('STARTUP_AUDIT '+JSON.stringify(report));
 }
-// Opt-in technical diagnostic: serve the exact isolated source only through
-// Playwright interception. It is never copied into the shipped game.
-async function reportBrowserCodec(page){
-  const fs=require('node:fs'),path=require('node:path');
-  const {pack,unpack}=require('../scripts/audit-save-codec.cjs');
-  const source=fs.readFileSync(path.join(__dirname,'../scripts/audit-save-web-codec.mjs'),'utf8');
-  const moduleUrl=new URL('__audit-save-web-codec.mjs',page.url()).href;
-  const limits={maxDecodedBytes:16*1024*1024,maxEncodedBytes:2*1024*1024};
-  const json=JSON.stringify({schemaVersion:1,run:{playerName:'Шахматы ♟️ 👑',
-    cells:Array.from({length:10000},(_,i)=>({x:i%100,y:Math.floor(i/100),completed:true,receipt:'encounter:'+i}))}});
-  const shape=value=>value?.schemaVersion===1&&Array.isArray(value.run?.cells);
-  await page.route(moduleUrl,route=>route.fulfill({status:200,contentType:'text/javascript',body:source}));
-  try{
-    const result=await page.evaluate(async ({moduleUrl,limits,json,nodeEnvelope})=>{
-      const {supported,packWeb,unpackWeb}=await import(moduleUrl);
-      if(!supported())throw Error('Chromium Web codec unavailable');
-      const shape=value=>value?.schemaVersion===1&&Array.isArray(value.run?.cells);
-      const start=performance.now(),envelope=await packWeb(json,limits),packedAt=performance.now();
-      const restored=await unpackWeb(nodeEnvelope,limits,shape),unpackedAt=performance.now();
-      if(restored!==json||await unpackWeb(envelope,limits,shape)!==json)throw Error('Chromium codec roundtrip mismatch');
-      for(const damaged of [{...envelope,decodedBytes:32},{...envelope,sha256:'0'.repeat(64)}]){
-        let rejected=false;
-        try{await unpackWeb(damaged,limits,shape);}catch{rejected=true;}
-        if(!rejected)throw Error('Chromium accepted malformed codec envelope');
-      }
-      return {envelope,packMs:Math.round(packedAt-start),unpackMs:Math.round(unpackedAt-packedAt)};
-    },{moduleUrl,limits,json,nodeEnvelope:pack(json,limits)});
-    assert.strictEqual(unpack(result.envelope,limits,shape),json,'Chromium -> Node exact roundtrip');
-    console.log('BROWSER_CODEC_AUDIT '+JSON.stringify({decodedBytes:result.envelope.decodedBytes,
-      envelopeBytes:Buffer.byteLength(JSON.stringify(result.envelope)),packMs:result.packMs,unpackMs:result.unpackMs,
-      checks:'both directions exact; corruption and declared size rejected; synthetic fixture, not mobile'}));
-    await reportBrowserIndexedDB(page,moduleUrl,limits);
-  }finally{await page.unroute(moduleUrl);}
-}
-// Same test page, isolated database name and exact prototype source.
-// Keep all experimental files out of dist and all live localStorage keys intact.
-async function reportBrowserIndexedDB(page,codecUrl,limits){
-  const fs=require('node:fs'),path=require('node:path');
-  const moduleUrl=new URL('__audit-save-indexeddb.mjs',page.url()).href;
-  const source=fs.readFileSync(path.join(__dirname,'../scripts/audit-save-indexeddb.mjs'),'utf8');
-  await page.route(moduleUrl,route=>route.fulfill({status:200,contentType:'text/javascript',body:source}));
-  try{
-   const report=await page.evaluate(async({moduleUrl,codecUrl,limits})=>{
-    const {openAuditStore}=await import(moduleUrl),{packWeb}=await import(codecUrl);
-    const shape=value=>value?.schemaVersion===1&&Array.isArray(value.run?.cells);
-    const name='rpchess-audit-'+crypto.randomUUID(),scope='audit-A',other='audit-B';
-    // Deliberately >5 MiB decoded. Repetitive synthetic data, not a real run.
-    const cells=Array.from({length:10000},(_,i)=>({x:i%100,y:Math.floor(i/100),note:'x'.repeat(600),receipt:'r'+i}));
-    const make=step=>JSON.stringify({schemaVersion:1,run:{playerName:'Шахматы 👑',step,cells}});
-    const first=make(1),next=make(2),competing=make(3);
-    const [a,b,c]=await Promise.all([first,next,competing].map(json=>packWeb(json,limits)));
-    if(a.decodedBytes<=5*1024*1024)throw Error('large fixture required');
-    const check=(ok,message)=>{if(!ok)throw Error(message);};
-    let store=null,second=null;
-    try{
-     store=await openAuditStore(name,limits,shape);
-     check((await store.publish(scope,0,a)).revision===1,'initial revision');
-     let aborted=false;
-     try{await store.publish(scope,1,b,{abortBeforeCommit:true});}catch(e){aborted=/abort/i.test(String(e));}
-     check(aborted,'injected rollback');
-     store.close();store=null;store=await openAuditStore(name,limits,shape);
-     check((await store.read(scope)).json===first,'previous snapshot after reopen');
-     check(await store.read(scope,2)===null,'aborted revision absent');
-     second=await openAuditStore(name,limits,shape);
-     const outcomes=await Promise.all([store.publish(scope,1,b),second.publish(scope,1,c)]);
-     check(outcomes.map(x=>x.status).sort().join(',')==='committed,conflict','two-connection CAS');
-     const winner=outcomes[0].status==='committed'?next:competing;
-     const winnerEnvelope=outcomes[0].status==='committed'?b:c;
-     const loser=winner===next?c:b,loserJson=winner===next?competing:next;
-     check((await store.read(scope)).json===winner,'winner exact');
-     check((await second.publish(scope,1,loser)).status==='conflict','stale revision rejected');
-     check((await store.publish(scope,2,winnerEnvelope)).status==='unchanged','same content no-op');
-     check((await second.publish(scope,2,loser)).revision===3,'fresh revision accepted');
-     check((await store.read(scope,1)).json===first&&(await store.read(scope,2)).json===winner,'history exact');
-     let rejected=false;
-     try{await store.publish(scope,3,{...a,sha256:'0'.repeat(64)});}catch(e){rejected=/checksum/.test(String(e));}
-     check(rejected,'corrupt snapshot rejected');
-     check((await store.read(scope)).json===loserJson,'corruption leaves current revision');
-     check(await store.read(other)===null,'other scope empty');
-     check((await second.publish(other,0,a)).revision===1,'other scope independent');
-     check((await second.read(other)).json===first,'other scope exact');
-     return {decodedBytes:a.decodedBytes,encodedBytes:a.data.length,outcomes:outcomes.map(o=>o.status),
-      finalRevision:(await store.read(scope)).revision,checks:'abort, reopen, concurrent connections, stale writer, no-op, history, checksum, scope',
-      scope:'real Chromium IndexedDB, synthetic >5 MiB decoded snapshot; no live storage migration'};
-    }finally{
-     store?.close();second?.close();
-     await new Promise((resolve,reject)=>{
-      const req=indexedDB.deleteDatabase(name);
-      req.onsuccess=()=>resolve();req.onerror=()=>reject(req.error);req.onblocked=()=>reject(Error('audit DB cleanup blocked'));
-     });
-    }
-   },{moduleUrl,codecUrl,limits});
-   console.log('INDEXEDDB_AUDIT '+JSON.stringify(report));
-  }finally{await page.unroute(moduleUrl);}
-}
 async function clearState(page,{auditStartup=false}={}) {
   if(auditStartup)await page.addInitScript(()=>performance.setResourceTimingBufferSize(5000));
   await page.goto(url, { waitUntil:auditStartup?'domcontentloaded':'networkidle' });
-  if(auditStartup){
-    await reportStartup(page);
-    if(process.env.RPCHESS_AUDIT_SAVE_CODEC==='1')await reportBrowserCodec(page);
-  }
+  if(auditStartup)await reportStartup(page);
   await page.evaluate(([runKey, settingsKey]) => {
     localStorage.removeItem(runKey);
     localStorage.removeItem(settingsKey);

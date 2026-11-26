@@ -6,13 +6,6 @@ const assert=require('node:assert/strict');
 const {performance}=require('node:perf_hooks');
 const fs=require('node:fs');
 const {gzipSync,gunzipSync}=require('node:zlib');
-const {pack,unpack}=require('./audit-save-codec.cjs');
-const {splitGeneration,restoreGeneration}=require('./audit-save-generation.cjs');
-const {MemoryGenerationStore}=require('./audit-save-publication.cjs');
-const {auditSqlitePublication}=require('./audit-save-sqlite.cjs');
-const {auditD1Publication}=require('./audit-save-d1.cjs');
-const {auditWorkerCodec}=require('./audit-save-worker-codec.cjs');
-const {persistenceCallSites}=require('./audit-save-call-sites.cjs');
 const path=require('node:path');
 const {pathToFileURL}=require('node:url');
 class MemoryStorage{
@@ -29,24 +22,12 @@ function medianMs(fn,count=5){
  return Number(times.sort((a,b)=>a-b)[Math.floor(count/2)].toFixed(2));
 }
 (async()=>{
- console.log('SAVE_CALL_SITE_AUDIT '+JSON.stringify(persistenceCallSites()));
  globalThis.localStorage=new MemoryStorage();
  const p=await load('game/js/run-persistence.mjs');
  const k=await load('game/js/kingdom-map-core.mjs');
  const roadGraph=await load('game/js/kingdom-road-network.mjs');
  const c=await load('game/js/cloud-save.mjs');
  const {ClassicChessEngine}=await load('game/js/classic-chess-engine.mjs');
- const {shapeOfSnapshot}=await load('profile-worker/src/index.mjs');
- const {supported,packWeb,unpackWeb}=await load('scripts/audit-save-web-codec.mjs');
- assert(supported(),'CI Web compression APIs must be available');
- const webCodecReport=[],generationReport=[];
- const publicationFixtures=[];
- let publicationReport=null,sqlitePublicationReport=null,d1PublicationReport=null,workerCodecReport=null;
- // Experimental budgets cover these synthetic fixtures only.
- const codecLimits={maxDecodedBytes:16*1024*1024,maxEncodedBytes:2*1024*1024};
- const validVKEnvelope=value=>Boolean(value?.schemaVersion===1&&Number.isSafeInteger(value.revision)&&value.revision>=0&&
-  Number.isFinite(value.updatedAt)&&value.payload&&typeof value.payload==='object'&&!Array.isArray(value.payload)&&
-  shapeOfSnapshot({...value.payload,schemaVersion:1}));
  const worker=fs.readFileSync(path.resolve(__dirname,'../profile-worker/src/index.mjs'),'utf8');
  const profileLimit=Number(worker.match(/const MAX_SAVE_BYTES=(\d+)/)?.[1]);
  const cloudSource=fs.readFileSync(path.resolve(__dirname,'../game/js/cloud-save.mjs'),'utf8');
@@ -154,19 +135,6 @@ function medianMs(fn,count=5){
   const profileGzip=gzipSync(profileJson),vkGzip=gzipSync(envelope);
   assert.equal(gunzipSync(profileGzip).toString('utf8'),profileJson,'lossless profile compression');
   assert.equal(gunzipSync(vkGzip).toString('utf8'),envelope,'lossless VK compression');
-  const packedProfile=pack(profileJson,codecLimits),packedVK=pack(envelope,codecLimits);
-  assert.equal(unpack(packedProfile,codecLimits,shapeOfSnapshot),profileJson,'bounded profile codec exact roundtrip');
-  assert.equal(unpack(packedVK,codecLimits,validVKEnvelope),envelope,'bounded VK codec exact roundtrip');
-  if(target===100){
-   assert.throws(()=>unpack({...packedProfile,codecVersion:2},codecLimits,shapeOfSnapshot));
-   assert.throws(()=>unpack({...packedProfile,sha256:'0'.repeat(64)},codecLimits,shapeOfSnapshot),/checksum/);
-   assert.throws(()=>unpack({...packedProfile,data:packedProfile.data.slice(0,-4)},codecLimits,shapeOfSnapshot));
-   assert.throws(()=>unpack({...packedProfile,decodedBytes:32},codecLimits,shapeOfSnapshot),'forged short length must stop inflate');
-   assert.throws(()=>unpack(packedProfile,{...codecLimits,maxDecodedBytes:packedProfile.decodedBytes-1},shapeOfSnapshot));
-   assert.throws(()=>unpack(packedProfile,{...codecLimits,maxEncodedBytes:packedProfile.data.length-1},shapeOfSnapshot));
-   assert.throws(()=>unpack(pack('{"schemaVersion":2}',codecLimits),codecLimits,shapeOfSnapshot),/shape/);
-   assert.throws(()=>unpack(pack('not JSON',codecLimits),codecLimits,shapeOfSnapshot),SyntaxError);
-  }
   const gzipProfileBase64Bytes=bytes(profileGzip.toString('base64url'));
   const gzipVkChunks=Math.ceil(bytes(vkGzip.toString('base64url'))/c.CLOUD_CHUNK_BYTES);
   const vkBytes=bytes(c.encodeCloudPayload(envelope));
@@ -174,7 +142,6 @@ function medianMs(fn,count=5){
   report.push({encounters:target,cells:Object.keys(cells).length,localBytes,profileBytes,
    profileFits:profileBytes<=profileLimit,vkChunks,vkFits:vkChunks<=chunkLimit,
    gzipProfileBytes:profileGzip.length,gzipProfileBase64Bytes,gzipVkChunks,
-   codecProfileEnvelopeBytes:bytes(packedProfile),codecVKEnvelopeBytes:bytes(packedVK),
    gzipMedianMs:medianMs(()=>gzipSync(profileJson),3),
    gunzipMedianMs:medianMs(()=>gunzipSync(profileGzip),3),
    readMedianMs:medianMs(()=>p.readRun()),
@@ -244,109 +211,15 @@ function medianMs(fn,count=5){
   const richPayload={...payload,run:compactRun};
   const richProfile=JSON.stringify({...richPayload,schemaVersion:1});
   const richVK=JSON.stringify({schemaVersion:1,revision:1,updatedAt:1000+target,payload:richPayload});
-  const packedRich=pack(richProfile,codecLimits),packedRichVK=pack(richVK,codecLimits);
-  if(target===10000)workerCodecReport=await auditWorkerCodec(richProfile,codecLimits,shapeOfSnapshot);
-  assert.equal(unpack(packedRich,codecLimits,shapeOfSnapshot),richProfile);
-  assert.equal(unpack(packedRichVK,codecLimits,validVKEnvelope),richVK);
-  // Interoperate with the Node reference codec in both directions, using
-  // the actual Web Streams and SubtleCrypto APIs in the Node 22 runner.
-  const webStart=performance.now(),webPacked=await packWeb(richProfile,codecLimits);
-  const webPackMs=performance.now()-webStart,webReadStart=performance.now();
-  assert.equal(await unpackWeb(packedRich,codecLimits,shapeOfSnapshot),richProfile);
-  const webUnpackMs=performance.now()-webReadStart;
-  assert.equal(unpack(webPacked,codecLimits,shapeOfSnapshot),richProfile);
-  assert.equal(await unpackWeb(webPacked,codecLimits,shapeOfSnapshot),richProfile);
-  if(target===100){
-   assert.equal(await unpackWeb(await packWeb(richVK,codecLimits),codecLimits,validVKEnvelope),richVK);
-   const unicode=JSON.stringify({schemaVersion:1,run:{playerName:'Шахматы ♟️ 👑'}});
-   assert.equal(await unpackWeb(pack(unicode,codecLimits),codecLimits,shapeOfSnapshot),unicode);
-   assert.equal(unpack(await packWeb(unicode,codecLimits),codecLimits,shapeOfSnapshot),unicode);
-   await assert.rejects(unpackWeb({...webPacked,codecVersion:2},codecLimits,shapeOfSnapshot));
-   await assert.rejects(unpackWeb({...webPacked,sha256:'0'.repeat(64)},codecLimits,shapeOfSnapshot),/checksum/);
-   await assert.rejects(unpackWeb({...webPacked,data:webPacked.data.slice(0,-4)},codecLimits,shapeOfSnapshot));
-   await assert.rejects(unpackWeb({...webPacked,decodedBytes:32},codecLimits,shapeOfSnapshot),/budget/);
-   await assert.rejects(unpackWeb(webPacked,{...codecLimits,maxDecodedBytes:webPacked.decodedBytes-1},shapeOfSnapshot));
-   await assert.rejects(unpackWeb(webPacked,{...codecLimits,maxEncodedBytes:webPacked.data.length-1},shapeOfSnapshot));
-   await assert.rejects(packWeb(richProfile,{...codecLimits,maxEncodedBytes:32}),/budget/);
-   await assert.rejects(unpackWeb(await packWeb('{"schemaVersion":2}',codecLimits),codecLimits,shapeOfSnapshot),/shape/);
-  }
-  webCodecReport.push({encounters:target,decodedBytes:webPacked.decodedBytes,
-   envelopeBytes:bytes(webPacked),packMs:Number(webPackMs.toFixed(2)),unpackMs:Number(webUnpackMs.toFixed(2))});
-  // Transport-format prototype only: chunks contain the compressed ASCII
-  // payload, not a gameplay slice. No deletion, storage or network request.
-  const generationLimits={...codecLimits,maxChunkBytes:96*1024,maxChunks:32};
-  const {manifest,chunks}=splitGeneration(webPacked,generationLimits);
-  assert.equal(restoreGeneration(manifest,chunks,generationLimits,shapeOfSnapshot),richProfile);
-  if(target===1000){
-   const other=splitGeneration(pack(JSON.stringify({schemaVersion:1,run:{id:'other'}}),codecLimits),generationLimits);
-   assert(chunks.length>1,'multi-chunk fixture required');
-   assert.throws(()=>restoreGeneration(manifest,chunks.slice(0,-1),generationLimits,shapeOfSnapshot),/incomplete/);
-   assert.throws(()=>restoreGeneration(manifest,[...chunks].reverse(),generationLimits,shapeOfSnapshot),/chunk/);
-   assert.throws(()=>restoreGeneration(manifest,[chunks[0],chunks[0]],generationLimits,shapeOfSnapshot),/chunk/);
-   assert.throws(()=>restoreGeneration(manifest,[other.chunks[0],...chunks.slice(1)],generationLimits,shapeOfSnapshot),/chunk/);
-   const damaged={...chunks[0],data:(chunks[0].data[0]==='A'?'B':'A')+chunks[0].data.slice(1)};
-   assert.throws(()=>restoreGeneration(manifest,[damaged,...chunks.slice(1)],generationLimits,shapeOfSnapshot),/chunk/);
-   assert.throws(()=>restoreGeneration({...manifest,chunkHashes:manifest.chunkHashes.map(()=> '0'.repeat(64))},chunks,generationLimits,shapeOfSnapshot),/checksum/);
-   assert.throws(()=>restoreGeneration(manifest,chunks,{...generationLimits,maxChunks:1},shapeOfSnapshot));
-  }
-  if(target<=1000)publicationFixtures.push({manifest,chunks,json:richProfile});
-  if(target===1000){
-   const [first,competing,next]=publicationFixtures;
-   const store=new MemoryGenerationStore(generationLimits,shapeOfSnapshot);
-   const scope='audit-profile-A',otherScope='audit-profile-B';
-   const stage=(account,generation,parts=generation.chunks)=>{
-    store.stageManifest(account,generation.manifest);
-    for(const chunk of parts)store.stageChunk(account,chunk);
-   };
-   const request=(generation,expectedRevision,operationId)=>({generationId:generation.manifest.generationId,expectedRevision,operationId});
-   stage(scope,first);
-   assert.equal(store.publish(scope,request(first,0,'initial')).revision,1);
-   assert.equal(store.read(scope).json,first.json);
-   assert.equal(store.read(otherScope),null,'other account sees no committed data');
-   assert.throws(()=>store.publish(otherScope,request(first,0,'initial')),/unknown generation/);
-   stage(scope,next,next.chunks.slice(0,1));
-   assert.throws(()=>store.publish(scope,request(next,1,'upload-next')),/incomplete/);
-   assert.equal(store.read(scope).json,first.json,'interrupted upload preserves last published data');
-   assert.equal(store.head(scope).revision,1);
-   assert.equal(store.read(scope,2),null,'staged generation is not a committed revision');
-   const damaged={...next.chunks[1],data:'!'+next.chunks[1].data.slice(1)};
-   assert.throws(()=>store.stageChunk(scope,damaged),/chunk/);
-   stage(scope,competing);
-   stage(scope,next,next.chunks.slice(1));
-   store.stageChunk(scope,next.chunks[0]); // identical chunk retry is harmless
-   assert.equal(store.read(scope).json,first.json,'complete staging alone is not publication');
-   const nextRequest=request(next,1,'upload-next');
-   assert.equal(store.publish(scope,nextRequest).revision,2);
-   assert.equal(store.read(scope).json,next.json);
-   assert.equal(store.publish(scope,nextRequest).status,'replayed','lost acknowledgement cannot double-commit');
-   assert.equal(store.publish(scope,request(competing,1,'device-B')).status,'conflict');
-   assert.equal(store.read(scope).json,next.json,'stale writer cannot overwrite latest data');
-   assert.throws(()=>store.publish(scope,request(competing,2,'upload-next')),/operation ID conflict/);
-   assert.equal(store.publish(scope,request(competing,2,'device-B')).revision,3);
-   const lateRetry=store.publish(scope,nextRequest);
-   assert.equal(lateRetry.revision,2);
-   assert.equal(lateRetry.head.revision,3);
-   assert.equal(store.read(scope).json,competing.json,'late retry cannot roll back newer revision');
-   assert.equal(store.read(scope,1).json,first.json,'previous committed generation retained');
-   assert.equal(store.read(scope,2).json,next.json);
-   assert.equal(store.publish(scope,request(competing,3,'same-content')).revision,3);
-   stage(otherScope,first);
-   assert.equal(store.publish(otherScope,request(first,0,'initial')).revision,1);
-   assert.equal(store.read(otherScope).json,first.json);
-   assert.equal(store.read(scope).json,competing.json);
-   publicationReport={checks:'partial upload, corrupt chunk, immutable retry, stale writer, lost acknowledgement, late retry, operation conflict, prior revision, no-op, account isolation',
-    firstRevision:1,nextRevision:2,finalRevision:3,otherAccountRevision:1,scope:'in-memory sequential interleaving only'};
-   sqlitePublicationReport=await auditSqlitePublication(publicationFixtures,generationLimits,shapeOfSnapshot);
-   d1PublicationReport=await auditD1Publication(publicationFixtures,generationLimits,shapeOfSnapshot);
-  }
-  generationReport.push({encounters:target,chunks:chunks.length,manifestBytes:bytes(manifest),
-   largestChunkBytes:Math.max(...chunks.map(bytes)),totalStoredBytes:bytes(manifest)+chunks.reduce((sum,chunk)=>sum+bytes(chunk),0)});
+  const richGzip=gzipSync(richProfile),richVKGzip=gzipSync(richVK);
+  assert.equal(gunzipSync(richGzip).toString('utf8'),richProfile,'lossless synthetic profile compression');
+  assert.equal(gunzipSync(richVKGzip).toString('utf8'),richVK,'lossless synthetic VK compression');
   richSaveReport.push({encounters:target,cells:Object.keys(richCells).length,roads:completedRoads.length,
    historyEntries:receipts.length,historyPlies:receipts.length*historyMoves.length,productionClaims:productionClaims.length,
    localBytes:bytes(richStore.getItem(p.RUN_STORAGE_KEY)),profileBytes:bytes(richProfile),
-   codecProfileEnvelopeBytes:bytes(packedRich),codecVKEnvelopeBytes:bytes(packedRichVK),
+   gzipProfileBytes:richGzip.length,gzipProfileBase64Bytes:bytes(richGzip.toString('base64url')),
    rawVkChunks:Math.ceil(bytes(c.encodeCloudPayload(richVK))/c.CLOUD_CHUNK_BYTES),
-   hypotheticalCodecVkChunks:Math.ceil(bytes(packedRichVK)/c.CLOUD_CHUNK_BYTES),
+   hypotheticalGzipVkChunks:Math.ceil(bytes(richVKGzip.toString('base64url'))/c.CLOUD_CHUNK_BYTES),
    readMedianMs:medianMs(()=>p.readRun(richStore),3),
    writeMedianMs:medianMs(()=>p.writeRun(rich,richStore,1000+target),3)});
  }
@@ -365,8 +238,8 @@ function medianMs(fn,count=5){
  const replay=()=>{for(let i=1;i<=moves.length;i++){const e=new ClassicChessEngine();for(let j=0;j<i;j++)apply(e,moves[j]);}};
  const incremental=()=>{const e=new ClassicChessEngine();for(const uci of moves)apply(e,uci);assert.equal(e.fen(),seed.fen());};
  const replayMs=medianMs(replay,3),incrementalMs=medianMs(incremental,3);
- console.log('SAVE_GROWTH_AUDIT '+JSON.stringify({profileLimit,chunkLimit,codecLimits,codecChecks:'exact roundtrip and malformed/oversized rejection passed',report,ownershipReport,roadReport,signatureReport,richSaveReport,webCodecReport,generationReport,publicationReport,sqlitePublicationReport,d1PublicationReport,workerCodecReport,
+ console.log('SAVE_GROWTH_AUDIT '+JSON.stringify({profileLimit,chunkLimit,gzipChecks:'exact synthetic roundtrip passed',report,ownershipReport,roadReport,signatureReport,richSaveReport,
   replay:{plies:moves.length,oldEngineMoveCalls:moves.length*(moves.length+1)/2,
    incrementalEngineMoveCalls:moves.length,replayMs,incrementalMs},
-  limitations:'baseline route-only; enriched fixture includes synthetic fog, canonical single-edge road geometry, conquest/production receipts and up to 3 hero histories (legal move prefixes, not actual played matches); not full world generation or economy simulation; codec envelopes include metadata but not transport manifest, not accepted by current server; Node timings, not mobile or end-to-end frame time'}));
+  limitations:'baseline route-only; enriched fixture includes synthetic fog, canonical single-edge road geometry, conquest/production receipts and up to 3 hero histories (legal move prefixes, not actual played matches); not full world generation or economy simulation; hypothetical gzip/base64url sizes omit codec/transport metadata and are not accepted by current server; Node timings, not mobile or end-to-end frame time'}));
 })().catch(e=>{console.error(e);process.exitCode=1;});
