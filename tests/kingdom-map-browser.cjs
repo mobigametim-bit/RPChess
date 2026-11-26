@@ -63,9 +63,19 @@ async function dragKing(page,id){
 // The removed Classic skin must not leak chessboard tile textures into
 // any Kingdom view, regardless of race, save, movement or zoom state.
 async function assertTileImage(page,cellId){
- const css=await page.locator('[data-kingdom-cell="'+cellId+'"]').evaluate(element=>
-   getComputedStyle(element).backgroundImage);
- assert.equal(css,'none','permanent parchment tile '+cellId+' must not show Classic artwork');
+ // A locator can resolve a node just before the scheduled zoom repaint
+ // replaces it. A detached node reports an empty computed style. Query and
+ // read the current connected node in one browser task; do not poll for
+ // the expected value ('none') because that would mask a real art mismatch.
+ const handle=await page.waitForFunction(id=>{
+   const element=document.querySelector('[data-kingdom-cell="'+CSS.escape(id)+'"]');
+   if(!element?.isConnected||!element.getClientRects().length)return false;
+   const style=getComputedStyle(element).backgroundImage;
+   return style||false;
+ },cellId,{timeout:10000});
+ try{
+   assert.equal(await handle.jsonValue(),'none','permanent parchment tile '+cellId+' must not show Classic artwork');
+ }finally{await handle.dispose();}
 }
 
 (async()=>{
