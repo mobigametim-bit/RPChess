@@ -11,6 +11,7 @@ const {splitGeneration,restoreGeneration}=require('./audit-save-generation.cjs')
 const {MemoryGenerationStore}=require('./audit-save-publication.cjs');
 const {auditSqlitePublication}=require('./audit-save-sqlite.cjs');
 const {auditD1Publication}=require('./audit-save-d1.cjs');
+const {auditWorkerCodec}=require('./audit-save-worker-codec.cjs');
 const path=require('node:path');
 const {pathToFileURL}=require('node:url');
 class MemoryStorage{
@@ -38,7 +39,7 @@ function medianMs(fn,count=5){
  assert(supported(),'CI Web compression APIs must be available');
  const webCodecReport=[],generationReport=[];
  const publicationFixtures=[];
- let publicationReport=null,sqlitePublicationReport=null,d1PublicationReport=null;
+ let publicationReport=null,sqlitePublicationReport=null,d1PublicationReport=null,workerCodecReport=null;
  // Experimental budgets cover these synthetic fixtures only.
  const codecLimits={maxDecodedBytes:16*1024*1024,maxEncodedBytes:2*1024*1024};
  const validVKEnvelope=value=>Boolean(value?.schemaVersion===1&&Number.isSafeInteger(value.revision)&&value.revision>=0&&
@@ -242,6 +243,7 @@ function medianMs(fn,count=5){
   const richProfile=JSON.stringify({...richPayload,schemaVersion:1});
   const richVK=JSON.stringify({schemaVersion:1,revision:1,updatedAt:1000+target,payload:richPayload});
   const packedRich=pack(richProfile,codecLimits),packedRichVK=pack(richVK,codecLimits);
+  if(target===10000)workerCodecReport=await auditWorkerCodec(richProfile,codecLimits,shapeOfSnapshot);
   assert.equal(unpack(packedRich,codecLimits,shapeOfSnapshot),richProfile);
   assert.equal(unpack(packedRichVK,codecLimits,validVKEnvelope),richVK);
   // Interoperate with the Node reference codec in both directions, using
@@ -361,7 +363,7 @@ function medianMs(fn,count=5){
  const replay=()=>{for(let i=1;i<=moves.length;i++){const e=new ClassicChessEngine();for(let j=0;j<i;j++)apply(e,moves[j]);}};
  const incremental=()=>{const e=new ClassicChessEngine();for(const uci of moves)apply(e,uci);assert.equal(e.fen(),seed.fen());};
  const replayMs=medianMs(replay,3),incrementalMs=medianMs(incremental,3);
- console.log('SAVE_GROWTH_AUDIT '+JSON.stringify({profileLimit,chunkLimit,codecLimits,codecChecks:'exact roundtrip and malformed/oversized rejection passed',report,ownershipReport,roadReport,signatureReport,richSaveReport,webCodecReport,generationReport,publicationReport,sqlitePublicationReport,d1PublicationReport,
+ console.log('SAVE_GROWTH_AUDIT '+JSON.stringify({profileLimit,chunkLimit,codecLimits,codecChecks:'exact roundtrip and malformed/oversized rejection passed',report,ownershipReport,roadReport,signatureReport,richSaveReport,webCodecReport,generationReport,publicationReport,sqlitePublicationReport,d1PublicationReport,workerCodecReport,
   replay:{plies:moves.length,oldEngineMoveCalls:moves.length*(moves.length+1)/2,
    incrementalEngineMoveCalls:moves.length,replayMs,incrementalMs},
   limitations:'baseline route-only; enriched fixture includes synthetic fog, canonical single-edge road geometry, conquest/production receipts and up to 3 hero histories (legal move prefixes, not actual played matches); not full world generation or economy simulation; codec envelopes include metadata but not transport manifest, not accepted by current server; Node timings, not mobile or end-to-end frame time'}));
