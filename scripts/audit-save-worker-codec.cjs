@@ -24,12 +24,17 @@ async function auditWorkerCodec(json,limits,shape){
  `;
  let mf;
  try{
-  mf=new Miniflare({modules:true,script,compatibilityDate:'2025-01-01'});
+  // Explicit module array and worker list: avoid the deprecated implicit
+  // single-script inference in the locked Miniflare options schema.
+  mf=new Miniflare({workers:[{name:'rpchess-codec-audit',compatibilityDate:'2025-01-01',
+   modules:[{type:'ESModule',path:path.join(__dirname,'audit-codec-entry.mjs'),contents:script}]}]});
   const call=async body=>{
+   const start=performance.now();
    const response=await mf.dispatchFetch('http://localhost/codec-audit',{
     method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...body,limits})
    });
-   return {status:response.status,...await response.json()};
+   const result=await response.json();
+   return {status:response.status,...result,roundTripMs:performance.now()-start};
   };
   const nodeEnvelope=pack(json,limits);
   const decoded=await call({operation:'unpack',envelope:nodeEnvelope});
@@ -50,9 +55,10 @@ async function auditWorkerCodec(json,limits,shape){
    assert.match(failure.error,pattern,name);
   }
   return {decodedBytes:nodeEnvelope.decodedBytes,envelopeBytes:Buffer.byteLength(JSON.stringify(encoded.result)),
-   packMs:Math.round(encoded.elapsedMs*100)/100,unpackMs:Math.round(decoded.elapsedMs*100)/100,
+   packWorkerClockMs:Math.round(encoded.elapsedMs*100)/100,unpackWorkerClockMs:Math.round(decoded.elapsedMs*100)/100,
+   packRoundTripMs:Math.round(encoded.roundTripMs*100)/100,unpackRoundTripMs:Math.round(decoded.roundTripMs*100)/100,
    checks:'Node to workerd, workerd to Node and self roundtrip; checksum, forged length, version, shape rejection',
-   scope:'local workerd; no hosted Worker CPU/memory quota or live profile validation'};
+   scope:'local workerd; Worker clock can be frozen during CPU work; round-trip includes serialization and local transport, not hosted CPU/memory quota or live profile validation'};
  }finally{if(mf)await mf.dispose();}
 }
 module.exports={auditWorkerCodec};

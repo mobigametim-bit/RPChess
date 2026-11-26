@@ -12,6 +12,7 @@ const {MemoryGenerationStore}=require('./audit-save-publication.cjs');
 const {auditSqlitePublication}=require('./audit-save-sqlite.cjs');
 const {auditD1Publication}=require('./audit-save-d1.cjs');
 const {auditWorkerCodec}=require('./audit-save-worker-codec.cjs');
+const {persistenceCallSites}=require('./audit-save-call-sites.cjs');
 const path=require('node:path');
 const {pathToFileURL}=require('node:url');
 class MemoryStorage{
@@ -28,6 +29,7 @@ function medianMs(fn,count=5){
  return Number(times.sort((a,b)=>a-b)[Math.floor(count/2)].toFixed(2));
 }
 (async()=>{
+ console.log('SAVE_CALL_SITE_AUDIT '+JSON.stringify(persistenceCallSites()));
  globalThis.localStorage=new MemoryStorage();
  const p=await load('game/js/run-persistence.mjs');
  const k=await load('game/js/kingdom-map-core.mjs');
