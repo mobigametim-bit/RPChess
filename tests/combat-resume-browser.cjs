@@ -11,7 +11,7 @@ async function exercise(browser, type) {
   const errors = [];
   page.on('pageerror', error => errors.push(String(error.stack || error)));
   try {
-    await page.goto(url, { waitUntil:'networkidle' });
+    await page.goto(url, { waitUntil:'domcontentloaded' });
     await startNewRun(page);
     await page.evaluate(async ({ key, type }) => {
       const { createTravelChoices } = await import('./js/travel-choice-core.mjs');
@@ -56,9 +56,11 @@ async function exercise(browser, type) {
     }, runKey, { timeout:30000 });
     const before = await page.evaluate(key => ({
       run:JSON.parse(localStorage.getItem(key)),
-      fen:globalThis.RPChessClassicChess.snapshot().fen
+      fen:globalThis.RPChessClassicChess.snapshot().fen,
+      log:globalThis.RPChessClassicChess.moveLog
     }), runKey);
-    await page.reload({ waitUntil:'networkidle' });
+    await page.reload({ waitUntil:'domcontentloaded' });
+    await page.locator('[data-game-loading]').waitFor({state:'hidden',timeout:60000});
     await page.locator('[data-continue-run]').click();await page.locator('[data-journey-choice-modal]:not([hidden]) [data-journey-continue]').click();
     await page.locator('[data-classic-screen]:not([hidden])').waitFor();
     try {
@@ -90,21 +92,43 @@ async function exercise(browser, type) {
     assert.strictEqual(after.run.gold, before.run.gold, `${type} reload must not charge mercenaries again`);
     assert.strictEqual(after.artifactModal, false, `${type} reload must not offer an artifact again`);
     assert.deepStrictEqual(after.run.currentCombat, before.run.currentCombat);
-    const namedSprites = await page.evaluate(type => {
+    // Initial formation is not the surviving army: a legal AI reply may
+    // capture a named hero before checkpointing. Derive expected identities
+    // from the pre-reload committed moves, not from the restored artwork.
+    const namedSprites = await page.evaluate(({type,log}) => {
       const owner = type === 'battle' ? globalThis.RPChessBattle : globalThis.RPChessSkirmish;
       const plan = owner.battlePlan;
       const heroes = plan.playerFormation.filter(p => String(p.id || '').startsWith('hero.'));
+      const expected=new Map(heroes.map(hero=>[hero.square,hero.id]));
+      const captured=[];
+      for(const entry of log){
+        const {from,to,capture,castle,rookFrom,rookTo}=entry.move;
+        if(entry.color===plan.playerColor){
+          const id=expected.get(from),rook=castle?expected.get(rookFrom):null;
+          expected.delete(from);
+          if(castle)expected.delete(rookFrom);
+          if(id)expected.set(to,id);
+          if(rook)expected.set(rookTo,rook);
+        }else if(entry.captured){
+          const square=capture||to,id=expected.get(square);
+          if(id){captured.push(id);expected.delete(square);}
+        }
+      }
       const squares = [...document.querySelectorAll('[data-chess-board] [data-square]')];
-      return { owner:globalThis.RPChessClassicChess.combatOwner,
-        heroes:heroes.map(hero=>{
-          const current = squares.find(cell=>cell.dataset.personalizedId===hero.id);
+      return { owner:globalThis.RPChessClassicChess.combatOwner,captured,initialCount:heroes.length,
+        capturedStillRendered:squares.filter(cell=>captured.includes(cell.dataset.personalizedId)).map(cell=>cell.dataset.personalizedId),
+        heroes:[...expected].map(([square,id])=>{
+          const current = squares.find(cell=>cell.dataset.personalizedId===id);
           const img=current?.querySelector('.classic-piece');
-          return {id:hero.id,square:current?.dataset.square,src:img?.getAttribute('src')||''};
+          return {id,expectedSquare:square,square:current?.dataset.square,src:img?.getAttribute('src')||''};
         }) };
-    }, type);
+    }, {type,log:before.log});
     assert.equal(namedSprites.owner,type,'Only the active combat owner may paint this shared chess board');
-    assert(namedSprites.heroes.length>=2 && namedSprites.heroes.every(p=>p.src.includes('/heroes/')&&p.square),
-      `${type} must restore named hero sprites, not generic pieces: `+JSON.stringify(namedSprites));
+    assert(namedSprites.initialCount>=2&&namedSprites.heroes.length>0&&
+      namedSprites.heroes.length+namedSprites.captured.length===namedSprites.initialCount&&
+      namedSprites.capturedStillRendered.length===0&&
+      namedSprites.heroes.every(p=>p.src.includes('/heroes/')&&p.square===p.expectedSquare),
+      `${type} must restore every surviving named hero to its exact square and exclude captured heroes: `+JSON.stringify(namedSprites));
 
     if (type === 'battle') {
       // Reach an actual named pawn promotion by restoring a legal position
@@ -121,7 +145,8 @@ async function exercise(browser, type) {
         return {ok:true};
       }, {key:runKey,moves});
       assert(inserted.ok,JSON.stringify(inserted));
-      await page.reload({waitUntil:'networkidle'});
+      await page.reload({waitUntil:'domcontentloaded'});
+    await page.locator('[data-game-loading]').waitFor({state:'hidden',timeout:60000});
       await page.locator('[data-continue-run]').click();await page.locator('[data-journey-choice-modal]:not([hidden]) [data-journey-continue]').click();
       await page.locator('[data-classic-screen]:not([hidden])').waitFor();
     try {
@@ -149,7 +174,8 @@ async function exercise(browser, type) {
         'Named pawn must change its sprite to her individual queen immediately on promotion');
       await page.waitForFunction(key=>
         JSON.parse(localStorage.getItem(key)).currentCombat?.moves.length>=9,runKey,{timeout:8000});
-      await page.reload({waitUntil:'networkidle'});
+      await page.reload({waitUntil:'domcontentloaded'});
+    await page.locator('[data-game-loading]').waitFor({state:'hidden',timeout:60000});
       await page.locator('[data-continue-run]').click();await page.locator('[data-journey-choice-modal]:not([hidden]) [data-journey-continue]').click();
       await page.locator('[data-classic-screen]:not([hidden])').waitFor();
     try {

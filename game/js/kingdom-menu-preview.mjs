@@ -3,10 +3,10 @@
 import {readRun} from './run-persistence.mjs';
 import {validateKingdomMap,isOwned} from './kingdom-map-core.mjs?v=20261112-province-colors-v1';
 import {kingdomMapSprite,kingdomEncounterSprite} from './kingdom-map-assets.mjs';
-import {PARCHMENT_TILE} from './kingdom-parchment-core.mjs?v=20261111-parchment-png-only-v1';
+import {PARCHMENT_TILE} from './kingdom-parchment-core.mjs';
 import {commanderPieceArt} from './commander-portraits.mjs';
 import {renderParchment,renderParchmentFog,parchmentAssetsSettled,visibleThroughFog} from './kingdom-parchment-app.mjs?v=20261116-pond-river-trail-v4';
-import {drawKingdomOverlay} from './kingdom-map-overlay.mjs?v=20261112-province-colors-v1';
+import {drawKingdomOverlay} from './kingdom-map-overlay.mjs?v=20261114-corridor-joints-v2';
 import {animateTravelers,stopTravelers} from './kingdom-traveler-renderer.mjs?v=20261117-mobile-perf-v1';
 
 const TILE=142,MAX_CANVAS=1900;

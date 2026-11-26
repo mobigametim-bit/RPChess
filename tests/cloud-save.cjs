@@ -101,6 +101,17 @@ class MemoryStorage {
   assert.strictEqual((await platformModule.identity.getUserInfo()).id, 7646007, 'identity adapter must expose VK user info without leaking bridge calls into gameplay');
 
   let run = persistence.createRun({ now:100, playerName:'Cloud Tester' });
+  const trainedId=run.roster[1].id;
+  const mastery={threatLevel:6,threatXp:71,threatSource:'power-roll-v1',weeklyCommandedWeek:4,
+    weeklyBattleStats:{wins:8,draws:2,losses:1,highestDefeatedThreat:7},
+    weeklyBattleHistory:[{receiptId:'mastery-cloud-test',week:4,cellId:'1,0',enemyLevel:7,heroLevel:6,
+      result:'win',moves:[{uci:'e2e4',grade:'good'}],gold:45,mastery:19}]};
+  const {recruitProfile}=await import(pathToFileURL(path.join(root,'game/js/settlement-core.mjs')).href);
+  const recruit=recruitProfile('hero.lady_sorn');
+  assert(recruit,'known recruited hero fixture');
+  const recruited={...recruit,status:'wounded',isRunKing:false,...mastery,threatLevel:5};
+  run={...run,roster:[...run.roster.map(hero=>hero.id===trainedId?{...hero,...mastery}:hero),recruited]};
+  const progression=hero=>Object.fromEntries(Object.keys(mastery).map(key=>[key,hero[key]]));
   run = persistence.writeRun({ ...run, gold:321, supplies:7, journeyStep:4 }, null, 200);
 
   const first = cloudSave.prepareLocalEnvelope({ now:1000 });
@@ -109,6 +120,8 @@ class MemoryStorage {
   assert.strictEqual(first.payload.run.gold, 321);
   assert(first.payload.run.roster.every((entry) => entry.id && entry.status), 'known roster entries must compact to identity/status');
   assert(first.payload.run.roster.every((entry) => !entry.description), 'known roster entries must not duplicate static copy in cloud payload');
+  assert.deepStrictEqual(progression(first.payload.run.roster.find(hero=>hero.id===trainedId)),mastery,'compact snapshot preserves trained starter');
+  assert.deepStrictEqual(progression(first.payload.run.roster.find(hero=>hero.id===recruited.id)),{...mastery,threatLevel:5},'compact snapshot preserves recruited commander');
 
   const sample = 'абв🙂'.repeat(1500);
   const chunks = cloudSave.splitUtf8(sample, 257);
@@ -159,6 +172,9 @@ class MemoryStorage {
   assert.strictEqual(restored.gold, 654);
   assert.strictEqual(restored.journeyStep, 5);
   assert(restored.roster[0].description, 'cloud restore must rehydrate current static character copy');
+  assert.deepStrictEqual(progression(restored.roster.find(hero=>hero.id===trainedId)),mastery,'cloud restore preserves mastery, history and weekly deployment lock');
+  assert.deepStrictEqual(progression(restored.roster.find(hero=>hero.id===recruited.id)),{...mastery,threatLevel:5},'recruited hero survives cross-device transfer');
+  assert.equal(restored.roster.find(hero=>hero.id===recruited.id).status,'wounded');
 
   const localEnvelope = { ...second, payload:{ ...second.payload, run:{ ...second.payload.run, id:'run-local' } } };
   localEnvelope.fingerprint = cloudSave.payloadFingerprint(localEnvelope.payload);

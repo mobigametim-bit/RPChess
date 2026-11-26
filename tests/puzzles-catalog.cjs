@@ -2,9 +2,20 @@ const path=require('path'),assert=require('assert'),{pathToFileURL}=require('url
 (async()=>{
   const game=path.resolve(__dirname,'..','game');
   const core=await import(pathToFileURL(path.join(game,'js/puzzles/puzzle-core.mjs')).href);
-  const {PUZZLE_CATALOG,PUZZLE_SOURCE}=await import(pathToFileURL(path.join(game,'js/puzzles/puzzle-catalog.mjs')).href);
+  const {PUZZLE_CATALOG,PUZZLE_SOURCE,PUZZLE_CATALOG_META}=await import(pathToFileURL(path.join(game,'js/puzzles/puzzle-catalog.mjs')).href);
   assert(PUZZLE_CATALOG.length>=12,'playable preview must cover all 12 star levels');
   assert(PUZZLE_CATALOG.every(core.isNormalizedPuzzle),'every bundled puzzle must satisfy normalized runtime schema');
+  // Materialized production catalog must preserve EVERY original normalized
+  // row, including field values and order (selection is seeded by array index).
+  // A checked-in small seed catalog remains valid for source-only tests.
+  if(PUZZLE_CATALOG_META){
+    const fs=require('node:fs'),zlib=require('node:zlib');
+    const {decodeRow,EXPECTED_COUNT}=require('../scripts/materialize-puzzle-catalog.cjs');
+    const rows=JSON.parse(zlib.gunzipSync(fs.readFileSync(path.join(game,'js/puzzles/catalog-data/puzzle-catalog-11498.json.gz'))).toString('utf8'));
+    assert.strictEqual(PUZZLE_CATALOG.length,EXPECTED_COUNT);
+    assert.deepStrictEqual(PUZZLE_CATALOG,rows.map(decodeRow),'compact materialization must exactly preserve all normalized rows and order');
+    assert(PUZZLE_CATALOG.every(p=>Object.isFrozen(p)&&Object.isFrozen(p.solution)&&Object.isFrozen(p.themes)),'catalog immutability preserved');
+  }
   assert.strictEqual(PUZZLE_SOURCE.license,'CC0');
   assert(PUZZLE_SOURCE.name.includes('Lichess Open Database Puzzles'));
   assert.strictEqual(new Set(PUZZLE_CATALOG.map(p=>p.id)).size,PUZZLE_CATALOG.length,'puzzle ids must be unique');

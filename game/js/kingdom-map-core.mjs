@@ -642,13 +642,39 @@ function annexCell(map,point){
  next.annexationPointsSpent++;
  return {ok:true,map:next};
 }
-function borderEdges(map,point){
- if(!isOwned(map,point))return [];
+function borderEdges(map,point,ownedKeys=null){
+ // A render may reuse a snapshot-local ownership index. Other callers keep
+ // the original direct lookup; never cache across mutable map revisions.
+ const owns=id=>ownedKeys?ownedKeys.has(id):isOwned(map,id);
+ if(!owns(keyOf(point.x,point.y)))return [];
  return [['n',0,-1],['e',1,0],['s',0,1],['w',-1,0]]
-  .filter(([_,dx,dy])=>!isOwned(map,keyOf(point.x+dx,point.y+dy)))
+  .filter(([_,dx,dy])=>!owns(keyOf(point.x+dx,point.y+dy)))
   .map(([edge])=>edge);
 }
-export {MAP_VERSION,TYPES,ROMANS,keyOf,isPoint,adjacent,orthogonal,shortestKingRoute,siteLevelForStars,romanForStars,castleLevel,
+// Exact, compact static-layer invalidation signature for validated maps.
+// Retain every previous input and order (Canvas drawing can be order-sensitive).
+// No hash collision risk, no references to mutable state, no persisted revision.
+// Coordinate keys contain only signed digits and comma, and statuses are validated.
+function staticMapSignature(map,view,columns,rows){
+ const header=JSON.stringify([map.seed,map.worldGeneratorVersion,
+  view.x,view.y,columns,rows,map.royalRoadsSignature,map.royalRoads,
+  map.completedRoads,map.outpostRoads,map.centralOwnedCells,
+  map.battleConqueredCells,map.outposts,map.battleTerritories,
+  map.castle.x,map.castle.y,map.royalRoadsVersion]);
+ const cells=map.cells,parts=[];
+ for(const id of Object.keys(cells)){
+  const cell=cells[id];
+  // Keep strict flags as before, plus truthy flags used by the fog/ownership
+  // painters and encounter presence used by legacy road reconstruction.
+  const flags=(cell.explored===true?1:0)|(cell.annexed===true?2:0)|
+   (cell.explored?4:0)|(cell.annexed?8:0)|(cell.selectedEncounter?16:0);
+  const status=cell.status==='completed'?'c':cell.status==='revealed'?'r':
+   cell.status==='in_progress'?'i':'f';
+  parts.push(id+':'+flags+status+';');
+ }
+ return header+'|'+parts.join('');
+}
+export {MAP_VERSION,TYPES,ROMANS,keyOf,isPoint,staticMapSignature,adjacent,orthogonal,shortestKingRoute,siteLevelForStars,romanForStars,castleLevel,
  createKingdomMap,validateKingdomMap,migrateKingdomMap,updatePeak,randomEncounter,revealAround,enterCell,beginEncounter,cancelEncounterBeforeStart,
  finishEncounter,matchesCombatReceipt,canAnnex,annexCell,pointsEarned,pointsAvailable,territoryCapacity,
  growTerritory,reserveBattleTerritories,BATTLE_PROVINCE_HUES,playerTerritoryKeys,playerTerritoryCount,enemyBattleKeys,advanceDay,isOwned,linkCompletedRoad,borderEdges,weekForDay,productionFor,

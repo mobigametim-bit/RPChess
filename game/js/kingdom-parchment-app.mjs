@@ -1,11 +1,11 @@
 /* Optional parchment atlas: an optimized, seamless author-provided ground tile.
  * The existing nature SVGs, world rivers and fog remain separate layers.
  */
-import {PARCHMENT_TILE,randomAt,terrainAt,pickSprite,hash32} from './kingdom-parchment-core.mjs?v=20261111-parchment-png-only-v1';
-import {VISUAL} from './kingdom-world-config.mjs?v=20261113-opaque-terrain-v1';
+import {PARCHMENT_TILE,randomAt,terrainAt,pickSprite,hash32} from './kingdom-parchment-core.mjs';
+import {VISUAL} from './kingdom-world-config.mjs';
 import {biomeAt,landmarkAt} from './kingdom-world-core.mjs';
 import {roadYAt,riverXAt,closestRiver} from './kingdom-geography.mjs';
-import {drawKingdomRoads} from './kingdom-map-overlay.mjs?v=20261112-province-colors-v1';
+import {drawKingdomRoads} from './kingdom-map-overlay.mjs?v=20261114-corridor-joints-v2';
 import {FOG_SHOULDER,FOG_SHOULDER_ALPHA,visibleThroughFog} from './kingdom-fog-visibility.mjs';
 
 const PAPER_TILE_SRC='assets/kingdom-parchment/parchment_tile_256.webp',PAPER_TILE_SIZE=256;

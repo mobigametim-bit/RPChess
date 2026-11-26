@@ -8,7 +8,8 @@ const {execFileSync}=require('node:child_process');
 const ROOT=path.resolve(__dirname,'..');
 const groups=[
   {name:'kingdom',patterns:[/^game\/(?:js|css)\/kingdom-/i,/^game\/js\/(?:travel|resources|settlement|starvation)/i,/^game\/assets\/kingdom/i,/^tests\/kingdom-map-browser\.cjs$/],node:['travel-choice.cjs','resources.cjs','settlement.cjs','starvation.cjs'],browser:['kingdom-map-browser.cjs','travel-choice-browser.cjs','settlement-browser.cjs','starvation-browser.cjs']},
-  {name:'combat',patterns:[/^game\/(?:js|css)\/(?:combat|battle|skirmish|classic-chess|chess-ai|arena|caravan|chess960|artifacts|fork-master|piercing-vision|king-pin-ice)/i,/^tests\/(?:battle|skirmish|combat|classic-chess|chess-ai|arena|caravan|artifacts|fork-master|piercing-vision|king-pin-ice)/i],node:['classic-chess-engine.cjs','skirmish.cjs','battle.cjs','combat-checkpoint.cjs','artifacts.cjs','arena.cjs'],browser:['classic-chess-browser.cjs','skirmish-browser.cjs','battle-browser.cjs','combat-resume-browser.cjs','skirmish-artifact-browser.cjs','arena-browser.cjs']},
+  {name:'combat',patterns:[/^game\/(?:js|css)\/(?:combat|battle|skirmish|classic-chess|chess-ai|arena|caravan|chess960|artifacts|fork-master|piercing-vision|king-pin-ice)/i,/^tests\/(?:battle|skirmish|combat|classic-chess|chess-ai|arena|caravan|artifacts|fork-master|piercing-vision|king-pin-ice)/i],node:['classic-chess-engine.cjs','skirmish.cjs','battle.cjs','combat-checkpoint.cjs','artifacts.cjs','arena.cjs','event-combat-race.cjs'],browser:['classic-chess-browser.cjs','skirmish-browser.cjs','battle-browser.cjs','combat-resume-browser.cjs','skirmish-artifact-browser.cjs','arena-browser.cjs']},
+  {name:'weekly-defenders',patterns:[/^game\/(?:js|css)\/weekly-defenders/i],node:['battle.cjs','chess-ai-adapter.cjs'],browser:['battle-browser.cjs']},
   {name:'economy',patterns:[/^game\/js\/(?:economy|monetization|resources|settlement|starvation)/i,/^game\/js\/content\/(?:monetization|economy)/i,/^tests\/(?:resources|settlement|starvation|monetization)/],node:['resources.cjs','settlement.cjs','starvation.cjs','monetization.cjs'],browser:['resources-browser.cjs','settlement-browser.cjs','starvation-browser.cjs']},
   {name:'events',patterns:[/^game\/js\/(?:events?|content\/events?)/i,/^game\/assets\/events?/i,/^tests\/events?/],node:['events.cjs','events-v5.cjs','event-combat-race.cjs'],browser:['events-browser.cjs','travel-choice-browser.cjs']},
   {name:'puzzles',patterns:[/^game\/js\/(?:puzzles?|content\/puzzles?)/i,/^scripts\/(?:materialize-puzzle|validate-puzzle|import-lichess)/i,/^tests\/puzzles?/],node:['puzzles.cjs','puzzles-rules.cjs','puzzles-catalog.cjs'],browser:['puzzles-browser.cjs']},
@@ -17,7 +18,7 @@ const groups=[
   {name:'identity-pvp',patterns:[/^game\/js\/(?:tournament|profile|identity|cloud-save)/i,/^(?:profile-worker|tournament-worker)\//i,/^tests\/(?:tournament|profile|cloud-save)/i],node:['profile-worker.cjs','tournament-shadow.cjs','cloud-save.cjs'],browser:['tournament-v4-browser.cjs','cloud-continue-browser.cjs']},
   {name:'persistence',patterns:[/^game\/js\/(?:run-persistence|run-lifecycle|player-identity|cloud)/i,/^tests\/(?:run-lifecycle|cloud-continue|player-identity)/i],node:['run-lifecycle.cjs','cloud-save.cjs'],browser:['cloud-continue-browser.cjs','roster-browser.cjs']},
   {name:'ui',patterns:[/^game\/(?:css|index\.html|assets\/ui|assets\/fonts)/i,/^tests\/(?:responsive|portrait|reboot-foundation|mobile-run-summary|ui-redesign)/i],node:['ui-redesign-final.cjs','reboot-foundation.cjs'],browser:['responsive-viewport-browser.cjs','reboot-foundation-browser.cjs','portrait-key-scenes-browser.cjs']},
-  {name:'assets',patterns:[/^game\/(?:assets|generated_assets)\//i,/^scripts\/(?:runtime-asset|optimize-|background-asset|piece-asset|portrait-asset|board-asset)/i,/^tests\/(?:runtime-asset|piece-asset|portrait-asset|background-asset)/i],node:['runtime-asset-cache.cjs','piece-asset-runtime.cjs','portrait-asset-runtime.cjs','background-asset-runtime.cjs'],browser:['reboot-foundation-browser.cjs']},
+  {name:'assets',patterns:[/^game\/(?:assets|generated_assets)\//i,/^scripts\/(?:runtime-asset|optimize-|background-asset|piece-asset|portrait-asset|board-asset|resource-icon-asset)/i,/^tests\/(?:runtime-asset|piece-asset|portrait-asset|background-asset)/i],node:['runtime-asset-cache.cjs','piece-asset-runtime.cjs','portrait-asset-runtime.cjs','background-asset-runtime.cjs'],browser:['reboot-foundation-browser.cjs']},
   {name:'platform-ads',patterns:[/^game\/js\/(?:platform|gamepush|monetization|vk-)/i,/^(?:gamepush-|yandex-|leaderboard-)/i,/^tests\/(?:monetization|gamepush|yandex-gateway)/i],node:['monetization.cjs','onboarding.cjs'],browser:['onboarding-browser.cjs','combat-menu-browser.cjs']},
   {name:'infrastructure',patterns:[/^(?:package(?:-lock)?\.json|scripts\/build\.cjs|scripts\/run-browser-tests\.cjs|scripts\/verify-source\.cjs|\.github\/workflows\/)/],node:['reboot-foundation.cjs','dependency-security.cjs'],browser:['reboot-foundation-browser.cjs']}
 ];
@@ -54,6 +55,8 @@ function selfTest(){
     [['docs/ROADMAP.md'],[]],
     [['game/js/kingdom-map-core.mjs'],['kingdom']],
     [['game/js/mentor-training.mjs'],['mentor']],
+    [['game/js/weekly-defenders-app.mjs'],['weekly-defenders']],
+    [['game/js/weekly-defenders-core.mjs'],['weekly-defenders']],
     [['game/js/unknown-new-runtime.mjs'],['unknown-runtime-fallback']],
     [['game/css/ui.css'],['ui']],
     [['game/js/kingdom-map-core.mjs','game/js/combat.mjs'],['kingdom','combat']]
@@ -61,6 +64,7 @@ function selfTest(){
   for(const [files,want] of cases){
     const out=select(files);
     for(const x of want)if(!out.groups.includes(x))throw Error('Selector selftest failed: '+files.join(',')+' missing '+x);
+    if(want.includes('weekly-defenders')&&!out.browser_tests.includes('battle-browser.cjs'))throw Error('Weekly defender regression missing');
     if(files[0].startsWith('docs/')&&out.has_runtime_changes)throw Error('docs-only should skip build');
   }
   console.log('PR test selector selftest: PASS ('+cases.length+' cases)');

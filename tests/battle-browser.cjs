@@ -431,6 +431,7 @@ async function assertResponsiveStars(page, selector, cardSelector) {
     await weekly.evaluate(()=>globalThis.__weeklyAdReply(false));
     await weekly.waitForFunction(()=>document.querySelector('[data-weekly-battle-screen] [data-wd-action="skip"]').disabled===false);
     assert.equal(await pause.getAttribute('aria-label'),'Продолжить','negative ad result does not resume a paused battle');
+    assert.notStrictEqual(await weekly.evaluate(key=>JSON.parse(localStorage.getItem(key)).weeklyDefenders.active.fastForwardGranted,RUN_KEY),true,'negative ad must not persist a grant');
     await skipAd.click();
     await weekly.waitForFunction(()=>globalThis.__weeklyAdCalls.length===2);
     await weekly.evaluate(()=>globalThis.__weeklyAdReply(true));
@@ -438,6 +439,24 @@ async function assertResponsiveStars(page, selector, cardSelector) {
     assert.equal(await skipAd.isDisabled(),true,'completed reward unlocks fast-forward exactly once');
     assert.equal(await pause.getAttribute('aria-label'),'Пауза','completed ad resumes the battle');
     assert.deepStrictEqual(await weekly.evaluate(()=>globalThis.__weeklyAdCalls),['reward','reward']);
+    const granted=await weekly.evaluate(key=>JSON.parse(localStorage.getItem(key)).weeklyDefenders.active,RUN_KEY);
+    assert.equal(granted.fastForwardGranted,true,'completed ad grant is durable');
+    // Suspend through the real navigation button, reload, then use the
+    // persisted battle's actual map marker, not a second ad or injected grant.
+    await defenderScreen.locator('[data-wd-action="close"]').evaluate(button=>button.click());
+    await weekly.reload({waitUntil:'domcontentloaded'});
+    await weekly.locator('[data-game-loading]').waitFor({state:'hidden',timeout:60000});
+    await weekly.locator('[data-continue-run]').click();
+    await weekly.locator('[data-journey-choice-modal]:not([hidden]) [data-journey-continue]').click();
+    const resumeMarker=weekly.locator('[data-kingdom-resume-weekly="1,0"]');
+    await resumeMarker.waitFor({state:'visible',timeout:30000});
+    await resumeMarker.evaluate(button=>button.click());
+    await defenderScreen.waitFor({state:'visible'});
+    assert.equal(await skipAd.getAttribute('aria-label'),'Ускоренное завершение боя','reward survives reload and map resume');
+    assert.equal(await skipAd.isDisabled(),true,'no second ad is needed for the same battle');
+    const resumed=await weekly.evaluate(key=>JSON.parse(localStorage.getItem(key)).weeklyDefenders.active,RUN_KEY);
+    assert.equal(resumed.receiptId,granted.receiptId,'resume must preserve active receipt');
+    assert(resumed.moves.length>=granted.moves.length,'resume must preserve committed move history');
     await weekly.close();
     assert.deepStrictEqual(weeklyErrors,[]);
 

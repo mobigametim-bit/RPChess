@@ -58,12 +58,15 @@ function materialize(){
   for(const [type,count] of Object.entries(EXPECTED_TYPE_TOTALS))if(typeTotals[type]!==count)fail(`${type} total ${typeTotals[type]} != ${count}`);
   for(const [star,count] of Object.entries(EXPECTED_STAR_TOTALS))if(starTotals[star]!==count)fail(`★${star} total ${starTotals[star]} != ${count}`);
 
-  const body=JSON.stringify(puzzles);
+  const expandedBytes=Buffer.byteLength(JSON.stringify(puzzles));
+  const body=JSON.stringify(compact);
+  const compactBytes=Buffer.byteLength(body);
   const meta={count:EXPECTED_COUNT,sha256:EXPECTED_SHA256,typeTotals:EXPECTED_TYPE_TOTALS,starTotals:EXPECTED_STAR_TOTALS};
-  const moduleText=`// Generated deterministically from catalog-data/puzzle-catalog-11498.json.gz.\n// Source: Lichess Open Database Puzzles (CC0). Do not hand-edit.\n\nconst raw=${body};\nconst PUZZLE_CATALOG=Object.freeze(raw.map((puzzle)=>Object.freeze({...puzzle,solution:Object.freeze(puzzle.solution),themes:Object.freeze(puzzle.themes)})));\nconst PUZZLE_SOURCE=Object.freeze({name:'Lichess Open Database Puzzles',license:'CC0',url:'https://database.lichess.org/#puzzles'});\nconst PUZZLE_CATALOG_META=Object.freeze(${JSON.stringify(meta)});\n\nexport { PUZZLE_CATALOG, PUZZLE_SOURCE, PUZZLE_CATALOG_META };\n`;
+  const moduleText=`// Generated deterministically from catalog-data/puzzle-catalog-11498.json.gz.\n// Source: Lichess Open Database Puzzles (CC0). Do not hand-edit.\n\nconst raw=${body};\nconst words=value=>String(value||'').trim().split(/\\s+/).filter(Boolean);\nconst PUZZLE_CATALOG=Object.freeze(raw.map(([sourceId,fen,side,solutionText,type,rating,difficulty,targetPiece,materialGain,themesText])=>Object.freeze({id:'puzzle.'+sourceId,sourceId,fen,side,solution:Object.freeze(words(solutionText)),type,rating,difficulty,themes:Object.freeze(words(themesText)),targetPiece:targetPiece||null,materialGain,reward:9+3*difficulty})));\nconst PUZZLE_SOURCE=Object.freeze({name:'Lichess Open Database Puzzles',license:'CC0',url:'https://database.lichess.org/#puzzles'});\nconst PUZZLE_CATALOG_META=Object.freeze(${JSON.stringify(meta)});\n\nexport { PUZZLE_CATALOG, PUZZLE_SOURCE, PUZZLE_CATALOG_META };\n`;
   fs.mkdirSync(path.dirname(OUTPUT),{recursive:true});
   fs.writeFileSync(OUTPUT,moduleText);
   console.log(`Puzzle catalog materializer: PASS — ${EXPECTED_COUNT} tasks, ${compressed.length} compressed bytes, sha256 ${digest}`);
+  console.log('PUZZLE_CATALOG_SIZE '+JSON.stringify({expandedBytes,compactBytes,moduleBytes:Buffer.byteLength(moduleText)}));
   return {count:EXPECTED_COUNT,typeTotals,starTotals,digest};
 }
 

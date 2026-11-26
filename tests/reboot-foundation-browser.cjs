@@ -7,8 +7,46 @@ const RUN_KEY = 'rpchess.reboot.v1.run';
 const SETTINGS_KEY = 'rpchess.reboot.v1.settings';
 const TOLERANCE = 1;
 
-async function clearState(page) {
-  await page.goto(url, { waitUntil:'networkidle' });
+// Diagnostic only: measure completed same-origin requests up to the observed
+// usable menu in a fresh desktop context. No wall-time assertions or new suite.
+async function reportStartup(page) {
+  await page.locator('[data-game-loading][data-loader-initialized="1"]').waitFor({state:'attached',timeout:60000});
+  await page.locator('[data-game-loading]').waitFor({state:'hidden',timeout:60000});
+  await page.locator('[data-reboot-foundation]:not([hidden])').waitFor({state:'visible',timeout:60000});
+  const report=await page.evaluate(()=>{
+    const at=performance.now(),nav=performance.getEntriesByType('navigation')[0];
+    const all=performance.getEntriesByType('resource');
+    const local=all.filter(entry=>new URL(entry.name).origin===location.origin&&entry.responseEnd<=at);
+    const groups={},moduleUrls=new Map();
+    for(const entry of local){
+      const u=new URL(entry.name),kind=u.pathname.endsWith('.mjs')||u.pathname.endsWith('.js')?'js':
+        u.pathname.endsWith('.css')?'css':u.pathname.endsWith('.wasm')?'wasm':
+        /\.(png|webp|svg|jpe?g)$/i.test(u.pathname)?'image':
+        /\.(otf|woff2?|ttf)$/i.test(u.pathname)?'font':
+        /\.(mp3|ogg|wav)$/i.test(u.pathname)?'audio':'other';
+      const g=groups[kind]||(groups[kind]={requests:0,transferBytes:0,encodedBytes:0,decodedBytes:0});
+      g.requests++;g.transferBytes+=entry.transferSize;g.encodedBytes+=entry.encodedBodySize;g.decodedBytes+=entry.decodedBodySize;
+      if(kind==='js'){
+        if(!moduleUrls.has(u.pathname))moduleUrls.set(u.pathname,new Set());
+        moduleUrls.get(u.pathname).add(u.search);
+      }
+    }
+    const largest=local.slice().sort((a,b)=>b.encodedBodySize-a.encodedBodySize).slice(0,12).map(e=>({
+      path:new URL(e.name).pathname,encodedBytes:e.encodedBodySize,durationMs:Math.round(e.duration)}));
+    const duplicateModulePaths=[...moduleUrls].filter(([,variants])=>variants.size>1)
+      .map(([path,variants])=>({path,variants:variants.size}));
+    return {menuObservedMs:Math.round(at),domContentLoadedMs:Math.round(nav?.domContentLoadedEventEnd||0),
+      loadEventMs:Math.round(nav?.loadEventEnd||0),localRequests:local.length,
+      otherOriginEntries:all.filter(e=>new URL(e.name).origin!==location.origin).length,
+      navigationBytes:nav?.transferSize||0,groups,largest,duplicateModulePaths,
+      limitations:'fresh desktop Chromium; local no-store uncompressed test server; completed resource entries only; menu observation includes test polling; not production network or mobile'};
+  });
+  console.log('STARTUP_AUDIT '+JSON.stringify(report));
+}
+async function clearState(page,{auditStartup=false}={}) {
+  if(auditStartup)await page.addInitScript(()=>performance.setResourceTimingBufferSize(5000));
+  await page.goto(url, { waitUntil:auditStartup?'domcontentloaded':'networkidle' });
+  if(auditStartup)await reportStartup(page);
   await page.evaluate(([runKey, settingsKey]) => {
     localStorage.removeItem(runKey);
     localStorage.removeItem(settingsKey);
@@ -44,7 +82,7 @@ async function desktopContract(browser) {
   const page = await browser.newPage({ viewport:{ width:1440, height:900 } });
   const errors=[]; page.on('pageerror', (error)=>errors.push(String(error.stack||error)));
   try {
-    await clearState(page);
+    await clearState(page,{auditStartup:true});
     const menu = await waitForVisible(page, '[data-reboot-foundation]:not([hidden])', 'Desktop main menu');
     assert.strictEqual(await menu.locator('[data-new-game]').count(), 1);
     assert.strictEqual(await menu.locator('[data-continue-run]').isDisabled(), false, 'Journey always starts or resumes');

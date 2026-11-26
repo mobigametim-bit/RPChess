@@ -25,7 +25,7 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   assert(overlaySource.includes("clipRoadSurface(inside)")&&
      overlaySource.includes("for(const [inside,tone] of [[false,'gravel'],[true,'sandstone']]"),
     'paved roads switch from sandstone to gravel exactly at owned-cell boundaries');
-  assert(overlaySource.includes('visibleTravelRoads(map)'),
+  assert(overlaySource.includes('visibleRoadSnapshot(map)')&&overlaySource.includes('roadSnapshot.travel.length'),
     'historic roads remain an independent visible layer');
   const rendererSource=fs.readFileSync(path.join(game,'js/kingdom-traveler-renderer.mjs'),'utf8');
   assert(rendererSource.includes('if(!motion?.moving)continue'),
@@ -193,12 +193,25 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
     'first completed encounter connects to Castle, subsequent one to previous event');
   assert(journeyRoads.every(r=>r.kind==='travel'&&r.bend!==0),
     'restored Journey roads retain curved geometry for gray stone paving');
+  assert.deepStrictEqual(roadGraph.visibleRoadSnapshot(outsideMap),
+    {royal:roadGraph.visibleRoyalRoads(outsideMap),travel:journeyRoads},
+    'shared road snapshot preserves both independent projections');
   const allRoads=walkers.adjacencyOf([...roadGraph.visibleRoyalRoads(outsideMap),...journeyRoads]);
   assert(walkers.findRoute(allRoads,'0,0','4,1')?.length>=2,
     'free travelers may use the outside Journey road network');
   const duplicateInside=roadGraph.visibleTravelRoads({...secondRoad,completedRoads:[
     {id:'covered:1',from:'0,0',to:'1,0',bend:.4}]});
   assert.equal(duplicateInside.length,0,'a completed road does not duplicate covered owned paving');
+  const graphFixture={...secondRoad,royalRoadsVersion:3,centralOwnedCells:['0,0','2,0','3,0','4,0','8,0','9,0'],cells:{'0,0':{annexed:true}},
+    royalRoads:[{from:'0,0',to:'1,0',bend:0},{from:'1,0',to:'2,0',bend:0},
+      {from:'2,0',to:'3,0',bend:0},{from:'3,0',to:'4,0',bend:0},{from:'8,0',to:'9,0',bend:0}],
+    completedRoads:[{id:'covered-through-unowned',from:'0,0',to:'2,0',bend:.4},
+      {id:'covered-repeat',from:'2,0',to:'4,0',bend:.4},
+      {id:'separate-components',from:'4,0',to:'8,0',bend:.4},
+      {id:'unowned-end',from:'1,0',to:'4,0',bend:.4},
+      {id:'reverse-duplicate',from:'8,0',to:'4,0',bend:.5}]};
+  assert.deepStrictEqual(roadGraph.visibleTravelRoads(graphFixture).map(r=>r.id),
+    ['separate-components','unowned-end'],'component index preserves historical BFS through unowned vertices, disconnected components and first-road ordering');
   const dedup=roadGraph.visibleRoyalRoads({...secondRoad,outpostRoads:[
     {id:'old-reverse',from:'2,0',to:'0,0',bend:.5}]});
   assert.equal(dedup.length,secondRoad.royalRoads.length,
@@ -396,6 +409,27 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   assert(probes.some(item=>!item.type)&&probes.some(item=>item.type),
     'the map must contain both calm terrain and interesting encounters');
   const startMap=mapCore.createKingdomMap(mapRun,500);
+  const signatureFixture={...startMap,royalRoadsVersion:3,cells:{...startMap.cells,
+    '12,0':{status:'revealed',explored:false,annexed:false}}};
+  const staticKey=(map=signatureFixture,view={x:0,y:0},cols=9,rows=7)=>
+    mapCore.staticMapSignature(map,view,cols,rows);
+  assert.strictEqual(staticKey(),staticKey(JSON.parse(JSON.stringify(signatureFixture))),
+    'equivalent reloaded maps reuse static layers');
+  const changedCell=patch=>({...signatureFixture,cells:{...signatureFixture.cells,
+    '12,0':{...signatureFixture.cells['12,0'],...patch}}});
+  assert.strictEqual(staticKey(),staticKey(changedCell({production:{amount:9}})),
+    'dynamic marker data does not invalidate static layers');
+  for(const changed of [
+    changedCell({explored:true}),changedCell({explored:1}),changedCell({annexed:true}),
+    changedCell({status:'completed'}),changedCell({selectedEncounter:{type:'battle'}}),
+    {...signatureFixture,cells:{...signatureFixture.cells,'13,0':{status:'revealed'}}},
+    {...signatureFixture,castle:{...signatureFixture.castle,x:1}},
+    {...signatureFixture,royalRoadsVersion:2},
+    {...signatureFixture,completedRoads:[{from:'0,0',to:'12,0',bend:.5}]},
+    {...signatureFixture,battleTerritories:[{id:'12,0',cells:['12,0'],colorIndex:3}]}
+  ])assert.notStrictEqual(staticKey(),staticKey(changed),'static world change must invalidate');
+  assert.notStrictEqual(staticKey(),staticKey(signatureFixture,{x:1,y:0}));
+  assert.notStrictEqual(staticKey(),staticKey(signatureFixture,{x:0,y:0},11,7));
   assert(mapCore.validateKingdomMap(startMap));
   assert.strictEqual(startMap.day,1,'the independent calendar begins on Day 1');
    assert.equal(startMap.worldGeneratorVersion,6,'new Kingdom worlds must use shared v6 geography');
@@ -768,6 +802,21 @@ function memoryStorage(){const d=new Map();return{getItem:k=>d.has(k)?d.get(k):n
   assert.deepStrictEqual(new Set(conquered.map.battleConqueredCells),new Set(redA),
     'victory must transfer exactly the originally painted cells');
   assert(redA.every(id=>mapCore.isOwned(conquered.map,id)));
+  // The render-local index must match direct lookup and all four border edges
+  // across old annexed land, disconnected outposts and conquered provinces.
+  for(const fixture of [migrated,outpost.map,conquered.map,reserved]){
+    const owned=mapCore.playerTerritoryKeys(fixture);
+    const points=new Set([...Object.keys(fixture.cells),...owned]);
+    for(const id of [...points]){
+      const [x,y]=id.split(',').map(Number);
+      for(const [dx,dy] of [[0,-1],[1,0],[0,1],[-1,0]])points.add(mapCore.keyOf(x+dx,y+dy));
+    }
+    for(const id of points){
+      const [x,y]=id.split(',').map(Number),p={x,y};
+      assert.strictEqual(owned.has(id),mapCore.isOwned(fixture,p),'indexed ownership parity');
+      assert.deepStrictEqual(mapCore.borderEdges(fixture,p,owned),mapCore.borderEdges(fixture,p),'indexed border parity');
+    }
+  }
   assert.equal(conquered.map.centralOwnedCells.length,startMap.centralOwnedCells.length);
   assert.equal(conquered.map.uniqueFirstConquests[0].bonusLands,0);
   assert.equal(mapCore.playerTerritoryCount(conquered.map),

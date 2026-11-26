@@ -27,7 +27,7 @@ const C={
   fromGold:'Золото',fromSupplies:'Припасы',debt:'Неоплаченный долг! После партии погибнет командир: ',
   kingDebt:'Гибель короля завершит путешествие!',confirm:'Подтвердить и начать',
   battle:'Битва защитников',thinking:'Движок обдумывает ход…',pause:'Пауза',resume:'Продолжить',
-  result:'Смотреть рекламу — к результату',adPending:'Ожидание рекламы…',adFailed:'Реклама не завершена или недоступна. Бой можно продолжить.',adGranted:'Ускоренное завершение боя',battleManual:'Ваш ход',battleAuto:'Идёт автобой',move:'Ход',
+  result:'Смотреть рекламу — к результату',adPending:'Ожидание рекламы…',adFailed:'Реклама не завершена или недоступна. Бой можно продолжить.',adGranted:'Ускоренное завершение боя',moveFailed:'Не удалось продолжить бой. Нажмите «Продолжить», чтобы повторить.',battleManual:'Ваш ход',battleAuto:'Идёт автобой',move:'Ход',
   win:'Победа',draw:'Ничья',loss:'Поражение',return:'К карте',
   rewards:'Награда',mastery:'Мастерство',dead:'Командир погиб из-за долга',warning:'Потери обычных рекрутов постоянны',
   error:'Не удалось начать сражение',noHeroes:'Нет доступных героев',back:'К карте'},
@@ -39,7 +39,7 @@ const C={
   fromGold:'Gold',fromSupplies:'Supplies',debt:'Unpaid debt! Commander will die after battle: ',
   kingDebt:'King death ends the run!',confirm:'Confirm and start',
   battle:'Defender battle',thinking:'Engine is thinking…',pause:'Pause',resume:'Resume',
-  result:'Watch an ad — skip to result',adPending:'Waiting for ad…',adFailed:'Ad not completed or unavailable. You can continue the battle.',adGranted:'Fast-forwarding to result',battleManual:'Your move',battleAuto:'Auto battle',move:'Move',
+  result:'Watch an ad — skip to result',adPending:'Waiting for ad…',adFailed:'Ad not completed or unavailable. You can continue the battle.',adGranted:'Fast-forwarding to result',moveFailed:'Could not continue the battle. Press Resume to retry.',battleManual:'Your move',battleAuto:'Auto battle',move:'Move',
   win:'Victory',draw:'Draw',loss:'Defeat',return:'To map',
   rewards:'Reward',mastery:'Mastery',dead:'Commander died from debt',warning:'Regular recruit losses are permanent',
   error:'Could not start battle',noHeroes:'No available heroes',back:'To map'}
@@ -48,7 +48,8 @@ function t(k){return C[currentLanguage()==='en'?'en':'ru'][k]||k;}
 const typeToCode={king:'K',queen:'Q',rook:'R',bishop:'B',knight:'N',pawn:'P'};
 let root=null,battleScreen=null,selectedHeroId=null,cellId=null,engine=null,adapter=null;
 let identities=new Map(),capturedIds=new Set(),selectedSquare=null,paused=false,speed=1,skip=false,thinking=false;
-let turnTimer=null,session=0,lastResult=null,movePending=false,paymentModal=null,beforeFenForMove=null;
+let turnTimer=null,session=0,lastResult=null,movePending=false,paymentModal=null;
+let lastAnalysis=null;
 let mateCeremonyTimer=null;
 let skipAdBusy=false,skipAdNotice='';
 const MATE_CEREMONY_MS=3000;
@@ -155,7 +156,7 @@ function close(){
  document.body.classList.remove('compact-combat-active','classic-chess-active','wd-combat-active');
  // Suspending is safe: every played half-move and the week receipt are saved.
  if(weeklyState(readRun()).active){
-  paused=true;session++;clearTimeout(turnTimer);adapter?.stop?.();
+  paused=true;session++;clearTimeout(turnTimer);adapter?.destroy?.();adapter=null;lastAnalysis=null;
   root.hidden=true;
   globalThis.RPChessKingdomMap?.open?.();
   return;
@@ -325,6 +326,15 @@ function commitStart(accepted){
  if(!started.ok){renderSetup();return;}
  writeRun(started.run);resumeWeekly();
 }
+// Both replay and live moves use the same identity/casualty transition.
+function trackWeeklyMove(map,lost,move){
+ const capturedSquare=move.capture;
+ if(capturedSquare&&map.get(capturedSquare)?.startsWith('army:'))lost.add(map.get(capturedSquare));
+ if(capturedSquare)map.delete(capturedSquare);
+ const identity=map.get(move.from);map.delete(move.from);
+ if(identity)map.set(move.to,identity);
+ if(move.rookFrom){const rook=map.get(move.rookFrom);map.delete(move.rookFrom);if(rook)map.set(move.rookTo,rook);}
+}
 function newEngine(active){
  const chess=new ClassicChessEngine(active.fen||null);
  const map=new Map(active.formation.filter(p=>p.id).map(p=>[p.square,p.id]));
@@ -334,12 +344,7 @@ function newEngine(active){
   const candidate=legal.find(m=>m.from===entry.uci.slice(0,2)&&
    (m.uciTo||m.to)===entry.uci.slice(2,4)&&(m.promotion||'')===(entry.uci[4]||''));
   if(!candidate)throw new Error('Invalid weekly Battle move in save');
-  const capturedSquare=candidate.capture;
-  if(capturedSquare&&map.get(capturedSquare)?.startsWith('army:'))lost.add(map.get(capturedSquare));
-  if(capturedSquare)map.delete(capturedSquare);
-  const identity=map.get(candidate.from);map.delete(candidate.from);
-  if(identity)map.set(candidate.to,identity);
-  if(candidate.rookFrom){const rook=map.get(candidate.rookFrom);map.delete(candidate.rookFrom);if(rook)map.set(candidate.rookTo,rook);}
+  trackWeeklyMove(map,lost,candidate);
   const applied=chess.move(entry.uci.slice(0,2),entry.uci.slice(2,4),entry.uci[4]||null);
   if(!applied.ok)throw new Error('Corrupt weekly Battle save');
  }
@@ -352,7 +357,7 @@ function resumeWeekly(){
   const recreated=newEngine(active);engine=recreated.chess;identities=recreated.identities;capturedIds=recreated.lost;
  }catch(e){console.error(e);return false;}
  cancelMateCeremony();
- session++;paused=false;speed=1;skip=false;thinking=false;lastResult=null;
+ session++;paused=false;speed=1;skip=active.mode==='auto'&&active.fastForwardGranted===true;thinking=false;lastResult=null;lastAnalysis=null;
  skipAdBusy=false;skipAdNotice='';
  adapter?.destroy?.();adapter=new ChessAIAdapter();movePending=false;
  showPane('play');
@@ -509,17 +514,21 @@ async function playMove(uci){
  if(movePending)return;
  const run=readRun(),active=weeklyState(run).active;if(!active||!engine)return;
  movePending=true;
- try{
  const stamp=session;
+ try{
  // Two genuine Stockfish position scores feed the Mentor win-probability grader.
  // Failed analysis yields no badge, never a fabricated move assessment.
  const beforeFen=engine.fen();
- const before=skip?null:await adapter.analyzePosition({fen:beforeFen,depth:10});
+ const before=skip?null:lastAnalysis?.fen===beforeFen?lastAnalysis.score:
+  await adapter.analyzePosition({fen:beforeFen,depth:10});
  if(stamp!==session)return;
  const move=engine.move(uci.slice(0,2),uci.slice(2,4),uci[4]||null);
- if(!move.ok)return;
- const after=skip?null:await adapter.analyzePosition({fen:engine.fen(),depth:10});
+ if(!move.ok)throw new Error('Weekly battle engine rejected move');
+ const afterFen=engine.fen();
+ const after=skip?null:await adapter.analyzePosition({fen:afterFen,depth:10});
  if(stamp!==session)return;
+ // Cache only a complete two-line analysis at the exact requested depth.
+ lastAnalysis=after?.depth===10&&after?.secondDepth===10?{fen:afterFen,score:after}:null;
  const quality=trainingMoveQualityWinChance(before,after,uci);
  const centipawnLoss=Number.isFinite(before?.cp)&&Number.isFinite(after?.cp)?Math.max(0,before.cp+after.cp):null;
  const strong=Number.isFinite(centipawnLoss)?
@@ -529,22 +538,39 @@ async function playMove(uci){
    centipawnLoss!==null&&centipawnLoss<=40?'good':null);
  // Symbols are render-only; persisted grades retain mentor-compatible semantic keys.
  // Persist move plus its measured score classification before the next turn.
- const saved=recordWeeklyMove(run,uci,grade);
- if(!saved.ok)return;
+ // The ad callback or another legitimate write may have updated the run
+ // while Stockfish was thinking. Preserve those changes and verify the receipt.
+ const latest=readRun(),current=weeklyState(latest).active;
+ if(current?.receiptId!==active.receiptId||current.moves.length!==active.moves.length)
+  throw new Error('Weekly battle checkpoint changed during move');
+ const saved=recordWeeklyMove(latest,uci,grade);
+ if(!saved.ok)throw new Error('Weekly battle move checkpoint rejected');
  writeRun(saved.run);
- const restored=newEngine(weeklyState(saved.run).active);
- identities=restored.identities;capturedIds=restored.lost;
+ trackWeeklyMove(identities,capturedIds,move.move);
  renderBattle();
  if(engine.status().over||weeklyState(saved.run).active.moves.length>=400){
   finishWithMateCeremony();return;
  }
  scheduleTurn();
- }finally{movePending=false;}
+ }catch(error){
+  if(stamp===session){
+   console.error('[weekly-defenders] move checkpoint',error);
+   // Never continue on a board ahead of the persisted move history.
+   paused=true;lastAnalysis=null;clearTimeout(turnTimer);
+   const persisted=weeklyState(readRun()).active;
+   if(persisted?.receiptId===active.receiptId){
+    const restored=newEngine(persisted);
+    engine=restored.chess;identities=restored.identities;capturedIds=restored.lost;
+    skip=persisted.mode==='auto'&&persisted.fastForwardGranted===true;
+    skipAdNotice='moveFailed';renderBattle();
+   }
+  }
+ }finally{if(stamp===session)movePending=false;}
 }
 function scheduleTurn(){
  clearTimeout(turnTimer);
  const run=readRun(),active=weeklyState(run).active;if(!active||!engine)return;
- if(engine.status().over){finishWithMateCeremony();return;}
+ if(engine.status().over||active.moves.length>=400){finishWithMateCeremony();return;}
  if(mateCeremonyTimer!==null)return;
  if(active.mode==='manual'&&engine.turn()===active.playerColor){renderBattle();return;}
  if(paused||skipAdBusy)return;
@@ -556,14 +582,16 @@ function scheduleTurn(){
   try{
    const side=engine.turn(),elo=side===active.playerColor?threatRank(active.heroLevel).elo:threatRank(active.enemyLevel).elo;
    const uci=await adapter.chooseMove({fen:engine.fen(),elo,legalMoves:engine.legalMoves()});
-   if(stamp===session&&!paused&&uci){thinking=false;await playMove(uci);}
-  }catch(error){console.error('[weekly-defenders]',error);thinking=false;}
-  finally{thinking=false;}
+   if(stamp===session&&!paused&&!skipAdBusy&&uci){thinking=false;await playMove(uci);}
+   else if(stamp===session&&!paused&&!skipAdBusy){paused=true;skipAdNotice='moveFailed';renderBattle();}
+  }catch(error){
+   if(stamp===session){console.error('[weekly-defenders]',error);paused=true;skipAdNotice='moveFailed';renderBattle();}
+  }finally{if(stamp===session)thinking=false;}
  },skip?0:Math.round(1000/speed));
 }
 function finishBattle(){
  cancelMateCeremony();
- clearTimeout(turnTimer);session++;adapter?.stop?.();
+ clearTimeout(turnTimer);session++;adapter?.destroy?.();adapter=null;lastAnalysis=null;
  const run=readRun(),active=weeklyState(run).active;if(!active)return;
  const status=engine.status();
  const result=status.over&&status.winner===active.playerColor?'win':
@@ -671,7 +699,17 @@ async function requestSkipToResult(){
  catch{}
  if(stamp!==session||battleScreen.hidden||weeklyState(readRun()).active?.receiptId!==receipt)return;
  skipAdBusy=false;
- if(completed){skip=true;paused=false;skipAdNotice='';}
+ if(completed){
+  try{
+   const run=readRun(),current=weeklyState(run);
+   if(current.active?.receiptId!==receipt)return;
+   writeRun({...run,weeklyDefenders:{...current,active:{...current.active,fastForwardGranted:true}}});
+   skip=true;paused=false;skipAdNotice='';
+  }catch(error){
+   console.error('[weekly-defenders] reward checkpoint',error);
+   paused=true;skipAdNotice='moveFailed';
+  }
+ }
  else{paused=wasPaused;skipAdNotice='adFailed';}
  renderBattle();scheduleTurn();
 }
@@ -682,7 +720,7 @@ function onAction(event){
  if(act==='close')close();
  if(act==='prev'||act==='next')root.querySelector('[data-wd-carousel]').scrollBy({left:(act==='next'?1:-1)*400,behavior:'smooth'});
  if(act==='start')commitStart(false);
- if(act==='pause'&&mateCeremonyTimer===null){paused=!paused;if(!paused)scheduleTurn();renderBattle();}
+ if(act==='pause'&&mateCeremonyTimer===null){paused=!paused;if(!paused){if(skipAdNotice==='moveFailed'){adapter?.destroy?.();adapter=new ChessAIAdapter();lastAnalysis=null;skipAdNotice='';}scheduleTurn();}renderBattle();}
  if(act==='speed'&&mateCeremonyTimer===null){speed=speed===1?2:speed===2?4:1;renderBattle();}
  if(act==='skip')void requestSkipToResult();
 }

@@ -435,7 +435,7 @@ function processMove(entry,replayed=false) {
 }
 function syncBattleFromChess(){if(!battlePlan||battleFinalized||!['battle','caravan'].includes(globalThis.RPChessClassicChess?.combatOwner))return;const log=globalThis.RPChessClassicChess.moveLog||[];while(processedMoves<log.length){processMove(log[processedMoves]);processedMoves++;}
   if(isCaravan() && activeRun.currentCaravan.moves.length!==log.length){
-    activeRun=writeRun({...readRun(),currentCaravan:{...activeRun.currentCaravan,moves:log.map(({move})=>({from:move.from,to:move.uciTo||move.to,promotion:move.promotion||null}))}});
+    activeRun=writeRun({...readRun(),currentCaravan:{...activeRun.currentCaravan,moves:combatMoves(log)}});
   } else if (!isCaravan() && checkpointFor(activeRun,'battle',encounter)?.moves.length!==log.length) {
     const current=readRun(),checkpoint=checkpointFor(current,'battle',encounter);
     if(checkpoint) activeRun=writeRun({...current,currentCombat:{...checkpoint,moves:combatMoves(log)}});

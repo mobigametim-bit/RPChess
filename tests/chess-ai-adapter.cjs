@@ -77,16 +77,24 @@ function rngFrom(values) {
   assert.strictEqual(fallback.snapshot().degraded, true);
 
   class InterruptibleWorker extends FakeWorker {
-    constructor(url) { super(url); this.searches = 0; }
+    static searches = 0;
+    static abandoned = null;
     postMessage(command) {
       this.commands.push(command);
       if (command === 'uci') this.emit('uciok');
       if (command === 'isready') this.emit('readyok');
       if (command === 'stop') this.emit('bestmove e7e5');
       if (command.startsWith('go ')) {
-        this.searches += 1;
-        if (this.searches === 1) this.emit('info depth 4 multipv 1 score cp 12 pv e7e5');
-        else this.emit('bestmove c7c5');
+        InterruptibleWorker.searches += 1;
+        if (InterruptibleWorker.searches === 1) {
+          InterruptibleWorker.abandoned = this;
+          this.emit('info depth 4 multipv 1 score cp 12 pv e7e5');
+        } else {
+          // Simulate delayed messages already queued by a cancelled search,
+          // even after termination. Its bestmove is legal in the new search.
+          InterruptibleWorker.abandoned.emit('bestmove e7e5');
+          this.emit('bestmove c7c5');
+        }
       }
     }
   }
@@ -98,13 +106,30 @@ function rngFrom(values) {
   });
   await new Promise((resolve) => setImmediate(resolve));
   interruptible.stop();
+  assert.equal(InterruptibleWorker.abandoned.terminated,true,'cancelled UCI worker must be retired');
   assert.strictEqual(await interruptedSearch, null, 'stopped search must settle without leaking a move into the next game');
   const resumedMove = await interruptible.chooseMove({
     fen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1',
     elo: 1400,
-    legalMoves: ['g1f3', 'd2d4', 'c7c5']
+    legalMoves: ['e7e5', 'd2d4', 'c7c5']
   });
   assert.strictEqual(resumedMove, 'c7c5', 'a new search after cancellation must ignore the previous bestmove');
+
+  class TimeoutWorker extends FakeWorker {
+    static attempts=0;
+    postMessage(command) {
+      if(command.startsWith('go ')&&++TimeoutWorker.attempts===1)return;
+      super.postMessage(command);
+    }
+  }
+  const timed=new ChessAIAdapter({WorkerClass:TimeoutWorker,timeoutMs:50});
+  const timedOut=timed.chooseMove({fen:'8/8/8/8/8/8/8/8 b - - 0 1',elo:1400,legalMoves:['c7c5','e7e5']});
+  await new Promise(resolve=>setImmediate(resolve));
+  const timedWorker=FakeWorker.instances.at(-1);
+  assert.equal(await timedOut,'c7c5','timeout retains the existing legal fallback');
+  assert.equal(timedWorker.terminated,true,'timed-out worker must not pollute the next search');
+  assert.equal(await timed.chooseMove({fen:'8/8/8/8/8/8/8/8 b - - 0 1',elo:1400,legalMoves:['c7c5','e7e5']}),'e7e5','next turn uses a fresh engine');
+  timed.destroy();
 
   class DelayedInitWorker extends FakeWorker {
     postMessage(command) {

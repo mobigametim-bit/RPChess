@@ -27,13 +27,13 @@ import {drawKingdomOverlay} from './kingdom-map-overlay.mjs?v=20261114-corridor-
 import {animateTravelers,stopTravelers} from './kingdom-traveler-renderer.mjs?v=20261117-mobile-perf-v1';
 import {industrySprite,industrySpriteIndex,industryYield,industryLevel,industryPending,collectIndustry,BUILDING_TYPES} from './kingdom-industry-core.mjs';
 import {worldAt} from './kingdom-world-core.mjs';
-import {ATLAS_VIEW} from './kingdom-world-config.mjs?v=20261109-atlas-visual5';
+import {ATLAS_VIEW} from './kingdom-world-config.mjs';
 import {subscribe,currentLanguage,t} from './i18n.mjs';
 import {runtimeT} from '../localization/runtime-ui.mjs';
 import {createKingdomMap,validateKingdomMap,updatePeak,randomEncounter,enterCell,
- finishEncounter,matchesCombatReceipt,migrateKingdomMap,territoryCapacity,playerTerritoryCount,castleLevel,revealAround,
+ finishEncounter,matchesCombatReceipt,migrateKingdomMap,territoryCapacity,playerTerritoryKeys,castleLevel,revealAround,
  collectProduction,canBuildOutpost,buildOutpost,canBuildSettlement,buildSettlement,
- romanForStars,keyOf,adjacent,shortestKingRoute,acknowledgeReturn,isOwned,borderEdges,weekForDay,advanceDay} from './kingdom-map-core.mjs?v=20261112-province-colors-v1';
+ romanForStars,keyOf,adjacent,shortestKingRoute,acknowledgeReturn,isOwned,borderEdges,weekForDay,advanceDay,staticMapSignature} from './kingdom-map-core.mjs?v=20261112-province-colors-v1';
 
 const COPY={
  ru:{day:'День',shards:'Осколки чести',castle:'Замок',supply:'Припасы',power:'Мощь',points:'Очки присоединения',
@@ -779,7 +779,8 @@ function render(){
  const gloryLabel=runtimeT(currentLanguage(),'chronicle.glory');
  const headingGlory=screen.querySelector('[data-kingdom-heading-glory]');
  headingGlory.title=gloryLabel;headingGlory.setAttribute('aria-label',gloryLabel);
- screen.querySelector('[data-kingdom-points]').textContent=String(playerTerritoryCount(map));
+ const ownedKeys=playerTerritoryKeys(map);
+ screen.querySelector('[data-kingdom-points]').textContent=String(ownedKeys.size);
  screen.querySelector('[data-kingdom-shards]').textContent=String(honorShards());
  const cells=document.createDocumentFragment(),productions=document.createDocumentFragment();
  const tileUrls=new Map(); // Reuse resolved CSS URLs across the visible grid.
@@ -791,12 +792,12 @@ function render(){
   for(let col=-CENTER_X;col<WIDTH-CENTER_X;col++){
    const point={x:view.x+col,y:view.y+row},id=keyOf(point.x,point.y);
    const cell=map.cells[id],isCastle=id===keyOf(map.castle.x,map.castle.y);
-   const owned=isOwned(map,point);
+   const owned=ownedKeys.has(id);
    const visible=Boolean(isCastle||owned||visibleThroughFog(map,point));
    // A Skirmish is a concealed bandit ambush until the king actually enters.
    const encounterKnown=visible&&!(cell?.selectedEncounter?.type==='skirmish'&&cell.explored!==true);
    const within=adjacent(visualKing,point),here=id===keyOf(visualKing.x,visualKing.y);
-   const edges=owned?borderEdges(map,point):[];
+   const edges=owned?borderEdges(map,point,ownedKeys):[];
    const btn=document.createElement('button');btn.type='button';btn.dataset.kingdomCell=id;
    const light=(point.x+point.y)%2===0;
    btn.setAttribute('role','gridcell');btn.className='km-cell'+
@@ -978,31 +979,47 @@ function render(){
   travelers:world.querySelector('.km-travelers-layer'),
   fog:world.querySelector('.km-parchment-fog')
  };
- const staticKey=JSON.stringify([map.seed,map.worldGeneratorVersion,
-  view.x,view.y,WIDTH,HEIGHT,map.royalRoadsSignature,map.royalRoads,
-  map.completedRoads,map.outpostRoads,map.centralOwnedCells,
-  map.battleConqueredCells,map.outposts,map.battleTerritories,
-  Object.entries(map.cells).map(([id,cell])=>
-   [id,cell?.explored===true,cell?.annexed===true,cell?.status||''])]);
+ const staticKey=staticMapSignature(map,view,WIDTH,HEIGHT);
  const reuseStatic=staticMapKey===staticKey&&Boolean(
   layers.atlas&&layers.overlay&&layers.details&&layers.fog);
  stopTravelers();
- world.replaceChildren(cells);
+ // Stable viewport: reconcile only changed cell subtrees, preserving live DOM
+ // identity and attached Canvas layers. Candidate cells are still built by the
+ // same renderer; do not reuse animated bursts or rely on a second visual key.
+ const oldCells=Array.from(world.querySelectorAll(':scope > [data-kingdom-cell]'));
+ const newCells=Array.from(cells.children);
+ const sameGrid=Object.values(layers).every(Boolean)&&oldCells.length===newCells.length&&
+  oldCells.every((node,i)=>node.dataset.kingdomCell===newCells[i].dataset.kingdomCell);
+ let reusedCells=0;
+ if(sameGrid){
+  for(let i=0;i<oldCells.length;i++){
+   const before=oldCells[i],after=newCells[i];
+   if(!before.querySelector('.km-resource-bursts,.km-flavor-flyout')&&before.isEqualNode(after)){
+    reusedCells++;
+   }else before.replaceWith(after);
+  }
+  const keepLayers=new Set(Object.values(layers));
+  for(const node of Array.from(world.children)){
+   if(!keepLayers.has(node)&&!node.hasAttribute('data-kingdom-cell'))node.remove();
+  }
+ }else world.replaceChildren(cells);
+ world.dataset.reusedCellCount=String(reusedCells);
+ world.dataset.viewportCellCount=String(newCells.length);
  if(parchment){
   const atlas=layers.atlas||document.createElement('canvas');atlas.className='km-parchment-canvas';
   atlas.dataset.kingdomParchment='';atlas.setAttribute('aria-hidden','true');
-  world.prepend(atlas);
+  if(atlas.parentNode!==world)world.prepend(atlas);
  }
  const overlay=layers.overlay||document.createElement('canvas');overlay.className='km-kingdom-overlay';
  overlay.dataset.kingdomOverlay='';overlay.setAttribute('aria-hidden','true');
- world.append(overlay);
+ if(overlay.parentNode!==world)world.append(overlay);
  // Paper < political tint and both sets of borders < roads/nature < sites.
  // The transparent foreground canvas prevents borders from painting over
  // water, paving, natural landmarks, pieces and resource markers.
  if(parchment){
   const details=layers.details||document.createElement('canvas');details.className='km-parchment-details';
   details.dataset.kingdomTerrainDetails='';details.setAttribute('aria-hidden','true');
-  world.append(details);
+  if(details.parentNode!==world)world.append(details);
   if(!reuseStatic)renderParchment(world.querySelector('.km-parchment-canvas'),
    {seed:map.seed,view,columns:WIDTH,rows:HEIGHT,map,detailCanvas:details});
  }
@@ -1010,12 +1027,12 @@ function render(){
   // One independent, noninteractive animation layer: no run state writes.
   const travelers=layers.travelers||document.createElement('canvas');travelers.className='km-travelers-layer';
   travelers.dataset.kingdomTravelers='';travelers.setAttribute('aria-hidden','true');
-  world.append(travelers);
+  if(travelers.parentNode!==world)world.append(travelers);
   animateTravelers(travelers,{map,view,columns:WIDTH,rows:HEIGHT,parchment});
   if(parchment){
    const fog=layers.fog||document.createElement('canvas');fog.className='km-parchment-fog';
    fog.dataset.kingdomFog='';fog.setAttribute('aria-hidden','true');
-   world.append(fog);
+   if(fog.parentNode!==world)world.append(fog);
    if(!reuseStatic)renderParchmentFog(fog,{view,columns:WIDTH,rows:HEIGHT,map});
   }
  staticMapKey=staticKey;

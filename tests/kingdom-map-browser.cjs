@@ -63,9 +63,19 @@ async function dragKing(page,id){
 // The removed Classic skin must not leak chessboard tile textures into
 // any Kingdom view, regardless of race, save, movement or zoom state.
 async function assertTileImage(page,cellId){
- const css=await page.locator('[data-kingdom-cell="'+cellId+'"]').evaluate(element=>
-   getComputedStyle(element).backgroundImage);
- assert.equal(css,'none','permanent parchment tile '+cellId+' must not show Classic artwork');
+ // A locator can resolve a node just before the scheduled zoom repaint
+ // replaces it. A detached node reports an empty computed style. Query and
+ // read the current connected node in one browser task; do not poll for
+ // the expected value ('none') because that would mask a real art mismatch.
+ const handle=await page.waitForFunction(id=>{
+   const element=document.querySelector('[data-kingdom-cell="'+CSS.escape(id)+'"]');
+   if(!element?.isConnected||!element.getClientRects().length)return false;
+   const style=getComputedStyle(element).backgroundImage;
+   return style||false;
+ },cellId,{timeout:10000});
+ try{
+   assert.equal(await handle.jsonValue(),'none','permanent parchment tile '+cellId+' must not show Classic artwork');
+ }finally{await handle.dispose();}
 }
 
 (async()=>{
@@ -145,13 +155,23 @@ async function assertTileImage(page,cellId){
   assert.equal(before.kingdomMap.worldGeneratorVersion,6,
     'new Kingdom run uses the v6 deterministic world generator');
   const reopenReuse=await page.evaluate(()=>{
+    const world=document.querySelector('[data-kingdom-world]');
     const before=document.querySelector('.km-parchment-canvas');
     const fog=document.querySelector('.km-parchment-fog');
+    const cells=new Map([...world.querySelectorAll('[data-kingdom-cell]')]
+      .map(node=>[node.dataset.kingdomCell,node]));
     globalThis.RPChessKingdomMap.open();
-    return before===document.querySelector('.km-parchment-canvas')&&
-      fog===document.querySelector('.km-parchment-fog');
+    const next=[...world.querySelectorAll('[data-kingdom-cell]')];
+    return {canvas:before===document.querySelector('.km-parchment-canvas')&&
+      fog===document.querySelector('.km-parchment-fog'),
+      reused:next.filter(node=>cells.get(node.dataset.kingdomCell)===node).length,
+      reported:Number(world.dataset.reusedCellCount),total:next.length,
+      order:next.every((node,i)=>node.dataset.kingdomCell===[...cells.keys()][i])};
   });
-  assert(reopenReuse,'reopening a Kingdom map must retain its Canvas backing stores');
+  assert(reopenReuse.canvas,'reopening a Kingdom map must retain its Canvas backing stores');
+  assert(reopenReuse.order&&reopenReuse.reused===reopenReuse.reported&&
+    reopenReuse.reused>=reopenReuse.total-2,
+    'same viewport reopen preserves unchanged live cell nodes in order, including their art');
   const reopened=await read(page);
   assert.equal(reopened.kingdomMap.worldGeneratorVersion,6,
     'reopening a v6 save must never downgrade or regenerate its world');

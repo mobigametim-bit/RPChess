@@ -1,7 +1,7 @@
 /* Road-crossing trading tents. Pure, deterministic, additive to existing saves.
  * Gold is earned per completed week and held for collection; the King trades
  * only when physically standing on his own trading-tent tile. */
-import {visibleRoyalRoads,ownedKeys} from './kingdom-road-network.mjs';
+import {visibleRoyalRoads,ownedKeys} from './kingdom-road-network.mjs?v=20261111-polish-v1';
 import {naturalTileOccupancy} from './kingdom-geography.mjs';
 import {industryLevel} from './kingdom-industry-core.mjs';
 

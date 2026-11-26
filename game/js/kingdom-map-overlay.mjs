@@ -3,9 +3,9 @@
 import {PARCHMENT_TILE} from './kingdom-parchment-core.mjs';
 import {hashString} from './race-assets.mjs';
 import {BATTLE_PROVINCE_HUES} from './kingdom-map-core.mjs?v=20261112-province-colors-v1';
-import {visibleRoyalRoads,visibleTravelRoads,ownedKeys} from './kingdom-road-network.mjs?v=20261111-polish-v1';
+import {visibleRoadSnapshot,ownedKeys} from './kingdom-road-network.mjs?v=20261111-polish-v1';
 import {drawSandstoneRoad,drawRoadJunction} from './kingdom-road-paving.mjs?v=20261114-corridor-joints-v2';
-import {VISUAL} from './kingdom-world-config.mjs?v=20261113-opaque-terrain-v1';
+import {VISUAL} from './kingdom-world-config.mjs';
 import {visibleThroughFog} from './kingdom-fog-visibility.mjs';
 
 const TILE=PARCHMENT_TILE;
@@ -128,14 +128,13 @@ function drawKingdomBoundary(ctx,{map,view,columns,rows}){
 
 // Shared player-road painter: on parchment it runs on the SAME terrain
 // canvas, at the same world-road opacity as naturally generated roads.
-function drawKingdomRoads(ctx,{map,view,columns,rows,paint=true}){
+function drawKingdomRoads(ctx,{map,view,columns,rows,paint=true,roadSnapshot=null}){
  if(!ctx||!map||!view)return 0;
  const left=view.x-Math.floor(columns/2),top=view.y-Math.floor(rows/2);
  const width=columns*TILE,height=rows*TILE;
  let roadCount=0;
  const painted=new Set(),junctions=new Map();
- const royalRoads=visibleRoyalRoads(map);
- const travelRoads=visibleTravelRoads(map);
+ const {royal:royalRoads,travel:travelRoads}=roadSnapshot||visibleRoadSnapshot(map);
  // The owner boundary is evaluated per map tile, not per road ID.
  // Otherwise a road crossing into the kingdom stays gray end-to-end.
  const ownedRectangles=[];
@@ -249,15 +248,16 @@ function drawKingdomOverlay(canvas,{map,view,columns,rows,drawBorder=true,drawRo
  }
  ctx.restore();
  const enemyBorderCount=drawBorder?drawEnemyBattleTerritories(ctx,{map,view,columns,rows}):0;
- const roadCount=drawKingdomRoads(ctx,{map,view,columns,rows,paint:drawRoads});
+ const roadSnapshot=visibleRoadSnapshot(map);
+ const roadCount=drawKingdomRoads(ctx,{map,view,columns,rows,paint:drawRoads,roadSnapshot});
  // The overlay is beneath all site and king art; never cut off the road
  // before its endpoint. Roads physically reach the tile centers.
  const borderCount=drawBorder?drawKingdomBoundary(ctx,{map,view,columns,rows}):0;
  ctx.restore();
  canvas.dataset.glowingOwnedCells=String(glowCount);
  canvas.dataset.roadSegments=String(roadCount);
- canvas.dataset.journeyRoadSegments=String(visibleTravelRoads(map).length);
- canvas.dataset.ownedRoadSegments=String(visibleRoyalRoads(map).length);
+ canvas.dataset.journeyRoadSegments=String(roadSnapshot.travel.length);
+ canvas.dataset.ownedRoadSegments=String(roadSnapshot.royal.length);
  canvas.dataset.borderSegments=String(borderCount);
  canvas.dataset.enemyBorderSegments=String(enemyBorderCount);
  canvas.dataset.enemyProvinceCount=String(visibleBattleProvinces(map).length);
