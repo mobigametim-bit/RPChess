@@ -1,0 +1,52 @@
+name: One-time artifact cleanup (2026-11-26)
+on:
+  push:
+    branches:
+      - maintenance/actions-artifact-cleanup-20261126
+    paths:
+      - .github/workflows/one-time-artifact-cleanup-20261126.yml
+permissions:
+  actions: write
+jobs:
+  cleanup:
+    if: github.repository == 'mobigametim-bit/RPChess' && github.ref == 'refs/heads/maintenance/actions-artifact-cleanup-20261126'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Delete only repository artifacts older than 72 hours
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import datetime as dt, json, os, subprocess, sys
+          repo=os.environ['GH_REPO']
+          assert repo=='mobigametim-bit/RPChess'
+          cutoff=dt.datetime.now(dt.timezone.utc)-dt.timedelta(days=3)
+          def inventory():
+              pages=json.loads(subprocess.check_output(['gh','api','--paginate','--slurp',f'repos/{repo}/actions/artifacts?per_page=100'],text=True))
+              return {int(a['id']):a for p in pages for a in p['artifacts']}
+          def old(a):
+              return dt.datetime.fromisoformat(a['created_at'].replace('Z','+00:00')) < cutoff
+          items=inventory()
+          targets=[a for a in items.values() if old(a)]
+          print('CLEANUP_BEFORE '+json.dumps({'cutoff':cutoff.isoformat(),'total':len(items),'eligible':len(targets),'eligible_bytes':sum(a['size_in_bytes'] for a in targets)}),flush=True)
+          deleted=0
+          deleted_bytes=0
+          failures=[]
+          for a in targets:
+              result=subprocess.run(['gh','api','--method','DELETE',f'repos/{repo}/actions/artifacts/{int(a["id"])}'],capture_output=True,text=True)
+              if result.returncode==0:
+                  deleted+=1
+                  deleted_bytes+=a['size_in_bytes']
+              else:
+                  failures.append({'id':a['id'],'error':result.stderr.strip()[:300]})
+          remaining=inventory()
+          report={'cutoff':cutoff.isoformat(),'initial':len(items),'eligible':len(targets),'deleted':deleted,'deleted_bytes':deleted_bytes,'remaining':len(remaining),'remaining_old':sum(old(a) for a in remaining.values()),'remaining_recent':sum(not old(a) for a in remaining.values()),'failures':failures}
+          print('ARTIFACT_CLEANUP '+json.dumps(report),flush=True)
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as summary:
+              summary.write('## One-time artifact cleanup\n\n'+json.dumps(report,indent=2)+'\n')
+          if failures or report['remaining_old']: sys.exit(1)
+          PY
